@@ -41,30 +41,25 @@ function buildMenu() {
 // Electron's default print (triggered by the renderer calling window.print())
 // doesn't reliably honor our @page CSS (landscape Letter) or print background
 // colors, which was causing print failures / blank-looking output. Printing
-// through the main process with explicit options fixes both.
+// through the main process fixes that, but forcing an exact custom pageSize
+// + margins here (in microns) turned out to be rejected outright by some
+// real printer drivers as "Invalid printer settings" - unlike "Microsoft
+// Print to PDF", physical printers validate requested margins against their
+// own fixed unprintable border and refuse anything outside it, rather than
+// clamping. Stick to landscape + printBackground, which every driver
+// supports, and let @page CSS (plus the printer's own paper-size default,
+// selectable in the dialog below) handle the rest.
 ipcMain.handle('print-sheets', () => {
   return new Promise((resolve) => {
     if (!mainWindow) {
       resolve({ success: false, failureReason: 'No window' });
       return;
     }
-    // Margins match the @page rule in styles.css (0.28in = 7112 microns) so
-    // the sheet layout's math (card size, rows/cols) lines up with what's
-    // actually reserved on the physical page.
-    const MARGIN_MICRONS = 7112;
     mainWindow.webContents.print(
       {
         silent: false,
         printBackground: true,
         landscape: true,
-        pageSize: 'Letter',
-        margins: {
-          marginType: 'custom',
-          top: MARGIN_MICRONS,
-          bottom: MARGIN_MICRONS,
-          left: MARGIN_MICRONS,
-          right: MARGIN_MICRONS,
-        },
       },
       (success, failureReason) => {
         resolve({ success, failureReason });
