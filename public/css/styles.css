@@ -381,18 +381,20 @@ h1, h2, h3 { margin: 0; }
   color: #ffd400;
   -webkit-text-stroke: calc(var(--w) * 0.0035) #000;
   text-shadow: calc(var(--w) * 0.006) calc(var(--w) * 0.006) 0 rgba(0,0,0,0.5);
-  transform: rotate(-4deg);
   margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
 }
 
 /* "Super Sale Price!!!" script-style callout that replaces the numeric
-   price entirely, matching the store's existing Super Sale talkers. */
+   price entirely, matching the store's existing Super Sale talkers. Sized
+   to stay on one line at full scale so it reads as a single callout instead
+   of wrapping and eating a second line's worth of vertical space. */
 .card__supersale-text {
   flex: 0 0 auto;
   text-align: center;
+  white-space: nowrap;
   font-family: "Segoe Script", "Brush Script MT", cursive;
   color: var(--sale-red);
-  font-size: calc(var(--w) * 0.105 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.062 * var(--price-fit, 1));
   line-height: 1.2;
   margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
 }

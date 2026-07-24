@@ -29,7 +29,7 @@ function buildPricingHtml(talker) {
   if (talkerType === 'supersale') {
     // Matches the store's existing "Super Sale" talkers: a stylized callout
     // in place of any numeric price.
-    return `<div class="card__supersale-text">Super Sale<br>Price!!!</div>`;
+    return `<div class="card__supersale-text">Super Sale Price!!!</div>`;
   }
 
   // Both "closeout" and "standard" show the same regular/sale price layout;
