@@ -2,14 +2,52 @@
   "name": "shelf-talker-wizard",
   "version": "1.0.0",
   "description": "Shelf talker generator for Liquor Outlet Wine Cellars - manual entry or import from the website, standardized print-ready sizes.",
-  "main": "server/index.js",
+  "author": "Liquor Outlet Wine Cellars",
+  "main": "electron/main.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "dev": "node server/index.js",
+    "electron": "electron .",
+    "dist:win": "electron-builder --win --x64"
   },
   "license": "UNLICENSED",
   "dependencies": {
     "express": "^4.19.2",
     "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.liquoroutletwinecellars.shelftalkerwizard",
+    "productName": "Shelf Talker Wizard",
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Shelf Talker Wizard"
+    }
   }
 }

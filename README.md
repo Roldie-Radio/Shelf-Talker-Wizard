@@ -21,6 +21,43 @@ npm start
 
 Then open http://localhost:3000 in a browser.
 
+## Windows installer (for store PCs)
+
+For running on the Dell OptiPlex / Windows 11 store PCs, this app is also packaged as a
+standalone desktop app (Electron) with a normal Windows installer &mdash; Start Menu and
+Desktop shortcuts, an uninstaller, no browser or command line required. Staff just double-click
+"Shelf Talker Wizard" like any other program.
+
+**Getting the installer:** a Windows `.exe` can't be built from a Mac/Linux machine, so it's
+built by a GitHub Actions workflow (`.github/workflows/build-windows.yml`) instead:
+
+1. In this repo on GitHub, go to **Actions &rarr; Build Windows Installer &rarr; Run workflow**.
+2. When it finishes (a few minutes), open the run and download the
+   `ShelfTalkerWizard-Windows-Installer` artifact &mdash; it contains
+   `Shelf Talker Wizard Setup <version>.exe`.
+3. Copy that installer to each OptiPlex and run it. No Node.js or other dependencies needed on
+   the PC; everything (including a private copy of Node) is bundled inside.
+
+To build it yourself instead, on a Windows machine with Node 18+:
+
+```bash
+npm install
+npm run dist:win
+```
+
+The installer is written to `dist/`.
+
+### How it's packaged
+
+- `electron/main.js` is the desktop app's entry point: it starts the same Express server
+  in-process (on a fixed local port, `127.0.0.1` only) and opens it in a native window.
+- `server/index.js` exports `start()` so both the plain CLI (`npm start`) and the Electron
+  wrapper can launch the same server.
+- `build/icon.ico` / `build/icon.png` are the app icon (a grape-cluster mark in the template's
+  amber color, generated to match the brand).
+- The `build` section of `package.json` configures `electron-builder` to produce an NSIS
+  installer with Desktop/Start Menu shortcuts.
+
 ## Using the website import
 
 Click **Import from Website**, paste a product page URL from liquoroutletwinecellars.com, and click **Fetch Product Data**. The importer looks for (in order):
