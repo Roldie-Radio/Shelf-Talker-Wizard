@@ -1,5 +1,7 @@
 (function () {
   const STORAGE_KEY = 'shelfTalkerQueue.v1';
+  const REVIEWERS_KEY = 'shelfTalkerReviewers.v1';
+  const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
   const CARDS_PER_SHEET = 6;
   // Matches the print sheet's card width (--w: 2.8in) on an 11in-wide
   // landscape Letter page - see the @media print rules in styles.css.
@@ -7,6 +9,12 @@
 
   /** @type {Array<object>} */
   let queue = loadQueue();
+
+  /** @type {Array<string>} */
+  let reviewers = loadReviewers();
+
+  /** Ratings currently attached to whatever's in the form (not yet in queue). */
+  let currentRatings = [];
 
   let previewMode = 'single'; // 'single' | 'sheet'
   let sheetPage = 0;
@@ -24,6 +32,20 @@
 
   function saveQueue() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+  }
+
+  function loadReviewers() {
+    try {
+      const raw = localStorage.getItem(REVIEWERS_KEY);
+      const list = raw ? JSON.parse(raw) : null;
+      return Array.isArray(list) && list.length ? list : [...DEFAULT_REVIEWERS];
+    } catch {
+      return [...DEFAULT_REVIEWERS];
+    }
+  }
+
+  function saveReviewers() {
+    localStorage.setItem(REVIEWERS_KEY, JSON.stringify(reviewers));
   }
 
   function makeId() {
@@ -44,6 +66,17 @@
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
     salePrice: document.getElementById('fSalePrice'),
+    talkerType: document.getElementById('fTalkerType'),
+    award: document.getElementById('fAward'),
+    ratingReviewer: document.getElementById('fRatingReviewer'),
+    ratingScore: document.getElementById('fRatingScore'),
+    addRatingBtn: document.getElementById('addRatingBtn'),
+    ratingsList: document.getElementById('ratingsList'),
+    manageReviewersToggle: document.getElementById('manageReviewersToggle'),
+    reviewerManager: document.getElementById('reviewerManager'),
+    newReviewerName: document.getElementById('newReviewerName'),
+    addReviewerBtn: document.getElementById('addReviewerBtn'),
+    reviewerManagerList: document.getElementById('reviewerManagerList'),
     saveBtn: document.getElementById('saveBtn'),
     cancelEditBtn: document.getElementById('cancelEditBtn'),
     clearFormBtn: document.getElementById('clearFormBtn'),
@@ -91,6 +124,9 @@
       theme: els.theme.value,
       price: els.price.value.trim(),
       salePrice: els.salePrice.value.trim(),
+      talkerType: els.talkerType.value,
+      award: els.award.value.trim(),
+      ratings: currentRatings.slice(),
     };
   }
 
@@ -101,6 +137,10 @@
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
     els.salePrice.value = talker.salePrice || '';
+    els.talkerType.value = talker.talkerType || 'standard';
+    els.award.value = talker.award || '';
+    currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
+    renderRatingsList();
   }
 
   function resetForm() {
@@ -108,6 +148,8 @@
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
+    currentRatings = [];
+    renderRatingsList();
     hideError();
     refreshPreview();
   }
@@ -119,6 +161,91 @@
   function hideError() {
     els.formError.hidden = true;
   }
+
+  // ---------- Ratings & reviewers ----------
+
+  function renderReviewerSelect() {
+    const current = els.ratingReviewer.value;
+    els.ratingReviewer.innerHTML = reviewers.map((r) => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+    if (reviewers.includes(current)) els.ratingReviewer.value = current;
+  }
+
+  function renderReviewerManagerList() {
+    if (reviewers.length === 0) {
+      els.reviewerManagerList.innerHTML = '<p class="empty-hint">No reviewers yet.</p>';
+      return;
+    }
+    els.reviewerManagerList.innerHTML = reviewers.map((r, i) => `
+      <div class="rating-chip" data-reviewer-index="${i}">
+        <span>${escapeHtml(r)}</span>
+        <button type="button" data-action="remove-reviewer" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  function renderRatingsList() {
+    if (currentRatings.length === 0) {
+      els.ratingsList.innerHTML = '';
+      return;
+    }
+    els.ratingsList.innerHTML = currentRatings.map((r, i) => `
+      <div class="rating-chip" data-rating-index="${i}">
+        <span>${escapeHtml(r.score)} Pts ${escapeHtml(r.reviewer)}</span>
+        <button type="button" data-action="remove-rating" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  function addRating() {
+    const reviewer = els.ratingReviewer.value;
+    const score = els.ratingScore.value.trim();
+    if (!reviewer || !score) return;
+    currentRatings.push({ reviewer, score });
+    els.ratingScore.value = '';
+    renderRatingsList();
+    refreshPreview();
+  }
+
+  els.addRatingBtn.addEventListener('click', addRating);
+  els.ratingScore.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addRating(); }
+  });
+
+  els.ratingsList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-rating"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-rating-index]').dataset.ratingIndex);
+    currentRatings.splice(idx, 1);
+    renderRatingsList();
+    refreshPreview();
+  });
+
+  els.manageReviewersToggle.addEventListener('click', () => {
+    els.reviewerManager.hidden = !els.reviewerManager.hidden;
+    if (!els.reviewerManager.hidden) renderReviewerManagerList();
+  });
+
+  els.addReviewerBtn.addEventListener('click', () => {
+    const name = els.newReviewerName.value.trim();
+    if (!name) return;
+    if (!reviewers.includes(name)) {
+      reviewers.push(name);
+      saveReviewers();
+      renderReviewerSelect();
+      renderReviewerManagerList();
+    }
+    els.newReviewerName.value = '';
+  });
+
+  els.reviewerManagerList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-reviewer"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-reviewer-index]').dataset.reviewerIndex);
+    reviewers.splice(idx, 1);
+    saveReviewers();
+    renderReviewerSelect();
+    renderReviewerManagerList();
+  });
 
   // ---------- Preview ----------
 
@@ -408,6 +535,7 @@
       const rec = {};
       header.forEach((key, i) => { rec[key] = (cols[i] || '').trim(); });
       if (!rec.title || !rec.price || Number.isNaN(Number(rec.price))) { skipped++; return; }
+      const typeRaw = (rec.type || rec['talker type'] || 'standard').toLowerCase();
       queue.push({
         id: makeId(),
         title: rec.title,
@@ -416,6 +544,11 @@
         price: rec.price,
         salePrice: rec.saleprice || rec['sale price'] || '',
         theme: (rec.theme || 'amber').toLowerCase() === 'purple' ? 'purple' : 'amber',
+        talkerType: ['closeout', 'supersale', 'super sale'].includes(typeRaw)
+          ? (typeRaw === 'super sale' ? 'supersale' : typeRaw)
+          : 'standard',
+        award: rec.award || '',
+        ratings: [],
       });
       added++;
     });
@@ -467,6 +600,7 @@
 
   // ---------- Init ----------
 
+  renderReviewerSelect();
   renderQueue();
   renderPreview();
 })();

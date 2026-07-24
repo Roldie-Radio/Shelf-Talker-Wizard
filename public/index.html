@@ -63,6 +63,39 @@
 
           <div class="field-row">
             <label class="field">
+              <span>Talker Style</span>
+              <select id="fTalkerType">
+                <option value="standard">Standard</option>
+                <option value="closeout">Closeout</option>
+                <option value="supersale">Super Sale</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Award / Medal (optional)</span>
+              <input type="text" id="fAward" maxlength="80" placeholder="Silver Medal - World Whiskey Masters" />
+            </label>
+          </div>
+
+          <div class="field ratings-field">
+            <span>Ratings (optional)</span>
+            <div class="ratings-builder">
+              <select id="fRatingReviewer"></select>
+              <input type="text" inputmode="numeric" id="fRatingScore" maxlength="3" placeholder="92" />
+              <button type="button" class="btn btn--small" id="addRatingBtn">Add</button>
+            </div>
+            <div class="ratings-list" id="ratingsList"></div>
+            <button type="button" class="link-btn" id="manageReviewersToggle">Manage reviewers</button>
+            <div class="reviewer-manager" id="reviewerManager" hidden>
+              <div class="reviewer-manager__add">
+                <input type="text" id="newReviewerName" maxlength="40" placeholder="Add a reviewer name..." />
+                <button type="button" class="btn btn--small" id="addReviewerBtn">Add</button>
+              </div>
+              <div class="reviewer-manager__list" id="reviewerManagerList"></div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
               <span>Regular Price *</span>
               <input type="text" inputmode="decimal" id="fPrice" required placeholder="13.99" />
             </label>
@@ -92,7 +125,7 @@
       </div>
 
       <div class="tab-panel" data-panel="bulk">
-        <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme</code>. Only <code>title</code> and <code>price</code> are required.</p>
+        <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme,type,award</code>. Only <code>title</code> and <code>price</code> are required. <code>type</code> can be <code>standard</code>, <code>closeout</code>, or <code>supersale</code>.</p>
         <textarea id="csvInput" rows="8" placeholder="title,description,size,price,salePrice,theme
 OXO Double Jigger,Great for measuring pours,Each,13.99,9.99,amber"></textarea>
         <button type="button" class="btn btn--primary" id="csvImportBtn">Add All to Queue</button>

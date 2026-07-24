@@ -7,6 +7,9 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Bulk CSV import** for adding many products at once.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
+- **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
+- **Awards & ratings** &mdash; an optional highlighted award/medal line, plus a list of critic ratings (e.g. "95 Pts Jim Murray"). Reviewers are picked from a managed dropdown (seeded with Wine Enthusiast, Wine Spectator, Wine Advocate, James Suckling, Jim Murray) that you can add to or trim from the "Manage reviewers" link.
+- **Full-page preview** &mdash; toggle the Live Preview between the single talker you're editing and a scaled Letter-landscape sheet showing the whole queue 6-up, with Prev/Next pagination past 6 items.
 - **Print-ready sheets** &mdash; queue up talkers and print; they're laid out 6-up on Letter-size paper (3 columns &times; 2 rows), the same arrangement as the original template, paginating automatically if you have more than 6.
 - Your queue is saved in the browser (localStorage) so it survives a refresh.
 
