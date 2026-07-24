@@ -258,23 +258,32 @@ h1, h2, h3 { margin: 0; }
 
   @page { size: letter landscape; margin: 0.28in; }
 
-  body { background: #fff; }
+  body,
+  .card,
+  .card__band {
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
 
+  /* Landscape Letter is 11in x 8.5in; content area is the page size minus
+     the @page margin above on each side (11 - 0.56 x 8.5 - 0.56). */
   .sheet {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 0.22in 0.42in;
+    justify-items: center;
+    align-items: center;
+    gap: 0.2in 0.3in;
     width: 100%;
-    height: 10.44in;
+    height: 7.94in;
     page-break-after: always;
   }
   .sheet:last-child { page-break-after: auto; }
 
   .sheet .card {
-    --w: 2.85in;
-    width: 100%;
-    height: 100%;
+    --w: 2.8in;
     box-shadow: none;
   }
 }

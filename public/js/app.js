@@ -365,9 +365,24 @@
     // Cards need to be laid out at print size before we can measure/shrink text.
     requestAnimationFrame(() => {
       els.printRoot.querySelectorAll('.card').forEach((card) => fitCardText(card));
-      requestAnimationFrame(() => window.print());
+      requestAnimationFrame(triggerPrint);
     });
   });
+
+  function triggerPrint() {
+    // Inside the packaged desktop app, print through the main process (see
+    // electron/main.js) instead of window.print() - Electron's renderer-side
+    // print doesn't reliably apply our page size or print backgrounds.
+    if (window.shelfTalker && window.shelfTalker.print) {
+      window.shelfTalker.print().then((result) => {
+        if (result && result.success === false && result.failureReason !== 'cancelled') {
+          alert(`Printing failed: ${result.failureReason || 'unknown error'}`);
+        }
+      });
+    } else {
+      window.print();
+    }
+  }
 
   // ---------- Init ----------
 
