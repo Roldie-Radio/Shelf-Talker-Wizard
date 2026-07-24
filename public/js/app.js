@@ -1,8 +1,15 @@
 (function () {
   const STORAGE_KEY = 'shelfTalkerQueue.v1';
+  const CARDS_PER_SHEET = 6;
+  // Matches the print sheet's card width (--w: 2.8in) on an 11in-wide
+  // landscape Letter page - see the @media print rules in styles.css.
+  const SHEET_CARD_RATIO = 2.8 / 11;
 
   /** @type {Array<object>} */
   let queue = loadQueue();
+
+  let previewMode = 'single'; // 'single' | 'sheet'
+  let sheetPage = 0;
 
   // ---------- Persistence ----------
 
@@ -51,6 +58,11 @@
     csvStatus: document.getElementById('csvStatus'),
 
     previewStage: document.getElementById('previewStage'),
+    previewToggleBtns: document.querySelectorAll('.toggle-btn'),
+    sheetPagination: document.getElementById('sheetPagination'),
+    prevPageBtn: document.getElementById('prevPageBtn'),
+    nextPageBtn: document.getElementById('nextPageBtn'),
+    pageIndicator: document.getElementById('pageIndicator'),
     queueGrid: document.getElementById('queueGrid'),
     queueCount: document.getElementById('queueCount'),
     clearQueueBtn: document.getElementById('clearQueueBtn'),
@@ -97,7 +109,7 @@
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
     hideError();
-    renderPreview();
+    refreshPreview();
   }
 
   function showError(msg) {
@@ -111,6 +123,7 @@
   // ---------- Preview ----------
 
   function renderPreview() {
+    els.sheetPagination.hidden = true;
     const talker = readForm();
     els.previewStage.innerHTML = '';
     const card = buildCardElement(talker);
@@ -118,14 +131,74 @@
     requestAnimationFrame(() => fitCardText(card));
   }
 
+  // A scaled-down stand-in for a printed Letter-landscape sheet, showing the
+  // whole queue 6-up (see .sheet-preview in styles.css, and the matching
+  // @media print rules it mirrors).
+  function renderSheetPreview() {
+    const totalPages = Math.max(1, Math.ceil(queue.length / CARDS_PER_SHEET));
+    sheetPage = Math.min(Math.max(sheetPage, 0), totalPages - 1);
+
+    els.previewStage.innerHTML = '';
+
+    if (queue.length === 0) {
+      els.previewStage.innerHTML = '<p class="empty-hint">No shelf talkers queued yet. Add one on the left to see the full page here.</p>';
+      els.sheetPagination.hidden = true;
+      return;
+    }
+
+    const sheetDiv = document.createElement('div');
+    sheetDiv.className = 'sheet-preview';
+    const items = queue.slice(sheetPage * CARDS_PER_SHEET, sheetPage * CARDS_PER_SHEET + CARDS_PER_SHEET);
+    items.forEach((talker) => sheetDiv.appendChild(buildCardElement(talker)));
+    els.previewStage.appendChild(sheetDiv);
+
+    // Card font sizes are driven by --w (see card.js/styles.css); compute it
+    // in px from the sheet's actual rendered width so text scales correctly
+    // at whatever size the preview panel happens to be.
+    requestAnimationFrame(() => {
+      const containerWidth = sheetDiv.getBoundingClientRect().width;
+      const cardWidthPx = containerWidth * SHEET_CARD_RATIO;
+      const cards = sheetDiv.querySelectorAll('.card');
+      cards.forEach((card) => card.style.setProperty('--w', `${cardWidthPx}px`));
+      requestAnimationFrame(() => cards.forEach((card) => fitCardText(card)));
+    });
+
+    els.sheetPagination.hidden = totalPages <= 1;
+    els.pageIndicator.textContent = `Page ${sheetPage + 1} of ${totalPages}`;
+  }
+
+  function refreshPreview() {
+    if (previewMode === 'sheet') renderSheetPreview();
+    else renderPreview();
+  }
+
   let previewDebounce;
   function schedulePreview() {
+    if (previewMode !== 'single') return;
     clearTimeout(previewDebounce);
     previewDebounce = setTimeout(renderPreview, 120);
   }
 
   els.form.addEventListener('input', schedulePreview);
-  els.theme.addEventListener('change', renderPreview);
+  els.theme.addEventListener('change', () => { if (previewMode === 'single') renderPreview(); });
+
+  els.previewToggleBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.preview === previewMode) return;
+      previewMode = btn.dataset.preview;
+      els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+      refreshPreview();
+    });
+  });
+
+  els.prevPageBtn.addEventListener('click', () => {
+    sheetPage = Math.max(0, sheetPage - 1);
+    renderSheetPreview();
+  });
+  els.nextPageBtn.addEventListener('click', () => {
+    sheetPage += 1;
+    renderSheetPreview();
+  });
 
   // ---------- Queue rendering ----------
 
@@ -175,6 +248,8 @@
     els.saveBtn.textContent = 'Save Changes';
     els.cancelEditBtn.hidden = false;
     document.querySelector('.tab[data-tab="manual"]').click();
+    previewMode = 'single';
+    els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
     renderPreview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -185,12 +260,14 @@
     queue.push({ ...talker, id: makeId() });
     saveQueue();
     renderQueue();
+    refreshPreview();
   }
 
   function deleteTalker(id) {
     queue = queue.filter((t) => t.id !== id);
     saveQueue();
     renderQueue();
+    refreshPreview();
   }
 
   els.clearQueueBtn.addEventListener('click', () => {
@@ -199,6 +276,7 @@
     queue = [];
     saveQueue();
     renderQueue();
+    refreshPreview();
   });
 
   els.cancelEditBtn.addEventListener('click', resetForm);
@@ -263,6 +341,8 @@
         salePrice: data.salePrice,
         theme: els.theme.value,
       });
+      previewMode = 'single';
+      els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
       renderPreview();
       document.querySelector('.tab[data-tab="manual"]').click();
       els.importStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
@@ -342,6 +422,7 @@
 
     saveQueue();
     renderQueue();
+    refreshPreview();
     els.csvStatus.textContent = `Added ${added} shelf talker(s).${skipped ? ` Skipped ${skipped} row(s) missing title/price.` : ''}`;
     if (added) els.csvInput.value = '';
   });

@@ -130,6 +130,53 @@ h1, h2, h3 { margin: 0; }
 
 .preview-stage { display: flex; justify-content: center; padding: 1rem 0; }
 
+.preview-toggle { display: flex; gap: 0.3rem; }
+.toggle-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #6b645a;
+}
+.toggle-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* A scaled-down stand-in for a printed Letter-landscape sheet (11in x
+   8.5in), showing the whole current print queue 6-up like the real print
+   output. Proportions (margin/gap/card size) mirror the @media print rules
+   below; card --w is set in JS from the container's actual rendered width. */
+.sheet-preview {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 11 / 8.5;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  box-sizing: border-box;
+  padding: 3.3% 2.6%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2.4% 2.7%;
+  justify-items: center;
+  align-items: center;
+}
+.sheet-preview .card { box-shadow: none; }
+
+.sheet-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #4a453d;
+}
+
 /* ---------- Queue ---------- */
 
 .queue-grid { display: flex; flex-direction: column; gap: 0.6rem; max-height: 70vh; overflow-y: auto; }

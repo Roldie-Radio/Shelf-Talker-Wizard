@@ -101,8 +101,19 @@ OXO Double Jigger,Great for measuring pours,Each,13.99,9.99,amber"></textarea>
     </section>
 
     <section class="panel panel--preview">
-      <h2>Live Preview</h2>
+      <div class="panel__header">
+        <h2>Live Preview</h2>
+        <div class="preview-toggle" role="tablist">
+          <button type="button" class="toggle-btn is-active" data-preview="single">Current Talker</button>
+          <button type="button" class="toggle-btn" data-preview="sheet">Full Page</button>
+        </div>
+      </div>
       <div class="preview-stage" id="previewStage"></div>
+      <div class="sheet-pagination no-print" id="sheetPagination" hidden>
+        <button type="button" class="btn btn--ghost btn--small" id="prevPageBtn">&larr; Prev</button>
+        <span id="pageIndicator">Page 1 of 1</span>
+        <button type="button" class="btn btn--ghost btn--small" id="nextPageBtn">Next &rarr;</button>
+      </div>
     </section>
 
     <section class="panel panel--queue">
