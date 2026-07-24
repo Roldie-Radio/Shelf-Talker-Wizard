@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelf Talker Wizard</title>
+<link rel="icon" href="assets/logo.png" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="appbar no-print">
+    <div class="appbar__brand">
+      <img src="assets/logo.png" alt="Liquor Outlet Wine Cellars" class="appbar__logo" />
+      <div>
+        <h1>Shelf Talker Wizard</h1>
+        <p>Build, preview, and print shelf talkers &mdash; standardized to your template size.</p>
+      </div>
+    </div>
+    <div class="appbar__actions">
+      <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
+      <button id="printBtn" class="btn btn--primary" disabled>Print Sheet(s)</button>
+    </div>
+  </header>
+
+  <main class="layout no-print">
+
+    <section class="panel panel--form">
+      <div class="tabs" role="tablist">
+        <button class="tab is-active" data-tab="manual" role="tab">Manual Entry</button>
+        <button class="tab" data-tab="import" role="tab">Import from Website</button>
+        <button class="tab" data-tab="bulk" role="tab">Bulk CSV Import</button>
+      </div>
+
+      <div class="tab-panel is-active" data-panel="manual">
+        <form id="talkerForm" novalidate>
+          <input type="hidden" id="editId" value="" />
+
+          <label class="field">
+            <span>Product Title *</span>
+            <input type="text" id="fTitle" maxlength="120" required placeholder="OXO Double Jigger" />
+          </label>
+
+          <label class="field">
+            <span>Description</span>
+            <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span>Size / Unit</span>
+              <input type="text" id="fSize" maxlength="24" placeholder="750ml / Each / 6-pack" />
+            </label>
+            <label class="field">
+              <span>Theme</span>
+              <select id="fTheme">
+                <option value="amber">Amber</option>
+                <option value="purple">Purple</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
+              <span>Regular Price *</span>
+              <input type="text" inputmode="decimal" id="fPrice" required placeholder="13.99" />
+            </label>
+            <label class="field">
+              <span>Sale Price (optional)</span>
+              <input type="text" inputmode="decimal" id="fSalePrice" placeholder="9.99" />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary" id="saveBtn">Add to Queue</button>
+            <button type="button" class="btn" id="cancelEditBtn" hidden>Cancel Edit</button>
+            <button type="button" class="btn btn--ghost" id="clearFormBtn">Clear</button>
+          </div>
+          <p class="form-error" id="formError" hidden></p>
+        </form>
+      </div>
+
+      <div class="tab-panel" data-panel="import">
+        <p class="help-text">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
+        <label class="field">
+          <span>Product Page URL</span>
+          <input type="url" id="importUrl" placeholder="https://www.liquoroutletwinecellars.com/products/..." />
+        </label>
+        <button type="button" class="btn btn--primary" id="importBtn">Fetch Product Data</button>
+        <p class="help-text" id="importStatus"></p>
+      </div>
+
+      <div class="tab-panel" data-panel="bulk">
+        <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme</code>. Only <code>title</code> and <code>price</code> are required.</p>
+        <textarea id="csvInput" rows="8" placeholder="title,description,size,price,salePrice,theme
+OXO Double Jigger,Great for measuring pours,Each,13.99,9.99,amber"></textarea>
+        <button type="button" class="btn btn--primary" id="csvImportBtn">Add All to Queue</button>
+        <p class="help-text" id="csvStatus"></p>
+      </div>
+    </section>
+
+    <section class="panel panel--preview">
+      <h2>Live Preview</h2>
+      <div class="preview-stage" id="previewStage"></div>
+    </section>
+
+    <section class="panel panel--queue">
+      <div class="panel__header">
+        <h2>Queue</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="clearQueueBtn">Clear All</button>
+      </div>
+      <div class="queue-grid" id="queueGrid">
+        <p class="empty-hint">No shelf talkers yet. Add one on the left to get started.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <section id="printRoot" class="print-only"></section>
+
+</div>
+
+<script src="js/card.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
