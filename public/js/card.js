@@ -92,6 +92,22 @@ function fitCardText(cardEl) {
       guard -= 1;
     }
   });
+
+  // The Super Sale callout and the Closeout badge run noticeably larger
+  // than the standard regular/sale price lines. On a long title/description
+  // that combined block can still be taller than the space left on the
+  // talker, which - since .card__body doesn't scroll - shoves (and clips)
+  // whatever's below it. Scale the whole pricing block down (all parts
+  // together, so their relative sizes stay the same) until it fits.
+  const body = cardEl.querySelector('.card__body');
+  if (!body) return;
+  let priceFit = 1;
+  let priceGuard = 40;
+  while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.5 && priceGuard > 0) {
+    priceFit = Math.round((priceFit - 0.03) * 100) / 100;
+    body.style.setProperty('--price-fit', priceFit);
+    priceGuard -= 1;
+  }
 }
 
 function renderFittedCard(talker) {
