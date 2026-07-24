@@ -57,12 +57,17 @@ jobs:
 
       # Publishes the installer as a permanent Release asset (workflow-run
       # artifacts above expire after 30 days). Creates the git tag too, if it
-      # doesn't already exist, pointing at the commit that was built.
+      # doesn't already exist, pointing at the commit that was built - this
+      # needs target_commitish set explicitly, since the repo has no "main"
+      # and its default branch is just whichever feature branch happened to
+      # be pushed first; without it, a tag created from any other branch
+      # silently points at that unrelated default branch's tip instead.
       - name: Publish release
         if: steps.release_tag.outputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: Shelf Talker Wizard ${{ steps.release_tag.outputs.tag }}
           files: dist/*.exe
           generate_release_notes: true
