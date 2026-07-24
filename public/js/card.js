@@ -23,6 +23,60 @@ function buildRatingsHtml(talker) {
   return `<div class="card__ratings">${lines.join('<br>')}</div>`;
 }
 
+// Untappd-style rating callout: a big circled score (e.g. "94") next to a
+// 5-dot rating with its decimal value (e.g. "4.27"). Either half can be
+// left off if the field wasn't filled in.
+function buildBeerRatingHtml(talker) {
+  const score = talker.untappdScore != null ? String(talker.untappdScore).trim() : '';
+  const ratingNum = Number(talker.untappdRating);
+  const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
+  if (!score && !hasRating) return '';
+
+  const scoreHtml = score ? `<div class="card__beer-score">${escapeHtml(score)}</div>` : '';
+
+  let detailHtml = '';
+  if (hasRating) {
+    const clamped = Math.max(0, Math.min(5, ratingNum));
+    const dots = Array.from({ length: 5 }, (_, i) => {
+      const fill = clamped - i;
+      const cls = fill >= 1 ? 'is-full' : fill > 0 ? 'is-half' : 'is-empty';
+      return `<span class="card__beer-dot ${cls}"></span>`;
+    }).join('');
+    detailHtml = `
+      <div class="card__beer-rating-detail">
+        <div class="card__beer-rating-label">Untappd Rating</div>
+        <div class="card__beer-dots-row">${dots}<span class="card__beer-rating-num">${clamped.toFixed(2)}</span></div>
+      </div>
+    `;
+  }
+
+  return `<div class="card__beer-rating">${scoreHtml}${detailHtml}</div>`;
+}
+
+// Brewery/Location/Style/ABV/IBU info table, matching an Untappd product
+// page. Rows with no value (IBU is often not on file) are left out rather
+// than shown blank.
+function buildBeerTableHtml(talker) {
+  const rows = [
+    ['Brewery', talker.brewery],
+    ['Location', talker.location],
+    ['Style', talker.style],
+    ['ABV', talker.abv],
+    ['IBU', talker.ibu],
+  ].filter(([, value]) => value && String(value).trim() !== '');
+  if (!rows.length) return '';
+  return `
+    <div class="card__beer-table">
+      ${rows.map(([label, value]) => `
+        <div class="card__beer-table-row">
+          <div class="card__beer-table-label">${escapeHtml(label)}</div>
+          <div class="card__beer-table-value">${escapeHtml(value)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function buildPricingHtml(talker) {
   const talkerType = talker.talkerType || 'standard';
 
@@ -46,23 +100,27 @@ function buildPricingHtml(talker) {
 }
 
 /**
- * @param {object} talker - { title, description, size, price, salePrice,
- *   theme, talkerType, ratings: [{reviewer, score}] }
+ * @param {object} talker - { category, title, description, size, price,
+ *   salePrice, theme, talkerType, ratings: [{reviewer, score}], brewery,
+ *   location, style, abv, ibu, untappdScore, untappdRating }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.theme = talker.theme === 'purple' ? 'purple' : 'amber';
+  const isBeer = talker.category === 'beer';
 
   card.innerHTML = `
     <div class="card__band">
       <img class="card__logo" src="assets/logo.png" alt="" />
     </div>
     <div class="card__body">
-      <div class="card__title" data-fit="title">${escapeHtml(talker.title || 'Product Title')}</div>
+      <div class="card__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
+      ${isBeer ? buildBeerRatingHtml(talker) : ''}
+      ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
-      ${buildRatingsHtml(talker)}
+      ${isBeer ? '' : buildRatingsHtml(talker)}
       <div class="card__spacer"></div>
       ${talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : ''}
       ${buildPricingHtml(talker)}

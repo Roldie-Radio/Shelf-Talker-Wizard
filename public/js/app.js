@@ -16,6 +16,8 @@
   /** Ratings currently attached to whatever's in the form (not yet in queue). */
   let currentRatings = [];
 
+  let currentCategory = 'wine'; // 'wine' | 'beer'
+
   let previewMode = 'single'; // 'single' | 'sheet'
   let sheetPage = 0;
 
@@ -58,6 +60,18 @@
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
+    categoryToggleBtns: document.querySelectorAll('.category-toggle .toggle-btn'),
+    titleLabel: document.getElementById('fTitleLabel'),
+    wineRatingsField: document.getElementById('wineRatingsField'),
+    beerFields: document.getElementById('beerFields'),
+    brewery: document.getElementById('fBrewery'),
+    location: document.getElementById('fLocation'),
+    style: document.getElementById('fStyle'),
+    abv: document.getElementById('fAbv'),
+    ibu: document.getElementById('fIbu'),
+    untappdScore: document.getElementById('fUntappdScore'),
+    untappdRating: document.getElementById('fUntappdRating'),
+
     form: document.getElementById('talkerForm'),
     editId: document.getElementById('editId'),
     title: document.getElementById('fTitle'),
@@ -90,7 +104,7 @@
     csvStatus: document.getElementById('csvStatus'),
 
     previewStage: document.getElementById('previewStage'),
-    previewToggleBtns: document.querySelectorAll('.toggle-btn'),
+    previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
     sheetPagination: document.getElementById('sheetPagination'),
     prevPageBtn: document.getElementById('prevPageBtn'),
     nextPageBtn: document.getElementById('nextPageBtn'),
@@ -113,10 +127,31 @@
     });
   });
 
+  // ---------- Category (Wine/Spirits vs Beer) ----------
+
+  function applyCategory(category) {
+    currentCategory = category === 'beer' ? 'beer' : 'wine';
+    const isBeer = currentCategory === 'beer';
+    els.categoryToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.category === currentCategory));
+    els.wineRatingsField.hidden = isBeer;
+    els.beerFields.hidden = !isBeer;
+    els.titleLabel.textContent = isBeer ? 'Beer Name *' : 'Product Title *';
+    els.size.placeholder = isBeer ? '16oz Can / 4-pack' : '750ml / Each / 6-pack';
+  }
+
+  els.categoryToggleBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.category === currentCategory) return;
+      applyCategory(btn.dataset.category);
+      refreshPreview();
+    });
+  });
+
   // ---------- Form <-> talker object ----------
 
   function readForm() {
     return {
+      category: currentCategory,
       title: els.title.value.trim(),
       description: els.description.value.trim(),
       size: els.size.value.trim(),
@@ -125,10 +160,18 @@
       salePrice: els.salePrice.value.trim(),
       talkerType: els.talkerType.value,
       ratings: currentRatings.slice(),
+      brewery: els.brewery.value.trim(),
+      location: els.location.value.trim(),
+      style: els.style.value.trim(),
+      abv: els.abv.value.trim(),
+      ibu: els.ibu.value.trim(),
+      untappdScore: els.untappdScore.value.trim(),
+      untappdRating: els.untappdRating.value.trim(),
     };
   }
 
   function fillForm(talker) {
+    applyCategory(talker.category);
     els.title.value = talker.title || '';
     els.description.value = talker.description || '';
     els.size.value = talker.size || '';
@@ -138,6 +181,13 @@
     els.talkerType.value = talker.talkerType || 'standard';
     currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
     renderRatingsList();
+    els.brewery.value = talker.brewery || '';
+    els.location.value = talker.location || '';
+    els.style.value = talker.style || '';
+    els.abv.value = talker.abv || '';
+    els.ibu.value = talker.ibu || '';
+    els.untappdScore.value = talker.untappdScore || '';
+    els.untappdRating.value = talker.untappdRating || '';
   }
 
   function resetForm() {
@@ -596,6 +646,7 @@
 
   // ---------- Init ----------
 
+  applyCategory('wine');
   renderReviewerSelect();
   renderQueue();
   renderPreview();

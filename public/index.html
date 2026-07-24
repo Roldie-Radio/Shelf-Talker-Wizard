@@ -34,11 +34,15 @@
       </div>
 
       <div class="tab-panel is-active" data-panel="manual">
+        <div class="category-toggle" role="tablist">
+          <button type="button" class="toggle-btn is-active" data-category="wine">Wine / Spirits</button>
+          <button type="button" class="toggle-btn" data-category="beer">Beer</button>
+        </div>
         <form id="talkerForm" novalidate>
           <input type="hidden" id="editId" value="" />
 
           <label class="field">
-            <span>Product Title *</span>
+            <span id="fTitleLabel">Product Title *</span>
             <input type="text" id="fTitle" maxlength="120" required placeholder="OXO Double Jigger" />
           </label>
 
@@ -70,7 +74,44 @@
             </select>
           </label>
 
-          <div class="field ratings-field">
+          <div class="field-group" id="beerFields" hidden>
+            <div class="field-row">
+              <label class="field">
+                <span>Brewery</span>
+                <input type="text" id="fBrewery" maxlength="80" placeholder="New Anthem Beer Project" />
+              </label>
+              <label class="field">
+                <span>Location</span>
+                <input type="text" id="fLocation" maxlength="80" placeholder="Wilmington, NC" />
+              </label>
+            </div>
+            <label class="field">
+              <span>Style</span>
+              <input type="text" id="fStyle" maxlength="120" placeholder="IPA - Imperial / Double New England / Hazy" />
+            </label>
+            <div class="field-row">
+              <label class="field">
+                <span>ABV</span>
+                <input type="text" id="fAbv" maxlength="12" placeholder="8%" />
+              </label>
+              <label class="field">
+                <span>IBU (optional)</span>
+                <input type="text" inputmode="numeric" id="fIbu" maxlength="12" placeholder="65" />
+              </label>
+            </div>
+            <div class="field-row">
+              <label class="field">
+                <span>Untappd Score (optional)</span>
+                <input type="text" inputmode="numeric" id="fUntappdScore" maxlength="3" placeholder="94" />
+              </label>
+              <label class="field">
+                <span>Untappd Rating (optional)</span>
+                <input type="text" inputmode="decimal" id="fUntappdRating" maxlength="4" placeholder="4.27" />
+              </label>
+            </div>
+          </div>
+
+          <div class="field ratings-field" id="wineRatingsField">
             <span>Ratings (optional)</span>
             <div class="ratings-builder">
               <select id="fRatingReviewer"></select>
