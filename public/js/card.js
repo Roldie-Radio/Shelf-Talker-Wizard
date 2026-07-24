@@ -14,20 +14,13 @@ function formatMoney(value) {
   return `$${num.toFixed(2)}`;
 }
 
-function buildAwardAndRatingsHtml(talker) {
-  const parts = [];
-  if (talker.award) {
-    parts.push(`<div class="card__award">${escapeHtml(talker.award)}</div>`);
-  }
-  if (Array.isArray(talker.ratings) && talker.ratings.length) {
-    const lines = talker.ratings
-      .filter((r) => r && (r.reviewer || r.score))
-      .map((r) => `${escapeHtml(r.score || '')} Pts ${escapeHtml(r.reviewer || '')}`.trim());
-    if (lines.length) {
-      parts.push(`<div class="card__ratings">${lines.join('<br>')}</div>`);
-    }
-  }
-  return parts.join('');
+function buildRatingsHtml(talker) {
+  if (!Array.isArray(talker.ratings) || !talker.ratings.length) return '';
+  const lines = talker.ratings
+    .filter((r) => r && (r.reviewer || r.score))
+    .map((r) => `${escapeHtml(r.score || '')} Pts ${escapeHtml(r.reviewer || '')}`.trim());
+  if (!lines.length) return '';
+  return `<div class="card__ratings">${lines.join('<br>')}</div>`;
 }
 
 function buildPricingHtml(talker) {
@@ -39,20 +32,12 @@ function buildPricingHtml(talker) {
     return `<div class="card__supersale-text">Super Sale<br>Price!!!</div>`;
   }
 
-  if (talkerType === 'closeout') {
-    // Matches the store's existing "Closeout" talkers: a single red sale
-    // price under a bold "CLOSEOUT!!" badge, no strikethrough regular price.
-    const shown = talker.salePrice && Number(talker.salePrice) > 0 ? talker.salePrice : talker.price;
-    return `
-      <div class="card__closeout-badge">CLOSEOUT!!</div>
-      <div class="card__prices">
-        <div class="card__sale-price">Sale Price ${formatMoney(shown)}</div>
-      </div>
-    `;
-  }
-
+  // Both "closeout" and "standard" show the same regular/sale price layout;
+  // closeout just adds the "CLOSEOUT!!" badge above it.
+  const badge = talkerType === 'closeout' ? '<div class="card__closeout-badge">CLOSEOUT!!</div>' : '';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   return `
+    ${badge}
     <div class="card__prices">
       ${hasSale ? `<div class="card__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : ''}
       <div class="card__regular-price ${hasSale ? 'is-struck' : ''}">${hasSale ? formatMoney(talker.price) : `Regular Price ${formatMoney(talker.price)}`}</div>
@@ -62,7 +47,7 @@ function buildPricingHtml(talker) {
 
 /**
  * @param {object} talker - { title, description, size, price, salePrice,
- *   theme, talkerType, award, ratings: [{reviewer, score}] }
+ *   theme, talkerType, ratings: [{reviewer, score}] }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -77,7 +62,7 @@ function buildCardElement(talker) {
     <div class="card__body">
       <div class="card__title" data-fit="title">${escapeHtml(talker.title || 'Product Title')}</div>
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
-      ${buildAwardAndRatingsHtml(talker)}
+      ${buildRatingsHtml(talker)}
       <div class="card__spacer"></div>
       ${talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : ''}
       ${buildPricingHtml(talker)}

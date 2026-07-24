@@ -67,7 +67,6 @@
     price: document.getElementById('fPrice'),
     salePrice: document.getElementById('fSalePrice'),
     talkerType: document.getElementById('fTalkerType'),
-    award: document.getElementById('fAward'),
     ratingReviewer: document.getElementById('fRatingReviewer'),
     ratingScore: document.getElementById('fRatingScore'),
     addRatingBtn: document.getElementById('addRatingBtn'),
@@ -125,7 +124,6 @@
       price: els.price.value.trim(),
       salePrice: els.salePrice.value.trim(),
       talkerType: els.talkerType.value,
-      award: els.award.value.trim(),
       ratings: currentRatings.slice(),
     };
   }
@@ -138,7 +136,6 @@
     els.price.value = talker.price || '';
     els.salePrice.value = talker.salePrice || '';
     els.talkerType.value = talker.talkerType || 'standard';
-    els.award.value = talker.award || '';
     currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
     renderRatingsList();
   }
@@ -547,7 +544,6 @@
         talkerType: ['closeout', 'supersale', 'super sale'].includes(typeRaw)
           ? (typeRaw === 'super sale' ? 'supersale' : typeRaw)
           : 'standard',
-        award: rec.award || '',
         ratings: [],
       });
       added++;
