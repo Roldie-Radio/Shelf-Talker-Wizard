@@ -1,7 +1,12 @@
 name: Build Windows Installer
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Also publish this build as a permanent GitHub Release"
+        type: boolean
+        default: false
   push:
     tags:
       - "v*"
@@ -34,13 +39,30 @@ jobs:
           path: dist/*.exe
           retention-days: 30
 
-      # Only when the run was triggered by pushing a version tag (e.g. v1.1.0),
-      # also publish the installer as a permanent GitHub Release asset, since
-      # workflow-run artifacts expire after 30 days.
+      # Figure out the release tag to use: the pushed tag itself when this run
+      # was triggered by `git push --follow-tags` (from `npm run release:*`),
+      # or "v<version from package.json>" when triggered manually from the
+      # Actions tab (lets a release be cut without needing tag-push access).
+      - name: Determine release tag
+        id: release_tag
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_release == true
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            version=$(node -p "require('./package.json').version")
+            echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Publishes the installer as a permanent Release asset (workflow-run
+      # artifacts above expire after 30 days). Creates the git tag too, if it
+      # doesn't already exist, pointing at the commit that was built.
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.release_tag.outputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          name: Shelf Talker Wizard ${{ github.ref_name }}
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Shelf Talker Wizard ${{ steps.release_tag.outputs.tag }}
           files: dist/*.exe
           generate_release_notes: true
