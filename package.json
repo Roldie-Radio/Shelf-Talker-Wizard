@@ -8,7 +8,10 @@
     "start": "node server/index.js",
     "dev": "node server/index.js",
     "electron": "electron .",
-    "dist:win": "electron-builder --win --x64 --publish never"
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "release:patch": "npm version patch && git push --follow-tags",
+    "release:minor": "npm version minor && git push --follow-tags",
+    "release:major": "npm version major && git push --follow-tags"
   },
   "license": "UNLICENSED",
   "dependencies": {

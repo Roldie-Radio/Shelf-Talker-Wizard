@@ -29,14 +29,32 @@ Desktop shortcuts, an uninstaller, no browser or command line required. Staff ju
 "Shelf Talker Wizard" like any other program.
 
 **Getting the installer:** a Windows `.exe` can't be built from a Mac/Linux machine, so it's
-built by a GitHub Actions workflow (`.github/workflows/build-windows.yml`) instead:
+built by a GitHub Actions workflow (`.github/workflows/build-windows.yml`) instead. There are
+two ways to trigger it:
 
-1. In this repo on GitHub, go to **Actions &rarr; Build Windows Installer &rarr; Run workflow**.
-2. When it finishes (a few minutes), open the run and download the
-   `ShelfTalkerWizard-Windows-Installer` artifact &mdash; it contains
-   `Shelf Talker Wizard Setup <version>.exe`.
-3. Copy that installer to each OptiPlex and run it. No Node.js or other dependencies needed on
-   the PC; everything (including a private copy of Node) is bundled inside.
+- **One-off / testing a change:** in this repo on GitHub, go to
+  **Actions &rarr; Build Windows Installer &rarr; Run workflow**. When it finishes (a couple of
+  minutes), open the run and download the `ShelfTalkerWizard-Windows-Installer` artifact.
+  Artifacts expire after 30 days and aren't versioned &mdash; use this for quick checks.
+- **Shipping an actual update (recommended):** tag a version. This is the repeatable path for
+  every future release:
+
+  ```bash
+  npm run release:patch   # bug fixes: 1.0.0 -> 1.0.1
+  npm run release:minor   # new features: 1.0.0 -> 1.1.0
+  npm run release:major   # breaking/major changes: 1.0.0 -> 2.0.0
+  ```
+
+  Each of these bumps the version in `package.json`, commits it, creates a git tag (e.g.
+  `v1.0.1`), and pushes both. Pushing a `v*` tag automatically triggers the workflow, which
+  builds the installer **and** publishes it as a permanent asset on the repo's
+  [**Releases**](../../releases) page (named e.g. "Shelf Talker Wizard v1.0.1") &mdash; a stable
+  link that won't expire, so that's the one to send to the store PCs.
+
+Either way, copy the resulting installer to each OptiPlex and run it. No Node.js or other
+dependencies needed on the PC; everything (including a private copy of Node) is bundled inside.
+There's no auto-update yet, so updating a PC just means re-running the newer installer on it
+&mdash; NSIS installs over the existing copy in place and keeps the same shortcuts.
 
 To build it yourself instead, on a Windows machine with Node 18+:
 
