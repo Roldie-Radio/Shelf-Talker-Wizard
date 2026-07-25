@@ -760,18 +760,23 @@
     refreshPreview();
   });
 
-  // Exports the current queue as a downloadable JSON file - a manual
-  // backup/archive separate from the automatic localStorage persistence
-  // (see saveQueue), for moving a queue to another computer or keeping a
-  // copy of a batch outside the browser.
-  function saveQueueToFile() {
-    if (queue.length === 0) return;
-    const payload = {
+  // Shared export shape for the current queue - a manual backup/archive
+  // separate from the automatic localStorage persistence (see saveQueue),
+  // for moving a queue to another computer or keeping a copy of a batch
+  // outside the browser. Used by both the in-page Save Queue button (browser
+  // download, below) and the Electron File menu's "Save Queue" (native save
+  // dialog, see onSaveRequested below).
+  function buildQueueExportPayload() {
+    return {
       app: 'Shelf Talker Wizard',
       exportedAt: new Date().toISOString(),
       queue,
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  }
+
+  function saveQueueToFile() {
+    if (queue.length === 0) return;
+    const blob = new Blob([JSON.stringify(buildQueueExportPayload(), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -783,6 +788,27 @@
   }
 
   els.saveQueueBtn.addEventListener('click', saveQueueToFile);
+
+  // Electron's File menu "Open Queue…"/"Save Queue" (see electron/main.js) -
+  // absent entirely outside Electron, where window.shelfTalker is never
+  // injected (see preload.js), same guard pattern as print() above.
+  if (window.shelfTalker && window.shelfTalker.onSaveRequested) {
+    window.shelfTalker.onSaveRequested(() => {
+      if (queue.length === 0) return;
+      window.shelfTalker.saveQueueToFile(buildQueueExportPayload());
+    });
+  }
+  if (window.shelfTalker && window.shelfTalker.onQueueOpened) {
+    window.shelfTalker.onQueueOpened((openedQueue) => {
+      if (queue.length > 0 && !confirm('Opening a queue file will replace your current queue. Continue?')) {
+        return;
+      }
+      queue = openedQueue;
+      saveQueue();
+      renderQueue();
+      refreshPreview();
+    });
+  }
 
   els.cancelEditBtn.addEventListener('click', resetForm);
   els.clearFormBtn.addEventListener('click', resetForm);
