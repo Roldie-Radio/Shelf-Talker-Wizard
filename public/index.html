@@ -200,7 +200,10 @@ OXO Double Jigger,Great for measuring pours,Each,13.99,9.99,amber"></textarea>
     <section class="panel panel--queue">
       <div class="panel__header">
         <h2>Queue</h2>
-        <button type="button" class="btn btn--ghost btn--small" id="clearQueueBtn">Clear All</button>
+        <div class="panel__header-actions">
+          <button type="button" class="btn btn--ghost btn--small" id="saveQueueBtn" disabled>Save Queue&hellip;</button>
+          <button type="button" class="btn btn--ghost btn--small" id="clearQueueBtn">Clear All</button>
+        </div>
       </div>
       <div class="queue-grid" id="queueGrid">
         <p class="empty-hint">No shelf talkers yet. Add one on the left to get started.</p>
