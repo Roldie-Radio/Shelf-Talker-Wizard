@@ -20,7 +20,7 @@
     </div>
     <div class="appbar__actions">
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
-      <button id="printBtn" class="btn btn--primary" disabled>Print Sheet(s)</button>
+      <button id="printBtn" class="btn btn--primary" disabled>Print Sheet(s)&hellip;</button>
     </div>
   </header>
 
@@ -210,6 +210,21 @@ OXO Double Jigger,Great for measuring pours,Each,13.99,9.99,amber"></textarea>
   </main>
 
   <section id="printRoot" class="print-only"></section>
+
+  <div id="printPreviewOverlay" class="print-preview-overlay no-print" hidden>
+    <div class="print-preview-modal">
+      <div class="print-preview-modal__header">
+        <h2>Print Preview</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="printPreviewCloseBtn">&times; Close</button>
+      </div>
+      <p class="help-text" id="printPreviewSummary"></p>
+      <div class="print-preview-sheets" id="printPreviewSheets"></div>
+      <div class="print-preview-modal__footer">
+        <button type="button" class="btn" id="printPreviewCancelBtn">Cancel</button>
+        <button type="button" class="btn btn--primary" id="printPreviewConfirmBtn">Print Now</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
