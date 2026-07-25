@@ -11,6 +11,12 @@
   // sheet preview at whatever pixel width it happens to be rendered at.
   const SIGN_LAYOUTS = {
     talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in', aspect: 830 / 1136, label: 'Shelf Talkers' },
+    // Half Size keeps the same width as Full (same cols/printWidth) but is
+    // cut to half the height, so more rows fit per sheet; Quarter Size
+    // uniformly scales both dimensions to 50% of Full (same aspect ratio,
+    // half the printWidth), so both cols and rows increase.
+    'talker-half': { cols: 3, rows: 3, perSheet: 9, printWidth: '2.8in', aspect: 830 / 568, label: 'Half Size Shelf Talkers' },
+    'talker-quarter': { cols: 6, rows: 3, perSheet: 18, printWidth: '1.4in', aspect: 830 / 1136, label: 'Quarter Size Shelf Talkers' },
     'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in', aspect: 2.7, label: 'Large Display Signs' },
     'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', aspect: 2, label: 'Small Display Signs' },
   };
@@ -33,16 +39,23 @@
 
   function layoutKeyFor(talker) {
     if (talker.signType === 'sign') return talker.signSize === 'small' ? 'sign-small' : 'sign-large';
+    if (talker.talkerSize === 'half') return 'talker-half';
+    if (talker.talkerSize === 'quarter') return 'talker-quarter';
     return 'talker';
   }
 
+  function emptyLayoutGroups() {
+    const groups = {};
+    Object.keys(SIGN_LAYOUTS).forEach((key) => { groups[key] = []; });
+    return groups;
+  }
+
   // Groups the queue by print layout and chunks each group into sheets, so
-  // a printed/previewed sheet never mixes Shelf Talkers with Display Signs
-  // or the two Display Sign sizes - their physical dimensions don't match.
-  // Order: all Shelf Talker sheets, then Large Display Sign sheets, then
-  // Small Display Sign sheets.
+  // a printed/previewed sheet never mixes different layouts (Shelf Talker
+  // sizes, Display Sign sizes) with each other - their physical dimensions
+  // don't match. Order matches SIGN_LAYOUTS' own key order.
   function buildSheets(items) {
-    const groups = { talker: [], 'sign-large': [], 'sign-small': [] };
+    const groups = emptyLayoutGroups();
     items.forEach((t) => groups[layoutKeyFor(t)].push(t));
     const sheets = [];
     Object.keys(SIGN_LAYOUTS).forEach((key) => {
@@ -66,7 +79,7 @@
   // paper vs. grouped mode whenever a queue has partial quantities of more
   // than one type.
   function buildRows(items) {
-    const groups = { talker: [], 'sign-large': [], 'sign-small': [] };
+    const groups = emptyLayoutGroups();
     items.forEach((t) => groups[layoutKeyFor(t)].push(t));
     const rows = [];
     Object.keys(SIGN_LAYOUTS).forEach((key) => {
@@ -113,6 +126,7 @@
 
   let currentSignType = 'talker'; // 'talker' | 'sign'
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
+  let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
   let currentCategory = 'wine'; // 'wine' | 'beer'
 
   let previewMode = 'single'; // 'single' | 'sheet'
@@ -176,8 +190,6 @@
     signSizeToggleBtns: document.querySelectorAll('.signsize-toggle .toggle-btn'),
     categoryToggleBtns: document.querySelectorAll('.category-toggle .toggle-btn'),
     titleLabel: document.getElementById('fTitleLabel'),
-    vintageField: document.getElementById('vintageField'),
-    vintage: document.getElementById('fVintage'),
     descriptionField: document.getElementById('descriptionField'),
     wineRatingsField: document.getElementById('wineRatingsField'),
     beerFields: document.getElementById('beerFields'),
@@ -197,6 +209,8 @@
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
     salePrice: document.getElementById('fSalePrice'),
+    talkerSizeField: document.getElementById('talkerSizeField'),
+    talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
     ratingReviewer: document.getElementById('fRatingReviewer'),
     ratingScore: document.getElementById('fRatingScore'),
@@ -258,7 +272,7 @@
 
   // Single source of truth for what the form should look like, driven by
   // the three toggles together - e.g. a Small Display Sign has no room for
-  // a description/rating/vintage, regardless of category, so those fields
+  // a description/rating, regardless of category, so those fields
   // disappear only in that combination.
   function applyFormMode() {
     const isBeer = currentCategory === 'beer';
@@ -273,7 +287,8 @@
     els.titleLabel.textContent = isBeer ? 'Beer Name *' : (isSign ? 'Product Name *' : 'Product Title *');
     els.size.placeholder = isBeer ? '16oz Can / 4-pack' : '750ml / Each / 6-pack';
 
-    els.vintageField.hidden = isBeer || isSmallSign;
+    els.talkerSizeField.hidden = isSign;
+    els.talkerSize.value = currentTalkerSize;
     els.descriptionField.hidden = isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     els.beerFields.hidden = !isBeer || isSmallSign;
@@ -291,6 +306,12 @@
 
   function setSignSize(signSize) {
     currentSignSize = signSize === 'small' ? 'small' : 'large';
+    sheetPage = 0;
+    applyFormMode();
+  }
+
+  function setTalkerSize(talkerSize) {
+    currentTalkerSize = ['half', 'quarter'].includes(talkerSize) ? talkerSize : 'full';
     sheetPage = 0;
     applyFormMode();
   }
@@ -316,6 +337,11 @@
     });
   });
 
+  els.talkerSize.addEventListener('change', () => {
+    setTalkerSize(els.talkerSize.value);
+    refreshPreview();
+  });
+
   els.categoryToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.category === currentCategory) return;
@@ -330,9 +356,9 @@
     return {
       signType: currentSignType,
       signSize: currentSignSize,
+      talkerSize: currentTalkerSize,
       category: currentCategory,
       title: els.title.value.trim(),
-      vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
       size: els.size.value.trim(),
       theme: els.theme.value,
@@ -353,10 +379,10 @@
   function fillForm(talker) {
     currentSignType = talker.signType === 'sign' ? 'sign' : 'talker';
     currentSignSize = talker.signSize === 'small' ? 'small' : 'large';
+    currentTalkerSize = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
     currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
     applyFormMode();
     els.title.value = talker.title || '';
-    els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
     els.size.value = talker.size || '';
     els.theme.value = talker.theme || 'amber';
@@ -502,7 +528,7 @@
   // instead of the sign just added. The Print Preview modal (opened from
   // "Print Sheet(s)") is what shows every sheet together.
   function renderSheetPreview() {
-    const currentLayoutKey = layoutKeyFor({ signType: currentSignType, signSize: currentSignSize });
+    const currentLayoutKey = layoutKeyFor({ signType: currentSignType, signSize: currentSignSize, talkerSize: currentTalkerSize });
     const relevantItems = queue.filter((t) => layoutKeyFor(t) === currentLayoutKey);
     const sheets = buildSheets(relevantItems);
     const totalPages = Math.max(1, sheets.length);

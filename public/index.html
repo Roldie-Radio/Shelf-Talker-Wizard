@@ -54,11 +54,6 @@
             <input type="text" id="fTitle" maxlength="120" required placeholder="OXO Double Jigger" />
           </label>
 
-          <label class="field" id="vintageField">
-            <span>Vintage (optional)</span>
-            <input type="text" id="fVintage" maxlength="12" placeholder="2015" />
-          </label>
-
           <label class="field" id="descriptionField">
             <span>Description</span>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
@@ -77,6 +72,15 @@
               </select>
             </label>
           </div>
+
+          <label class="field" id="talkerSizeField">
+            <span>Talker Size</span>
+            <select id="fTalkerSize">
+              <option value="full">Full Size</option>
+              <option value="half">Half Size</option>
+              <option value="quarter">Quarter Size</option>
+            </select>
+          </label>
 
           <label class="field">
             <span>Talker Style</span>

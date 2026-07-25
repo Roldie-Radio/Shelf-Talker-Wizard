@@ -489,6 +489,30 @@ h1, h2, h3 { margin: 0; }
   box-shadow: 0 2px 10px rgba(0,0,0,0.12);
 }
 
+/* Half Size keeps the same --w (width) as Full but is cut to half the
+   height - all of .card's internal font-sizes/spacing stay the same
+   width-relative fractions (unchanged from Full), so they end up too tall
+   for the shorter body; fitCardText's existing shrink-to-fit compresses
+   title/description/price down to fit, same as it already does for an
+   unusually long Full Size talker. Quarter Size needs no override here -
+   it keeps Full's aspect ratio and just gets a smaller --w (see
+   SIGN_LAYOUTS in app.js), so every fraction scales down uniformly. */
+.card[data-size="half"] { aspect-ratio: 830 / 568; }
+
+/* .card__band/.card__band--footer/.card__logo/.card__footer-text are all
+   fixed fractions of --w (not of the card's own height - see the comment
+   on .card__band below), so cutting the card's height in half while --w
+   stays the same would otherwise double their share of the shorter card,
+   squeezing the body far more than "half" and forcing text to shrink to
+   its floor even for short content. Halved to keep the same proportion of
+   the card's own height as Full Size. Body content (title/description/
+   price/etc.) is left alone and relies on the existing shrink-to-fit
+   instead, same as it already does for an unusually long Full Size talker. */
+.card[data-size="half"] .card__band { flex-basis: calc(var(--w) * 0.07735); }
+.card[data-size="half"] .card__band--footer { flex-basis: calc(var(--w) * 0.03835); }
+.card[data-size="half"] .card__logo { height: calc(var(--w) * 0.0526); }
+.card[data-size="half"] .card__footer-text { font-size: calc(var(--w) * 0.017); }
+
 .card__band {
   /* Height as a fraction of --w (not a % of the card's own height) - percentage
      flex-basis/height need a "definite" parent height to resolve, which isn't
@@ -523,7 +547,7 @@ h1, h2, h3 { margin: 0; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 3% 6% 4%;
+  padding: calc(3% * var(--price-fit, 1)) 6% calc(4% * var(--price-fit, 1));
   min-height: 0;
   overflow: hidden;
 }
@@ -532,9 +556,9 @@ h1, h2, h3 { margin: 0; }
   text-align: center;
   text-transform: uppercase;
   font-weight: 800;
-  font-size: calc(var(--w) * 0.075);
+  font-size: calc(var(--w) * 0.075 * var(--price-fit, 1));
   line-height: 1.15;
-  margin: 2% 0 3%;
+  margin: calc(2% * var(--price-fit, 1)) 0 calc(3% * var(--price-fit, 1));
   flex: 0 0 auto;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -545,7 +569,7 @@ h1, h2, h3 { margin: 0; }
 }
 
 .card__description {
-  font-size: calc(var(--w) * 0.052);
+  font-size: calc(var(--w) * 0.052 * var(--price-fit, 1));
   line-height: 1.3;
   color: #171717;
   flex: 0 0 auto;
@@ -561,14 +585,14 @@ h1, h2, h3 { margin: 0; }
   text-align: center;
   font-weight: 700;
   color: #171717;
-  font-size: calc(var(--w) * 0.05);
+  font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
   line-height: 1.35;
   flex: 0 0 auto;
   /* Clear separation from the description above (and the spacer below) so
      it reads as its own distinct line rather than a continuation of the
      description paragraph. */
-  margin-top: calc(var(--w) * 0.035);
-  padding-top: calc(var(--w) * 0.025);
+  margin-top: calc(var(--w) * 0.035 * var(--price-fit, 1));
+  padding-top: calc(var(--w) * 0.025 * var(--price-fit, 1));
   border-top: 1px solid #e5ddd0;
 }
 
@@ -697,8 +721,8 @@ h1, h2, h3 { margin: 0; }
 .card__size {
   align-self: flex-end;
   font-weight: 800;
-  font-size: calc(var(--w) * 0.072);
-  margin-bottom: 2%;
+  font-size: calc(var(--w) * 0.072 * var(--price-fit, 1));
+  margin-bottom: calc(2% * var(--price-fit, 1));
 }
 
 .card__prices { display: flex; flex-direction: column; gap: calc(var(--w) * 0.0274 * var(--price-fit, 1)); margin-top: 1%; }
@@ -808,10 +832,9 @@ h1, h2, h3 { margin: 0; }
 }
 
 /* Large signs pin the product name to the top instead of centering the
-   whole content block as a group - otherwise a short description/no
-   vintage leaves the title floating away from the top edge. Small signs
-   keep centering (title + price is the whole layout, centering reads
-   better there). */
+   whole content block as a group - otherwise a short description leaves
+   the title floating away from the top edge. Small signs keep centering
+   (title + price is the whole layout, centering reads better there). */
 .sign[data-size="large"] .sign__content { justify-content: flex-start; }
 
 /* Vertical "SALE"/"PRICE" edge lettering - shown on any sign with a
@@ -847,12 +870,6 @@ h1, h2, h3 { margin: 0; }
   overflow: hidden;
 }
 .sign__title--small { font-size: calc(var(--w) * 0.06); }
-
-.sign__vintage {
-  font-weight: 800;
-  font-size: calc(var(--w) * 0.018 * var(--price-fit, 1));
-  flex: 0 0 auto;
-}
 
 .sign__description {
   font-size: calc(var(--w) * 0.014);
