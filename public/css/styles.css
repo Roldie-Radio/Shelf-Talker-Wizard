@@ -726,7 +726,7 @@ h1, h2, h3 { margin: 0; }
 }
 
 .card__prices { display: flex; flex-direction: column; gap: calc(var(--w) * 0.008 * var(--price-fit, 1)); margin-top: 1%; }
-.card__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * 0.072 * var(--price-fit, 1)); }
+.card__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * 0.08 * var(--price-fit, 1)); }
 .card__regular-price { font-weight: 800; font-size: calc(var(--w) * 0.072 * var(--price-fit, 1)); }
 
 /* Super Sale's actual price, shown big and prominent under the "Super Sale
