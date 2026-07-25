@@ -10,10 +10,26 @@
   // of --w); printWidth/11 gives the same ratio used to size the on-screen
   // sheet preview at whatever pixel width it happens to be rendered at.
   const SIGN_LAYOUTS = {
-    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in', label: 'Shelf Talkers' },
-    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in', label: 'Large Display Signs' },
-    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', label: 'Small Display Signs' },
+    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in', aspect: 830 / 1136, label: 'Shelf Talkers' },
+    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in', aspect: 2.7, label: 'Large Display Signs' },
+    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', aspect: 2, label: 'Small Display Signs' },
   };
+
+  // Page content area in inches (11in x 8.5in landscape Letter minus the
+  // 0.28in @page margin on each side) and the row gap between sheet rows -
+  // both must match the @media print rules in styles.css exactly, since
+  // auto-arrange (below) packs rows onto pages using this same height budget.
+  const PAGE_CONTENT_HEIGHT_IN = 7.94;
+  const ROW_GAP_IN = 0.2;
+  const PAGE_MARGIN_IN = 0.28;
+
+  // aspect is width/height (the same convention as the CSS aspect-ratio
+  // property), so an item's real printed height is its printWidth divided
+  // by its aspect.
+  function itemHeightIn(layoutKey) {
+    const layout = SIGN_LAYOUTS[layoutKey];
+    return parseFloat(layout.printWidth) / layout.aspect;
+  }
 
   function layoutKeyFor(talker) {
     if (talker.signType === 'sign') return talker.signSize === 'small' ? 'sign-small' : 'sign-large';
@@ -39,6 +55,53 @@
     return sheets;
   }
 
+  // Auto-arrange (beta): rather than grouping every item by type into
+  // same-type sheets (see buildSheets), this builds full-width "rows" - each
+  // holding up to a type's own column count of same-type items, so a row
+  // always has one fixed height - then greedily stacks rows onto pages by a
+  // height budget. A page can mix rows of different types as long as every
+  // row spans the full sheet width and keeps its own fixed height, so the
+  // sheet still cuts cleanly with straight horizontal cuts (then vertical
+  // cuts within a row) - avoiding full 2D bin-packing while still saving
+  // paper vs. grouped mode whenever a queue has partial quantities of more
+  // than one type.
+  function buildRows(items) {
+    const groups = { talker: [], 'sign-large': [], 'sign-small': [] };
+    items.forEach((t) => groups[layoutKeyFor(t)].push(t));
+    const rows = [];
+    Object.keys(SIGN_LAYOUTS).forEach((key) => {
+      const { cols } = SIGN_LAYOUTS[key];
+      const groupItems = groups[key];
+      for (let i = 0; i < groupItems.length; i += cols) {
+        rows.push({ layoutKey: key, items: groupItems.slice(i, i + cols) });
+      }
+    });
+    return rows;
+  }
+
+  function packRowsIntoPages(rows) {
+    const pages = [];
+    let current = null;
+    let usedHeight = 0;
+    rows.forEach((row) => {
+      const rowHeight = itemHeightIn(row.layoutKey);
+      const fitsOnCurrent = current && (usedHeight + ROW_GAP_IN + rowHeight) <= PAGE_CONTENT_HEIGHT_IN + 0.001;
+      if (fitsOnCurrent) {
+        usedHeight += ROW_GAP_IN + rowHeight;
+      } else {
+        current = { rows: [] };
+        pages.push(current);
+        usedHeight = rowHeight;
+      }
+      current.rows.push(row);
+    });
+    return pages;
+  }
+
+  function buildAutoArrangedPages(items) {
+    return packRowsIntoPages(buildRows(items));
+  }
+
   /** @type {Array<object>} */
   let queue = loadQueue();
 
@@ -54,6 +117,12 @@
 
   let previewMode = 'single'; // 'single' | 'sheet'
   let sheetPage = 0;
+
+  // Auto-arrange (beta), opt-in from the Print Preview modal - off by
+  // default. Only affects the Print Preview modal and the actual print
+  // output (see buildAutoArrangedPages); the Full Page live preview always
+  // uses grouped sheets.
+  let autoArrangeEnabled = false;
 
   // ---------- Persistence ----------
 
@@ -161,6 +230,7 @@
     printPreviewCloseBtn: document.getElementById('printPreviewCloseBtn'),
     printPreviewCancelBtn: document.getElementById('printPreviewCancelBtn'),
     printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
+    autoArrangeToggle: document.getElementById('autoArrangeToggle'),
   };
 
   // ---------- Tabs ----------
@@ -736,20 +806,40 @@
 
   // ---------- Print ----------
 
-  // Builds the actual hidden print DOM (#printRoot) from the current queue,
-  // one .sheet per print-preview sheet, sized/shaped per SIGN_LAYOUTS.
+  // Builds the actual hidden print DOM (#printRoot) from the current queue.
+  // Grouped mode: one .sheet per print-preview sheet, sized/shaped per
+  // SIGN_LAYOUTS. Auto-arrange mode: one .sheet--auto per auto-arranged
+  // page, each holding a vertical stack of .sheet__row elements (see
+  // buildAutoArrangedPages) - --print-w is set per row instead of per sheet
+  // since a page can mix row types.
   function buildPrintDom() {
     els.printRoot.innerHTML = '';
-    buildSheets(queue).forEach(({ layoutKey, items }) => {
-      const layout = SIGN_LAYOUTS[layoutKey];
-      const sheetEl = document.createElement('div');
-      sheetEl.className = 'sheet';
-      sheetEl.style.setProperty('--cols', layout.cols);
-      sheetEl.style.setProperty('--rows', layout.rows);
-      sheetEl.style.setProperty('--print-w', layout.printWidth);
-      items.forEach((talker) => sheetEl.appendChild(buildPrintableElement(talker)));
-      els.printRoot.appendChild(sheetEl);
-    });
+    if (autoArrangeEnabled) {
+      buildAutoArrangedPages(queue).forEach((page) => {
+        const sheetEl = document.createElement('div');
+        sheetEl.className = 'sheet sheet--auto';
+        page.rows.forEach((row) => {
+          const layout = SIGN_LAYOUTS[row.layoutKey];
+          const rowEl = document.createElement('div');
+          rowEl.className = 'sheet__row';
+          rowEl.style.setProperty('--print-w', layout.printWidth);
+          row.items.forEach((talker) => rowEl.appendChild(buildPrintableElement(talker)));
+          sheetEl.appendChild(rowEl);
+        });
+        els.printRoot.appendChild(sheetEl);
+      });
+    } else {
+      buildSheets(queue).forEach(({ layoutKey, items }) => {
+        const layout = SIGN_LAYOUTS[layoutKey];
+        const sheetEl = document.createElement('div');
+        sheetEl.className = 'sheet';
+        sheetEl.style.setProperty('--cols', layout.cols);
+        sheetEl.style.setProperty('--rows', layout.rows);
+        sheetEl.style.setProperty('--print-w', layout.printWidth);
+        items.forEach((talker) => sheetEl.appendChild(buildPrintableElement(talker)));
+        els.printRoot.appendChild(sheetEl);
+      });
+    }
   }
 
   function printNow() {
@@ -764,16 +854,28 @@
   // Shows every sheet that will be printed - grouped and shaped exactly
   // like the real print output - so staff can see how full each sheet is
   // (and whether it's worth queuing more items first) before committing to
-  // the system print dialog.
+  // the system print dialog. Also offers an opt-in "Auto-arrange (beta)"
+  // mode that can stack different sign types on the same sheet to save
+  // paper (see buildAutoArrangedPages) - off by default since it's new.
   function openPrintPreview() {
     if (queue.length === 0) return;
+    els.printPreviewOverlay.hidden = false;
+    renderPrintPreviewContents();
+  }
+
+  function renderPrintPreviewContents() {
+    els.printPreviewSheets.innerHTML = '';
+    if (autoArrangeEnabled) renderAutoArrangePreview();
+    else renderGroupedPreview();
+  }
+
+  function renderGroupedPreview() {
     const sheets = buildSheets(queue);
     const partialCount = sheets.filter((s) => s.items.length < SIGN_LAYOUTS[s.layoutKey].perSheet).length;
 
     els.printPreviewSummary.textContent = `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} will print.`
-      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, or print as-is.` : '');
+      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, try Auto-arrange (beta) above, or print as-is.` : '');
 
-    els.printPreviewSheets.innerHTML = '';
     const sheetEls = sheets.map((sheet, i) => {
       const layout = SIGN_LAYOUTS[sheet.layoutKey];
       const isPartial = sheet.items.length < layout.perSheet;
@@ -796,8 +898,6 @@
       return { grid, layout };
     });
 
-    els.printPreviewOverlay.hidden = false;
-
     // Sizing needs the grids laid out first to know their real pixel width.
     requestAnimationFrame(() => {
       sheetEls.forEach(({ grid, layout }) => {
@@ -808,6 +908,77 @@
       });
       requestAnimationFrame(() => {
         sheetEls.forEach(({ grid }) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
+      });
+    });
+  }
+
+  // Renders auto-arranged pages: each page is a vertical stack of full-width
+  // rows (see buildAutoArrangedPages), and a row holds only one sign
+  // type/size, so - unlike renderGroupedPreview, where one --w fits an
+  // entire sheet - every row needs its own --w computed from its own
+  // layout's printWidth.
+  function renderAutoArrangePreview() {
+    const groupedSheets = buildSheets(queue);
+    const pages = buildAutoArrangedPages(queue);
+    const savedSheets = groupedSheets.length - pages.length;
+
+    els.printPreviewSummary.textContent = `${pages.length} sheet${pages.length === 1 ? '' : 's'} will print with Auto-arrange.`
+      + (savedSheets > 0
+        ? ` That's ${savedSheets} fewer sheet${savedSheets === 1 ? '' : 's'} than printing each type separately.`
+        : ' Sign types are stacked onto shared sheets where they fit.');
+
+    const pageEls = [];
+    pages.forEach((page, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'print-preview-sheet';
+      wrap.innerHTML = `
+        <div class="print-preview-sheet__label">
+          <span>Sheet ${i + 1} of ${pages.length} &mdash; Auto-arranged</span>
+        </div>
+      `;
+      const sheetDiv = document.createElement('div');
+      sheetDiv.className = 'sheet-preview sheet-preview--auto print-preview-sheet__grid';
+      const rowEls = [];
+      page.rows.forEach((row) => {
+        const layout = SIGN_LAYOUTS[row.layoutKey];
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'sheet-preview__row';
+        row.items.forEach((talker) => rowDiv.appendChild(buildPrintableElement(talker)));
+        sheetDiv.appendChild(rowDiv);
+        rowEls.push({ rowDiv, layout });
+      });
+      wrap.appendChild(sheetDiv);
+      els.printPreviewSheets.appendChild(wrap);
+      pageEls.push({ sheetDiv, rowEls });
+    });
+
+    // Use the *sheet's* own rendered width (representing the full 11in page,
+    // same as renderGroupedPreview) as the basis for each row's --w, not the
+    // row's own width - the row sits inside the sheet's padded content box,
+    // so its width is narrower than the true 11in-page reference.
+    //
+    // .sheet-preview's CSS padding is a percentage, which (per spec) always
+    // resolves against its containing block's *width* - including for
+    // top/bottom padding - and against the parent's width, not this box's
+    // own max-width-capped width. Grid mode never notices, since its grid
+    // rows/cols just auto-divide whatever content space is left; this flex
+    // column can't, since row heights are computed from real inches
+    // (matching PAGE_CONTENT_HEIGHT_IN) independent of the padding CSS
+    // ends up producing, so the padding must be pinned to match: uniform
+    // PAGE_MARGIN_IN on every side, in px, derived from this same width.
+    requestAnimationFrame(() => {
+      pageEls.forEach(({ sheetDiv, rowEls }) => {
+        const containerWidth = sheetDiv.getBoundingClientRect().width;
+        const pxPerIn = containerWidth / 11;
+        sheetDiv.style.padding = `${pxPerIn * PAGE_MARGIN_IN}px`;
+        rowEls.forEach(({ rowDiv, layout }) => {
+          const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+          const elements = rowDiv.querySelectorAll('.card, .sign');
+          elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
+        });
+      });
+      requestAnimationFrame(() => {
+        pageEls.forEach(({ sheetDiv }) => sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
       });
     });
   }
@@ -825,6 +996,10 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !els.printPreviewOverlay.hidden) closePrintPreview();
+  });
+  els.autoArrangeToggle.addEventListener('change', () => {
+    autoArrangeEnabled = els.autoArrangeToggle.checked;
+    renderPrintPreviewContents();
   });
   els.printPreviewConfirmBtn.addEventListener('click', () => {
     closePrintPreview();
