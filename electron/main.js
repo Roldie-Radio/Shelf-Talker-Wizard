@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs/promises');
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron');
 const { start } = require('../server/index.js');
 
@@ -19,11 +20,60 @@ function showAboutDialog() {
   });
 }
 
+// Loads a previously saved queue file (see the "Save Queue" export format in
+// app.js: { app, exportedAt, queue }) and hands the queue array off to the
+// renderer, which owns actually applying it - the main process only knows
+// how to read/validate the file, not how to render a queue.
+async function handleOpenQueue() {
+  if (!mainWindow) return;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Open Shelf Talker Queue',
+    filters: [{ name: 'Shelf Talker Queue', extensions: ['json'] }],
+    properties: ['openFile'],
+  });
+  if (result.canceled || !result.filePaths[0]) return;
+  try {
+    const raw = await fs.readFile(result.filePaths[0], 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.queue)) {
+      throw new Error('This file does not contain a valid Shelf Talker Wizard queue.');
+    }
+    mainWindow.webContents.send('queue:opened', parsed.queue);
+  } catch (err) {
+    dialog.showErrorBox('Could not open queue', err.message);
+  }
+}
+
+// "Save Queue" from the File menu can't build the export payload itself (the
+// live queue only exists in the renderer), so it asks the renderer for one
+// via this event and waits for the queue:save invoke below.
+function handleSaveQueueRequest() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('queue:save-requested');
+}
+
+ipcMain.handle('queue:save', async (_event, payload) => {
+  if (!mainWindow) return { success: false };
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Shelf Talker Queue',
+    defaultPath: `shelf-talker-queue-${new Date().toISOString().slice(0, 10)}.json`,
+    filters: [{ name: 'Shelf Talker Queue', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { success: false };
+  await fs.writeFile(result.filePath, JSON.stringify(payload, null, 2), 'utf-8');
+  return { success: true, filePath: result.filePath };
+});
+
 function buildMenu() {
   const template = [
     {
       label: 'File',
-      submenu: [{ role: 'quit', label: 'Exit' }],
+      submenu: [
+        { label: 'Open Queue…', accelerator: 'CmdOrCtrl+O', click: handleOpenQueue },
+        { label: 'Save Queue', accelerator: 'CmdOrCtrl+S', click: handleSaveQueueRequest },
+        { type: 'separator' },
+        { role: 'quit', label: 'Exit' },
+      ],
     },
     {
       label: 'Help',
