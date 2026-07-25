@@ -201,11 +201,17 @@
 
   function setSignType(signType) {
     currentSignType = signType === 'sign' ? 'sign' : 'talker';
+    // The Full Page preview is scoped to this selection (see
+    // renderSheetPreview), so switching it should land back on its first
+    // page rather than keeping whatever page number the previous
+    // selection's sheets happened to be on.
+    sheetPage = 0;
     applyFormMode();
   }
 
   function setSignSize(signSize) {
     currentSignSize = signSize === 'small' ? 'small' : 'large';
+    sheetPage = 0;
     applyFormMode();
   }
 
@@ -407,15 +413,28 @@
   // by *sheet* (see buildSheets) rather than by raw item count, since each
   // sheet is one uniform layout (grid shape + card size) - Shelf Talkers,
   // Large Display Signs and Small Display Signs never share a sheet.
+  //
+  // Scoped to whichever sign type/size is currently selected in the form,
+  // the same way "Current Talker" mode already only shows the current
+  // form's entry rather than the whole queue - otherwise, since Shelf
+  // Talker sheets always sort first, switching the form to Display Signs
+  // and adding one would still show existing Shelf Talker sheets here
+  // instead of the sign just added. The Print Preview modal (opened from
+  // "Print Sheet(s)") is what shows every sheet together.
   function renderSheetPreview() {
-    const sheets = buildSheets(queue);
+    const currentLayoutKey = layoutKeyFor({ signType: currentSignType, signSize: currentSignSize });
+    const relevantItems = queue.filter((t) => layoutKeyFor(t) === currentLayoutKey);
+    const sheets = buildSheets(relevantItems);
     const totalPages = Math.max(1, sheets.length);
     sheetPage = Math.min(Math.max(sheetPage, 0), totalPages - 1);
 
     els.previewStage.innerHTML = '';
 
-    if (queue.length === 0) {
-      els.previewStage.innerHTML = '<p class="empty-hint">No shelf talkers queued yet. Add one on the left to see the full page here.</p>';
+    if (relevantItems.length === 0) {
+      const label = SIGN_LAYOUTS[currentLayoutKey].label;
+      els.previewStage.innerHTML = queue.length === 0
+        ? '<p class="empty-hint">No shelf talkers queued yet. Add one on the left to see the full page here.</p>'
+        : `<p class="empty-hint">No ${label} queued yet. Add one on the left, or switch Shelf Talkers/Display Signs above to see what else is queued.</p>`;
       els.sheetPagination.hidden = true;
       return;
     }
