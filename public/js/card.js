@@ -95,9 +95,11 @@ function buildPricingHtml(talker) {
     `;
   }
 
-  // Both "closeout" and "standard" show the same regular/sale price layout;
-  // closeout just adds the "CLOSEOUT!!" badge above it.
-  const badge = talkerType === 'closeout' ? '<div class="card__closeout-badge">CLOSEOUT!!</div>' : '';
+  // "closeout", "chilled" and "standard" all show the same regular/sale
+  // price layout; closeout/chilled just add their own badge above it.
+  let badge = '';
+  if (talkerType === 'closeout') badge = '<div class="card__closeout-badge">CLOSEOUT!!</div>';
+  else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
   return `
     ${badge}
     <div class="card__prices">
@@ -111,7 +113,7 @@ function buildPricingHtml(talker) {
 // Display Signs - a second, landscape card format for the store's Small
 // (6-up) and Large (2-up) printed display signs, distinct from the
 // portrait Shelf Talker card above. Reuses the same talker fields (plus
-// signSize/vintage), but lays title/price out in wide rows instead of a
+// signSize), but lays title/price out in wide rows instead of a
 // stacked block, and adds the header tagline + "SALE/PRICE" edge lettering
 // the store's existing sign templates use.
 // ================================================================
@@ -128,11 +130,11 @@ function buildSignRailHtml(side) {
 // The edge lettering marks any kind of special pricing, not just a plain
 // sale price - matches the store's reference signs, which show it on
 // Closeout and Super Sale signs even when illustrated without a distinct
-// sale price.
+// sale price. "Chilled" isn't a discount, so it doesn't trigger the rails.
 function signHasDiscount(talker) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
-  return talkerType !== 'standard' || hasSale;
+  return talkerType === 'closeout' || talkerType === 'supersale' || hasSale;
 }
 
 // Single-line version of the wine ratings list for the sign's rating/size
@@ -151,6 +153,7 @@ function buildSignTopRowHtml(talker, leftHtml) {
   let left = leftHtml || '';
   if (talkerType === 'closeout') left = '<div class="sign__closeout-badge">CLOSEOUT!!</div>';
   else if (talkerType === 'supersale') left = '<div class="sign__supersale-text">Super Sale Price!!!</div>';
+  else if (talkerType === 'chilled') left = '<div class="sign__chilled-badge">Also Available Chilled</div>';
   if (!left && !talker.size) return '';
   return `
     <div class="sign__top-row">
@@ -190,7 +193,6 @@ function buildLargeSignBodyHtml(talker) {
   const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
   return `
     <div class="sign__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
-    ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
     <div class="sign__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
     ${isBeer ? buildBeerRatingHtml(talker) : ''}
     ${buildSignTopRowHtml(talker, ratingHtml)}
@@ -215,6 +217,7 @@ function buildSmallSignBodyHtml(talker) {
   } else {
     priceHtml = `
       ${talkerType === 'closeout' ? '<div class="sign__closeout-badge">CLOSEOUT!!</div>' : ''}
+      ${talkerType === 'chilled' ? '<div class="sign__chilled-badge">Also Available Chilled</div>' : ''}
       <div class="sign__small-price ${hasSale ? 'is-sale' : ''}">${formatMoney(hasSale ? talker.salePrice : talker.price)}</div>
     `;
   }
@@ -231,7 +234,7 @@ function buildSmallSignBodyHtml(talker) {
 
 /**
  * @param {object} talker - same shape as buildCardElement, plus signSize
- *   ('small' | 'large') and vintage.
+ *   ('small' | 'large').
  * @returns {HTMLElement} a .sign element, not yet size-fitted
  */
 function buildSignElement(talker) {
@@ -272,6 +275,7 @@ function buildCardElement(talker) {
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.theme = talker.theme === 'purple' ? 'purple' : 'amber';
+  card.dataset.size = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
   const isBeer = talker.category === 'beer';
 
   card.innerHTML = `
@@ -325,7 +329,7 @@ function fitCardText(cardEl) {
   if (!body) return;
   let priceFit = 1;
   let priceGuard = 40;
-  while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.4 && priceGuard > 0) {
+  while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.35 && priceGuard > 0) {
     priceFit = Math.round((priceFit - 0.03) * 100) / 100;
     body.style.setProperty('--price-fit', priceFit);
     priceGuard -= 1;
