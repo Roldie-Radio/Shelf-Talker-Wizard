@@ -128,6 +128,10 @@
   // of truncating - toggled by clicking the title (see renderQueue).
   let expandedQueueItemIds = new Set();
 
+  // Which queue item's "more actions" menu (#queueItemMenu, shared by every
+  // row) is currently open, if any - see openQueueMenu/closeQueueMenu.
+  let queueMenuTalkerId = null;
+
   // ---------- Persistence ----------
 
   function loadQueue() {
@@ -225,6 +229,7 @@
     queueGrid: document.getElementById('queueGrid'),
     queueCount: document.getElementById('queueCount'),
     clearQueueBtn: document.getElementById('clearQueueBtn'),
+    queueItemMenu: document.getElementById('queueItemMenu'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
 
@@ -576,6 +581,7 @@
   // ---------- Queue rendering ----------
 
   function renderQueue() {
+    closeQueueMenu();
     els.queueCount.textContent = String(queue.length);
     els.printBtn.disabled = queue.length === 0;
 
@@ -606,9 +612,7 @@
           <div class="queue-item__meta">${typeLabel} &middot; ${escapeHtml(talker.size || '')} ${talker.size ? '&middot;' : ''} ${priceLabel}</div>
         </div>
         <div class="queue-item__actions">
-          <button type="button" data-action="edit" title="Edit">Edit</button>
-          <button type="button" data-action="duplicate" title="Duplicate">Copy</button>
-          <button type="button" data-action="delete" title="Delete">Delete</button>
+          <button type="button" class="queue-item__menu-btn" data-action="toggle-menu" aria-haspopup="true" aria-expanded="false" title="More actions">&#8942;</button>
         </div>
       `;
 
@@ -617,13 +621,58 @@
         else expandedQueueItemIds.add(talker.id);
         renderQueue();
       });
-      item.querySelector('[data-action="edit"]').addEventListener('click', () => startEdit(talker.id));
-      item.querySelector('[data-action="duplicate"]').addEventListener('click', () => duplicateTalker(talker.id));
-      item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteTalker(talker.id));
+      const menuBtn = item.querySelector('[data-action="toggle-menu"]');
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (queueMenuTalkerId === talker.id) closeQueueMenu();
+        else openQueueMenu(talker.id, menuBtn);
+      });
 
       els.queueGrid.appendChild(item);
     });
   }
+
+  // The "more actions" (Edit/Copy/Delete) menu is a single element shared
+  // by every queue row (#queueItemMenu in index.html), repositioned via JS
+  // to whichever row's kebab button was clicked, rather than one dropdown
+  // nested per-row - .queue-grid scrolls (overflow-y: auto), which would
+  // clip a per-row absolutely-positioned dropdown the moment that row is
+  // close enough to the bottom of the visible list.
+  function openQueueMenu(talkerId, buttonEl) {
+    queueMenuTalkerId = talkerId;
+    const rect = buttonEl.getBoundingClientRect();
+    els.queueItemMenu.style.top = `${rect.bottom + 4}px`;
+    els.queueItemMenu.style.right = `${window.innerWidth - rect.right}px`;
+    els.queueItemMenu.hidden = false;
+    buttonEl.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeQueueMenu() {
+    queueMenuTalkerId = null;
+    els.queueItemMenu.hidden = true;
+    els.queueGrid.querySelectorAll('.queue-item__menu-btn').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  }
+
+  els.queueItemMenu.querySelector('[data-action="edit"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    startEdit(id);
+  });
+  els.queueItemMenu.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    duplicateTalker(id);
+  });
+  els.queueItemMenu.querySelector('[data-action="delete"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    deleteTalker(id);
+  });
+  document.addEventListener('click', closeQueueMenu);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeQueueMenu();
+  });
+  els.queueGrid.addEventListener('scroll', closeQueueMenu);
 
   function startEdit(id) {
     const talker = queue.find((t) => t.id === id);
