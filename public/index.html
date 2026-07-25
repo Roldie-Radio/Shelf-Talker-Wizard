@@ -34,6 +34,14 @@
       </div>
 
       <div class="tab-panel is-active" data-panel="manual">
+        <div class="signtype-toggle" role="tablist">
+          <button type="button" class="toggle-btn is-active" data-signtype="talker">Shelf Talkers</button>
+          <button type="button" class="toggle-btn" data-signtype="sign">Display Signs</button>
+        </div>
+        <div class="signsize-toggle" role="tablist" id="signSizeToggle" hidden>
+          <button type="button" class="toggle-btn is-active" data-signsize="large">Large</button>
+          <button type="button" class="toggle-btn" data-signsize="small">Small</button>
+        </div>
         <div class="category-toggle" role="tablist">
           <button type="button" class="toggle-btn is-active" data-category="wine">Wine / Spirits</button>
           <button type="button" class="toggle-btn" data-category="beer">Beer</button>
@@ -46,7 +54,12 @@
             <input type="text" id="fTitle" maxlength="120" required placeholder="OXO Double Jigger" />
           </label>
 
-          <label class="field">
+          <label class="field" id="vintageField">
+            <span>Vintage (optional)</span>
+            <input type="text" id="fVintage" maxlength="12" placeholder="2015" />
+          </label>
+
+          <label class="field" id="descriptionField">
             <span>Description</span>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
           </label>

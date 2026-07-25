@@ -79,17 +79,25 @@ function buildBeerTableHtml(talker) {
 
 function buildPricingHtml(talker) {
   const talkerType = talker.talkerType || 'standard';
+  const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
 
   if (talkerType === 'supersale') {
-    // Matches the store's existing "Super Sale" talkers: a stylized callout
-    // in place of any numeric price.
-    return `<div class="card__supersale-text">Super Sale Price!!!</div>`;
+    // Matches the store's printed Super Sale signs: a stylized "Super Sale
+    // Price!!!" callout above the actual price (the sale price if one was
+    // given, otherwise just the regular price), with the regular price
+    // called out separately underneath when there's a sale price to compare
+    // it to.
+    const bigPrice = hasSale ? talker.salePrice : talker.price;
+    return `
+      <div class="card__supersale-text">Super Sale Price!!!</div>
+      <div class="card__supersale-price">${formatMoney(bigPrice)}</div>
+      ${hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : ''}
+    `;
   }
 
   // Both "closeout" and "standard" show the same regular/sale price layout;
   // closeout just adds the "CLOSEOUT!!" badge above it.
   const badge = talkerType === 'closeout' ? '<div class="card__closeout-badge">CLOSEOUT!!</div>' : '';
-  const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   return `
     ${badge}
     <div class="card__prices">
@@ -97,6 +105,158 @@ function buildPricingHtml(talker) {
       <div class="card__regular-price ${hasSale ? 'is-struck' : ''}">${hasSale ? formatMoney(talker.price) : `Regular Price ${formatMoney(talker.price)}`}</div>
     </div>
   `;
+}
+
+// ================================================================
+// Display Signs - a second, landscape card format for the store's Small
+// (6-up) and Large (2-up) printed display signs, distinct from the
+// portrait Shelf Talker card above. Reuses the same talker fields (plus
+// signSize/vintage), but lays title/price out in wide rows instead of a
+// stacked block, and adds the header tagline + "SALE/PRICE" edge lettering
+// the store's existing sign templates use.
+// ================================================================
+
+function buildSignRailHtml(side) {
+  const saleCol = `<div class="sign__rail-col">${'SALE'.split('').map((ch) => `<span>${ch}</span>`).join('')}</div>`;
+  const priceCol = `<div class="sign__rail-col">${'PRICE'.split('').map((ch) => `<span>${ch}</span>`).join('')}</div>`;
+  return `<div class="sign__rail sign__rail--${side}">${side === 'left' ? saleCol + priceCol : priceCol + saleCol}</div>`;
+}
+
+// The edge lettering marks any kind of special pricing, not just a plain
+// sale price - matches the store's reference signs, which show it on
+// Closeout and Super Sale signs even when illustrated without a distinct
+// sale price.
+function signHasDiscount(talker) {
+  const talkerType = talker.talkerType || 'standard';
+  const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
+  return talkerType !== 'standard' || hasSale;
+}
+
+// Single-line version of the wine ratings list for the sign's rating/size
+// row - only the first rating fits that row, matching the reference signs
+// (which always show exactly one).
+function buildRatingsInlineHtml(talker) {
+  if (!Array.isArray(talker.ratings) || !talker.ratings.length) return '';
+  const first = talker.ratings.find((r) => r && (r.reviewer || r.score));
+  if (!first) return '';
+  return `${escapeHtml(first.score || '')} Pts ${escapeHtml(first.reviewer || '')}`.trim();
+}
+
+// Top row: badge/rating/supersale-heading on the left, size on the right.
+function buildSignTopRowHtml(talker, leftHtml) {
+  const talkerType = talker.talkerType || 'standard';
+  let left = leftHtml || '';
+  if (talkerType === 'closeout') left = '<div class="sign__closeout-badge">CLOSEOUT!!</div>';
+  else if (talkerType === 'supersale') left = '<div class="sign__supersale-text">Super Sale Price!!!</div>';
+  if (!left && !talker.size) return '';
+  return `
+    <div class="sign__top-row">
+      <div class="sign__top-row-left">${left}</div>
+      ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
+    </div>
+  `;
+}
+
+// Price row for Large signs: sale/super-sale price on the left, regular
+// price on the right (or regular price alone, right-aligned, when there's
+// no sale).
+function buildSignPriceRowHtml(talker) {
+  const talkerType = talker.talkerType || 'standard';
+  const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
+
+  if (talkerType === 'supersale') {
+    const bigPrice = hasSale ? talker.salePrice : talker.price;
+    return `
+      <div class="sign__price-row">
+        <div class="sign__supersale-price">${formatMoney(bigPrice)}</div>
+        ${hasSale ? `<div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '<div></div>'}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="sign__price-row">
+      ${hasSale ? `<div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : '<div></div>'}
+      <div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>
+    </div>
+  `;
+}
+
+function buildLargeSignBodyHtml(talker) {
+  const isBeer = talker.category === 'beer';
+  const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
+  return `
+    <div class="sign__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
+    ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
+    <div class="sign__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
+    ${isBeer ? buildBeerRatingHtml(talker) : ''}
+    ${buildSignTopRowHtml(talker, ratingHtml)}
+    ${buildSignPriceRowHtml(talker)}
+  `;
+}
+
+// Small sign: just a name and a big price, no description/rating - matches
+// the store's blank Small Display Sign template.
+function buildSmallSignBodyHtml(talker) {
+  const isBeer = talker.category === 'beer';
+  const talkerType = talker.talkerType || 'standard';
+  const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
+
+  let priceHtml;
+  if (talkerType === 'supersale') {
+    const bigPrice = hasSale ? talker.salePrice : talker.price;
+    priceHtml = `
+      <div class="sign__supersale-text">Super Sale Price!!!</div>
+      <div class="sign__small-price is-sale">${formatMoney(bigPrice)}</div>
+    `;
+  } else {
+    priceHtml = `
+      ${talkerType === 'closeout' ? '<div class="sign__closeout-badge">CLOSEOUT!!</div>' : ''}
+      <div class="sign__small-price ${hasSale ? 'is-sale' : ''}">${formatMoney(hasSale ? talker.salePrice : talker.price)}</div>
+    `;
+  }
+
+  return `
+    <div class="sign__title sign__title--small" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
+    ${priceHtml}
+    <div class="sign__bottom-row">
+      ${hasSale ? `<div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '<div></div>'}
+      ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
+    </div>
+  `;
+}
+
+/**
+ * @param {object} talker - same shape as buildCardElement, plus signSize
+ *   ('small' | 'large') and vintage.
+ * @returns {HTMLElement} a .sign element, not yet size-fitted
+ */
+function buildSignElement(talker) {
+  const sign = document.createElement('div');
+  const size = talker.signSize === 'small' ? 'small' : 'large';
+  sign.className = 'sign';
+  sign.dataset.theme = talker.theme === 'purple' ? 'purple' : 'amber';
+  sign.dataset.size = size;
+
+  const bodyHtml = size === 'small' ? buildSmallSignBodyHtml(talker) : buildLargeSignBodyHtml(talker);
+  const showRails = signHasDiscount(talker);
+
+  sign.innerHTML = `
+    <div class="sign__band">
+      <div class="sign__tagline">Morris County's Largest Wine Discounter</div>
+    </div>
+    <div class="sign__body">
+      ${showRails ? buildSignRailHtml('left') : ''}
+      <div class="sign__content">${bodyHtml}</div>
+      ${showRails ? buildSignRailHtml('right') : ''}
+    </div>
+    <div class="sign__band sign__band--footer">
+      <span class="sign__footer-text">www.liquoroutletwinecellars.com</span>
+      <img class="sign__logo" src="assets/logo.png" alt="" />
+    </div>
+  `;
+
+  return sign;
 }
 
 /**
@@ -135,8 +295,9 @@ function buildCardElement(talker) {
 
 /**
  * Shrinks the title/description font sizes (in place) until their content
- * fits within the allotted band, down to a sensible minimum. Must be called
- * after the card element is attached to the document (needs real layout).
+ * fits within the allotted band, down to a sensible minimum. Works on both
+ * the Shelf Talker (.card) and Display Sign (.sign) formats. Must be called
+ * after the element is attached to the document (needs real layout).
  */
 function fitCardText(cardEl) {
   const targets = cardEl.querySelectorAll('[data-fit]');
@@ -154,10 +315,10 @@ function fitCardText(cardEl) {
   // The Super Sale callout and the Closeout badge run noticeably larger
   // than the standard regular/sale price lines. On a long title/description
   // that combined block can still be taller than the space left on the
-  // talker, which - since .card__body doesn't scroll - shoves (and clips)
+  // talker, which - since the body doesn't scroll - shoves (and clips)
   // whatever's below it. Scale the whole pricing block down (all parts
   // together, so their relative sizes stay the same) until it fits.
-  const body = cardEl.querySelector('.card__body');
+  const body = cardEl.querySelector('.card__body, .sign__body');
   if (!body) return;
   let priceFit = 1;
   let priceGuard = 40;
@@ -168,8 +329,17 @@ function fitCardText(cardEl) {
   }
 }
 
+/**
+ * @param {object} talker
+ * @returns {HTMLElement} a .card (signType 'talker') or .sign
+ *   (signType 'sign') element, not yet size-fitted.
+ */
+function buildPrintableElement(talker) {
+  return talker.signType === 'sign' ? buildSignElement(talker) : buildCardElement(talker);
+}
+
 function renderFittedCard(talker) {
-  const card = buildCardElement(talker);
+  const card = buildPrintableElement(talker);
   // fitCardText needs layout, so caller should append `card` to the DOM,
   // then call fitCardText(card) on the next frame.
   return card;
