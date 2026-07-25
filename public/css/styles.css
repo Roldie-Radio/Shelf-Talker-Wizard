@@ -380,11 +380,47 @@ h1, h2, h3 { margin: 0; }
   border-radius: 8px;
   padding: 0.5rem 0.6rem;
 }
+.queue-item.is-expanded { align-items: flex-start; }
 .queue-item__swatch { width: 10px; align-self: stretch; border-radius: 4px; flex-shrink: 0; }
 .queue-item__swatch[data-theme="amber"] { background: var(--amber-band); }
 .queue-item__swatch[data-theme="purple"] { background: var(--purple-band); }
 .queue-item__body { flex: 1; min-width: 0; }
-.queue-item__title { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Titles truncate to one line by default; clicking toggles .is-expanded
+   (state tracked in JS, see expandedQueueItemIds in app.js) so the full
+   title wraps onto multiple lines instead. A real <button> so it's
+   keyboard-reachable, styled to look like the plain text it replaces. The
+   expand icon is a separate flex item, not part of the truncating text
+   span - inside it, text-overflow:ellipsis would clip the icon away
+   together with the text on exactly the long titles where it matters most. */
+.queue-item__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.queue-item__title-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queue-item__expand-icon { flex: 0 0 auto; font-size: 0.7em; color: #8a8378; }
+.queue-item.is-expanded .queue-item__title-text {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+}
 .queue-item__meta { font-size: 0.78rem; color: #6b645a; }
 .queue-item__actions { display: flex; gap: 0.3rem; }
 .queue-item__actions button { border: none; background: none; cursor: pointer; font-size: 0.85rem; padding: 0.2rem 0.35rem; color: #6b645a; }
@@ -714,6 +750,13 @@ h1, h2, h3 { margin: 0; }
   text-align: center;
   padding: 0 1.5%;
 }
+
+/* Large signs pin the product name to the top instead of centering the
+   whole content block as a group - otherwise a short description/no
+   vintage leaves the title floating away from the top edge. Small signs
+   keep centering (title + price is the whole layout, centering reads
+   better there). */
+.sign[data-size="large"] .sign__content { justify-content: flex-start; }
 
 /* Vertical "SALE"/"PRICE" edge lettering - shown on any sign with a
    discount (sale price, Closeout, or Super Sale), matching the store's

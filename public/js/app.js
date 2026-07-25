@@ -124,6 +124,10 @@
   // uses grouped sheets.
   let autoArrangeEnabled = false;
 
+  // Queue item ids whose title is expanded to show the full text instead
+  // of truncating - toggled by clicking the title (see renderQueue).
+  let expandedQueueItemIds = new Set();
+
   // ---------- Persistence ----------
 
   function loadQueue() {
@@ -583,7 +587,8 @@
     els.queueGrid.innerHTML = '';
     queue.forEach((talker) => {
       const item = document.createElement('div');
-      item.className = 'queue-item';
+      const isExpanded = expandedQueueItemIds.has(talker.id);
+      item.className = `queue-item${isExpanded ? ' is-expanded' : ''}`;
       const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
         ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
         : formatMoney(talker.price);
@@ -594,7 +599,10 @@
       item.innerHTML = `
         <div class="queue-item__swatch" data-theme="${talker.theme}"></div>
         <div class="queue-item__body">
-          <div class="queue-item__title">${escapeHtml(talker.title || 'Untitled')}</div>
+          <button type="button" class="queue-item__title" data-action="toggle-expand" title="Click to ${isExpanded ? 'collapse' : 'show full title'}">
+            <span class="queue-item__title-text">${escapeHtml(talker.title || 'Untitled')}</span>
+            <span class="queue-item__expand-icon" aria-hidden="true">${isExpanded ? '▾' : '▸'}</span>
+          </button>
           <div class="queue-item__meta">${typeLabel} &middot; ${escapeHtml(talker.size || '')} ${talker.size ? '&middot;' : ''} ${priceLabel}</div>
         </div>
         <div class="queue-item__actions">
@@ -604,6 +612,11 @@
         </div>
       `;
 
+      item.querySelector('[data-action="toggle-expand"]').addEventListener('click', () => {
+        if (isExpanded) expandedQueueItemIds.delete(talker.id);
+        else expandedQueueItemIds.add(talker.id);
+        renderQueue();
+      });
       item.querySelector('[data-action="edit"]').addEventListener('click', () => startEdit(talker.id));
       item.querySelector('[data-action="duplicate"]').addEventListener('click', () => duplicateTalker(talker.id));
       item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteTalker(talker.id));
@@ -637,6 +650,7 @@
 
   function deleteTalker(id) {
     queue = queue.filter((t) => t.id !== id);
+    expandedQueueItemIds.delete(id);
     saveQueue();
     renderQueue();
     refreshPreview();
@@ -646,6 +660,7 @@
     if (queue.length === 0) return;
     if (!confirm('Remove all shelf talkers from the queue?')) return;
     queue = [];
+    expandedQueueItemIds.clear();
     saveQueue();
     renderQueue();
     refreshPreview();
