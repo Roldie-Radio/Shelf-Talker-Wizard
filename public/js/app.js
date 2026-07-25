@@ -2,10 +2,42 @@
   const STORAGE_KEY = 'shelfTalkerQueue.v1';
   const REVIEWERS_KEY = 'shelfTalkerReviewers.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
-  const CARDS_PER_SHEET = 6;
-  // Matches the print sheet's card width (--w: 2.8in) on an 11in-wide
-  // landscape Letter page - see the @media print rules in styles.css.
-  const SHEET_CARD_RATIO = 2.8 / 11;
+
+  // Print-sheet geometry per sign type/size, all sized to fit a single
+  // landscape Letter sheet (11in x 8.5in, 0.28in @page margin - see the
+  // @media print rules in styles.css). printWidth is the element's --w
+  // (its own width, matching how .card/.sign already scale everything off
+  // of --w); printWidth/11 gives the same ratio used to size the on-screen
+  // sheet preview at whatever pixel width it happens to be rendered at.
+  const SIGN_LAYOUTS = {
+    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in' },
+    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in' },
+    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in' },
+  };
+
+  function layoutKeyFor(talker) {
+    if (talker.signType === 'sign') return talker.signSize === 'small' ? 'sign-small' : 'sign-large';
+    return 'talker';
+  }
+
+  // Groups the queue by print layout and chunks each group into sheets, so
+  // a printed/previewed sheet never mixes Shelf Talkers with Display Signs
+  // or the two Display Sign sizes - their physical dimensions don't match.
+  // Order: all Shelf Talker sheets, then Large Display Sign sheets, then
+  // Small Display Sign sheets.
+  function buildSheets(items) {
+    const groups = { talker: [], 'sign-large': [], 'sign-small': [] };
+    items.forEach((t) => groups[layoutKeyFor(t)].push(t));
+    const sheets = [];
+    Object.keys(SIGN_LAYOUTS).forEach((key) => {
+      const { perSheet } = SIGN_LAYOUTS[key];
+      const groupItems = groups[key];
+      for (let i = 0; i < groupItems.length; i += perSheet) {
+        sheets.push({ layoutKey: key, items: groupItems.slice(i, i + perSheet) });
+      }
+    });
+    return sheets;
+  }
 
   /** @type {Array<object>} */
   let queue = loadQueue();
@@ -16,6 +48,8 @@
   /** Ratings currently attached to whatever's in the form (not yet in queue). */
   let currentRatings = [];
 
+  let currentSignType = 'talker'; // 'talker' | 'sign'
+  let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentCategory = 'wine'; // 'wine' | 'beer'
 
   let previewMode = 'single'; // 'single' | 'sheet'
@@ -60,8 +94,14 @@
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
+    signTypeToggleBtns: document.querySelectorAll('.signtype-toggle .toggle-btn'),
+    signSizeToggleWrap: document.getElementById('signSizeToggle'),
+    signSizeToggleBtns: document.querySelectorAll('.signsize-toggle .toggle-btn'),
     categoryToggleBtns: document.querySelectorAll('.category-toggle .toggle-btn'),
     titleLabel: document.getElementById('fTitleLabel'),
+    vintageField: document.getElementById('vintageField'),
+    vintage: document.getElementById('fVintage'),
+    descriptionField: document.getElementById('descriptionField'),
     wineRatingsField: document.getElementById('wineRatingsField'),
     beerFields: document.getElementById('beerFields'),
     brewery: document.getElementById('fBrewery'),
@@ -127,22 +167,66 @@
     });
   });
 
-  // ---------- Category (Wine/Spirits vs Beer) ----------
+  // ---------- Form mode (Shelf Talker/Display Sign x Small/Large x Wine/Beer) ----------
 
-  function applyCategory(category) {
-    currentCategory = category === 'beer' ? 'beer' : 'wine';
+  // Single source of truth for what the form should look like, driven by
+  // the three toggles together - e.g. a Small Display Sign has no room for
+  // a description/rating/vintage, regardless of category, so those fields
+  // disappear only in that combination.
+  function applyFormMode() {
     const isBeer = currentCategory === 'beer';
+    const isSign = currentSignType === 'sign';
+    const isSmallSign = isSign && currentSignSize === 'small';
+
+    els.signTypeToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.signtype === currentSignType));
+    els.signSizeToggleWrap.hidden = !isSign;
+    els.signSizeToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.signsize === currentSignSize));
     els.categoryToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.category === currentCategory));
-    els.wineRatingsField.hidden = isBeer;
-    els.beerFields.hidden = !isBeer;
-    els.titleLabel.textContent = isBeer ? 'Beer Name *' : 'Product Title *';
+
+    els.titleLabel.textContent = isBeer ? 'Beer Name *' : (isSign ? 'Product Name *' : 'Product Title *');
     els.size.placeholder = isBeer ? '16oz Can / 4-pack' : '750ml / Each / 6-pack';
+
+    els.vintageField.hidden = isBeer || isSmallSign;
+    els.descriptionField.hidden = isSmallSign;
+    els.wineRatingsField.hidden = isBeer || isSmallSign;
+    els.beerFields.hidden = !isBeer || isSmallSign;
   }
+
+  function setSignType(signType) {
+    currentSignType = signType === 'sign' ? 'sign' : 'talker';
+    applyFormMode();
+  }
+
+  function setSignSize(signSize) {
+    currentSignSize = signSize === 'small' ? 'small' : 'large';
+    applyFormMode();
+  }
+
+  function setCategory(category) {
+    currentCategory = category === 'beer' ? 'beer' : 'wine';
+    applyFormMode();
+  }
+
+  els.signTypeToggleBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.signtype === currentSignType) return;
+      setSignType(btn.dataset.signtype);
+      refreshPreview();
+    });
+  });
+
+  els.signSizeToggleBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.signsize === currentSignSize) return;
+      setSignSize(btn.dataset.signsize);
+      refreshPreview();
+    });
+  });
 
   els.categoryToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.category === currentCategory) return;
-      applyCategory(btn.dataset.category);
+      setCategory(btn.dataset.category);
       refreshPreview();
     });
   });
@@ -151,8 +235,11 @@
 
   function readForm() {
     return {
+      signType: currentSignType,
+      signSize: currentSignSize,
       category: currentCategory,
       title: els.title.value.trim(),
+      vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
       size: els.size.value.trim(),
       theme: els.theme.value,
@@ -171,8 +258,12 @@
   }
 
   function fillForm(talker) {
-    applyCategory(talker.category);
+    currentSignType = talker.signType === 'sign' ? 'sign' : 'talker';
+    currentSignSize = talker.signSize === 'small' ? 'small' : 'large';
+    currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
+    applyFormMode();
     els.title.value = talker.title || '';
+    els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
     els.size.value = talker.size || '';
     els.theme.value = talker.theme || 'amber';
@@ -300,16 +391,18 @@
     els.sheetPagination.hidden = true;
     const talker = readForm();
     els.previewStage.innerHTML = '';
-    const card = buildCardElement(talker);
+    const card = buildPrintableElement(talker);
     els.previewStage.appendChild(card);
     requestAnimationFrame(() => fitCardText(card));
   }
 
-  // A scaled-down stand-in for a printed Letter-landscape sheet, showing the
-  // whole queue 6-up (see .sheet-preview in styles.css, and the matching
-  // @media print rules it mirrors).
+  // A scaled-down stand-in for a printed Letter-landscape sheet. Paginates
+  // by *sheet* (see buildSheets) rather than by raw item count, since each
+  // sheet is one uniform layout (grid shape + card size) - Shelf Talkers,
+  // Large Display Signs and Small Display Signs never share a sheet.
   function renderSheetPreview() {
-    const totalPages = Math.max(1, Math.ceil(queue.length / CARDS_PER_SHEET));
+    const sheets = buildSheets(queue);
+    const totalPages = Math.max(1, sheets.length);
     sheetPage = Math.min(Math.max(sheetPage, 0), totalPages - 1);
 
     els.previewStage.innerHTML = '';
@@ -320,21 +413,27 @@
       return;
     }
 
+    const sheet = sheets[sheetPage];
+    const layout = SIGN_LAYOUTS[sheet.layoutKey];
+
     const sheetDiv = document.createElement('div');
     sheetDiv.className = 'sheet-preview';
-    const items = queue.slice(sheetPage * CARDS_PER_SHEET, sheetPage * CARDS_PER_SHEET + CARDS_PER_SHEET);
-    items.forEach((talker) => sheetDiv.appendChild(buildCardElement(talker)));
+    sheetDiv.style.setProperty('--cols', layout.cols);
+    sheetDiv.style.setProperty('--rows', layout.rows);
+    sheet.items.forEach((talker) => sheetDiv.appendChild(buildPrintableElement(talker)));
     els.previewStage.appendChild(sheetDiv);
 
-    // Card font sizes are driven by --w (see card.js/styles.css); compute it
-    // in px from the sheet's actual rendered width so text scales correctly
-    // at whatever size the preview panel happens to be.
+    // Card/sign font sizes are driven by --w (see card.js/styles.css);
+    // compute it in px from the sheet's actual rendered width, using the
+    // same ratio the print layout uses (its printWidth against the full
+    // 11in sheet width), so text scales correctly at whatever size the
+    // preview panel happens to be.
     requestAnimationFrame(() => {
       const containerWidth = sheetDiv.getBoundingClientRect().width;
-      const cardWidthPx = containerWidth * SHEET_CARD_RATIO;
-      const cards = sheetDiv.querySelectorAll('.card');
-      cards.forEach((card) => card.style.setProperty('--w', `${cardWidthPx}px`));
-      requestAnimationFrame(() => cards.forEach((card) => fitCardText(card)));
+      const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+      const elements = sheetDiv.querySelectorAll('.card, .sign');
+      elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
+      requestAnimationFrame(() => elements.forEach((el) => fitCardText(el)));
     });
 
     els.sheetPagination.hidden = totalPages <= 1;
@@ -392,12 +491,15 @@
       const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
         ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
         : formatMoney(talker.price);
+      const typeLabel = talker.signType === 'sign'
+        ? (talker.signSize === 'small' ? 'Small Display Sign' : 'Large Display Sign')
+        : 'Shelf Talker';
 
       item.innerHTML = `
         <div class="queue-item__swatch" data-theme="${talker.theme}"></div>
         <div class="queue-item__body">
           <div class="queue-item__title">${escapeHtml(talker.title || 'Untitled')}</div>
-          <div class="queue-item__meta">${escapeHtml(talker.size || '')} ${talker.size ? '&middot;' : ''} ${priceLabel}</div>
+          <div class="queue-item__meta">${typeLabel} &middot; ${escapeHtml(talker.size || '')} ${talker.size ? '&middot;' : ''} ${priceLabel}</div>
         </div>
         <div class="queue-item__actions">
           <button type="button" data-action="edit" title="Edit">Edit</button>
@@ -612,19 +714,20 @@
     if (queue.length === 0) return;
     els.printRoot.innerHTML = '';
 
-    const perSheet = 6;
-    for (let i = 0; i < queue.length; i += perSheet) {
-      const sheet = document.createElement('div');
-      sheet.className = 'sheet';
-      queue.slice(i, i + perSheet).forEach((talker) => {
-        sheet.appendChild(buildCardElement(talker));
-      });
-      els.printRoot.appendChild(sheet);
-    }
+    buildSheets(queue).forEach(({ layoutKey, items }) => {
+      const layout = SIGN_LAYOUTS[layoutKey];
+      const sheetEl = document.createElement('div');
+      sheetEl.className = 'sheet';
+      sheetEl.style.setProperty('--cols', layout.cols);
+      sheetEl.style.setProperty('--rows', layout.rows);
+      sheetEl.style.setProperty('--print-w', layout.printWidth);
+      items.forEach((talker) => sheetEl.appendChild(buildPrintableElement(talker)));
+      els.printRoot.appendChild(sheetEl);
+    });
 
-    // Cards need to be laid out at print size before we can measure/shrink text.
+    // Cards/signs need to be laid out at print size before we can measure/shrink text.
     requestAnimationFrame(() => {
-      els.printRoot.querySelectorAll('.card').forEach((card) => fitCardText(card));
+      els.printRoot.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
       requestAnimationFrame(triggerPrint);
     });
   });
@@ -646,7 +749,7 @@
 
   // ---------- Init ----------
 
-  applyCategory('wine');
+  applyFormMode();
   renderReviewerSelect();
   renderQueue();
   renderPreview();
