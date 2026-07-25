@@ -98,6 +98,7 @@ h1, h2, h3 { margin: 0; }
 .panel h2 { font-size: 1rem; margin-bottom: 0.75rem; }
 .panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
 .panel__header h2 { margin: 0; }
+.panel__header-actions { display: flex; align-items: center; gap: 0.5rem; }
 
 /* ---------- Tabs ---------- */
 

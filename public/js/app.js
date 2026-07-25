@@ -229,6 +229,7 @@
     queueGrid: document.getElementById('queueGrid'),
     queueCount: document.getElementById('queueCount'),
     clearQueueBtn: document.getElementById('clearQueueBtn'),
+    saveQueueBtn: document.getElementById('saveQueueBtn'),
     queueItemMenu: document.getElementById('queueItemMenu'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
@@ -584,6 +585,7 @@
     closeQueueMenu();
     els.queueCount.textContent = String(queue.length);
     els.printBtn.disabled = queue.length === 0;
+    els.saveQueueBtn.disabled = queue.length === 0;
 
     if (queue.length === 0) {
       els.queueGrid.innerHTML = '<p class="empty-hint">No shelf talkers yet. Add one on the left to get started.</p>';
@@ -714,6 +716,30 @@
     renderQueue();
     refreshPreview();
   });
+
+  // Exports the current queue as a downloadable JSON file - a manual
+  // backup/archive separate from the automatic localStorage persistence
+  // (see saveQueue), for moving a queue to another computer or keeping a
+  // copy of a batch outside the browser.
+  function saveQueueToFile() {
+    if (queue.length === 0) return;
+    const payload = {
+      app: 'Shelf Talker Wizard',
+      exportedAt: new Date().toISOString(),
+      queue,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shelf-talker-queue-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  els.saveQueueBtn.addEventListener('click', saveQueueToFile);
 
   els.cancelEditBtn.addEventListener('click', resetForm);
   els.clearFormBtn.addEventListener('click', resetForm);
