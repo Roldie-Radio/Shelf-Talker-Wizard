@@ -244,6 +244,26 @@ h1, h2, h3 { margin: 0; }
 }
 .sheet-preview .card, .sheet-preview .sign { box-shadow: none; }
 
+/* Auto-arrange (beta) preview: unlike the grid above (one uniform card/sign
+   size and grid shape per sheet), an auto-arranged sheet is a vertical
+   stack of rows that can each be a different sign type/size, so it's laid
+   out with flex instead of a shared CSS grid - see .sheet--auto below for
+   the print equivalent, and buildAutoArrangedPages in app.js. */
+.sheet-preview--auto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.4%;
+}
+.sheet-preview__row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2.7%;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
 .sheet-pagination {
   display: flex;
   align-items: center;
@@ -285,6 +305,31 @@ h1, h2, h3 { margin: 0; }
   padding: 1.1rem 1.2rem 0.4rem;
 }
 .print-preview-modal__header h2 { font-size: 1.1rem; }
+
+.auto-arrange-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.2rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  color: #4a453d;
+  cursor: pointer;
+  user-select: none;
+}
+.auto-arrange-toggle input { cursor: pointer; }
+.beta-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
 
 #printPreviewSummary { padding: 0 1.2rem; margin-bottom: 0.75rem; }
 
@@ -831,6 +876,26 @@ h1, h2, h3 { margin: 0; }
   .sheet .sign {
     --w: var(--print-w, 2.8in);
     box-shadow: none;
+  }
+
+  /* Auto-arrange (beta): a page is a vertical stack of full-width rows
+     (see buildAutoArrangedPages in app.js) instead of a uniform grid, since
+     a page can mix different sign types/sizes. --print-w is set per row
+     rather than per sheet; the .sheet .card/.sign rule above still applies
+     since it's a descendant selector, so each row's own --print-w wins. */
+  .sheet--auto {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2in;
+  }
+  .sheet__row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.3in;
+    width: 100%;
+    flex: 0 0 auto;
   }
 }
 
