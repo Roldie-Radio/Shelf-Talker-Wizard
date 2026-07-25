@@ -583,9 +583,9 @@ h1, h2, h3 { margin: 0; }
 
 .card__ratings {
   text-align: center;
-  font-weight: 700;
+  font-weight: 800;
   color: #171717;
-  font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.06 * var(--price-fit, 1));
   line-height: 1.35;
   flex: 0 0 auto;
   /* Clear separation from the description above (and the spacer below) so
