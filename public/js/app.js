@@ -10,9 +10,9 @@
   // of --w); printWidth/11 gives the same ratio used to size the on-screen
   // sheet preview at whatever pixel width it happens to be rendered at.
   const SIGN_LAYOUTS = {
-    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in' },
-    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in' },
-    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in' },
+    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in', label: 'Shelf Talkers' },
+    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in', label: 'Large Display Signs' },
+    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', label: 'Small Display Signs' },
   };
 
   function layoutKeyFor(talker) {
@@ -154,6 +154,13 @@
     clearQueueBtn: document.getElementById('clearQueueBtn'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
+
+    printPreviewOverlay: document.getElementById('printPreviewOverlay'),
+    printPreviewSummary: document.getElementById('printPreviewSummary'),
+    printPreviewSheets: document.getElementById('printPreviewSheets'),
+    printPreviewCloseBtn: document.getElementById('printPreviewCloseBtn'),
+    printPreviewCancelBtn: document.getElementById('printPreviewCancelBtn'),
+    printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
   };
 
   // ---------- Tabs ----------
@@ -710,10 +717,10 @@
 
   // ---------- Print ----------
 
-  els.printBtn.addEventListener('click', () => {
-    if (queue.length === 0) return;
+  // Builds the actual hidden print DOM (#printRoot) from the current queue,
+  // one .sheet per print-preview sheet, sized/shaped per SIGN_LAYOUTS.
+  function buildPrintDom() {
     els.printRoot.innerHTML = '';
-
     buildSheets(queue).forEach(({ layoutKey, items }) => {
       const layout = SIGN_LAYOUTS[layoutKey];
       const sheetEl = document.createElement('div');
@@ -724,12 +731,85 @@
       items.forEach((talker) => sheetEl.appendChild(buildPrintableElement(talker)));
       els.printRoot.appendChild(sheetEl);
     });
+  }
 
+  function printNow() {
+    buildPrintDom();
     // Cards/signs need to be laid out at print size before we can measure/shrink text.
     requestAnimationFrame(() => {
       els.printRoot.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
       requestAnimationFrame(triggerPrint);
     });
+  }
+
+  // Shows every sheet that will be printed - grouped and shaped exactly
+  // like the real print output - so staff can see how full each sheet is
+  // (and whether it's worth queuing more items first) before committing to
+  // the system print dialog.
+  function openPrintPreview() {
+    if (queue.length === 0) return;
+    const sheets = buildSheets(queue);
+    const partialCount = sheets.filter((s) => s.items.length < SIGN_LAYOUTS[s.layoutKey].perSheet).length;
+
+    els.printPreviewSummary.textContent = `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} will print.`
+      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, or print as-is.` : '');
+
+    els.printPreviewSheets.innerHTML = '';
+    const sheetEls = sheets.map((sheet, i) => {
+      const layout = SIGN_LAYOUTS[sheet.layoutKey];
+      const isPartial = sheet.items.length < layout.perSheet;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'print-preview-sheet';
+      wrap.innerHTML = `
+        <div class="print-preview-sheet__label">
+          <span>Sheet ${i + 1} of ${sheets.length} &mdash; ${layout.label}</span>
+          <span class="print-preview-sheet__fill ${isPartial ? 'is-partial' : ''}">${sheet.items.length} of ${layout.perSheet} slots used</span>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'sheet-preview print-preview-sheet__grid';
+      grid.style.setProperty('--cols', layout.cols);
+      grid.style.setProperty('--rows', layout.rows);
+      sheet.items.forEach((talker) => grid.appendChild(buildPrintableElement(talker)));
+      wrap.appendChild(grid);
+      els.printPreviewSheets.appendChild(wrap);
+      return { grid, layout };
+    });
+
+    els.printPreviewOverlay.hidden = false;
+
+    // Sizing needs the grids laid out first to know their real pixel width.
+    requestAnimationFrame(() => {
+      sheetEls.forEach(({ grid, layout }) => {
+        const containerWidth = grid.getBoundingClientRect().width;
+        const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+        const elements = grid.querySelectorAll('.card, .sign');
+        elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
+      });
+      requestAnimationFrame(() => {
+        sheetEls.forEach(({ grid }) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
+      });
+    });
+  }
+
+  function closePrintPreview() {
+    els.printPreviewOverlay.hidden = true;
+    els.printPreviewSheets.innerHTML = '';
+  }
+
+  els.printBtn.addEventListener('click', openPrintPreview);
+  els.printPreviewCloseBtn.addEventListener('click', closePrintPreview);
+  els.printPreviewCancelBtn.addEventListener('click', closePrintPreview);
+  els.printPreviewOverlay.addEventListener('click', (e) => {
+    if (e.target === els.printPreviewOverlay) closePrintPreview();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !els.printPreviewOverlay.hidden) closePrintPreview();
+  });
+  els.printPreviewConfirmBtn.addEventListener('click', () => {
+    closePrintPreview();
+    printNow();
   });
 
   function triggerPrint() {
