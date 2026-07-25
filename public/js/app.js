@@ -879,7 +879,7 @@
         price: rec.price,
         salePrice: rec.saleprice || rec['sale price'] || '',
         theme: (rec.theme || 'amber').toLowerCase() === 'purple' ? 'purple' : 'amber',
-        talkerType: ['closeout', 'supersale', 'super sale'].includes(typeRaw)
+        talkerType: ['closeout', 'supersale', 'super sale', 'chilled'].includes(typeRaw)
           ? (typeRaw === 'super sale' ? 'supersale' : typeRaw)
           : 'standard',
         ratings: [],

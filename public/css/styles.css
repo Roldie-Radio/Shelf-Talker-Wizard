@@ -9,6 +9,7 @@
   --purple-band: #7d3a52;
   --purple-band-dark: #582738;
   --sale-red: #d21f1f;
+  --chilled-blue: #1a5fb4;
   --radius: 10px;
 }
 
@@ -667,6 +668,17 @@ h1, h2, h3 { margin: 0; }
   margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
 }
 
+/* "Also Available Chilled" - a plain bold blue callout, not a sale/discount
+   type, so it skips the comic-badge/script-callout treatment those get. */
+.card__chilled-badge {
+  flex: 0 0 auto;
+  text-align: center;
+  font-weight: 800;
+  color: var(--chilled-blue);
+  font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
+  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
+}
+
 /* "Super Sale Price!!!" script-style callout that replaces the numeric
    price entirely, matching the store's existing Super Sale talkers. Sized
    to stay on one line at full scale so it reads as a single callout instead
@@ -898,6 +910,12 @@ h1, h2, h3 { margin: 0; }
   color: #ffd400;
   -webkit-text-stroke: calc(var(--w) * 0.0015) #000;
   text-shadow: calc(var(--w) * 0.003) calc(var(--w) * 0.003) 0 rgba(0,0,0,0.5);
+}
+
+.sign__chilled-badge {
+  font-weight: 800;
+  color: var(--chilled-blue);
+  font-size: calc(var(--w) * 0.02 * var(--price-fit, 1));
 }
 
 .sign__supersale-text {

@@ -84,6 +84,7 @@
               <option value="standard">Standard</option>
               <option value="closeout">Closeout</option>
               <option value="supersale">Super Sale</option>
+              <option value="chilled">Also Available Chilled</option>
             </select>
           </label>
 
@@ -173,7 +174,7 @@
       </div>
 
       <div class="tab-panel" data-panel="bulk">
-        <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required. <code>type</code> can be <code>standard</code>, <code>closeout</code>, or <code>supersale</code>.</p>
+        <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required. <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</p>
         <textarea id="csvInput" rows="8" placeholder="title,description,size,price,salePrice,theme
 OXO Double Jigger,Great for measuring pours,Each,13.99,9.99,amber"></textarea>
         <button type="button" class="btn btn--primary" id="csvImportBtn">Add All to Queue</button>
