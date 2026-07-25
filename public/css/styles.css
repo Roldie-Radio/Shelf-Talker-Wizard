@@ -734,6 +734,7 @@ h1, h2, h3 { margin: 0; }
    show a real number - unlike the plain callout the shelf talker used to
    show on its own). */
 .card__supersale-price {
+  font-family: "Segoe Script", "Brush Script MT", cursive;
   color: var(--sale-red);
   font-weight: 800;
   text-align: center;
