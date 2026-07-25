@@ -104,7 +104,7 @@ function buildPricingHtml(talker) {
     ${badge}
     <div class="card__prices">
       ${hasSale ? `<div class="card__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : ''}
-      <div class="card__regular-price ${hasSale ? 'is-struck' : ''}">${hasSale ? formatMoney(talker.price) : `Regular Price ${formatMoney(talker.price)}`}</div>
+      <div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>
     </div>
   `;
 }
