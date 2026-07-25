@@ -22,10 +22,13 @@
   };
 
   // Page content area in inches (11in x 8.5in landscape Letter minus the
-  // 0.28in @page margin on each side) and the row gap between sheet rows -
-  // both must match the @media print rules in styles.css exactly, since
-  // auto-arrange (below) packs rows onto pages using this same height budget.
+  // 0.28in @page margin on each side) and the gaps between items/rows on a
+  // sheet - all must match the @media print rules in styles.css exactly,
+  // since auto-arrange (below) packs items onto pages using this same
+  // width/height budget.
+  const PAGE_CONTENT_WIDTH_IN = 10.44;
   const PAGE_CONTENT_HEIGHT_IN = 7.94;
+  const ITEM_GAP_IN = 0.3;
   const ROW_GAP_IN = 0.2;
   const PAGE_MARGIN_IN = 0.28;
 
@@ -68,51 +71,65 @@
     return sheets;
   }
 
-  // Auto-arrange (beta): rather than grouping every item by type into
-  // same-type sheets (see buildSheets), this builds full-width "rows" - each
-  // holding up to a type's own column count of same-type items, so a row
-  // always has one fixed height - then greedily stacks rows onto pages by a
-  // height budget. A page can mix rows of different types as long as every
-  // row spans the full sheet width and keeps its own fixed height, so the
-  // sheet still cuts cleanly with straight horizontal cuts (then vertical
-  // cuts within a row) - avoiding full 2D bin-packing while still saving
-  // paper vs. grouped mode whenever a queue has partial quantities of more
-  // than one type.
-  function buildRows(items) {
-    const groups = emptyLayoutGroups();
-    items.forEach((t) => groups[layoutKeyFor(t)].push(t));
-    const rows = [];
-    Object.keys(SIGN_LAYOUTS).forEach((key) => {
-      const { cols } = SIGN_LAYOUTS[key];
-      const groupItems = groups[key];
-      for (let i = 0; i < groupItems.length; i += cols) {
-        rows.push({ layoutKey: key, items: groupItems.slice(i, i + cols) });
+  // Auto-arrange (beta): a real 2D bin-packer, not just per-type grouping
+  // (see buildSheets). Runs in two stages, the standard reduction from 2D
+  // bin-packing to 1D bin-packing via "shelves":
+  //
+  // 1. packItemsIntoShelves - First-Fit Decreasing Height (FFDH): sort every
+  //    item (any type, any size) tallest-first, then place each into the
+  //    first existing shelf with enough leftover width, or start a new shelf
+  //    if none fits. Sorting tallest-first guarantees a later item is never
+  //    taller than a shelf it joins, so a shelf's height is always just its
+  //    first item's height. This is what lets a row mix types/sizes (e.g. a
+  //    Quarter Shelf Talker next to a Small Display Sign) instead of only
+  //    ever stacking same-type rows.
+  // 2. packShelvesIntoPages - greedily stacks the resulting shelves onto
+  //    pages by height budget, same as before.
+  //
+  // FFDH is a well-known shelf-packing heuristic (provably within ~1.7x the
+  // optimal area) that's simple enough to keep deterministic and cheap for
+  // the handful of items a print queue realistically holds.
+  function packItemsIntoShelves(items) {
+    const rects = items
+      .map((talker) => {
+        const layoutKey = layoutKeyFor(talker);
+        return { talker, width: parseFloat(SIGN_LAYOUTS[layoutKey].printWidth), height: itemHeightIn(layoutKey) };
+      })
+      .sort((a, b) => b.height - a.height);
+
+    const shelves = [];
+    rects.forEach((rect) => {
+      const shelf = shelves.find((s) => s.usedWidth + ITEM_GAP_IN + rect.width <= PAGE_CONTENT_WIDTH_IN + 0.001);
+      if (shelf) {
+        shelf.usedWidth += ITEM_GAP_IN + rect.width;
+        shelf.items.push(rect.talker);
+      } else {
+        shelves.push({ height: rect.height, usedWidth: rect.width, items: [rect.talker] });
       }
     });
-    return rows;
+    return shelves;
   }
 
-  function packRowsIntoPages(rows) {
+  function packShelvesIntoPages(shelves) {
     const pages = [];
     let current = null;
     let usedHeight = 0;
-    rows.forEach((row) => {
-      const rowHeight = itemHeightIn(row.layoutKey);
-      const fitsOnCurrent = current && (usedHeight + ROW_GAP_IN + rowHeight) <= PAGE_CONTENT_HEIGHT_IN + 0.001;
+    shelves.forEach((shelf) => {
+      const fitsOnCurrent = current && (usedHeight + ROW_GAP_IN + shelf.height) <= PAGE_CONTENT_HEIGHT_IN + 0.001;
       if (fitsOnCurrent) {
-        usedHeight += ROW_GAP_IN + rowHeight;
+        usedHeight += ROW_GAP_IN + shelf.height;
       } else {
         current = { rows: [] };
         pages.push(current);
-        usedHeight = rowHeight;
+        usedHeight = shelf.height;
       }
-      current.rows.push(row);
+      current.rows.push(shelf);
     });
     return pages;
   }
 
   function buildAutoArrangedPages(items) {
-    return packRowsIntoPages(buildRows(items));
+    return packShelvesIntoPages(packItemsIntoShelves(items));
   }
 
   /** @type {Array<object>} */
@@ -926,8 +943,8 @@
   // Grouped mode: one .sheet per print-preview sheet, sized/shaped per
   // SIGN_LAYOUTS. Auto-arrange mode: one .sheet--auto per auto-arranged
   // page, each holding a vertical stack of .sheet__row elements (see
-  // buildAutoArrangedPages) - --print-w is set per row instead of per sheet
-  // since a page can mix row types.
+  // buildAutoArrangedPages) - since a shelf can mix item types/sizes,
+  // --print-w is set per item instead of per row.
   function buildPrintDom() {
     els.printRoot.innerHTML = '';
     if (autoArrangeEnabled) {
@@ -935,11 +952,13 @@
         const sheetEl = document.createElement('div');
         sheetEl.className = 'sheet sheet--auto';
         page.rows.forEach((row) => {
-          const layout = SIGN_LAYOUTS[row.layoutKey];
           const rowEl = document.createElement('div');
           rowEl.className = 'sheet__row';
-          rowEl.style.setProperty('--print-w', layout.printWidth);
-          row.items.forEach((talker) => rowEl.appendChild(buildPrintableElement(talker)));
+          row.items.forEach((talker) => {
+            const el = buildPrintableElement(talker);
+            el.style.setProperty('--print-w', SIGN_LAYOUTS[layoutKeyFor(talker)].printWidth);
+            rowEl.appendChild(el);
+          });
           sheetEl.appendChild(rowEl);
         });
         els.printRoot.appendChild(sheetEl);
@@ -1029,9 +1048,9 @@
   }
 
   // Renders auto-arranged pages: each page is a vertical stack of full-width
-  // rows (see buildAutoArrangedPages), and a row holds only one sign
-  // type/size, so - unlike renderGroupedPreview, where one --w fits an
-  // entire sheet - every row needs its own --w computed from its own
+  // shelves (see buildAutoArrangedPages), and a shelf can mix item
+  // types/sizes, so - unlike renderGroupedPreview, where one --w fits an
+  // entire sheet - every item needs its own --w computed from its own
   // layout's printWidth.
   function renderAutoArrangePreview() {
     const groupedSheets = buildSheets(queue);
@@ -1054,18 +1073,20 @@
       `;
       const sheetDiv = document.createElement('div');
       sheetDiv.className = 'sheet-preview sheet-preview--auto print-preview-sheet__grid';
-      const rowEls = [];
+      const itemEls = [];
       page.rows.forEach((row) => {
-        const layout = SIGN_LAYOUTS[row.layoutKey];
         const rowDiv = document.createElement('div');
         rowDiv.className = 'sheet-preview__row';
-        row.items.forEach((talker) => rowDiv.appendChild(buildPrintableElement(talker)));
+        row.items.forEach((talker) => {
+          const el = buildPrintableElement(talker);
+          rowDiv.appendChild(el);
+          itemEls.push({ el, layoutKey: layoutKeyFor(talker) });
+        });
         sheetDiv.appendChild(rowDiv);
-        rowEls.push({ rowDiv, layout });
       });
       wrap.appendChild(sheetDiv);
       els.printPreviewSheets.appendChild(wrap);
-      pageEls.push({ sheetDiv, rowEls });
+      pageEls.push({ sheetDiv, itemEls });
     });
 
     // Use the *sheet's* own rendered width (representing the full 11in page,
@@ -1083,14 +1104,13 @@
     // ends up producing, so the padding must be pinned to match: uniform
     // PAGE_MARGIN_IN on every side, in px, derived from this same width.
     requestAnimationFrame(() => {
-      pageEls.forEach(({ sheetDiv, rowEls }) => {
+      pageEls.forEach(({ sheetDiv, itemEls }) => {
         const containerWidth = sheetDiv.getBoundingClientRect().width;
         const pxPerIn = containerWidth / 11;
         sheetDiv.style.padding = `${pxPerIn * PAGE_MARGIN_IN}px`;
-        rowEls.forEach(({ rowDiv, layout }) => {
-          const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
-          const elements = rowDiv.querySelectorAll('.card, .sign');
-          elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
+        itemEls.forEach(({ el, layoutKey }) => {
+          const widthPx = containerWidth * (parseFloat(SIGN_LAYOUTS[layoutKey].printWidth) / 11);
+          el.style.setProperty('--w', `${widthPx}px`);
         });
       });
       requestAnimationFrame(() => {
