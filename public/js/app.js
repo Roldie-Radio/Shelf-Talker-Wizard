@@ -971,8 +971,9 @@
   // like the real print output - so staff can see how full each sheet is
   // (and whether it's worth queuing more items first) before committing to
   // the system print dialog. Also offers an opt-in "Auto-arrange (beta)"
-  // mode that can stack different sign types on the same sheet to save
-  // paper (see buildAutoArrangedPages) - off by default since it's new.
+  // mode that can stack different talker sizes and sign types on the same
+  // sheet to save paper (see buildAutoArrangedPages) - off by default
+  // since it's new.
   function openPrintPreview() {
     if (queue.length === 0) return;
     els.printPreviewOverlay.hidden = false;
@@ -1029,10 +1030,10 @@
   }
 
   // Renders auto-arranged pages: each page is a vertical stack of full-width
-  // rows (see buildAutoArrangedPages), and a row holds only one sign
-  // type/size, so - unlike renderGroupedPreview, where one --w fits an
-  // entire sheet - every row needs its own --w computed from its own
-  // layout's printWidth.
+  // rows (see buildAutoArrangedPages), and a row holds only one layout type
+  // (a talker size or a sign type/size), so - unlike renderGroupedPreview,
+  // where one --w fits an entire sheet - every row needs its own --w
+  // computed from its own layout's printWidth.
   function renderAutoArrangePreview() {
     const groupedSheets = buildSheets(queue);
     const pages = buildAutoArrangedPages(queue);
@@ -1041,7 +1042,7 @@
     els.printPreviewSummary.textContent = `${pages.length} sheet${pages.length === 1 ? '' : 's'} will print with Auto-arrange.`
       + (savedSheets > 0
         ? ` That's ${savedSheets} fewer sheet${savedSheets === 1 ? '' : 's'} than printing each type separately.`
-        : ' Sign types are stacked onto shared sheets where they fit.');
+        : ' Different sizes and types are stacked onto shared sheets where they fit.');
 
     const pageEls = [];
     pages.forEach((page, i) => {
