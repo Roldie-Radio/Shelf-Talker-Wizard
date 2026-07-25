@@ -140,6 +140,23 @@ async function createWindow() {
   Menu.setApplicationMenu(buildMenu());
   mainWindow.loadURL(`http://127.0.0.1:${PORT}`);
 
+  // Electron's BrowserWindow doesn't show a native copy/paste context menu on
+  // its own - the host app has to build one. Scope it to editable fields
+  // (inputs/textareas) so right-click still does nothing on non-editable
+  // content like product cards/images.
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    if (!params.isEditable) return;
+
+    const template = [
+      { role: 'cut', enabled: params.editFlags.canCut },
+      { role: 'copy', enabled: params.editFlags.canCopy },
+      { role: 'paste', enabled: params.editFlags.canPaste },
+      { type: 'separator' },
+      { role: 'selectAll', enabled: params.editFlags.canSelectAll },
+    ];
+    Menu.buildFromTemplate(template).popup({ window: mainWindow });
+  });
+
   // Any link the app tries to open in a new window/tab (e.g. target="_blank")
   // should go to the system browser, not spawn another Electron window.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
