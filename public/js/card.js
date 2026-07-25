@@ -119,7 +119,10 @@ function buildPricingHtml(talker) {
 function buildSignRailHtml(side) {
   const saleCol = `<div class="sign__rail-col">${'SALE'.split('').map((ch) => `<span>${ch}</span>`).join('')}</div>`;
   const priceCol = `<div class="sign__rail-col">${'PRICE'.split('').map((ch) => `<span>${ch}</span>`).join('')}</div>`;
-  return `<div class="sign__rail sign__rail--${side}">${side === 'left' ? saleCol + priceCol : priceCol + saleCol}</div>`;
+  // Always SALE-then-PRICE reading left-to-right, on both rails - matching
+  // the store's printed signs, which don't mirror the right side (it reads
+  // "SALE PRICE" there too, not "PRICE SALE").
+  return `<div class="sign__rail sign__rail--${side}">${saleCol}${priceCol}</div>`;
 }
 
 // The edge lettering marks any kind of special pricing, not just a plain
@@ -322,7 +325,7 @@ function fitCardText(cardEl) {
   if (!body) return;
   let priceFit = 1;
   let priceGuard = 40;
-  while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.5 && priceGuard > 0) {
+  while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.4 && priceGuard > 0) {
     priceFit = Math.round((priceFit - 0.03) * 100) / 100;
     body.style.setProperty('--price-fit', priceFit);
     priceGuard -= 1;
