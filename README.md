@@ -109,10 +109,33 @@ server/
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
+  js/layout.js         Print-sheet geometry + sheet/auto-arrange packing (no DOM)
   js/card.js           Card rendering + auto text-fit
   js/app.js            Form, queue, import, CSV, and print wiring
   assets/logo.png      Brand logo (extracted from the provided template)
+test/
+  layout.test.js          Packing invariants: every layout fits a sheet, no item lost
+  print-css-sync.test.js  Guards the JS geometry against the print CSS
 ```
+
+## Tests
+
+```bash
+npm test
+```
+
+No dependencies and no install step needed &mdash; they use Node's built-in test
+runner, and run on every push via `.github/workflows/test.yml`.
+
+The print geometry lives in two places that can't see each other: the numbers in
+`public/js/layout.js` (which the auto-arrange packer budgets against) and the
+`@media print` rules in `public/css/styles.css` (which the browser actually lays
+the page out with). If those drift apart nothing complains at runtime &mdash; the
+packer will happily fit six items onto a page CSS then renders seven across, and
+the overflow silently clips. `print-css-sync.test.js` reads the real values back
+out of the stylesheet and fails if they stop agreeing, so **if you change a page
+margin, gap, card size or aspect ratio, change it in both places** and let the
+tests confirm it.
 
 ## Customizing
 

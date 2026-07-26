@@ -3,23 +3,18 @@
   const REVIEWERS_KEY = 'shelfTalkerReviewers.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
-  // Print-sheet geometry per sign type/size, all sized to fit a single
-  // landscape Letter sheet (11in x 8.5in, 0.28in @page margin - see the
-  // @media print rules in styles.css). printWidth is the element's --w
-  // (its own width, matching how .card/.sign already scale everything off
-  // of --w); printWidth/11 gives the same ratio used to size the on-screen
-  // sheet preview at whatever pixel width it happens to be rendered at.
-  const SIGN_LAYOUTS = {
-    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in', aspect: 830 / 1136, label: 'Shelf Talkers' },
-    // Half Size keeps the same width as Full (same cols/printWidth) but is
-    // cut to half the height, so more rows fit per sheet; Quarter Size
-    // uniformly scales both dimensions to 50% of Full (same aspect ratio,
-    // half the printWidth), so both cols and rows increase.
-    'talker-half': { cols: 3, rows: 3, perSheet: 9, printWidth: '2.8in', aspect: 830 / 568, label: 'Half Size Shelf Talkers' },
-    'talker-quarter': { cols: 6, rows: 3, perSheet: 18, printWidth: '1.4in', aspect: 830 / 1136, label: 'Quarter Size Shelf Talkers' },
-    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in', aspect: 2.7, label: 'Large Display Signs' },
-    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', aspect: 2, label: 'Small Display Signs' },
-  };
+  // Print-sheet geometry and the sheet/auto-arrange packing live in
+  // layout.js, apart from this file's DOM wiring so they can be unit tested
+  // against the @media print rules they have to agree with.
+  const {
+    PAGE_WIDTH_IN,
+    PAGE_MARGIN_IN,
+    SIGN_LAYOUTS,
+    printWidthCss,
+    layoutKeyFor,
+    buildSheets,
+    buildAutoArrangedPages,
+  } = window.ShelfTalkerLayout;
 
   // Human-readable names for the queue list's meta line (see renderQueue).
   const SIZE_LABELS = { full: 'Full', half: 'Half', quarter: 'Quarter' };
@@ -28,117 +23,6 @@
     supersale: 'Super Sale',
     chilled: 'Also Available Chilled',
   };
-
-  // Page content area in inches (11in x 8.5in landscape Letter minus the
-  // 0.28in @page margin on each side) and the gaps between items/rows on a
-  // sheet - all must match the @media print rules in styles.css exactly,
-  // since auto-arrange (below) packs items onto pages using this same
-  // width/height budget.
-  const PAGE_CONTENT_WIDTH_IN = 10.44;
-  const PAGE_CONTENT_HEIGHT_IN = 7.94;
-  const ITEM_GAP_IN = 0.3;
-  const ROW_GAP_IN = 0.2;
-  const PAGE_MARGIN_IN = 0.28;
-
-  // aspect is width/height (the same convention as the CSS aspect-ratio
-  // property), so an item's real printed height is its printWidth divided
-  // by its aspect.
-  function itemHeightIn(layoutKey) {
-    const layout = SIGN_LAYOUTS[layoutKey];
-    return parseFloat(layout.printWidth) / layout.aspect;
-  }
-
-  function layoutKeyFor(talker) {
-    if (talker.signType === 'sign') return talker.signSize === 'small' ? 'sign-small' : 'sign-large';
-    if (talker.talkerSize === 'half') return 'talker-half';
-    if (talker.talkerSize === 'quarter') return 'talker-quarter';
-    return 'talker';
-  }
-
-  function emptyLayoutGroups() {
-    const groups = {};
-    Object.keys(SIGN_LAYOUTS).forEach((key) => { groups[key] = []; });
-    return groups;
-  }
-
-  // Groups the queue by print layout and chunks each group into sheets, so
-  // a printed/previewed sheet never mixes different layouts (Shelf Talker
-  // sizes, Display Sign sizes) with each other - their physical dimensions
-  // don't match. Order matches SIGN_LAYOUTS' own key order.
-  function buildSheets(items) {
-    const groups = emptyLayoutGroups();
-    items.forEach((t) => groups[layoutKeyFor(t)].push(t));
-    const sheets = [];
-    Object.keys(SIGN_LAYOUTS).forEach((key) => {
-      const { perSheet } = SIGN_LAYOUTS[key];
-      const groupItems = groups[key];
-      for (let i = 0; i < groupItems.length; i += perSheet) {
-        sheets.push({ layoutKey: key, items: groupItems.slice(i, i + perSheet) });
-      }
-    });
-    return sheets;
-  }
-
-  // Auto-arrange (beta): a real 2D bin-packer, not just per-type grouping
-  // (see buildSheets). Runs in two stages, the standard reduction from 2D
-  // bin-packing to 1D bin-packing via "shelves":
-  //
-  // 1. packItemsIntoShelves - First-Fit Decreasing Height (FFDH): sort every
-  //    item (any type, any size) tallest-first, then place each into the
-  //    first existing shelf with enough leftover width, or start a new shelf
-  //    if none fits. Sorting tallest-first guarantees a later item is never
-  //    taller than a shelf it joins, so a shelf's height is always just its
-  //    first item's height. This is what lets a row mix types/sizes (e.g. a
-  //    Quarter Shelf Talker next to a Small Display Sign) instead of only
-  //    ever stacking same-type rows.
-  // 2. packShelvesIntoPages - greedily stacks the resulting shelves onto
-  //    pages by height budget, same as before.
-  //
-  // FFDH is a well-known shelf-packing heuristic (provably within ~1.7x the
-  // optimal area) that's simple enough to keep deterministic and cheap for
-  // the handful of items a print queue realistically holds.
-  function packItemsIntoShelves(items) {
-    const rects = items
-      .map((talker) => {
-        const layoutKey = layoutKeyFor(talker);
-        return { talker, width: parseFloat(SIGN_LAYOUTS[layoutKey].printWidth), height: itemHeightIn(layoutKey) };
-      })
-      .sort((a, b) => b.height - a.height);
-
-    const shelves = [];
-    rects.forEach((rect) => {
-      const shelf = shelves.find((s) => s.usedWidth + ITEM_GAP_IN + rect.width <= PAGE_CONTENT_WIDTH_IN + 0.001);
-      if (shelf) {
-        shelf.usedWidth += ITEM_GAP_IN + rect.width;
-        shelf.items.push(rect.talker);
-      } else {
-        shelves.push({ height: rect.height, usedWidth: rect.width, items: [rect.talker] });
-      }
-    });
-    return shelves;
-  }
-
-  function packShelvesIntoPages(shelves) {
-    const pages = [];
-    let current = null;
-    let usedHeight = 0;
-    shelves.forEach((shelf) => {
-      const fitsOnCurrent = current && (usedHeight + ROW_GAP_IN + shelf.height) <= PAGE_CONTENT_HEIGHT_IN + 0.001;
-      if (fitsOnCurrent) {
-        usedHeight += ROW_GAP_IN + shelf.height;
-      } else {
-        current = { rows: [] };
-        pages.push(current);
-        usedHeight = shelf.height;
-      }
-      current.rows.push(shelf);
-    });
-    return pages;
-  }
-
-  function buildAutoArrangedPages(items) {
-    return packShelvesIntoPages(packItemsIntoShelves(items));
-  }
 
   /** @type {Array<object>} */
   let queue = loadQueue();
@@ -669,7 +553,7 @@
     // preview panel happens to be.
     requestAnimationFrame(() => {
       const containerWidth = sheetDiv.getBoundingClientRect().width;
-      const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+      const widthPx = containerWidth * (layout.printWidth / PAGE_WIDTH_IN);
       const elements = sheetDiv.querySelectorAll('.card, .sign');
       elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
       requestAnimationFrame(() => elements.forEach((el) => fitCardText(el)));
@@ -1114,7 +998,7 @@
           rowEl.className = 'sheet__row';
           row.items.forEach((talker) => {
             const el = buildPrintableElement(talker);
-            el.style.setProperty('--print-w', SIGN_LAYOUTS[layoutKeyFor(talker)].printWidth);
+            el.style.setProperty('--print-w', printWidthCss(layoutKeyFor(talker)));
             rowEl.appendChild(el);
           });
           sheetEl.appendChild(rowEl);
@@ -1128,7 +1012,7 @@
         sheetEl.className = 'sheet';
         sheetEl.style.setProperty('--cols', layout.cols);
         sheetEl.style.setProperty('--rows', layout.rows);
-        sheetEl.style.setProperty('--print-w', layout.printWidth);
+        sheetEl.style.setProperty('--print-w', printWidthCss(layoutKey));
         items.forEach((talker) => sheetEl.appendChild(buildPrintableElement(talker)));
         els.printRoot.appendChild(sheetEl);
       });
@@ -1234,7 +1118,7 @@
     requestAnimationFrame(() => {
       sheetEls.forEach(({ grid, layout }) => {
         const containerWidth = grid.getBoundingClientRect().width;
-        const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+        const widthPx = containerWidth * (layout.printWidth / PAGE_WIDTH_IN);
         const elements = grid.querySelectorAll('.card, .sign');
         elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
       });
@@ -1306,7 +1190,7 @@
         const pxPerIn = containerWidth / 11;
         sheetDiv.style.padding = `${pxPerIn * PAGE_MARGIN_IN}px`;
         itemEls.forEach(({ el, layoutKey }) => {
-          const widthPx = containerWidth * (parseFloat(SIGN_LAYOUTS[layoutKey].printWidth) / 11);
+          const widthPx = containerWidth * (SIGN_LAYOUTS[layoutKey].printWidth / PAGE_WIDTH_IN);
           el.style.setProperty('--w', `${widthPx}px`);
         });
       });
