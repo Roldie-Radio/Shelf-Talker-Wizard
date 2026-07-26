@@ -3,7 +3,7 @@
 A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talkers without opening Photoshop. It reproduces the look of the existing amber/purple templates (same logo, layout, and card size) and adds:
 
 - **Manual entry** form for title, description, size/unit, regular price, and sale price.
-- **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it.
+- **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **Bulk CSV import** for adding many products at once.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
@@ -89,6 +89,12 @@ Click **Import from Website**, paste a product page URL from liquoroutletwinecel
 
 If a page doesn't expose any of this, the fields will come back blank and you can fill them in manually &mdash; the import is a shortcut, not a requirement.
 
+### Importing a beer from Untappd
+
+Switch the Import tab to **Beer**, paste an Untappd beer page URL (`https://untappd.com/b/...`), and click **Fetch Beer Data**. This fills in the beer name, brewery, location, style, ABV, IBU, Untappd rating, and description &mdash; not price or size, since Untappd doesn't sell anything; add those two by hand.
+
+Untappd's page layout isn't something this project controls, so the importer leans on things unlikely to break even if it changes: the page's Open Graph tags for the name/description, and plain-text pattern matching for the ABV/IBU/rating numbers, rather than exact markup. Same as the product importer above, a field it can't find just comes back blank for you to fill in.
+
 ## Printing
 
 1. Add shelf talkers via any of the three methods.
@@ -105,7 +111,7 @@ If a page doesn't expose any of this, the fields will come back blank and you ca
 ```
 server/
   index.js            Express app: serves the frontend and the URL-import API
-  productImport.js    Fetches a product page and extracts title/description/price
+  productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout

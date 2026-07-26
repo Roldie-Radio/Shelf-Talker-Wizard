@@ -188,9 +188,18 @@
       </div>
 
       <div class="tab-panel" data-panel="import" id="panelImport" role="tabpanel" aria-labelledby="tabImport" tabindex="0">
-        <p class="help-text">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
+        <!-- Shares .category-toggle with Manual Entry's own group (see
+             below) so the existing category-toggle wiring in app.js - click
+             handling, active-state sync, aria-checked - covers both groups
+             automatically; the two are two views onto the same
+             currentCategory, not independent settings. -->
+        <div class="category-toggle" role="radiogroup" aria-label="Product category">
+          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
+          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
+        </div>
+        <p class="help-text" id="importHelpText">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
         <label class="field">
-          <span>Product Page URL</span>
+          <span id="importUrlLabel">Product Page URL</span>
           <input type="url" id="importUrl" placeholder="https://www.liquoroutletwinecellars.com/products/..." />
         </label>
         <button type="button" class="btn btn--primary" id="importBtn">Fetch Product Data</button>

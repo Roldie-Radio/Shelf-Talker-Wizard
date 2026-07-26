@@ -1,3 +1,16 @@
+// cheerio's HTTP dependency (undici) references the global File class at
+// module-load time (undici/lib/web/webidl/index.js), which Node only added
+// to the global scope itself starting in the 20.x line - on Node 18 this
+// throws "ReferenceError: File is not defined" the instant anything
+// requires cheerio, before a single line of this file's own code runs.
+// node:buffer has exported the same File class since well before that
+// (confirmed present on 18.20.8), so re-exposing it as a global is a
+// no-op on any Node that already has it and a real fix on any that don't -
+// this has to run before the require('cheerio') below.
+if (typeof globalThis.File === 'undefined') {
+  globalThis.File = require('node:buffer').File;
+}
+
 const cheerio = require('cheerio');
 
 const FETCH_TIMEOUT_MS = 10000;
@@ -27,7 +40,7 @@ function assertPublicUrl(url) {
   }
 }
 
-async function fetchHtml(url) {
+async function fetchHtml(url, extraHeaders = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -47,6 +60,7 @@ async function fetchHtml(url) {
         headers: {
           'User-Agent': USER_AGENT,
           Accept: 'text/html,application/xhtml+xml',
+          ...extraHeaders,
         },
       });
       if (!REDIRECT_STATUSES.has(resp.status)) break;
@@ -228,4 +242,138 @@ async function extractProduct(url) {
   };
 }
 
-module.exports = { extractProduct };
+// ================================================================
+// Beer import - focused on Untappd beer pages (https://untappd.com/b/...),
+// which is where staff are expected to paste links from for a Beer talker.
+//
+// This could not be verified against Untappd's live markup: outbound
+// requests to untappd.com are blocked from the environment this was
+// written in (every attempt came back HTTP 403, which is itself a strong
+// signal Untappd blocks non-browser traffic - see BEER_USER_AGENT below).
+// The selectors here are best-effort, based on Untappd's long-documented
+// classic page structure, but every one of them is optional and the parser
+// leans harder on things far less likely to break if that markup has moved
+// on: Open Graph tags (title/description are close to universal across
+// site redesigns) and plain-text regex scans for the numeric facts
+// (ABV/IBU/rating), rather than brittle class names. A field the parser
+// can't find just comes back blank, same as the product importer above -
+// staff review and fill in the rest either way.
+// ================================================================
+
+// Untappd (and plenty of brewery sites) return an outright 403 to the
+// product importer's identifying UA above - confirmed while building this.
+// A standard desktop browser UA is what lets a single, human-initiated
+// fetch of one public page succeed instead.
+const BEER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+  + '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+// "8.00" -> "8", "5.50" -> "5.5" - matches the plain "8%" style already used
+// by the manual entry form's own placeholder, instead of a raw regex capture
+// like "8.00%".
+function trimNumber(str) {
+  const num = Number(str);
+  return Number.isFinite(num) ? String(num) : str;
+}
+
+// Untappd's <title>/og:title has historically read "<Beer> by <Brewery>",
+// sometimes with a " | Untappd" site-name suffix. Splitting on "by" lets one
+// tag opportunistically supply both the beer name and, as a fallback if
+// nothing more specific is found in the page body, the brewery name too.
+function splitBeerTitle(ogTitle) {
+  if (!ogTitle) return {};
+  const cleaned = ogTitle.replace(/\s*[|–—-]\s*Untappd\s*$/i, '').trim();
+  const byMatch = cleaned.match(/^(.*?)\s+by\s+(.+)$/i);
+  return byMatch
+    ? { name: byMatch[1].trim(), brewery: byMatch[2].trim() }
+    : { name: cleaned };
+}
+
+function firstMatch(text, patterns) {
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m) return m[1];
+  }
+  return undefined;
+}
+
+// A bare decimal could be almost anything on a page that also lists related
+// beers with their own ratings and check-in counts; only accept it as
+// Untappd's own rating if it's actually shaped like one (0-5, one or two
+// decimal places).
+function asRating(text) {
+  const trimmed = (text || '').trim();
+  return /^[0-5](\.\d{1,2})?$/.test(trimmed) ? trimmed : undefined;
+}
+
+// Split out from extractBeer so it can be exercised directly against fixture
+// HTML in tests - a real fetch to Untappd isn't available to test against
+// (see the note above), so this is the part that can actually be pinned
+// down and regression-tested.
+function parseBeerHtml(html, sourceUrl) {
+  const $ = cheerio.load(html);
+  const bodyText = $('body').text().replace(/\s+/g, ' ');
+
+  const ogTitle = $('meta[property="og:title"]').attr('content');
+  const ogDescription = firstNonEmpty(
+    $('meta[property="og:description"]').attr('content'),
+    $('meta[name="description"]').attr('content')
+  );
+  const fromTitle = splitBeerTitle(ogTitle);
+
+  const domName = $('.name h1, h1[itemprop="name"], .beer-details .name').first().text();
+  const domBrewery = $('.brewery a, .brewery-name, [itemprop="brand"] [itemprop="name"]').first().text();
+  const domLocation = $('.brewery-location, .brewery .location').first().text();
+  const domStyle = $('.style, [itemprop="style"]').first().text();
+  const domRating = $('.rating .num, [itemprop="ratingValue"]').first().text();
+
+  const title = firstNonEmpty(domName, fromTitle.name);
+  const brewery = firstNonEmpty(domBrewery, fromTitle.brewery);
+  const location = firstNonEmpty(domLocation);
+  const style = firstNonEmpty(domStyle);
+
+  const abvRaw = firstMatch(bodyText, [
+    /([\d]{1,2}(?:\.\d{1,2})?)\s*%\s*ABV\b/i,
+    /\bABV\b[:\s]*([\d]{1,2}(?:\.\d{1,2})?)\s*%/i,
+  ]);
+  const ibuRaw = firstMatch(bodyText, [
+    /([\d]{1,3})\s*IBU\b/i,
+    /\bIBU\b[:\s]*([\d]{1,3})\b/i,
+  ]);
+  const ratingRaw = firstMatch(bodyText, [
+    /Rated\s+([\d]\.\d{1,2})\b/i,
+    /([\d]\.\d{1,2})\s*(?:out of 5|Caps)\b/i,
+  ]);
+
+  const abv = abvRaw ? `${trimNumber(abvRaw)}%` : undefined;
+  const ibu = firstNonEmpty(ibuRaw);
+  const untappdRating = firstNonEmpty(asRating(domRating), asRating(ratingRaw));
+
+  const imageUrl = $('meta[property="og:image"]').attr('content');
+
+  if (!title && !brewery && !abv && !ibu && !untappdRating && !ogDescription) {
+    throw new Error(
+      'Could not find beer details on that page. Untappd may be blocking automated '
+      + 'requests - try a direct beer page URL, or enter the details manually.'
+    );
+  }
+
+  return {
+    title: title || '',
+    description: ogDescription || '',
+    brewery: brewery || '',
+    location: location || '',
+    style: style || '',
+    abv: abv || '',
+    ibu: ibu || '',
+    untappdRating: untappdRating || '',
+    imageUrl: imageUrl || '',
+    sourceUrl,
+  };
+}
+
+async function extractBeer(url) {
+  const html = await fetchHtml(url, { 'User-Agent': BEER_USER_AGENT });
+  return parseBeerHtml(html, url);
+}
+
+module.exports = { extractProduct, extractBeer, parseBeerHtml };

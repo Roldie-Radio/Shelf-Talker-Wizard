@@ -1,6 +1,6 @@
 const path = require('path');
 const express = require('express');
-const { extractProduct } = require('./productImport');
+const { extractProduct, extractBeer } = require('./productImport');
 
 function createApp() {
   const app = express();
@@ -9,7 +9,7 @@ function createApp() {
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   app.post('/api/import-url', async (req, res) => {
-    const { url } = req.body || {};
+    const { url, category } = req.body || {};
 
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ error: 'A product URL is required.' });
@@ -26,7 +26,13 @@ function createApp() {
     }
 
     try {
-      const product = await extractProduct(parsed.toString());
+      // The client's Wine/Spirits vs Beer toggle picks the extraction path -
+      // beer gets Untappd-focused parsing (brewery, style, ABV, IBU,
+      // rating) instead of the price-and-description extraction generic
+      // retail product pages use.
+      const product = category === 'beer'
+        ? await extractBeer(parsed.toString())
+        : await extractProduct(parsed.toString());
       res.json(product);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not read product data from that page.' });
