@@ -154,6 +154,8 @@
     clearFormBtn: document.getElementById('clearFormBtn'),
     formError: document.getElementById('formError'),
 
+    importHelpText: document.getElementById('importHelpText'),
+    importUrlLabel: document.getElementById('importUrlLabel'),
     importUrl: document.getElementById('importUrl'),
     importBtn: document.getElementById('importBtn'),
     importStatus: document.getElementById('importStatus'),
@@ -298,6 +300,25 @@
     els.descriptionField.hidden = isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     els.beerFields.hidden = !isBeer || isSmallSign;
+
+    applyImportMode();
+  }
+
+  // The Import tab's copy - what it asks for and what it promises to fill
+  // in - follows the same Wine/Spirits-vs-Beer toggle as Manual Entry
+  // (see the shared .category-toggle note in index.html), since beer
+  // import is aimed at Untappd rather than a retail product page and pulls
+  // a different set of fields (no price - Untappd doesn't sell anything).
+  function applyImportMode() {
+    const isBeer = currentCategory === 'beer';
+    els.importUrlLabel.textContent = isBeer ? 'Untappd Beer Page URL' : 'Product Page URL';
+    els.importUrl.placeholder = isBeer
+      ? 'https://untappd.com/b/brewery-name-beer-name/12345'
+      : 'https://www.liquoroutletwinecellars.com/products/...';
+    els.importHelpText.textContent = isBeer
+      ? 'Paste a beer\'s Untappd page URL. We\'ll try to pull the brewery, location, style, ABV, IBU, rating, and description automatically - you\'ll still need to add the price and size yourself.'
+      : 'Paste a product page URL from your website. We\'ll try to pull the title, description, and price automatically - review the fields before adding it to your queue.';
+    els.importBtn.textContent = isBeer ? 'Fetch Beer Data' : 'Fetch Product Data';
   }
 
   function setSignType(signType) {
@@ -978,36 +999,58 @@
   // ---------- Import from website ----------
 
   els.importBtn.addEventListener('click', async () => {
+    const isBeer = currentCategory === 'beer';
     const url = els.importUrl.value.trim();
     if (!url) {
-      els.importStatus.textContent = 'Enter a product URL first.';
+      els.importStatus.textContent = isBeer ? 'Enter an Untappd beer URL first.' : 'Enter a product URL first.';
       return;
     }
     els.importBtn.disabled = true;
-    els.importStatus.textContent = 'Fetching product data...';
+    els.importStatus.textContent = isBeer ? 'Fetching beer data...' : 'Fetching product data...';
 
     try {
       const resp = await fetch('/api/import-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, category: currentCategory }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Import failed.');
 
-      fillForm({
-        title: data.title,
-        description: data.description,
-        size: data.size,
-        price: data.price,
-        salePrice: data.salePrice,
-        theme: els.theme.value,
-      });
+      if (isBeer) {
+        // No price/salePrice/size here - Untappd is a rating and check-in
+        // site, not a retailer, so it has no price to pull. Staff still add
+        // those two fields by hand; everything else (name, brewery,
+        // location, style, ABV, IBU, rating, description) comes from the
+        // page.
+        fillForm({
+          category: 'beer',
+          title: data.title,
+          description: data.description,
+          brewery: data.brewery,
+          location: data.location,
+          style: data.style,
+          abv: data.abv,
+          ibu: data.ibu,
+          untappdRating: data.untappdRating,
+          theme: els.theme.value,
+        });
+        els.importStatus.textContent = 'Loaded! Add the price and size, double-check the rest, then click "Add to Queue".';
+      } else {
+        fillForm({
+          title: data.title,
+          description: data.description,
+          size: data.size,
+          price: data.price,
+          salePrice: data.salePrice,
+          theme: els.theme.value,
+        });
+        els.importStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
+      }
       previewMode = 'single';
       setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
       renderPreview();
       document.querySelector('.tab[data-tab="manual"]').click();
-      els.importStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
     } catch (err) {
       els.importStatus.textContent = err.message || 'Something went wrong fetching that page.';
     } finally {
