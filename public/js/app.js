@@ -165,17 +165,36 @@
 
   // ---------- Persistence ----------
 
+  // Anything read back from localStorage or a saved queue file is untrusted:
+  // it may predate a version of the app, or have been hand-edited. Parsing
+  // succeeding doesn't mean the shape is usable - a stored object rather
+  // than an array used to make every later queue.forEach throw, leaving the
+  // app rendering nothing with no way to recover from the UI.
+  function normalizeQueue(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((t) => t && typeof t === 'object')
+      .map((t) => ({ ...t, id: t.id || makeId() }));
+  }
+
   function loadQueue() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
+      return raw ? normalizeQueue(JSON.parse(raw)) : [];
     } catch {
       return [];
     }
   }
 
   function saveQueue() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+    } catch (err) {
+      // Storage being full or unavailable (private browsing) shouldn't take
+      // the whole app down mid-render - the queue still works for this
+      // session, it just won't survive a refresh.
+      console.warn('Could not save the queue to browser storage.', err);
+    }
   }
 
   function loadReviewers() {
@@ -419,6 +438,14 @@
 
   function resetForm() {
     els.form.reset();
+    // form.reset() snaps every control back to its markup default, including
+    // the Talker Size <select> - but currentTalkerSize (the value readForm
+    // actually uses) lives outside the form and isn't touched, so without
+    // this the dropdown would read "Full Size" while the next talker added
+    // silently kept the previous Half/Quarter size. Re-applying the mode
+    // puts the control back in sync with the state, which also keeps the
+    // selected size across a batch of entries.
+    applyFormMode();
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
@@ -685,6 +712,9 @@
   // close enough to the bottom of the visible list.
   function openQueueMenu(talkerId, buttonEl) {
     queueMenuTalkerId = talkerId;
+    const idx = queue.findIndex((t) => t.id === talkerId);
+    els.queueItemMenu.querySelector('[data-action="move-up"]').disabled = idx <= 0;
+    els.queueItemMenu.querySelector('[data-action="move-down"]').disabled = idx === -1 || idx >= queue.length - 1;
     const rect = buttonEl.getBoundingClientRect();
     els.queueItemMenu.style.top = `${rect.bottom + 4}px`;
     els.queueItemMenu.style.right = `${window.innerWidth - rect.right}px`;
@@ -698,6 +728,16 @@
     els.queueGrid.querySelectorAll('.queue-item__menu-btn').forEach((b) => b.setAttribute('aria-expanded', 'false'));
   }
 
+  els.queueItemMenu.querySelector('[data-action="move-up"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    moveTalker(id, -1);
+  });
+  els.queueItemMenu.querySelector('[data-action="move-down"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    moveTalker(id, 1);
+  });
   els.queueItemMenu.querySelector('[data-action="edit"]').addEventListener('click', () => {
     const id = queueMenuTalkerId;
     closeQueueMenu();
@@ -731,6 +771,20 @@
     els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
     renderPreview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Queue order is print order: buildSheets keeps each layout group's
+  // existing order when it chunks it into sheets, so moving an item changes
+  // which sheet - and where on it - the talker lands.
+  function moveTalker(id, delta) {
+    const idx = queue.findIndex((t) => t.id === id);
+    if (idx === -1) return;
+    const target = idx + delta;
+    if (target < 0 || target >= queue.length) return;
+    [queue[idx], queue[target]] = [queue[target], queue[idx]];
+    saveQueue();
+    renderQueue();
+    refreshPreview();
   }
 
   function duplicateTalker(id) {
@@ -803,7 +857,8 @@
       if (queue.length > 0 && !confirm('Opening a queue file will replace your current queue. Continue?')) {
         return;
       }
-      queue = openedQueue;
+      queue = normalizeQueue(openedQueue);
+      expandedQueueItemIds.clear();
       saveQueue();
       renderQueue();
       refreshPreview();
@@ -1005,9 +1060,20 @@
 
   function printNow() {
     buildPrintDom();
-    // Cards/signs need to be laid out at print size before we can measure/shrink text.
+    // Cards/signs need to be laid out at print size before we can
+    // measure/shrink text - and #printRoot is `display: none` outside
+    // @media print, where scrollHeight/clientHeight both read 0. That made
+    // every one of fitCardText's fit checks false, so it silently shrank
+    // nothing and the printer got unfitted cards (titles truncated with an
+    // ellipsis, the price block pushed off the bottom of the card) even
+    // though the on-screen Print Preview - which *is* laid out - showed them
+    // fitting fine. `.is-measuring` lays the same DOM out off-screen at true
+    // print width just long enough to measure it; the font sizes fitCardText
+    // sets are inline styles, so they survive the class coming back off.
+    els.printRoot.classList.add('is-measuring');
     requestAnimationFrame(() => {
       els.printRoot.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
+      els.printRoot.classList.remove('is-measuring');
       requestAnimationFrame(triggerPrint);
     });
   }

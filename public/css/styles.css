@@ -466,7 +466,8 @@ h1, h2, h3 { margin: 0; }
   font-size: 0.85rem;
   color: var(--ink);
 }
-.queue-item-menu button:hover { background: rgba(27, 27, 27, 0.06); color: var(--accent); }
+.queue-item-menu button:hover:not(:disabled) { background: rgba(27, 27, 27, 0.06); color: var(--accent); }
+.queue-item-menu button:disabled { opacity: 0.4; cursor: not-allowed; }
 .queue-item-menu button[data-action="delete"] { color: var(--sale-red); }
 .queue-item-menu button[data-action="delete"]:hover { background: rgba(210, 31, 31, 0.08); }
 
@@ -562,8 +563,15 @@ h1, h2, h3 { margin: 0; }
   flex: 0 0 auto;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  /* Three lines, not two: a long-but-real product name ("Chateau Ste
+     Michelle Indian Wells Columbia Valley Riesling Reserve 2023") can't fit
+     two lines at a legible size, and shrink-to-fit would drive it to its
+     floor and still cut it off with an ellipsis. The extra line comes out of
+     .card__spacer's slack, so short titles look exactly as before, and
+     fitCardText's --price-fit pass still protects the price block if a
+     talker is genuinely too full. */
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -967,6 +975,29 @@ h1, h2, h3 { margin: 0; }
 
 .print-only { display: none; }
 
+/* Off-screen measuring pass, added briefly by printNow() in app.js before
+   printing: fitCardText can only measure elements that are actually laid
+   out, and the print DOM is `display: none` in every medium but print. Kept
+   out of the document flow (and off-screen) so nothing flashes in the app. */
+.print-only.is-measuring {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: -20000px;
+  width: 10.44in;
+  pointer-events: none;
+}
+
+/* Deliberately outside @media print: the measuring pass above has to size
+   cards at their real print width, which is what --print-w carries (set per
+   sheet, or per item in auto-arrange mode - see buildPrintDom in app.js).
+   Only ever matches inside #printRoot; the on-screen previews use
+   .sheet-preview and set --w in JS instead. */
+.sheet .card,
+.sheet .sign {
+  --w: var(--print-w, 2.8in);
+}
+
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block; }
@@ -1001,10 +1032,7 @@ h1, h2, h3 { margin: 0; }
   .sheet:last-child { page-break-after: auto; }
 
   .sheet .card,
-  .sheet .sign {
-    --w: var(--print-w, 2.8in);
-    box-shadow: none;
-  }
+  .sheet .sign { box-shadow: none; }
 
   /* Auto-arrange (beta): a page is a vertical stack of full-width rows
      (see buildAutoArrangedPages in app.js) instead of a uniform grid, since

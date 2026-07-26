@@ -309,11 +309,20 @@ function buildCardElement(talker) {
 function fitCardText(cardEl) {
   const targets = cardEl.querySelectorAll('[data-fit]');
   targets.forEach((el) => {
-    const minPx = el.dataset.fit === 'title' ? 10 : 8;
-    let fontSize = parseFloat(getComputedStyle(el).fontSize);
+    // Both the floor and the step are relative to the element's own starting
+    // size, not absolute pixels. The same card gets rendered at wildly
+    // different scales - a ~120px-wide card in the Print Preview modal, a
+    // 2.8in one on paper, a 10.1in Display Sign - and every font size in the
+    // card is a fraction of --w, so a fixed 10px/8px floor meant a different
+    // amount of shrink was available at each scale: the small previews were
+    // already at (or under) the floor before shrinking started, and truncated
+    // titles that print perfectly well.
+    const startPx = parseFloat(getComputedStyle(el).fontSize);
+    const minPx = Math.max(startPx * 0.5, 4);
+    let fontSize = startPx;
     let guard = 40;
     while (el.scrollHeight > el.clientHeight + 1 && fontSize > minPx && guard > 0) {
-      fontSize -= 0.5;
+      fontSize *= 0.97;
       el.style.fontSize = `${fontSize}px`;
       guard -= 1;
     }
