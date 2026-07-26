@@ -98,6 +98,8 @@ Untappd's page layout isn't something this project controls, so the importer lea
 
 If Untappd blocks the request outright, the importer automatically retries once with a different set of request headers before giving up &mdash; you'll only see an error if both attempts are blocked. If that happens, wait a bit and try again, try from a different network, or just fill the fields in by hand.
 
+Location isn't on the beer page itself &mdash; the importer follows the brewery name's link to that brewery's own Untappd page and pulls it from there, a second request made automatically after the first. If that second page can't be reached, the rest of the import still goes through; only location comes back blank.
+
 ## Printing
 
 1. Add shelf talkers via any of the three methods.
