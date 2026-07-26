@@ -1,9 +1,10 @@
 // extractBeer's HTML parsing (Untappd-focused import) is split out as
 // parseBeerHtml specifically so it can be tested here against fixture HTML.
-// A real fetch to Untappd isn't something these tests can rely on - Untappd
-// returned HTTP 403 to every attempt while this was being built (see the
-// comment above parseBeerHtml in productImport.js), which is itself a sign
-// the site actively blocks non-browser traffic. These fixtures encode the
+// A real fetch to Untappd isn't something these tests can rely on - every
+// outbound request from the environment this was first built in was
+// blocked before it reached Untappd at all, which says nothing about
+// whether Untappd itself would have accepted the request (see the longer
+// note above parseBeerHtml in productImport.js). These fixtures encode the
 // best-effort assumptions the parser makes about Untappd's markup, so a
 // future change to those assumptions shows up here instead of silently
 // changing what an import fills in.
@@ -12,7 +13,7 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const { parseBeerHtml } = require('../server/productImport');
+const { parseBeerHtml, fetchBeerHtml, extractBeer } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
@@ -208,4 +209,130 @@ test('parseBeerHtml handles a title with no "by <brewery>" clause', () => {
   const result = parseBeerHtml(html, 'https://example.com/a');
   assert.equal(result.title, 'Mystery Beer');
   assert.equal(result.brewery, '');
+});
+
+// ================================================================
+// fetchBeerHtml / extractBeer's retry orchestration.
+//
+// A real fetch to Untappd isn't available to test against (see the note at
+// the top of this file), but the DECISION of when to retry with a
+// different header set - and which one goes first - is pure logic that
+// doesn't need one: mocking the global fetch() lets these be pinned exactly
+// regardless of what Untappd itself would actually do.
+// ================================================================
+
+function mockResponse({ status = 200, body = '<html></html>', headers = {} } = {}) {
+  const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+  if (!lower['content-type']) lower['content-type'] = 'text/html; charset=utf-8';
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: String(status),
+    headers: { get: (name) => lower[name.toLowerCase()] ?? null },
+    text: async () => body,
+  };
+}
+
+// Swaps globalThis.fetch for the duration of one test and guarantees it's
+// put back afterward, success or failure - a leaked mock would silently
+// break every later test in this file that expects the real network stack.
+async function withMockFetch(impl, run) {
+  const real = globalThis.fetch;
+  globalThis.fetch = impl;
+  try {
+    await run();
+  } finally {
+    globalThis.fetch = real;
+  }
+}
+
+test('fetchBeerHtml succeeds on the first (plain) attempt without trying the second', async () => {
+  const calls = [];
+  await withMockFetch(
+    async (url, opts) => { calls.push(opts.headers); return mockResponse({ status: 200, body: 'ok-body' }); },
+    async () => {
+      const html = await fetchBeerHtml('https://untappd.com/b/x/1');
+      assert.equal(html, 'ok-body');
+    }
+  );
+  assert.equal(calls.length, 1, 'a successful first attempt must not trigger a second');
+  assert.doesNotMatch(calls[0]['User-Agent'], /Chrome/,
+    'the first attempt must be the plain, honest UA - not the full-browser header set');
+});
+
+test('fetchBeerHtml falls back to the full-browser header set only after a blocked-looking response', async () => {
+  const calls = [];
+  await withMockFetch(
+    async (url, opts) => {
+      calls.push(opts.headers);
+      return calls.length === 1 ? mockResponse({ status: 403 }) : mockResponse({ status: 200, body: 'second-attempt-body' });
+    },
+    async () => {
+      const html = await fetchBeerHtml('https://untappd.com/b/x/1');
+      assert.equal(html, 'second-attempt-body');
+    }
+  );
+  assert.equal(calls.length, 2, 'a 403 on the first attempt should trigger exactly one retry');
+  assert.doesNotMatch(calls[0]['User-Agent'], /Chrome/, 'first attempt: plain UA');
+  assert.match(calls[1]['User-Agent'], /Chrome/, 'second attempt: the full desktop-browser header set');
+  assert.ok(calls[1]['Sec-Fetch-Mode'], 'second attempt should send the accompanying browser headers, not just a UA string');
+});
+
+test('fetchBeerHtml does not retry a plain 404 - a wrong URL retrying with different headers would not fix', async () => {
+  const calls = [];
+  await withMockFetch(
+    async (url, opts) => { calls.push(opts.headers); return mockResponse({ status: 404 }); },
+    async () => {
+      await assert.rejects(() => fetchBeerHtml('https://untappd.com/b/gone/1'), /404/);
+    }
+  );
+  assert.equal(calls.length, 1, 'a 404 is not a block and must not spend a second round-trip');
+});
+
+test('fetchBeerHtml does not retry a network-level failure', async () => {
+  const calls = [];
+  await withMockFetch(
+    async () => { calls.push(1); throw new Error('getaddrinfo ENOTFOUND'); },
+    async () => {
+      await assert.rejects(() => fetchBeerHtml('https://untappd.com/b/x/1'), /ENOTFOUND/);
+    }
+  );
+  assert.equal(calls.length, 1, 'a network failure has no httpStatus and must not be treated as a block to retry');
+});
+
+test('extractBeer turns a block that survives both attempts into an actionable message', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => extractBeer('https://untappd.com/b/x/1'),
+        /Untappd blocked this request/
+      );
+    }
+  );
+});
+
+test('extractBeer passes through a non-block failure unchanged', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 404 }),
+    async () => {
+      await assert.rejects(() => extractBeer('https://untappd.com/b/gone/1'), /404/);
+    }
+  );
+});
+
+test('extractBeer succeeds end-to-end when the second attempt gets through', async () => {
+  let call = 0;
+  const html = page({
+    head: '<meta property="og:title" content="Two Attempts by Some Brewery" />'
+      + '<meta property="og:description" content="d" />',
+  });
+  await withMockFetch(
+    async () => { call += 1; return call === 1 ? mockResponse({ status: 403 }) : mockResponse({ status: 200, body: html }); },
+    async () => {
+      const result = await extractBeer('https://untappd.com/b/x/1');
+      assert.equal(result.title, 'Two Attempts');
+      assert.equal(result.brewery, 'Some Brewery');
+    }
+  );
 });

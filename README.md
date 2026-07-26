@@ -95,6 +95,8 @@ Switch the Import tab to **Beer**, paste an Untappd beer page URL (`https://unta
 
 Untappd's page layout isn't something this project controls, so the importer leans on things unlikely to break even if it changes: the page's Open Graph tags for the name/description, and plain-text pattern matching for the ABV/IBU/rating numbers, rather than exact markup. Same as the product importer above, a field it can't find just comes back blank for you to fill in.
 
+If Untappd blocks the request outright, the importer automatically retries once with a different set of request headers before giving up &mdash; you'll only see an error if both attempts are blocked. If that happens, wait a bit and try again, try from a different network, or just fill the fields in by hand.
+
 ## Printing
 
 1. Add shelf talkers via any of the three methods.
