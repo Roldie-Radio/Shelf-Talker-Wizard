@@ -9,6 +9,9 @@ function escapeHtml(str) {
 }
 
 function formatMoney(value) {
+  // An empty field is "no price yet", not zero - Number('') is 0, which made
+  // the live preview of a blank form advertise "Regular Price $0.00".
+  if (value === null || value === undefined || String(value).trim() === '') return '';
   const num = Number(value);
   if (!Number.isFinite(num)) return '';
   return `$${num.toFixed(2)}`;
@@ -100,11 +103,12 @@ function buildPricingHtml(talker) {
   let badge = '';
   if (talkerType === 'closeout') badge = '<div class="card__closeout-badge">CLOSEOUT!!</div>';
   else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
+  const regular = formatMoney(talker.price);
   return `
     ${badge}
     <div class="card__prices">
       ${hasSale ? `<div class="card__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : ''}
-      <div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>
+      ${regular ? `<div class="card__regular-price">Regular Price ${regular}</div>` : ''}
     </div>
   `;
 }
@@ -180,10 +184,11 @@ function buildSignPriceRowHtml(talker) {
     `;
   }
 
+  const regular = formatMoney(talker.price);
   return `
     <div class="sign__price-row">
       ${hasSale ? `<div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : '<div></div>'}
-      <div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>
+      ${regular ? `<div class="sign__regular-price">Regular Price ${regular}</div>` : '<div></div>'}
     </div>
   `;
 }

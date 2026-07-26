@@ -27,24 +27,26 @@
   <main class="layout no-print">
 
     <section class="panel panel--form">
-      <div class="tabs" role="tablist">
-        <button class="tab is-active" data-tab="manual" role="tab">Manual Entry</button>
-        <button class="tab" data-tab="import" role="tab">Import from Website</button>
-        <button class="tab" data-tab="bulk" role="tab">Bulk CSV Import</button>
+      <div class="tabs" role="tablist" aria-label="How to add a product">
+        <button class="tab is-active" data-tab="manual" role="tab" id="tabManual" aria-controls="panelManual" aria-selected="true">Manual Entry</button>
+        <button class="tab" data-tab="import" role="tab" id="tabImport" aria-controls="panelImport" aria-selected="false" tabindex="-1">Import from Website</button>
+        <button class="tab" data-tab="bulk" role="tab" id="tabBulk" aria-controls="panelBulk" aria-selected="false" tabindex="-1">Bulk CSV Import</button>
       </div>
 
-      <div class="tab-panel is-active" data-panel="manual">
-        <div class="signtype-toggle" role="tablist">
-          <button type="button" class="toggle-btn is-active" data-signtype="talker">Shelf Talkers</button>
-          <button type="button" class="toggle-btn" data-signtype="sign">Display Signs</button>
+      <div class="tab-panel is-active" data-panel="manual" id="panelManual" role="tabpanel" aria-labelledby="tabManual" tabindex="0">
+        <!-- These are mutually exclusive settings, not tabs - a radio group
+             is what actually describes them to a screen reader. -->
+        <div class="signtype-toggle" role="radiogroup" aria-label="Sign type">
+          <button type="button" class="toggle-btn is-active" data-signtype="talker" role="radio" aria-checked="true">Shelf Talkers</button>
+          <button type="button" class="toggle-btn" data-signtype="sign" role="radio" aria-checked="false">Display Signs</button>
         </div>
-        <div class="signsize-toggle" role="tablist" id="signSizeToggle" hidden>
-          <button type="button" class="toggle-btn is-active" data-signsize="large">Large</button>
-          <button type="button" class="toggle-btn" data-signsize="small">Small</button>
+        <div class="signsize-toggle" role="radiogroup" aria-label="Display sign size" id="signSizeToggle" hidden>
+          <button type="button" class="toggle-btn is-active" data-signsize="large" role="radio" aria-checked="true">Large</button>
+          <button type="button" class="toggle-btn" data-signsize="small" role="radio" aria-checked="false">Small</button>
         </div>
-        <div class="category-toggle" role="tablist">
-          <button type="button" class="toggle-btn is-active" data-category="wine">Wine / Spirits</button>
-          <button type="button" class="toggle-btn" data-category="beer">Beer</button>
+        <div class="category-toggle" role="radiogroup" aria-label="Product category">
+          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
+          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
         </div>
         <form id="talkerForm" novalidate>
           <input type="hidden" id="editId" value="" />
@@ -130,17 +132,17 @@
           </div>
 
           <div class="field ratings-field" id="wineRatingsField">
-            <span>Ratings (optional)</span>
+            <span id="ratingsFieldLabel">Ratings (optional)</span>
             <div class="ratings-builder">
-              <select id="fRatingReviewer"></select>
-              <input type="text" inputmode="numeric" id="fRatingScore" maxlength="3" placeholder="92" />
+              <select id="fRatingReviewer" aria-label="Reviewer"></select>
+              <input type="text" inputmode="numeric" id="fRatingScore" maxlength="3" placeholder="92" aria-label="Rating score" />
               <button type="button" class="btn btn--small" id="addRatingBtn">Add</button>
             </div>
             <div class="ratings-list" id="ratingsList"></div>
-            <button type="button" class="link-btn" id="manageReviewersToggle">Manage reviewers</button>
+            <button type="button" class="link-btn" id="manageReviewersToggle" aria-expanded="false" aria-controls="reviewerManager">Manage reviewers</button>
             <div class="reviewer-manager" id="reviewerManager" hidden>
               <div class="reviewer-manager__add">
-                <input type="text" id="newReviewerName" maxlength="40" placeholder="Add a reviewer name..." />
+                <input type="text" id="newReviewerName" maxlength="40" placeholder="Add a reviewer name..." aria-label="New reviewer name" />
                 <button type="button" class="btn btn--small" id="addReviewerBtn">Add</button>
               </div>
               <div class="reviewer-manager__list" id="reviewerManagerList"></div>
@@ -163,35 +165,35 @@
             <button type="button" class="btn" id="cancelEditBtn" hidden>Cancel Edit</button>
             <button type="button" class="btn btn--ghost" id="clearFormBtn">Clear</button>
           </div>
-          <p class="form-error" id="formError" hidden></p>
+          <p class="form-error" id="formError" role="alert" hidden></p>
         </form>
       </div>
 
-      <div class="tab-panel" data-panel="import">
+      <div class="tab-panel" data-panel="import" id="panelImport" role="tabpanel" aria-labelledby="tabImport" tabindex="0">
         <p class="help-text">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
         <label class="field">
           <span>Product Page URL</span>
           <input type="url" id="importUrl" placeholder="https://www.liquoroutletwinecellars.com/products/..." />
         </label>
         <button type="button" class="btn btn--primary" id="importBtn">Fetch Product Data</button>
-        <p class="help-text" id="importStatus"></p>
+        <p class="help-text" id="importStatus" role="status" aria-live="polite"></p>
       </div>
 
-      <div class="tab-panel" data-panel="bulk">
+      <div class="tab-panel" data-panel="bulk" id="panelBulk" role="tabpanel" aria-labelledby="tabBulk" tabindex="0">
         <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required. <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</p>
-        <textarea id="csvInput" rows="8" placeholder="title,description,size,price,salePrice,theme
+        <textarea id="csvInput" rows="8" aria-label="CSV data" placeholder="title,description,size,price,salePrice,theme
 Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit flavors,750ml,14.99,11.99,amber"></textarea>
         <button type="button" class="btn btn--primary" id="csvImportBtn">Add All to Queue</button>
-        <p class="help-text" id="csvStatus"></p>
+        <p class="help-text" id="csvStatus" role="status" aria-live="polite"></p>
       </div>
     </section>
 
     <section class="panel panel--preview">
       <div class="panel__header">
         <h2>Live Preview</h2>
-        <div class="preview-toggle" role="tablist">
-          <button type="button" class="toggle-btn is-active" data-preview="single">Current Talker</button>
-          <button type="button" class="toggle-btn" data-preview="sheet">Full Page</button>
+        <div class="preview-toggle" role="radiogroup" aria-label="Preview mode">
+          <button type="button" class="toggle-btn is-active" data-preview="single" role="radio" aria-checked="true">Current Talker</button>
+          <button type="button" class="toggle-btn" data-preview="sheet" role="radio" aria-checked="false">Full Page</button>
         </div>
       </div>
       <div class="preview-stage" id="previewStage"></div>
@@ -211,7 +213,7 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
         </div>
       </div>
       <div class="queue-grid" id="queueGrid">
-        <p class="empty-hint">No shelf talkers yet. Add one on the left to get started.</p>
+        <p class="empty-hint">No shelf talkers yet. Add one using the form to get started.</p>
       </div>
     </section>
 
@@ -228,16 +230,16 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
   </div>
 
   <div id="printPreviewOverlay" class="print-preview-overlay no-print" hidden>
-    <div class="print-preview-modal">
+    <div class="print-preview-modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
       <div class="print-preview-modal__header">
-        <h2>Print Preview</h2>
+        <h2 id="printPreviewTitle">Print Preview</h2>
         <button type="button" class="btn btn--ghost btn--small" id="printPreviewCloseBtn">&times; Close</button>
       </div>
       <label class="auto-arrange-toggle">
         <input type="checkbox" id="autoArrangeToggle" />
         <span>Auto-arrange mixed sheets to save paper <span class="beta-badge">Beta</span></span>
       </label>
-      <p class="help-text" id="printPreviewSummary"></p>
+      <p class="help-text" id="printPreviewSummary" role="status" aria-live="polite"></p>
       <div class="print-preview-sheets" id="printPreviewSheets"></div>
       <div class="print-preview-modal__footer">
         <button type="button" class="btn" id="printPreviewCancelBtn">Cancel</button>

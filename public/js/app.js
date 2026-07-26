@@ -21,6 +21,14 @@
     'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', aspect: 2, label: 'Small Display Signs' },
   };
 
+  // Human-readable names for the queue list's meta line (see renderQueue).
+  const SIZE_LABELS = { full: 'Full', half: 'Half', quarter: 'Quarter' };
+  const STYLE_LABELS = {
+    closeout: 'Closeout',
+    supersale: 'Super Sale',
+    chilled: 'Also Available Chilled',
+  };
+
   // Page content area in inches (11in x 8.5in landscape Letter minus the
   // 0.28in @page margin on each side) and the gaps between items/rows on a
   // sheet - all must match the @media print rules in styles.css exactly,
@@ -295,12 +303,28 @@
 
   // ---------- Tabs ----------
 
+  function activateTab(tab) {
+    els.tabs.forEach((t) => {
+      const isActive = t === tab;
+      t.classList.toggle('is-active', isActive);
+      // Roving tabindex: only the selected tab is in the tab order, and the
+      // arrow keys move between them - the pattern role="tab" implies.
+      t.setAttribute('aria-selected', String(isActive));
+      t.tabIndex = isActive ? 0 : -1;
+    });
+    els.panels.forEach((p) => p.classList.toggle('is-active', p.dataset.panel === tab.dataset.tab));
+  }
+
   els.tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      els.tabs.forEach((t) => t.classList.remove('is-active'));
-      els.panels.forEach((p) => p.classList.remove('is-active'));
-      tab.classList.add('is-active');
-      document.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('is-active');
+    tab.addEventListener('click', () => activateTab(tab));
+    tab.addEventListener('keydown', (e) => {
+      const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!dir) return;
+      e.preventDefault();
+      const list = [...els.tabs];
+      const next = list[(list.indexOf(tab) + dir + list.length) % list.length];
+      activateTab(next);
+      next.focus();
     });
   });
 
@@ -310,15 +334,26 @@
   // the three toggles together - e.g. a Small Display Sign has no room for
   // a description/rating, regardless of category, so those fields
   // disappear only in that combination.
+  // The toggle rows are role="radiogroup"; keeping aria-checked in step with
+  // the .is-active styling is what makes the current choice readable to a
+  // screen reader instead of being conveyed by colour alone.
+  function setToggleState(buttons, isSelected) {
+    buttons.forEach((b) => {
+      const selected = isSelected(b);
+      b.classList.toggle('is-active', selected);
+      b.setAttribute('aria-checked', String(selected));
+    });
+  }
+
   function applyFormMode() {
     const isBeer = currentCategory === 'beer';
     const isSign = currentSignType === 'sign';
     const isSmallSign = isSign && currentSignSize === 'small';
 
-    els.signTypeToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.signtype === currentSignType));
+    setToggleState(els.signTypeToggleBtns, (b) => b.dataset.signtype === currentSignType);
     els.signSizeToggleWrap.hidden = !isSign;
-    els.signSizeToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.signsize === currentSignSize));
-    els.categoryToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.category === currentCategory));
+    setToggleState(els.signSizeToggleBtns, (b) => b.dataset.signsize === currentSignSize);
+    setToggleState(els.categoryToggleBtns, (b) => b.dataset.category === currentCategory);
 
     els.titleLabel.textContent = isBeer ? 'Beer Name *' : (isSign ? 'Product Name *' : 'Product Title *');
     els.size.placeholder = isBeer ? '16oz Can / 4-pack' : '750ml / Each / 6-pack';
@@ -523,6 +558,7 @@
 
   els.manageReviewersToggle.addEventListener('click', () => {
     els.reviewerManager.hidden = !els.reviewerManager.hidden;
+    els.manageReviewersToggle.setAttribute('aria-expanded', String(!els.reviewerManager.hidden));
     if (!els.reviewerManager.hidden) renderReviewerManagerList();
   });
 
@@ -550,13 +586,40 @@
 
   // ---------- Preview ----------
 
+  // Scales the single-talker preview to the space the panel actually has,
+  // instead of leaving it at the 320px/600px CSS default that left a small
+  // card marooned in the middle of a much wider panel. --w has to stay an
+  // absolute length (every font size and offset inside a card is a calc()
+  // against it), so it's measured here rather than expressed in CSS.
+  const PREVIEW_MIN_W = 260;
+  function sizePreviewElement(el) {
+    const stageWidth = els.previewStage.clientWidth;
+    if (!stageWidth) return;
+    // Leave room for whatever sits above the stage so a tall portrait card
+    // doesn't grow past the bottom of the window. In the stacked layout the
+    // stage can be scrolled well out of view, where its viewport-relative
+    // top is not a meaningful height budget - fall back to the full window.
+    const stageTop = els.previewStage.getBoundingClientRect().top;
+    const headroom = stageTop > 0 && stageTop < window.innerHeight ? stageTop : 0;
+    const availableHeight = window.innerHeight - headroom - 40;
+    // aspect-ratio computes to "830 / 1136" (or a bare number), not a value
+    // parseFloat can read on its own.
+    const [aw, ah] = getComputedStyle(el).aspectRatio.split('/').map((n) => parseFloat(n));
+    const aspect = Number.isFinite(aw) && Number.isFinite(ah) && ah > 0 ? aw / ah : (aw || 1);
+    const widthPx = Math.max(PREVIEW_MIN_W, Math.min(stageWidth, availableHeight * aspect));
+    el.style.setProperty('--w', `${widthPx}px`);
+  }
+
   function renderPreview() {
     els.sheetPagination.hidden = true;
     const talker = readForm();
     els.previewStage.innerHTML = '';
     const card = buildPrintableElement(talker);
     els.previewStage.appendChild(card);
-    requestAnimationFrame(() => fitCardText(card));
+    requestAnimationFrame(() => {
+      sizePreviewElement(card);
+      requestAnimationFrame(() => fitCardText(card));
+    });
   }
 
   // A scaled-down stand-in for a printed Letter-landscape sheet. Paginates
@@ -583,8 +646,8 @@
     if (relevantItems.length === 0) {
       const label = SIGN_LAYOUTS[currentLayoutKey].label;
       els.previewStage.innerHTML = queue.length === 0
-        ? '<p class="empty-hint">No shelf talkers queued yet. Add one on the left to see the full page here.</p>'
-        : `<p class="empty-hint">No ${label} queued yet. Add one on the left, or switch Shelf Talkers/Display Signs above to see what else is queued.</p>`;
+        ? '<p class="empty-hint">No shelf talkers queued yet. Add one using the form to see the full page here.</p>'
+        : `<p class="empty-hint">No ${label} queued yet. Add one using the form, or switch Shelf Talkers/Display Signs above to see what else is queued.</p>`;
       els.sheetPagination.hidden = true;
       return;
     }
@@ -614,6 +677,8 @@
 
     els.sheetPagination.hidden = totalPages <= 1;
     els.pageIndicator.textContent = `Page ${sheetPage + 1} of ${totalPages}`;
+    els.prevPageBtn.disabled = sheetPage === 0;
+    els.nextPageBtn.disabled = sheetPage >= totalPages - 1;
   }
 
   function refreshPreview() {
@@ -635,7 +700,7 @@
     btn.addEventListener('click', () => {
       if (btn.dataset.preview === previewMode) return;
       previewMode = btn.dataset.preview;
-      els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+      setToggleState(els.previewToggleBtns, (b) => b === btn);
       refreshPreview();
     });
   });
@@ -658,7 +723,7 @@
     els.saveQueueBtn.disabled = queue.length === 0;
 
     if (queue.length === 0) {
-      els.queueGrid.innerHTML = '<p class="empty-hint">No shelf talkers yet. Add one on the left to get started.</p>';
+      els.queueGrid.innerHTML = '<p class="empty-hint">No shelf talkers yet. Add one using the form to get started.</p>';
       return;
     }
 
@@ -670,18 +735,30 @@
       const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
         ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
         : formatMoney(talker.price);
+      // The meta line is the only place staff can catch a talker that was
+      // queued with the wrong size or style, so it spells out everything
+      // that changes what comes out of the printer - not just "Shelf
+      // Talker". Parts are joined rather than concatenated so a missing
+      // field (size is optional) can't leave a stray separator behind.
       const typeLabel = talker.signType === 'sign'
         ? (talker.signSize === 'small' ? 'Small Display Sign' : 'Large Display Sign')
-        : 'Shelf Talker';
+        : `${SIZE_LABELS[talker.talkerSize] || 'Full'} Shelf Talker`;
+      const metaParts = [typeLabel];
+      if (talker.category === 'beer') metaParts.push('Beer');
+      if (talker.talkerType && talker.talkerType !== 'standard') {
+        metaParts.push(STYLE_LABELS[talker.talkerType] || talker.talkerType);
+      }
+      if (talker.size) metaParts.push(escapeHtml(talker.size));
+      metaParts.push(priceLabel);
 
       item.innerHTML = `
-        <div class="queue-item__swatch" data-theme="${talker.theme}"></div>
+        <div class="queue-item__swatch" data-theme="${talker.theme}" title="${talker.theme === 'purple' ? 'Purple' : 'Amber'} theme"></div>
         <div class="queue-item__body">
           <button type="button" class="queue-item__title" data-action="toggle-expand" title="Click to ${isExpanded ? 'collapse' : 'show full title'}">
             <span class="queue-item__title-text">${escapeHtml(talker.title || 'Untitled')}</span>
             <span class="queue-item__expand-icon" aria-hidden="true">${isExpanded ? '▾' : '▸'}</span>
           </button>
-          <div class="queue-item__meta">${typeLabel} &middot; ${escapeHtml(talker.size || '')} ${talker.size ? '&middot;' : ''} ${priceLabel}</div>
+          <div class="queue-item__meta">${metaParts.join(' &middot; ')}</div>
         </div>
         <div class="queue-item__actions">
           <button type="button" class="queue-item__menu-btn" data-action="toggle-menu" aria-haspopup="true" aria-expanded="false" title="More actions">&#8942;</button>
@@ -768,7 +845,7 @@
     els.cancelEditBtn.hidden = false;
     document.querySelector('.tab[data-tab="manual"]').click();
     previewMode = 'single';
-    els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
     renderPreview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -928,7 +1005,7 @@
         theme: els.theme.value,
       });
       previewMode = 'single';
-      els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
+      setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
       renderPreview();
       document.querySelector('.tab[data-tab="manual"]').click();
       els.importStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
@@ -1084,11 +1161,39 @@
   // the system print dialog. Also offers an opt-in "Auto-arrange (beta)"
   // mode that can stack different sign types on the same sheet to save
   // paper (see buildAutoArrangedPages) - off by default since it's new.
+  // Focus moves into the dialog on open and back to the button that opened
+  // it on close, and Tab cycles inside it while it's up - otherwise keyboard
+  // focus stays behind on the page underneath, which for a modal means
+  // tabbing through controls you can't see.
+  let printPreviewReturnFocus = null;
+
+  function focusableInModal() {
+    return [...els.printPreviewOverlay.querySelectorAll('button, input, [href], select, textarea')]
+      .filter((el) => !el.disabled && el.offsetParent !== null);
+  }
+
   function openPrintPreview() {
     if (queue.length === 0) return;
+    printPreviewReturnFocus = document.activeElement;
     els.printPreviewOverlay.hidden = false;
     renderPrintPreviewContents();
+    els.printPreviewCloseBtn.focus();
   }
+
+  els.printPreviewOverlay.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const items = focusableInModal();
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   function renderPrintPreviewContents() {
     els.printPreviewSheets.innerHTML = '';
@@ -1214,6 +1319,8 @@
   function closePrintPreview() {
     els.printPreviewOverlay.hidden = true;
     els.printPreviewSheets.innerHTML = '';
+    if (printPreviewReturnFocus && printPreviewReturnFocus.isConnected) printPreviewReturnFocus.focus();
+    printPreviewReturnFocus = null;
   }
 
   els.printBtn.addEventListener('click', openPrintPreview);
