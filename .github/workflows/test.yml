@@ -29,8 +29,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
 
-      # No install step: the tests only use node:test and node:assert, and
-      # public/js/layout.js has no dependencies of its own.
+      # test/productImport.test.js exercises server/productImport.js, which
+      # depends on cheerio - the layout/print-css-sync suites were dependency
+      # -free, which is what let this step be skipped originally, but that
+      # stopped being true the moment a real npm package entered the require
+      # graph of anything under test/.
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run tests
         run: npm test
