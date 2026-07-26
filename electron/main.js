@@ -9,6 +9,14 @@ const PORT = 17321;
 let mainWindow = null;
 let httpServer = null;
 
+// Opens the same in-app Help panel the app bar's own Help button does,
+// rather than a separate window - the renderer owns the actual content
+// (see index.html/app.js), this just asks it to show it.
+function handleShowHelp() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('help:show-requested');
+}
+
 function showAboutDialog() {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
@@ -78,6 +86,8 @@ function buildMenu() {
     {
       label: 'Help',
       submenu: [
+        { label: 'Help', click: handleShowHelp },
+        { type: 'separator' },
         {
           label: 'About Shelf Talker Wizard',
           click: showAboutDialog,
