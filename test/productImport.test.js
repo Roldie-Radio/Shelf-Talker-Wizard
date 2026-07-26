@@ -152,6 +152,73 @@ test('parseBeerHtml prefers a DOM rating element over the regex fallback', () =>
   assert.equal(result.untappdRating, '4.5');
 });
 
+// Regression fixture built from a real Untappd page (a user reported the
+// importer missing both fields after the 403 fix; screenshots of the
+// actual page showed why). The real page shows "N/A IBU" - not a number -
+// and the rating as a bare "(4.23)" next to the dot widget, with none of
+// the "Rated"/"out of 5" phrasing the original patterns looked for. That
+// exact phrase does appear, but only inside the auto-generated og:
+// description ("...which has a rating of 4.2 out of 5..."), rounded to one
+// decimal rather than the on-page widget's two.
+test('parseBeerHtml matches the real page that motivated the N/A-IBU and bare-rating fallbacks', () => {
+  const html = page({
+    head: `
+      <meta property="og:title" content="Full Circle by Autodidact Beer | Untappd" />
+      <meta property="og:description" content="Full Circle by Autodidact Beer is a IPA - Imperial / Double New England / Hazy which has a rating of 4.2 out of 5, with 1,382 ratings and reviews on Untappd." />
+    `,
+    body: `
+      <h1>Full Circle</h1>
+      <p>Autodidact Beer</p>
+      <p>IPA - Imperial / Double New England / Hazy</p>
+      <div>8% ABV</div>
+      <div>N/A IBU</div>
+      <div>(4.23)</div>
+      <div>1,382 Ratings</div>
+    `,
+  });
+  const result = parseBeerHtml(html, 'https://untappd.com/b/x/1');
+  assert.equal(result.abv, '8%');
+  assert.equal(result.ibu, 'N/A');
+  // The precise on-page number wins over the rounded one in the description.
+  assert.equal(result.untappdRating, '4.23');
+});
+
+test('parseBeerHtml normalizes "N/A" IBU to a consistent case regardless of the page\'s own casing', () => {
+  const lower = parseBeerHtml(page({ body: '<p>8% ABV. n/a ibu.</p><meta property="og:description" content="d" />' }), 'https://example.com/a');
+  assert.equal(lower.ibu, 'N/A');
+
+  const wordFirst = parseBeerHtml(page({ body: '<p>ABV: 8%. IBU: N/A.</p><meta property="og:description" content="d" />' }), 'https://example.com/b');
+  assert.equal(wordFirst.ibu, 'N/A');
+});
+
+test('parseBeerHtml reads a bare parenthesized rating with no "Rated"/"out of 5" phrasing', () => {
+  const html = page({
+    body: '<p>Some unrelated (7) count.</p><p>(4.23)</p><meta property="og:description" content="d" />',
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.untappdRating, '4.23');
+});
+
+test('parseBeerHtml falls back to the rating mentioned in og:description when nothing on the visible page has it', () => {
+  const html = page({
+    head: '<meta property="og:description" content="Steez by New Anthem is a hazy IPA which has a rating of 4.2 out of 5, with 500 ratings on Untappd." />',
+    body: '<h1>Steez</h1>',
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.untappdRating, '4.2');
+});
+
+test('parseBeerHtml does not misread a parenthesized decimal outside Untappd\'s 0-5 rating range', () => {
+  // Same shape a real rating would have (one digit, a dot, two digits) but
+  // starting above 5 - asRating()'s range check, not just the capture
+  // pattern's shape, is what has to reject this.
+  const html = page({
+    body: '<p>Barrel-aged for (8.50) months in oak.</p><meta property="og:description" content="d" />',
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.untappdRating, '');
+});
+
 test('parseBeerHtml throws when the page has nothing usable', () => {
   const html = page({ body: '<p>This page is not a beer at all.</p>' });
   assert.throws(() => parseBeerHtml(html, 'https://example.com/nope'), /Could not find beer details/);

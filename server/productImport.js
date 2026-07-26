@@ -358,6 +358,15 @@ function asRating(text) {
   return /^[0-5](\.\d{1,2})?$/.test(trimmed) ? trimmed : undefined;
 }
 
+// Untappd shows "N/A" in place of a number for a beer with no listed IBU
+// (confirmed against a real page - see the note above ibuRaw below), which
+// none of the digit-only patterns match. Regardless of which case the page
+// happens to use ("N/A", "n/a"), display it the same way every time.
+function normalizeIbu(raw) {
+  if (!raw) return undefined;
+  return /^n\/a$/i.test(raw) ? 'N/A' : raw;
+}
+
 // Split out from extractBeer so it can be exercised directly against fixture
 // HTML in tests - a real fetch to Untappd isn't available to test against
 // (see the note above), so this is the part that can actually be pinned
@@ -388,17 +397,37 @@ function parseBeerHtml(html, sourceUrl) {
     /([\d]{1,2}(?:\.\d{1,2})?)\s*%\s*ABV\b/i,
     /\bABV\b[:\s]*([\d]{1,2}(?:\.\d{1,2})?)\s*%/i,
   ]);
+  // "N/A IBU" is a real value Untappd shows, not a missing one - a beer
+  // with no listed IBU still has a page, it just has nothing to put here.
+  // Tried after the digit patterns since a number is the far more common
+  // case.
   const ibuRaw = firstMatch(bodyText, [
     /([\d]{1,3})\s*IBU\b/i,
     /\bIBU\b[:\s]*([\d]{1,3})\b/i,
+    /\b(N\/A)\s*IBU\b/i,
+    /\bIBU\b[:\s]*(N\/A)\b/i,
   ]);
   const ratingRaw = firstMatch(bodyText, [
     /Rated\s+([\d]\.\d{1,2})\b/i,
     /([\d]\.\d{1,2})\s*(?:out of 5|Caps)\b/i,
-  ]);
+    // Untappd's actual beer-detail page (confirmed from a real page via a
+    // user report, not assumed) shows the rating as a bare number in
+    // parentheses next to the 5-dot widget, with none of the "Rated"/"out
+    // of 5" phrasing the two patterns above look for. Tried last - a bare
+    // parenthesized decimal is a weaker signal than an explicit phrase, and
+    // asRating()'s 0-5/two-decimal shape below is the only thing standing
+    // between this and an unrelated number elsewhere in parentheses on the
+    // page.
+    /\(([\d]\.\d{1,2})\)/,
+    // Untappd's own auto-generated og:description reads "<Beer> by
+    // <Brewery> is a <Style> which has a rating of N.N out of 5, with
+    // N,NNN ratings..." - a real fallback when the rating isn't in the
+    // visible page at all, but rounded to one decimal rather than the two
+    // the on-page widget uses, so it's tried only after everything above.
+  ]) || firstMatch(ogDescription || '', [/rating of\s+([\d]\.\d{1,2})\s*out of 5/i]);
 
   const abv = abvRaw ? `${trimNumber(abvRaw)}%` : undefined;
-  const ibu = firstNonEmpty(ibuRaw);
+  const ibu = normalizeIbu(ibuRaw);
   const untappdRating = firstNonEmpty(asRating(domRating), asRating(ratingRaw));
 
   const imageUrl = $('meta[property="og:image"]').attr('content');
