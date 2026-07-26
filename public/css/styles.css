@@ -792,6 +792,14 @@ h1, h2, h3 { margin: 0; }
 
 .sign {
   --w: 600px;
+  /* One knob for how large every piece of type on a Display Sign runs,
+     relative to the sign's own width. Signs are read from across the aisle
+     rather than at arm's length like a shelf talker, so they carry more
+     size and weight. Every font-size below is multiplied by this, so
+     retuning "a bit bigger" is a single number rather than twenty. Text
+     that no longer fits is still caught by fitCardText's shrink-to-fit and
+     the --price-fit pass, so raising this can't push content off a sign. */
+  --sign-text: 1.2;
   width: var(--w);
   background: #fff;
   border: calc(var(--w) * 0.0035) solid var(--ink);
@@ -829,22 +837,22 @@ h1, h2, h3 { margin: 0; }
   color: #fff;
   font-family: Rockwell, "Rockwell Nova", Georgia, "Times New Roman", serif;
   font-weight: 800;
-  font-size: calc(var(--w) * 0.016);
+  font-size: calc(var(--w) * var(--sign-text) * 0.016);
   letter-spacing: 0.01em;
   text-shadow: 0 1px 1px rgba(0,0,0,0.35);
 }
-.sign[data-size="small"] .sign__tagline { font-size: calc(var(--w) * 0.02); }
+.sign[data-size="small"] .sign__tagline { font-size: calc(var(--w) * var(--sign-text) * 0.02); }
 
 .sign__band--footer { justify-content: space-between; }
 
 .sign__footer-text {
   color: #fff;
-  font-weight: 700;
-  font-size: calc(var(--w) * 0.011);
+  font-weight: 800;
+  font-size: calc(var(--w) * var(--sign-text) * 0.011);
   letter-spacing: 0.02em;
   text-shadow: 0 1px 1px rgba(0,0,0,0.35);
 }
-.sign[data-size="small"] .sign__footer-text { font-size: calc(var(--w) * 0.014); }
+.sign[data-size="small"] .sign__footer-text { font-size: calc(var(--w) * var(--sign-text) * 0.014); }
 
 .sign__logo { height: calc(var(--w) * 0.028); }
 .sign[data-size="small"] .sign__logo { height: calc(var(--w) * 0.036); }
@@ -894,13 +902,13 @@ h1, h2, h3 { margin: 0; }
   color: var(--sale-red);
   font-weight: 800;
   line-height: 1;
-  font-size: calc(var(--w) * 0.03);
+  font-size: calc(var(--w) * var(--sign-text) * 0.03);
 }
 
 .sign__title {
   font-weight: 800;
   text-transform: uppercase;
-  font-size: calc(var(--w) * 0.03);
+  font-size: calc(var(--w) * var(--sign-text) * 0.03);
   line-height: 1.15;
   flex: 0 0 auto;
   display: -webkit-box;
@@ -909,10 +917,11 @@ h1, h2, h3 { margin: 0; }
   line-clamp: 2;
   overflow: hidden;
 }
-.sign__title--small { font-size: calc(var(--w) * 0.06); }
+.sign__title--small { font-size: calc(var(--w) * var(--sign-text) * 0.06); }
 
 .sign__description {
-  font-size: calc(var(--w) * 0.014);
+  font-weight: 700;
+  font-size: calc(var(--w) * var(--sign-text) * 0.014);
   line-height: 1.3;
   color: #171717;
   flex: 0 0 auto;
@@ -926,16 +935,16 @@ h1, h2, h3 { margin: 0; }
 /* The Untappd-style rating block is reused from the Beer Shelf Talker,
    which is sized relative to a much taller card; scale it way down for the
    short Display Sign body. */
-.sign__content .card__beer-rating { flex: 0 0 auto; gap: calc(var(--w) * 0.012); margin: 0; }
+.sign__content .card__beer-rating { flex: 0 0 auto; gap: calc(var(--w) * var(--sign-text) * 0.012); margin: 0; }
 .sign__content .card__beer-score {
-  width: calc(var(--w) * 0.075 * var(--price-fit, 1));
-  height: calc(var(--w) * 0.075 * var(--price-fit, 1));
-  font-size: calc(var(--w) * 0.028 * var(--price-fit, 1));
-  border-width: calc(var(--w) * 0.005 * var(--price-fit, 1));
+  width: calc(var(--w) * var(--sign-text) * 0.075 * var(--price-fit, 1));
+  height: calc(var(--w) * var(--sign-text) * 0.075 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.028 * var(--price-fit, 1));
+  border-width: calc(var(--w) * var(--sign-text) * 0.005 * var(--price-fit, 1));
 }
-.sign__content .card__beer-rating-label { font-size: calc(var(--w) * 0.011 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * 0.004 * var(--price-fit, 1)); }
-.sign__content .card__beer-dot { width: calc(var(--w) * 0.011 * var(--price-fit, 1)); height: calc(var(--w) * 0.011 * var(--price-fit, 1)); }
-.sign__content .card__beer-rating-num { font-size: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-label { font-size: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * var(--sign-text) * 0.004 * var(--price-fit, 1)); }
+.sign__content .card__beer-dot { width: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); height: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-num { font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
 
 .sign__meta-row,
 .sign__price-row,
@@ -962,8 +971,13 @@ h1, h2, h3 { margin: 0; }
 
 .sign__size {
   font-weight: 800;
-  font-size: calc(var(--w) * 0.016 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1));
 }
+/* Small signs are a third the width of a Large one, so a fraction tuned for
+   Large renders tiny here - the regular price already had an override for
+   exactly this reason and the size, its partner across the bottom row, was
+   left behind at roughly half its height. Matched to it. */
+.sign[data-size="small"] .sign__size { font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1)); }
 
 /* Matched to .sign__size, its partner across the row. Previously the rating
    had no rule at all, so it inherited the page's absolute 16px instead of
@@ -971,14 +985,14 @@ h1, h2, h3 { margin: 0; }
    a fixed size no matter how large the sign was printed. */
 .sign__rating {
   font-weight: 800;
-  font-size: calc(var(--w) * 0.016 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1));
 }
 
 .sign__closeout-badge {
   font-family: "Comic Sans MS", "Segoe Print", cursive;
-  font-weight: 700;
+  font-weight: 800;
   font-style: italic;
-  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1));
   color: #ffd400;
   -webkit-text-stroke: calc(var(--w) * 0.0015) #000;
   text-shadow: calc(var(--w) * 0.003) calc(var(--w) * 0.003) 0 rgba(0,0,0,0.5);
@@ -987,33 +1001,33 @@ h1, h2, h3 { margin: 0; }
 .sign__chilled-badge {
   font-weight: 800;
   color: var(--chilled-blue);
-  font-size: calc(var(--w) * 0.02 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.02 * var(--price-fit, 1));
 }
 
 .sign__supersale-text {
   font-family: "Segoe Script", "Brush Script MT", cursive;
   color: var(--sale-red);
-  font-weight: 700;
+  font-weight: 800;
   font-style: italic;
-  font-size: calc(var(--w) * 0.018 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.018 * var(--price-fit, 1));
 }
-.sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * 0.032 * var(--price-fit, 1)); }
+.sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1)); }
 
-.sign__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * 0.023 * var(--price-fit, 1)); }
-.sign__regular-price { font-weight: 700; font-size: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
-.sign[data-size="small"] .sign__regular-price { font-size: calc(var(--w) * 0.026 * var(--price-fit, 1)); }
+.sign__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1)); }
+.sign__regular-price { font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
+.sign[data-size="small"] .sign__regular-price { font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1)); }
 
 .sign__supersale-price {
   color: var(--sale-red);
   font-weight: 800;
   flex: 1 1 auto;
   text-align: center;
-  font-size: calc(var(--w) * 0.032 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1));
 }
 
 .sign__small-price {
   font-weight: 800;
-  font-size: calc(var(--w) * 0.09 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.09 * var(--price-fit, 1));
   flex: 0 0 auto;
 }
 .sign__small-price.is-sale { color: var(--sale-red); }
