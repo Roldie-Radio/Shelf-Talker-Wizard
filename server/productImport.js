@@ -80,7 +80,12 @@ async function fetchHtml(url, extraHeaders = {}) {
     }
 
     if (!resp.ok) {
-      throw new Error(`The page responded with ${resp.status} ${resp.statusText}.`);
+      const err = new Error(`The page responded with ${resp.status} ${resp.statusText}.`);
+      // Lets a caller distinguish "the site is actively blocking us" from
+      // any other failure - extractBeer below uses this to decide whether
+      // a second attempt with different headers is worth making.
+      err.httpStatus = resp.status;
+      throw err;
     }
     const contentType = resp.headers.get('content-type') || '';
     if (!contentType.includes('html')) {
@@ -246,26 +251,74 @@ async function extractProduct(url) {
 // Beer import - focused on Untappd beer pages (https://untappd.com/b/...),
 // which is where staff are expected to paste links from for a Beer talker.
 //
-// This could not be verified against Untappd's live markup: outbound
-// requests to untappd.com are blocked from the environment this was
-// written in (every attempt came back HTTP 403, which is itself a strong
-// signal Untappd blocks non-browser traffic - see BEER_USER_AGENT below).
-// The selectors here are best-effort, based on Untappd's long-documented
-// classic page structure, but every one of them is optional and the parser
-// leans harder on things far less likely to break if that markup has moved
-// on: Open Graph tags (title/description are close to universal across
-// site redesigns) and plain-text regex scans for the numeric facts
-// (ABV/IBU/rating), rather than brittle class names. A field the parser
-// can't find just comes back blank, same as the product importer above -
-// staff review and fill in the rest either way.
+// This could not be verified against Untappd's live markup from the
+// environment it was originally written in - every outbound request from
+// there was blocked before it reached Untappd at all, regardless of
+// headers, which is a property of that environment's network, not
+// something this code can detect or reason about. The selectors here are
+// best-effort, based on Untappd's long-documented classic page structure,
+// but every one of them is optional and the parser leans harder on things
+// far less likely to break if that markup has moved on: Open Graph tags
+// (title/description are close to universal across site redesigns) and
+// plain-text regex scans for the numeric facts (ABV/IBU/rating), rather
+// than brittle class names. A field the parser can't find just comes back
+// blank, same as the product importer above - staff review and fill in the
+// rest either way.
 // ================================================================
 
-// Untappd (and plenty of brewery sites) return an outright 403 to the
-// product importer's identifying UA above - confirmed while building this.
-// A standard desktop browser UA is what lets a single, human-initiated
-// fetch of one public page succeed instead.
-const BEER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-  + '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+// Two header sets, tried in order (see fetchBeerHtml below):
+//
+// 1. Plain: the product importer's own honest, self-identifying UA. This
+//    is what's actually gotten data back from Untappd in real use.
+// 2. Full-browser: a complete, internally-consistent set of headers a real
+//    Chrome navigation sends together (UA + Accept-Language + the
+//    sec-fetch-*/sec-ch-ua client hints). A bare User-Agent claiming to be
+//    Chrome with none of the headers that normally travel with it is
+//    itself a known bot signature - some WAFs treat that combination as
+//    MORE suspicious than a plain script UA that isn't pretending to be
+//    anything, which is the opposite of what an earlier version of this
+//    file assumed. Kept as a second attempt rather than the default, since
+//    it's an untested hypothesis, not confirmed against the live site.
+const BEER_HEADER_SETS = [
+  {},
+  {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+      + '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1',
+  },
+];
+
+// Status codes worth spending a second round-trip on - a real block/rate
+// limit, not a URL that's simply wrong or gone.
+const BLOCKED_STATUSES = new Set([403, 429, 503]);
+
+// Only moves on to the next header set when the previous attempt looks like
+// a block, not for other failures (a bad URL, a timeout, a redirect loop) -
+// those would fail identically on a second attempt and just cost the user
+// extra time waiting for it.
+async function fetchBeerHtml(url) {
+  for (let i = 0; i < BEER_HEADER_SETS.length; i++) {
+    try {
+      return await fetchHtml(url, BEER_HEADER_SETS[i]);
+    } catch (err) {
+      const hasMoreAttempts = i < BEER_HEADER_SETS.length - 1;
+      if (!hasMoreAttempts || !BLOCKED_STATUSES.has(err.httpStatus)) throw err;
+    }
+  }
+  // Unreachable - the loop above always either returns or throws - but
+  // keeps the function's control flow explicit rather than implying it
+  // could fall off the end and return undefined.
+  throw new Error('Could not fetch that page.');
+}
 
 // "8.00" -> "8", "5.50" -> "5.5" - matches the plain "8%" style already used
 // by the manual entry form's own placeholder, instead of a raw regex capture
@@ -372,8 +425,20 @@ function parseBeerHtml(html, sourceUrl) {
 }
 
 async function extractBeer(url) {
-  const html = await fetchHtml(url, { 'User-Agent': BEER_USER_AGENT });
+  let html;
+  try {
+    html = await fetchBeerHtml(url);
+  } catch (err) {
+    if (BLOCKED_STATUSES.has(err.httpStatus)) {
+      throw new Error(
+        'Untappd blocked this request. This can happen from certain networks or hosting '
+        + 'providers - try again in a bit, from a different network, or enter the beer\'s '
+        + 'details manually.'
+      );
+    }
+    throw err;
+  }
   return parseBeerHtml(html, url);
 }
 
-module.exports = { extractProduct, extractBeer, parseBeerHtml };
+module.exports = { extractProduct, extractBeer, parseBeerHtml, fetchBeerHtml };
