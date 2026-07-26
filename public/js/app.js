@@ -1,6 +1,8 @@
 (function () {
   const STORAGE_KEY = 'shelfTalkerQueue.v1';
   const REVIEWERS_KEY = 'shelfTalkerReviewers.v1';
+  // Must match the key the inline pre-paint script in index.html reads.
+  const THEME_KEY = 'shelfTalkerTheme.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // Print-sheet geometry and the sheet/auto-arrange packing live in
@@ -171,6 +173,7 @@
     clearQueueBtn: document.getElementById('clearQueueBtn'),
     saveQueueBtn: document.getElementById('saveQueueBtn'),
     queueItemMenu: document.getElementById('queueItemMenu'),
+    themeToggle: document.getElementById('themeToggle'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
 
@@ -182,6 +185,56 @@
     printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
     autoArrangeToggle: document.getElementById('autoArrangeToggle'),
   };
+
+  // ---------- Theme ----------
+
+  // Dark mode covers the application chrome only. Shelf talkers and display
+  // signs keep the print palette (see the note above .card in styles.css) -
+  // they are pictures of something that gets printed on white paper, so
+  // theming them would break the guarantee that the preview shows exactly
+  // what comes out of the printer.
+  //
+  // The attribute itself is set by an inline script in index.html so the
+  // theme is already correct on the first painted frame; this only handles
+  // switching it afterwards and remembering the choice.
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme) {
+    const dark = theme === 'dark';
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    if (els.themeToggle) {
+      els.themeToggle.setAttribute('aria-pressed', String(dark));
+      els.themeToggle.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+      els.themeToggle.querySelector('.theme-toggle__icon').textContent = dark ? '☀' : '☽';
+      els.themeToggle.querySelector('.theme-toggle__label').textContent = dark ? 'Light' : 'Dark';
+    }
+  }
+
+  if (els.themeToggle) {
+    els.themeToggle.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try {
+        localStorage.setItem(THEME_KEY, next);
+      } catch {
+        // Same as the queue: an unavailable store shouldn't break the click,
+        // the choice just won't survive a restart.
+      }
+    });
+  }
+
+  // Follow the OS only while the user hasn't expressed a preference of their
+  // own - once they've picked, their choice sticks.
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      let saved = null;
+      try { saved = localStorage.getItem(THEME_KEY); } catch { /* ignore */ }
+      if (!saved) applyTheme(e.matches ? 'dark' : 'light');
+    });
+  }
 
   // ---------- Tabs ----------
 
@@ -1268,6 +1321,7 @@
 
   // ---------- Init ----------
 
+  applyTheme(currentTheme());
   applyFormMode();
   renderReviewerSelect();
   renderQueue();

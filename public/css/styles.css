@@ -1,8 +1,18 @@
+/* ================================================================
+   Two palettes, deliberately kept apart.
+
+   PRINT palette (--ink, --muted, --accent, --sale-red, the band colours):
+   the colours of the shelf talkers and display signs themselves. These
+   describe ink on paper, so they are FIXED - never themed, never overridden
+   by dark mode. A talker prints the same whatever the app looks like on
+   screen, and the preview has to keep showing what will actually print.
+
+   UI palette (--ui-*): the application chrome around the previews - panels,
+   the form, the queue, the modal. Only these are re-pointed by dark mode.
+   ================================================================ */
 :root {
+  /* --- Print palette (fixed) --- */
   --ink: #1b1b1b;
-  --bg: #f4f2ee;
-  --panel: #ffffff;
-  --border: #ddd6cc;
   --accent: #8a5f27;
   --amber-band: #bd8436;
   --amber-band-dark: #8a5f27;
@@ -13,7 +23,60 @@
   /* Secondary ink. #8a8378 was used for this and fails WCAG AA on white
      (~3.8:1); this is the same family at ~5.8:1. */
   --muted: #6b645a;
+
+  /* --- UI palette (themed) --- */
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;   /* accent used as text/border, on a panel */
+  --ui-on-accent: #ffffff;    /* text on an accent-filled surface */
+  --ui-overlay: rgba(27, 27, 27, 0.55);
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-danger-tint: rgba(210, 31, 31, 0.08);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+
   --radius: 10px;
+  color-scheme: light;
+}
+
+/* Dark mode re-points the UI palette only. Contrast was chosen against the
+   surface each token actually sits on: --ui-accent-ink reads 8.7:1 on
+   --ui-panel, and --ui-on-accent 7.6:1 on --ui-accent, so accent text and
+   filled buttons both stay well clear of the 4.5:1 AA threshold that the
+   light theme's greys were failing before. */
+:root[data-theme="dark"] {
+  --ui-bg: #171614;
+  --ui-panel: #23211e;
+  --ui-panel-alt: #2b2825;
+  --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733;
+  --ui-ink: #f0ece6;
+  --ui-ink-soft: #d8d2c8;
+  --ui-muted: #b0a89e;
+  --ui-field: #1c1a18;
+  --ui-btn: #2b2825;
+  --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441;
+  --ui-accent-hover: #e8b563;
+  --ui-accent-ink: #e8b563;
+  --ui-on-accent: #241a08;
+  --ui-overlay: rgba(0, 0, 0, 0.72);
+  --ui-hover: rgba(255, 255, 255, 0.08);
+  --ui-danger-tint: rgba(255, 107, 107, 0.14);
+  --ui-code-bg: #302c28;
+  --ui-danger: #ff8f8f;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -27,8 +90,8 @@
 html, body {
   margin: 0;
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--ui-bg);
+  color: var(--ui-ink);
 }
 
 h1, h2, h3 { margin: 0; }
@@ -43,8 +106,8 @@ h1, h2, h3 { margin: 0; }
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1.5rem;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -53,29 +116,32 @@ h1, h2, h3 { margin: 0; }
 .appbar__brand { display: flex; align-items: center; gap: 0.9rem; }
 .appbar__logo { height: 44px; }
 .appbar h1 { font-size: 1.25rem; }
-.appbar p { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--muted); }
+.appbar p { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--ui-muted); }
 
 .appbar__actions { display: flex; align-items: center; gap: 1rem; }
-.queue-count { font-size: 0.9rem; color: var(--muted); }
+.queue-count { font-size: 0.9rem; color: var(--ui-muted); }
 
 /* ---------- Buttons ---------- */
 
 .btn {
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--ink);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-btn);
+  color: var(--ui-ink);
   padding: 0.55rem 1rem;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
 }
-.btn:hover { background: #f7f3ec; }
+.btn:hover { background: var(--ui-btn-hover); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn--primary:hover { background: #71491d; }
-.btn--ghost { background: transparent; border-color: transparent; color: #8a5f27; }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
 .btn--small { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+
+.btn--icon { display: inline-flex; align-items: center; gap: 0.4rem; }
+.theme-toggle__icon { font-size: 1rem; line-height: 1; }
 
 /* ---------- Layout ---------- */
 
@@ -89,8 +155,8 @@ h1, h2, h3 { margin: 0; }
 }
 
 .panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
   border-radius: var(--radius);
   padding: 1.1rem 1.2rem;
   /* Without this, a grid item's default min-width:auto lets its content's
@@ -106,7 +172,7 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- Tabs ---------- */
 
-.tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-border); }
 .tab {
   border: none;
   background: none;
@@ -114,10 +180,10 @@ h1, h2, h3 { margin: 0; }
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--ui-muted);
   border-bottom: 2px solid transparent;
 }
-.tab.is-active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab.is-active { color: var(--ui-accent); border-bottom-color: var(--ui-accent); }
 .tab-panel { display: none; }
 .tab-panel.is-active { display: block; }
 
@@ -130,13 +196,13 @@ h1, h2, h3 { margin: 0; }
 .field-group .field-row { margin-bottom: 0; }
 
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; min-width: 0; }
-.field span { color: #4a453d; }
+.field span { color: var(--ui-ink-soft); }
 .field input, .field textarea, .field select, #csvInput {
   font: inherit;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-border);
   border-radius: 6px;
-  background: #fffdfa;
+  background: var(--ui-field);
   font-weight: 400;
   /* Inputs/selects otherwise fall back to their own default intrinsic
      width (~200px) instead of filling the field, which - combined with
@@ -152,9 +218,9 @@ h1, h2, h3 { margin: 0; }
 .field-row .field { min-width: 0; }
 
 .form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
-.form-error { color: var(--sale-red); font-size: 0.85rem; margin-top: 0.5rem; }
-.help-text { font-size: 0.85rem; color: var(--muted); margin: 0 0 0.75rem; }
-.help-text code { background: #f0ece3; padding: 0.1rem 0.3rem; border-radius: 4px; }
+.form-error { color: var(--ui-danger); font-size: 0.85rem; margin-top: 0.5rem; }
+.help-text { font-size: 0.85rem; color: var(--ui-muted); margin: 0 0 0.75rem; }
+.help-text code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; }
 
 /* ---------- Ratings builder ---------- */
 
@@ -168,8 +234,8 @@ h1, h2, h3 { margin: 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f7f3ec;
-  border: 1px solid var(--border);
+  background: var(--ui-panel-alt);
+  border: 1px solid var(--ui-border);
   border-radius: 6px;
   padding: 0.3rem 0.55rem;
   font-size: 0.82rem;
@@ -179,16 +245,16 @@ h1, h2, h3 { margin: 0; }
   border: none;
   background: none;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--ui-muted);
   font-size: 0.85rem;
   padding: 0 0.2rem;
 }
-.rating-chip button:hover { color: var(--sale-red); }
+.rating-chip button:hover { color: var(--ui-danger); }
 
 .link-btn {
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--ui-accent);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -199,14 +265,14 @@ h1, h2, h3 { margin: 0; }
 .reviewer-manager {
   margin-top: 0.5rem;
   padding: 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: #fbf9f5;
+  background: var(--ui-panel-sunken);
 }
 .reviewer-manager__add { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
 .reviewer-manager__add input { flex: 1; margin: 0; }
 .reviewer-manager__list { display: flex; flex-direction: column; gap: 0.25rem; }
-.reviewer-manager__list .rating-chip { background: #fff; }
+.reviewer-manager__list .rating-chip { background: var(--ui-panel); }
 
 /* ---------- Preview ---------- */
 
@@ -243,16 +309,16 @@ h1, h2, h3 { margin: 0; }
 
 .preview-toggle { display: flex; gap: 0.3rem; }
 .toggle-btn {
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-btn);
   padding: 0.35rem 0.7rem;
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--ui-muted);
 }
-.toggle-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.toggle-btn.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
 
 /* A stand-in for a printed Letter-landscape sheet, laid out at its literal
    printed size - 11in x 8.5in, with the same 0.28in page margin and the
@@ -265,7 +331,7 @@ h1, h2, h3 { margin: 0; }
   width: 11in;
   height: 8.5in;
   background: #fff;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-border);
   box-shadow: 0 2px 10px rgba(0,0,0,0.12);
   box-sizing: border-box;
   padding: 0.28in;
@@ -305,7 +371,7 @@ h1, h2, h3 { margin: 0; }
   gap: 0.9rem;
   margin-top: 0.75rem;
   font-size: 0.85rem;
-  color: #4a453d;
+  color: var(--ui-ink-soft);
 }
 
 /* ---------- Print preview ---------- */
@@ -313,7 +379,7 @@ h1, h2, h3 { margin: 0; }
 .print-preview-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(27, 27, 27, 0.55);
+  background: var(--ui-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -322,7 +388,7 @@ h1, h2, h3 { margin: 0; }
 }
 
 .print-preview-modal {
-  background: var(--panel);
+  background: var(--ui-panel);
   border-radius: var(--radius);
   width: 100%;
   max-width: 920px;
@@ -347,15 +413,15 @@ h1, h2, h3 { margin: 0; }
   padding: 0 1.2rem;
   margin-bottom: 0.6rem;
   font-size: 0.85rem;
-  color: #4a453d;
+  color: var(--ui-ink-soft);
   cursor: pointer;
   user-select: none;
 }
 .auto-arrange-toggle input { cursor: pointer; }
 .beta-badge {
   display: inline-block;
-  background: var(--accent);
-  color: #fff;
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -383,10 +449,10 @@ h1, h2, h3 { margin: 0; }
   font-size: 0.85rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #4a453d;
+  color: var(--ui-ink-soft);
 }
-.print-preview-sheet__fill { font-weight: 500; color: var(--muted); }
-.print-preview-sheet__fill.is-partial { color: var(--sale-red); font-weight: 700; }
+.print-preview-sheet__fill { font-weight: 500; color: var(--ui-muted); }
+.print-preview-sheet__fill.is-partial { color: var(--ui-danger); font-weight: 700; }
 
 /* No max-width: like every other preview this is laid out at a literal 11in
    and scaled down by its .preview-scaler, so constraining its width here
@@ -398,19 +464,19 @@ h1, h2, h3 { margin: 0; }
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 0.8rem 1.2rem 1.1rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--ui-border);
 }
 
 /* ---------- Queue ---------- */
 
 .queue-grid { display: flex; flex-direction: column; gap: 0.6rem; max-height: 70vh; overflow-y: auto; }
-.empty-hint { color: var(--muted); font-size: 0.85rem; }
+.empty-hint { color: var(--ui-muted); font-size: 0.85rem; }
 
 .queue-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-border);
   border-radius: 8px;
   padding: 0.5rem 0.6rem;
 }
@@ -448,14 +514,14 @@ h1, h2, h3 { margin: 0; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.queue-item__expand-icon { flex: 0 0 auto; font-size: 0.7em; color: var(--muted); }
+.queue-item__expand-icon { flex: 0 0 auto; font-size: 0.7em; color: var(--ui-muted); }
 .queue-item.is-expanded .queue-item__title-text {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   word-break: break-word;
 }
-.queue-item__meta { font-size: 0.78rem; color: var(--muted); }
+.queue-item__meta { font-size: 0.78rem; color: var(--ui-muted); }
 /* A single "more actions" (kebab) button replaces the old inline
    Edit/Copy/Delete buttons, freeing up horizontal room for the title. The
    dropdown itself (#queueItemMenu, in index.html) is a single element
@@ -472,18 +538,18 @@ h1, h2, h3 { margin: 0; }
   line-height: 1;
   padding: 0.25rem 0.55rem;
   border-radius: 6px;
-  color: var(--muted);
+  color: var(--ui-muted);
 }
 .queue-item__menu-btn:hover,
-.queue-item__menu-btn[aria-expanded="true"] { color: var(--accent); background: rgba(27, 27, 27, 0.06); }
+.queue-item__menu-btn[aria-expanded="true"] { color: var(--ui-accent); background: var(--ui-hover); }
 
 .queue-item-menu {
   position: fixed;
   display: flex;
   flex-direction: column;
   min-width: 110px;
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
   border-radius: 8px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.15);
   overflow: hidden;
@@ -496,17 +562,29 @@ h1, h2, h3 { margin: 0; }
   text-align: left;
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
-  color: var(--ink);
+  color: var(--ui-ink);
 }
-.queue-item-menu button:hover:not(:disabled) { background: rgba(27, 27, 27, 0.06); color: var(--accent); }
+.queue-item-menu button:hover:not(:disabled) { background: var(--ui-hover); color: var(--ui-accent); }
 .queue-item-menu button:disabled { opacity: 0.4; cursor: not-allowed; }
-.queue-item-menu button[data-action="delete"] { color: var(--sale-red); }
-.queue-item-menu button[data-action="delete"]:hover { background: rgba(210, 31, 31, 0.08); }
+.queue-item-menu button[data-action="delete"] { color: var(--ui-danger); }
+.queue-item-menu button[data-action="delete"]:hover { background: var(--ui-danger-tint); }
 
 /* ================================================================
    Shelf talker card — proportions taken from the print template
    (830 x 1136 px card within a 3300 x 2550 px, 6-up letter sheet)
    ================================================================ */
+
+/* Printed artifacts opt out of the app's theme entirely. 27 rules inside
+   .card/.sign set no colour of their own and would otherwise inherit the
+   body's - which dark mode turns light, rendering a talker's title in pale
+   ink on the white card it prints on. Pinning the print palette here keeps
+   a preview showing what actually comes out of the printer, whatever the
+   app looks like around it. */
+.card,
+.sign {
+  color: var(--ink);
+  background: #fff;
+}
 
 .card {
   --w: 320px;
