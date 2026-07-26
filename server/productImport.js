@@ -402,6 +402,36 @@ function extractBeerDescriptionFromDom($) {
   return undefined;
 }
 
+// The beer page's brewery name is itself a link to that brewery's own
+// Untappd page (confirmed via a screenshot of the real Full Circle page:
+// the "Autodidact Beer" text under the beer title sits inside the same
+// .brewery element parseBeerHtml already reads for the name, wrapped in an
+// <a> whose href goes to /w/autodidact-beer/<id>). Location isn't anywhere
+// on the beer page itself - see parseBreweryHtml below - so getting it
+// means following this link and fetching that second page too.
+function extractBreweryUrl(html, sourceUrl) {
+  const $ = cheerio.load(html);
+  const href = $('.brewery a').first().attr('href');
+  if (!href) return undefined;
+  try {
+    return new URL(href, sourceUrl).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+// A brewery's own Untappd page (confirmed via a user-supplied DevTools
+// screenshot of Autodidact Beer's page) reuses the exact same ".brewery"
+// class name the beer page uses for its brewery-name link, but for
+// something completely different here: a plain-text location ("Morris
+// Plains, NJ United States"), not a link to anything, sitting in the same
+// .top .basic .name structure a beer page uses for its own title and
+// brewery link.
+function parseBreweryHtml(html) {
+  const $ = cheerio.load(html);
+  return firstNonEmpty($('.basic .name .brewery').first().text());
+}
+
 // Split out from extractBeer so it can be exercised directly against fixture
 // HTML in tests - a real fetch to Untappd isn't available to test against
 // (see the note above), so this is the part that can actually be pinned
@@ -504,7 +534,35 @@ async function extractBeer(url) {
     }
     throw err;
   }
-  return parseBeerHtml(html, url);
+  const result = parseBeerHtml(html, url);
+
+  // Location is a second request away - following the brewery link found
+  // above to that brewery's own page (see extractBreweryUrl/parseBreweryHtml
+  // above). Best-effort only: the beer import itself already succeeded by
+  // this point, so a brewery page that's blocked, missing, or shaped
+  // differently just leaves location blank for manual entry rather than
+  // failing the whole import over a field that was never guaranteed.
+  if (!result.location) {
+    const breweryUrl = extractBreweryUrl(html, url);
+    if (breweryUrl) {
+      try {
+        const breweryHtml = await fetchBeerHtml(breweryUrl);
+        const location = parseBreweryHtml(breweryHtml);
+        if (location) result.location = location;
+      } catch {
+        // Swallow - see comment above.
+      }
+    }
+  }
+
+  return result;
 }
 
-module.exports = { extractProduct, extractBeer, parseBeerHtml, fetchBeerHtml };
+module.exports = {
+  extractProduct,
+  extractBeer,
+  parseBeerHtml,
+  fetchBeerHtml,
+  parseBreweryHtml,
+  extractBreweryUrl,
+};

@@ -13,7 +13,7 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const { parseBeerHtml, fetchBeerHtml, extractBeer } = require('../server/productImport');
+const { parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
@@ -453,4 +453,123 @@ test('extractBeer succeeds end-to-end when the second attempt gets through', asy
       assert.equal(result.brewery, 'Some Brewery');
     }
   );
+});
+
+// ================================================================
+// Brewery location - a second request following the beer page's brewery
+// link. Confirmed via two real DevTools screenshots (the beer page's
+// .brewery link, and the brewery page's own reuse of that same class name
+// for a plain-text location instead) - see the notes above
+// extractBreweryUrl/parseBreweryHtml in productImport.js.
+// ================================================================
+
+test('extractBreweryUrl resolves a root-relative brewery link against the beer page URL', () => {
+  const html = page({
+    body: '<h1>Full Circle</h1><p class="brewery"><a href="/w/autodidact-beer/432029">Autodidact Beer</a></p>',
+  });
+  const url = extractBreweryUrl(html, 'https://untappd.com/b/autodidact-beer-full-circle/5307329');
+  assert.equal(url, 'https://untappd.com/w/autodidact-beer/432029');
+});
+
+test('extractBreweryUrl passes through an already-absolute brewery link unchanged', () => {
+  const html = page({
+    body: '<p class="brewery"><a href="https://untappd.com/w/autodidact-beer/432029">Autodidact Beer</a></p>',
+  });
+  const url = extractBreweryUrl(html, 'https://untappd.com/b/x/1');
+  assert.equal(url, 'https://untappd.com/w/autodidact-beer/432029');
+});
+
+test('extractBreweryUrl returns undefined when the beer page has no brewery link', () => {
+  const html = page({ body: '<h1>Full Circle</h1>' });
+  assert.equal(extractBreweryUrl(html, 'https://untappd.com/b/x/1'), undefined);
+});
+
+test('parseBreweryHtml reads the location from a real brewery page structure', () => {
+  const html = page({
+    body: `
+      <div class="cont brewery-page">
+        <div class="main"><div class="box b_info"><div class="content"><div class="top">
+          <div class="basic">
+            <div class="name">
+              <h1>Autodidact Beer</h1>
+              <p class="brewery">Morris Plains, NJ United States</p>
+              <p class="style">Micro Brewery</p>
+            </div>
+          </div>
+        </div></div></div></div>
+      </div>
+    `,
+  });
+  assert.equal(parseBreweryHtml(html), 'Morris Plains, NJ United States');
+});
+
+test('parseBreweryHtml returns undefined when the page has no recognizable location', () => {
+  const html = page({ body: '<h1>Some Brewery</h1>' });
+  assert.equal(parseBreweryHtml(html), undefined);
+});
+
+test('extractBeer follows the brewery link and fills in location from the brewery page', async () => {
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Full Circle by Autodidact Beer | Untappd" />'
+      + '<meta property="og:description" content="d" />',
+    body: '<p class="brewery"><a href="/w/autodidact-beer/432029">Autodidact Beer</a></p>',
+  });
+  const breweryHtml = page({
+    body: '<div class="basic"><div class="name"><h1>Autodidact Beer</h1>'
+      + '<p class="brewery">Morris Plains, NJ United States</p></div></div>',
+  });
+  const requestedUrls = [];
+  await withMockFetch(
+    async (url) => {
+      requestedUrls.push(url);
+      if (url === 'https://untappd.com/b/autodidact-beer-full-circle/1') {
+        return mockResponse({ status: 200, body: beerHtml });
+      }
+      if (url === 'https://untappd.com/w/autodidact-beer/432029') {
+        return mockResponse({ status: 200, body: breweryHtml });
+      }
+      throw new Error('unexpected URL: ' + url);
+    },
+    async () => {
+      const result = await extractBeer('https://untappd.com/b/autodidact-beer-full-circle/1');
+      assert.equal(result.brewery, 'Autodidact Beer');
+      assert.equal(result.location, 'Morris Plains, NJ United States');
+    }
+  );
+  assert.deepEqual(requestedUrls, [
+    'https://untappd.com/b/autodidact-beer-full-circle/1',
+    'https://untappd.com/w/autodidact-beer/432029',
+  ]);
+});
+
+test('extractBeer still succeeds with a blank location when the brewery page is blocked', async () => {
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Full Circle by Autodidact Beer | Untappd" />'
+      + '<meta property="og:description" content="d" />',
+    body: '<p class="brewery"><a href="/w/autodidact-beer/432029">Autodidact Beer</a></p>',
+  });
+  await withMockFetch(
+    async (url) => (url.includes('/w/') ? mockResponse({ status: 403 }) : mockResponse({ status: 200, body: beerHtml })),
+    async () => {
+      const result = await extractBeer('https://untappd.com/b/autodidact-beer-full-circle/1');
+      assert.equal(result.brewery, 'Autodidact Beer');
+      assert.equal(result.location, '');
+    }
+  );
+});
+
+test('extractBeer does not request the brewery page at all when there is no brewery link to follow', async () => {
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Full Circle by Autodidact Beer | Untappd" />'
+      + '<meta property="og:description" content="d" />',
+  });
+  let calls = 0;
+  await withMockFetch(
+    async () => { calls += 1; return mockResponse({ status: 200, body: beerHtml }); },
+    async () => {
+      const result = await extractBeer('https://untappd.com/b/autodidact-beer-full-circle/1');
+      assert.equal(result.location, '');
+    }
+  );
+  assert.equal(calls, 1, 'no .brewery a link means nothing to follow - must not make a second request');
 });
