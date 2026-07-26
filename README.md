@@ -5,7 +5,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Manual entry** form for title, description, size/unit, regular price, and sale price.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it.
 - **Bulk CSV import** for adding many products at once.
-- **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed.
+- **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
 - **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
 - **Ratings** &mdash; an optional list of critic ratings (e.g. "95 Pts Jim Murray"). Reviewers are picked from a managed dropdown (seeded with Wine Enthusiast, Wine Spectator, Wine Advocate, James Suckling, Jim Murray) that you can add to or trim from the "Manage reviewers" link.
@@ -92,8 +92,13 @@ If a page doesn't expose any of this, the fields will come back blank and you ca
 ## Printing
 
 1. Add shelf talkers via any of the three methods.
-2. Review/edit/reorder in the **Queue** panel.
-3. Click **Print Sheet(s)**. This opens your browser's print dialog with pages already formatted for Letter paper, 6 talkers per sheet. Choose "Save as PDF" instead of a printer if you want a PDF file.
+2. Review them in the **Queue** panel. Each row's &vellip; menu can move it up or
+   down (queue order is print order), edit it, copy it, or delete it.
+3. Click **Print Sheet(s)**. A preview shows every sheet exactly as it will print
+   &mdash; including how full each one is &mdash; before anything reaches the printer.
+4. Click **Print Now**. This opens your browser's print dialog with pages already
+   formatted for Letter paper, 6 talkers per sheet. Choose "Save as PDF" instead of a
+   printer if you want a PDF file.
 
 ## Project layout
 
@@ -104,10 +109,33 @@ server/
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
+  js/layout.js         Print-sheet geometry + sheet/auto-arrange packing (no DOM)
   js/card.js           Card rendering + auto text-fit
   js/app.js            Form, queue, import, CSV, and print wiring
   assets/logo.png      Brand logo (extracted from the provided template)
+test/
+  layout.test.js          Packing invariants: every layout fits a sheet, no item lost
+  print-css-sync.test.js  Guards the JS geometry against the print CSS
 ```
+
+## Tests
+
+```bash
+npm test
+```
+
+No dependencies and no install step needed &mdash; they use Node's built-in test
+runner, and run on every push via `.github/workflows/test.yml`.
+
+The print geometry lives in two places that can't see each other: the numbers in
+`public/js/layout.js` (which the auto-arrange packer budgets against) and the
+`@media print` rules in `public/css/styles.css` (which the browser actually lays
+the page out with). If those drift apart nothing complains at runtime &mdash; the
+packer will happily fit six items onto a page CSS then renders seven across, and
+the overflow silently clips. `print-css-sync.test.js` reads the real values back
+out of the stylesheet and fails if they stop agreeing, so **if you change a page
+margin, gap, card size or aspect ratio, change it in both places** and let the
+tests confirm it.
 
 ## Customizing
 

@@ -9,6 +9,9 @@ function escapeHtml(str) {
 }
 
 function formatMoney(value) {
+  // An empty field is "no price yet", not zero - Number('') is 0, which made
+  // the live preview of a blank form advertise "Regular Price $0.00".
+  if (value === null || value === undefined || String(value).trim() === '') return '';
   const num = Number(value);
   if (!Number.isFinite(num)) return '';
   return `$${num.toFixed(2)}`;
@@ -100,11 +103,12 @@ function buildPricingHtml(talker) {
   let badge = '';
   if (talkerType === 'closeout') badge = '<div class="card__closeout-badge">CLOSEOUT!!</div>';
   else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
+  const regular = formatMoney(talker.price);
   return `
     ${badge}
     <div class="card__prices">
       ${hasSale ? `<div class="card__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : ''}
-      <div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>
+      ${regular ? `<div class="card__regular-price">Regular Price ${regular}</div>` : ''}
     </div>
   `;
 }
@@ -180,10 +184,11 @@ function buildSignPriceRowHtml(talker) {
     `;
   }
 
+  const regular = formatMoney(talker.price);
   return `
     <div class="sign__price-row">
       ${hasSale ? `<div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : '<div></div>'}
-      <div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>
+      ${regular ? `<div class="sign__regular-price">Regular Price ${regular}</div>` : '<div></div>'}
     </div>
   `;
 }
@@ -309,11 +314,20 @@ function buildCardElement(talker) {
 function fitCardText(cardEl) {
   const targets = cardEl.querySelectorAll('[data-fit]');
   targets.forEach((el) => {
-    const minPx = el.dataset.fit === 'title' ? 10 : 8;
-    let fontSize = parseFloat(getComputedStyle(el).fontSize);
+    // Both the floor and the step are relative to the element's own starting
+    // size, not absolute pixels. The same card gets rendered at wildly
+    // different scales - a ~120px-wide card in the Print Preview modal, a
+    // 2.8in one on paper, a 10.1in Display Sign - and every font size in the
+    // card is a fraction of --w, so a fixed 10px/8px floor meant a different
+    // amount of shrink was available at each scale: the small previews were
+    // already at (or under) the floor before shrinking started, and truncated
+    // titles that print perfectly well.
+    const startPx = parseFloat(getComputedStyle(el).fontSize);
+    const minPx = Math.max(startPx * 0.5, 4);
+    let fontSize = startPx;
     let guard = 40;
     while (el.scrollHeight > el.clientHeight + 1 && fontSize > minPx && guard > 0) {
-      fontSize -= 0.5;
+      fontSize *= 0.97;
       el.style.fontSize = `${fontSize}px`;
       guard -= 1;
     }

@@ -10,6 +10,9 @@
   --purple-band-dark: #582738;
   --sale-red: #d21f1f;
   --chilled-blue: #1a5fb4;
+  /* Secondary ink. #8a8378 was used for this and fails WCAG AA on white
+     (~3.8:1); this is the same family at ~5.8:1. */
+  --muted: #6b645a;
   --radius: 10px;
 }
 
@@ -50,10 +53,10 @@ h1, h2, h3 { margin: 0; }
 .appbar__brand { display: flex; align-items: center; gap: 0.9rem; }
 .appbar__logo { height: 44px; }
 .appbar h1 { font-size: 1.25rem; }
-.appbar p { margin: 0.1rem 0 0; font-size: 0.85rem; color: #6b645a; }
+.appbar p { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--muted); }
 
 .appbar__actions { display: flex; align-items: center; gap: 1rem; }
-.queue-count { font-size: 0.9rem; color: #6b645a; }
+.queue-count { font-size: 0.9rem; color: var(--muted); }
 
 /* ---------- Buttons ---------- */
 
@@ -111,7 +114,7 @@ h1, h2, h3 { margin: 0; }
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #8a8378;
+  color: var(--muted);
   border-bottom: 2px solid transparent;
 }
 .tab.is-active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -150,7 +153,7 @@ h1, h2, h3 { margin: 0; }
 
 .form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
 .form-error { color: var(--sale-red); font-size: 0.85rem; margin-top: 0.5rem; }
-.help-text { font-size: 0.85rem; color: #6b645a; margin: 0 0 0.75rem; }
+.help-text { font-size: 0.85rem; color: var(--muted); margin: 0 0 0.75rem; }
 .help-text code { background: #f0ece3; padding: 0.1rem 0.3rem; border-radius: 4px; }
 
 /* ---------- Ratings builder ---------- */
@@ -176,7 +179,7 @@ h1, h2, h3 { margin: 0; }
   border: none;
   background: none;
   cursor: pointer;
-  color: #6b645a;
+  color: var(--muted);
   font-size: 0.85rem;
   padding: 0 0.2rem;
 }
@@ -207,6 +210,12 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- Preview ---------- */
 
+/* The preview is the thing staff are actually checking, so it sticks to the
+   top of the viewport as the form column scrolls past it - the Beer form in
+   particular is tall enough that the price fields sit well below the fold,
+   and previously you had to scroll the preview off-screen to reach them. */
+.panel--preview { position: sticky; top: 5.5rem; }
+
 .preview-stage { display: flex; justify-content: center; padding: 1rem 0; }
 
 .preview-toggle { display: flex; gap: 0.3rem; }
@@ -218,7 +227,7 @@ h1, h2, h3 { margin: 0; }
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  color: #6b645a;
+  color: var(--muted);
 }
 .toggle-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
@@ -236,11 +245,17 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--border);
   box-shadow: 0 2px 10px rgba(0,0,0,0.12);
   box-sizing: border-box;
-  padding: 3.3% 2.6%;
+  /* All four sides are 2.6%, not 3.3% vertical: percentage padding resolves
+     against the containing block's *width* on every side, so 2.6% of the
+     11in sheet width is the 0.28in @page margin the print rules use - 3.3%
+     rendered as 0.36in and made the preview's top/bottom margins wider than
+     what actually prints. */
+  padding: 2.6%;
   display: grid;
   grid-template-columns: repeat(var(--cols, 3), 1fr);
   grid-template-rows: repeat(var(--rows, 2), 1fr);
-  gap: 2.4% 2.7%;
+  /* 0.2in and 0.3in of the 11in width, matching the print gap. */
+  gap: 1.8% 2.7%;
   justify-items: center;
   align-items: center;
 }
@@ -353,11 +368,14 @@ h1, h2, h3 { margin: 0; }
   margin-bottom: 0.5rem;
   color: #4a453d;
 }
-.print-preview-sheet__fill { font-weight: 500; color: #6b645a; }
+.print-preview-sheet__fill { font-weight: 500; color: var(--muted); }
 .print-preview-sheet__fill.is-partial { color: var(--sale-red); font-weight: 700; }
 
+/* Was capped at 480px inside a 920px modal, which left half the dialog empty
+   and rendered the cards too small to actually check before committing to a
+   print run. */
 .print-preview-sheet__grid {
-  max-width: 480px;
+  max-width: 100%;
   margin: 0;
 }
 
@@ -372,7 +390,7 @@ h1, h2, h3 { margin: 0; }
 /* ---------- Queue ---------- */
 
 .queue-grid { display: flex; flex-direction: column; gap: 0.6rem; max-height: 70vh; overflow-y: auto; }
-.empty-hint { color: #8a8378; font-size: 0.85rem; }
+.empty-hint { color: var(--muted); font-size: 0.85rem; }
 
 .queue-item {
   display: flex;
@@ -416,14 +434,14 @@ h1, h2, h3 { margin: 0; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.queue-item__expand-icon { flex: 0 0 auto; font-size: 0.7em; color: #8a8378; }
+.queue-item__expand-icon { flex: 0 0 auto; font-size: 0.7em; color: var(--muted); }
 .queue-item.is-expanded .queue-item__title-text {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   word-break: break-word;
 }
-.queue-item__meta { font-size: 0.78rem; color: #6b645a; }
+.queue-item__meta { font-size: 0.78rem; color: var(--muted); }
 /* A single "more actions" (kebab) button replaces the old inline
    Edit/Copy/Delete buttons, freeing up horizontal room for the title. The
    dropdown itself (#queueItemMenu, in index.html) is a single element
@@ -440,7 +458,7 @@ h1, h2, h3 { margin: 0; }
   line-height: 1;
   padding: 0.25rem 0.55rem;
   border-radius: 6px;
-  color: #6b645a;
+  color: var(--muted);
 }
 .queue-item__menu-btn:hover,
 .queue-item__menu-btn[aria-expanded="true"] { color: var(--accent); background: rgba(27, 27, 27, 0.06); }
@@ -466,7 +484,8 @@ h1, h2, h3 { margin: 0; }
   font-size: 0.85rem;
   color: var(--ink);
 }
-.queue-item-menu button:hover { background: rgba(27, 27, 27, 0.06); color: var(--accent); }
+.queue-item-menu button:hover:not(:disabled) { background: rgba(27, 27, 27, 0.06); color: var(--accent); }
+.queue-item-menu button:disabled { opacity: 0.4; cursor: not-allowed; }
 .queue-item-menu button[data-action="delete"] { color: var(--sale-red); }
 .queue-item-menu button[data-action="delete"]:hover { background: rgba(210, 31, 31, 0.08); }
 
@@ -562,8 +581,15 @@ h1, h2, h3 { margin: 0; }
   flex: 0 0 auto;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  /* Three lines, not two: a long-but-real product name ("Chateau Ste
+     Michelle Indian Wells Columbia Valley Riesling Reserve 2023") can't fit
+     two lines at a legible size, and shrink-to-fit would drive it to its
+     floor and still cut it off with an ellipsis. The extra line comes out of
+     .card__spacer's slack, so short titles look exactly as before, and
+     fitCardText's --price-fit pass still protects the price block if a
+     talker is genuinely too full. */
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -631,7 +657,7 @@ h1, h2, h3 { margin: 0; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #6b645a;
+  color: var(--muted);
   font-size: calc(var(--w) * 0.032 * var(--price-fit, 1));
   margin-bottom: calc(var(--w) * 0.012 * var(--price-fit, 1));
 }
@@ -672,7 +698,7 @@ h1, h2, h3 { margin: 0; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: #6b645a;
+  color: var(--muted);
 }
 
 .card__beer-table-value { flex: 1 1 auto; min-width: 0; font-weight: 600; color: var(--ink); }
@@ -967,6 +993,29 @@ h1, h2, h3 { margin: 0; }
 
 .print-only { display: none; }
 
+/* Off-screen measuring pass, added briefly by printNow() in app.js before
+   printing: fitCardText can only measure elements that are actually laid
+   out, and the print DOM is `display: none` in every medium but print. Kept
+   out of the document flow (and off-screen) so nothing flashes in the app. */
+.print-only.is-measuring {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: -20000px;
+  width: 10.44in;
+  pointer-events: none;
+}
+
+/* Deliberately outside @media print: the measuring pass above has to size
+   cards at their real print width, which is what --print-w carries (set per
+   sheet, or per item in auto-arrange mode - see buildPrintDom in app.js).
+   Only ever matches inside #printRoot; the on-screen previews use
+   .sheet-preview and set --w in JS instead. */
+.sheet .card,
+.sheet .sign {
+  --w: var(--print-w, 2.8in);
+}
+
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block; }
@@ -1001,10 +1050,7 @@ h1, h2, h3 { margin: 0; }
   .sheet:last-child { page-break-after: auto; }
 
   .sheet .card,
-  .sheet .sign {
-    --w: var(--print-w, 2.8in);
-    box-shadow: none;
-  }
+  .sheet .sign { box-shadow: none; }
 
   /* Auto-arrange (beta): a page is a vertical stack of full-width rows
      (see buildAutoArrangedPages in app.js) instead of a uniform grid, since
@@ -1031,4 +1077,24 @@ h1, h2, h3 { margin: 0; }
 
 @media (max-width: 1100px) {
   .layout { grid-template-columns: 1fr; }
+  /* Sticky only makes sense beside a scrolling form column; once everything
+     is stacked the preview would pin over the queue below it. */
+  .panel--preview { position: static; }
+}
+
+/* Below this the app bar's brand block and actions can't share a row: the
+   title wrapped to three lines, the tagline to seven, and the Print button's
+   label wrapped and overflowed its own box. */
+@media (max-width: 720px) {
+  .appbar {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    row-gap: 0.6rem;
+  }
+  .appbar__brand { flex: 1 1 100%; }
+  .appbar p { display: none; }
+  .appbar__actions { flex: 1 1 100%; justify-content: space-between; }
+  .btn { white-space: nowrap; }
+  .layout { padding: 1rem 1rem 2rem; gap: 1rem; }
+  .tabs { flex-wrap: wrap; }
 }

@@ -1,0 +1,36 @@
+name: Tests
+
+# The print geometry is split across public/js/layout.js and the @media print
+# rules in public/css/styles.css, and nothing at runtime notices if the two
+# drift apart - the damage only shows up on paper. These run on every push so
+# that drift is caught before it reaches a store PC.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both ends of the range package.json's `engines` promises. The test
+        # runner's own behaviour moved between these two - `node --test` only
+        # learned to expand glob patterns in 22, so a script that worked on
+        # 22 failed outright on 20 - and a store PC runs whatever Node is
+        # bundled in the installer, not the one this was written on.
+        node-version: [18, 22]
+    name: test (node ${{ matrix.node-version }})
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # No install step: the tests only use node:test and node:assert, and
+      # public/js/layout.js has no dependencies of its own.
+      - name: Run tests
+        run: npm test

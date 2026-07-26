@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
+    "test": "node --test",
     "electron": "electron .",
     "dist:win": "electron-builder --win --x64 --publish never",
     "release:patch": "npm version patch && git push --follow-tags",
@@ -14,6 +15,9 @@
     "release:major": "npm version major && git push --follow-tags"
   },
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "express": "^4.19.2",
     "cheerio": "^1.0.0"

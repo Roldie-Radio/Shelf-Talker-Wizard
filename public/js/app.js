@@ -3,134 +3,26 @@
   const REVIEWERS_KEY = 'shelfTalkerReviewers.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
-  // Print-sheet geometry per sign type/size, all sized to fit a single
-  // landscape Letter sheet (11in x 8.5in, 0.28in @page margin - see the
-  // @media print rules in styles.css). printWidth is the element's --w
-  // (its own width, matching how .card/.sign already scale everything off
-  // of --w); printWidth/11 gives the same ratio used to size the on-screen
-  // sheet preview at whatever pixel width it happens to be rendered at.
-  const SIGN_LAYOUTS = {
-    talker: { cols: 3, rows: 2, perSheet: 6, printWidth: '2.8in', aspect: 830 / 1136, label: 'Shelf Talkers' },
-    // Half Size keeps the same width as Full (same cols/printWidth) but is
-    // cut to half the height, so more rows fit per sheet; Quarter Size
-    // uniformly scales both dimensions to 50% of Full (same aspect ratio,
-    // half the printWidth), so both cols and rows increase.
-    'talker-half': { cols: 3, rows: 3, perSheet: 9, printWidth: '2.8in', aspect: 830 / 568, label: 'Half Size Shelf Talkers' },
-    'talker-quarter': { cols: 6, rows: 3, perSheet: 18, printWidth: '1.4in', aspect: 830 / 1136, label: 'Quarter Size Shelf Talkers' },
-    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: '10.1in', aspect: 2.7, label: 'Large Display Signs' },
-    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: '4.9in', aspect: 2, label: 'Small Display Signs' },
+  // Print-sheet geometry and the sheet/auto-arrange packing live in
+  // layout.js, apart from this file's DOM wiring so they can be unit tested
+  // against the @media print rules they have to agree with.
+  const {
+    PAGE_WIDTH_IN,
+    PAGE_MARGIN_IN,
+    SIGN_LAYOUTS,
+    printWidthCss,
+    layoutKeyFor,
+    buildSheets,
+    buildAutoArrangedPages,
+  } = window.ShelfTalkerLayout;
+
+  // Human-readable names for the queue list's meta line (see renderQueue).
+  const SIZE_LABELS = { full: 'Full', half: 'Half', quarter: 'Quarter' };
+  const STYLE_LABELS = {
+    closeout: 'Closeout',
+    supersale: 'Super Sale',
+    chilled: 'Also Available Chilled',
   };
-
-  // Page content area in inches (11in x 8.5in landscape Letter minus the
-  // 0.28in @page margin on each side) and the gaps between items/rows on a
-  // sheet - all must match the @media print rules in styles.css exactly,
-  // since auto-arrange (below) packs items onto pages using this same
-  // width/height budget.
-  const PAGE_CONTENT_WIDTH_IN = 10.44;
-  const PAGE_CONTENT_HEIGHT_IN = 7.94;
-  const ITEM_GAP_IN = 0.3;
-  const ROW_GAP_IN = 0.2;
-  const PAGE_MARGIN_IN = 0.28;
-
-  // aspect is width/height (the same convention as the CSS aspect-ratio
-  // property), so an item's real printed height is its printWidth divided
-  // by its aspect.
-  function itemHeightIn(layoutKey) {
-    const layout = SIGN_LAYOUTS[layoutKey];
-    return parseFloat(layout.printWidth) / layout.aspect;
-  }
-
-  function layoutKeyFor(talker) {
-    if (talker.signType === 'sign') return talker.signSize === 'small' ? 'sign-small' : 'sign-large';
-    if (talker.talkerSize === 'half') return 'talker-half';
-    if (talker.talkerSize === 'quarter') return 'talker-quarter';
-    return 'talker';
-  }
-
-  function emptyLayoutGroups() {
-    const groups = {};
-    Object.keys(SIGN_LAYOUTS).forEach((key) => { groups[key] = []; });
-    return groups;
-  }
-
-  // Groups the queue by print layout and chunks each group into sheets, so
-  // a printed/previewed sheet never mixes different layouts (Shelf Talker
-  // sizes, Display Sign sizes) with each other - their physical dimensions
-  // don't match. Order matches SIGN_LAYOUTS' own key order.
-  function buildSheets(items) {
-    const groups = emptyLayoutGroups();
-    items.forEach((t) => groups[layoutKeyFor(t)].push(t));
-    const sheets = [];
-    Object.keys(SIGN_LAYOUTS).forEach((key) => {
-      const { perSheet } = SIGN_LAYOUTS[key];
-      const groupItems = groups[key];
-      for (let i = 0; i < groupItems.length; i += perSheet) {
-        sheets.push({ layoutKey: key, items: groupItems.slice(i, i + perSheet) });
-      }
-    });
-    return sheets;
-  }
-
-  // Auto-arrange (beta): a real 2D bin-packer, not just per-type grouping
-  // (see buildSheets). Runs in two stages, the standard reduction from 2D
-  // bin-packing to 1D bin-packing via "shelves":
-  //
-  // 1. packItemsIntoShelves - First-Fit Decreasing Height (FFDH): sort every
-  //    item (any type, any size) tallest-first, then place each into the
-  //    first existing shelf with enough leftover width, or start a new shelf
-  //    if none fits. Sorting tallest-first guarantees a later item is never
-  //    taller than a shelf it joins, so a shelf's height is always just its
-  //    first item's height. This is what lets a row mix types/sizes (e.g. a
-  //    Quarter Shelf Talker next to a Small Display Sign) instead of only
-  //    ever stacking same-type rows.
-  // 2. packShelvesIntoPages - greedily stacks the resulting shelves onto
-  //    pages by height budget, same as before.
-  //
-  // FFDH is a well-known shelf-packing heuristic (provably within ~1.7x the
-  // optimal area) that's simple enough to keep deterministic and cheap for
-  // the handful of items a print queue realistically holds.
-  function packItemsIntoShelves(items) {
-    const rects = items
-      .map((talker) => {
-        const layoutKey = layoutKeyFor(talker);
-        return { talker, width: parseFloat(SIGN_LAYOUTS[layoutKey].printWidth), height: itemHeightIn(layoutKey) };
-      })
-      .sort((a, b) => b.height - a.height);
-
-    const shelves = [];
-    rects.forEach((rect) => {
-      const shelf = shelves.find((s) => s.usedWidth + ITEM_GAP_IN + rect.width <= PAGE_CONTENT_WIDTH_IN + 0.001);
-      if (shelf) {
-        shelf.usedWidth += ITEM_GAP_IN + rect.width;
-        shelf.items.push(rect.talker);
-      } else {
-        shelves.push({ height: rect.height, usedWidth: rect.width, items: [rect.talker] });
-      }
-    });
-    return shelves;
-  }
-
-  function packShelvesIntoPages(shelves) {
-    const pages = [];
-    let current = null;
-    let usedHeight = 0;
-    shelves.forEach((shelf) => {
-      const fitsOnCurrent = current && (usedHeight + ROW_GAP_IN + shelf.height) <= PAGE_CONTENT_HEIGHT_IN + 0.001;
-      if (fitsOnCurrent) {
-        usedHeight += ROW_GAP_IN + shelf.height;
-      } else {
-        current = { rows: [] };
-        pages.push(current);
-        usedHeight = shelf.height;
-      }
-      current.rows.push(shelf);
-    });
-    return pages;
-  }
-
-  function buildAutoArrangedPages(items) {
-    return packShelvesIntoPages(packItemsIntoShelves(items));
-  }
 
   /** @type {Array<object>} */
   let queue = loadQueue();
@@ -165,17 +57,36 @@
 
   // ---------- Persistence ----------
 
+  // Anything read back from localStorage or a saved queue file is untrusted:
+  // it may predate a version of the app, or have been hand-edited. Parsing
+  // succeeding doesn't mean the shape is usable - a stored object rather
+  // than an array used to make every later queue.forEach throw, leaving the
+  // app rendering nothing with no way to recover from the UI.
+  function normalizeQueue(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((t) => t && typeof t === 'object')
+      .map((t) => ({ ...t, id: t.id || makeId() }));
+  }
+
   function loadQueue() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
+      return raw ? normalizeQueue(JSON.parse(raw)) : [];
     } catch {
       return [];
     }
   }
 
   function saveQueue() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+    } catch (err) {
+      // Storage being full or unavailable (private browsing) shouldn't take
+      // the whole app down mid-render - the queue still works for this
+      // session, it just won't survive a refresh.
+      console.warn('Could not save the queue to browser storage.', err);
+    }
   }
 
   function loadReviewers() {
@@ -276,12 +187,28 @@
 
   // ---------- Tabs ----------
 
+  function activateTab(tab) {
+    els.tabs.forEach((t) => {
+      const isActive = t === tab;
+      t.classList.toggle('is-active', isActive);
+      // Roving tabindex: only the selected tab is in the tab order, and the
+      // arrow keys move between them - the pattern role="tab" implies.
+      t.setAttribute('aria-selected', String(isActive));
+      t.tabIndex = isActive ? 0 : -1;
+    });
+    els.panels.forEach((p) => p.classList.toggle('is-active', p.dataset.panel === tab.dataset.tab));
+  }
+
   els.tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      els.tabs.forEach((t) => t.classList.remove('is-active'));
-      els.panels.forEach((p) => p.classList.remove('is-active'));
-      tab.classList.add('is-active');
-      document.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('is-active');
+    tab.addEventListener('click', () => activateTab(tab));
+    tab.addEventListener('keydown', (e) => {
+      const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!dir) return;
+      e.preventDefault();
+      const list = [...els.tabs];
+      const next = list[(list.indexOf(tab) + dir + list.length) % list.length];
+      activateTab(next);
+      next.focus();
     });
   });
 
@@ -291,15 +218,26 @@
   // the three toggles together - e.g. a Small Display Sign has no room for
   // a description/rating, regardless of category, so those fields
   // disappear only in that combination.
+  // The toggle rows are role="radiogroup"; keeping aria-checked in step with
+  // the .is-active styling is what makes the current choice readable to a
+  // screen reader instead of being conveyed by colour alone.
+  function setToggleState(buttons, isSelected) {
+    buttons.forEach((b) => {
+      const selected = isSelected(b);
+      b.classList.toggle('is-active', selected);
+      b.setAttribute('aria-checked', String(selected));
+    });
+  }
+
   function applyFormMode() {
     const isBeer = currentCategory === 'beer';
     const isSign = currentSignType === 'sign';
     const isSmallSign = isSign && currentSignSize === 'small';
 
-    els.signTypeToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.signtype === currentSignType));
+    setToggleState(els.signTypeToggleBtns, (b) => b.dataset.signtype === currentSignType);
     els.signSizeToggleWrap.hidden = !isSign;
-    els.signSizeToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.signsize === currentSignSize));
-    els.categoryToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.category === currentCategory));
+    setToggleState(els.signSizeToggleBtns, (b) => b.dataset.signsize === currentSignSize);
+    setToggleState(els.categoryToggleBtns, (b) => b.dataset.category === currentCategory);
 
     els.titleLabel.textContent = isBeer ? 'Beer Name *' : (isSign ? 'Product Name *' : 'Product Title *');
     els.size.placeholder = isBeer ? '16oz Can / 4-pack' : '750ml / Each / 6-pack';
@@ -419,6 +357,14 @@
 
   function resetForm() {
     els.form.reset();
+    // form.reset() snaps every control back to its markup default, including
+    // the Talker Size <select> - but currentTalkerSize (the value readForm
+    // actually uses) lives outside the form and isn't touched, so without
+    // this the dropdown would read "Full Size" while the next talker added
+    // silently kept the previous Half/Quarter size. Re-applying the mode
+    // puts the control back in sync with the state, which also keeps the
+    // selected size across a batch of entries.
+    applyFormMode();
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
@@ -496,6 +442,7 @@
 
   els.manageReviewersToggle.addEventListener('click', () => {
     els.reviewerManager.hidden = !els.reviewerManager.hidden;
+    els.manageReviewersToggle.setAttribute('aria-expanded', String(!els.reviewerManager.hidden));
     if (!els.reviewerManager.hidden) renderReviewerManagerList();
   });
 
@@ -523,13 +470,40 @@
 
   // ---------- Preview ----------
 
+  // Scales the single-talker preview to the space the panel actually has,
+  // instead of leaving it at the 320px/600px CSS default that left a small
+  // card marooned in the middle of a much wider panel. --w has to stay an
+  // absolute length (every font size and offset inside a card is a calc()
+  // against it), so it's measured here rather than expressed in CSS.
+  const PREVIEW_MIN_W = 260;
+  function sizePreviewElement(el) {
+    const stageWidth = els.previewStage.clientWidth;
+    if (!stageWidth) return;
+    // Leave room for whatever sits above the stage so a tall portrait card
+    // doesn't grow past the bottom of the window. In the stacked layout the
+    // stage can be scrolled well out of view, where its viewport-relative
+    // top is not a meaningful height budget - fall back to the full window.
+    const stageTop = els.previewStage.getBoundingClientRect().top;
+    const headroom = stageTop > 0 && stageTop < window.innerHeight ? stageTop : 0;
+    const availableHeight = window.innerHeight - headroom - 40;
+    // aspect-ratio computes to "830 / 1136" (or a bare number), not a value
+    // parseFloat can read on its own.
+    const [aw, ah] = getComputedStyle(el).aspectRatio.split('/').map((n) => parseFloat(n));
+    const aspect = Number.isFinite(aw) && Number.isFinite(ah) && ah > 0 ? aw / ah : (aw || 1);
+    const widthPx = Math.max(PREVIEW_MIN_W, Math.min(stageWidth, availableHeight * aspect));
+    el.style.setProperty('--w', `${widthPx}px`);
+  }
+
   function renderPreview() {
     els.sheetPagination.hidden = true;
     const talker = readForm();
     els.previewStage.innerHTML = '';
     const card = buildPrintableElement(talker);
     els.previewStage.appendChild(card);
-    requestAnimationFrame(() => fitCardText(card));
+    requestAnimationFrame(() => {
+      sizePreviewElement(card);
+      requestAnimationFrame(() => fitCardText(card));
+    });
   }
 
   // A scaled-down stand-in for a printed Letter-landscape sheet. Paginates
@@ -556,8 +530,8 @@
     if (relevantItems.length === 0) {
       const label = SIGN_LAYOUTS[currentLayoutKey].label;
       els.previewStage.innerHTML = queue.length === 0
-        ? '<p class="empty-hint">No shelf talkers queued yet. Add one on the left to see the full page here.</p>'
-        : `<p class="empty-hint">No ${label} queued yet. Add one on the left, or switch Shelf Talkers/Display Signs above to see what else is queued.</p>`;
+        ? '<p class="empty-hint">No shelf talkers queued yet. Add one using the form to see the full page here.</p>'
+        : `<p class="empty-hint">No ${label} queued yet. Add one using the form, or switch Shelf Talkers/Display Signs above to see what else is queued.</p>`;
       els.sheetPagination.hidden = true;
       return;
     }
@@ -579,7 +553,7 @@
     // preview panel happens to be.
     requestAnimationFrame(() => {
       const containerWidth = sheetDiv.getBoundingClientRect().width;
-      const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+      const widthPx = containerWidth * (layout.printWidth / PAGE_WIDTH_IN);
       const elements = sheetDiv.querySelectorAll('.card, .sign');
       elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
       requestAnimationFrame(() => elements.forEach((el) => fitCardText(el)));
@@ -587,6 +561,8 @@
 
     els.sheetPagination.hidden = totalPages <= 1;
     els.pageIndicator.textContent = `Page ${sheetPage + 1} of ${totalPages}`;
+    els.prevPageBtn.disabled = sheetPage === 0;
+    els.nextPageBtn.disabled = sheetPage >= totalPages - 1;
   }
 
   function refreshPreview() {
@@ -608,7 +584,7 @@
     btn.addEventListener('click', () => {
       if (btn.dataset.preview === previewMode) return;
       previewMode = btn.dataset.preview;
-      els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+      setToggleState(els.previewToggleBtns, (b) => b === btn);
       refreshPreview();
     });
   });
@@ -631,7 +607,7 @@
     els.saveQueueBtn.disabled = queue.length === 0;
 
     if (queue.length === 0) {
-      els.queueGrid.innerHTML = '<p class="empty-hint">No shelf talkers yet. Add one on the left to get started.</p>';
+      els.queueGrid.innerHTML = '<p class="empty-hint">No shelf talkers yet. Add one using the form to get started.</p>';
       return;
     }
 
@@ -643,18 +619,30 @@
       const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
         ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
         : formatMoney(talker.price);
+      // The meta line is the only place staff can catch a talker that was
+      // queued with the wrong size or style, so it spells out everything
+      // that changes what comes out of the printer - not just "Shelf
+      // Talker". Parts are joined rather than concatenated so a missing
+      // field (size is optional) can't leave a stray separator behind.
       const typeLabel = talker.signType === 'sign'
         ? (talker.signSize === 'small' ? 'Small Display Sign' : 'Large Display Sign')
-        : 'Shelf Talker';
+        : `${SIZE_LABELS[talker.talkerSize] || 'Full'} Shelf Talker`;
+      const metaParts = [typeLabel];
+      if (talker.category === 'beer') metaParts.push('Beer');
+      if (talker.talkerType && talker.talkerType !== 'standard') {
+        metaParts.push(STYLE_LABELS[talker.talkerType] || talker.talkerType);
+      }
+      if (talker.size) metaParts.push(escapeHtml(talker.size));
+      metaParts.push(priceLabel);
 
       item.innerHTML = `
-        <div class="queue-item__swatch" data-theme="${talker.theme}"></div>
+        <div class="queue-item__swatch" data-theme="${talker.theme}" title="${talker.theme === 'purple' ? 'Purple' : 'Amber'} theme"></div>
         <div class="queue-item__body">
           <button type="button" class="queue-item__title" data-action="toggle-expand" title="Click to ${isExpanded ? 'collapse' : 'show full title'}">
             <span class="queue-item__title-text">${escapeHtml(talker.title || 'Untitled')}</span>
             <span class="queue-item__expand-icon" aria-hidden="true">${isExpanded ? '▾' : '▸'}</span>
           </button>
-          <div class="queue-item__meta">${typeLabel} &middot; ${escapeHtml(talker.size || '')} ${talker.size ? '&middot;' : ''} ${priceLabel}</div>
+          <div class="queue-item__meta">${metaParts.join(' &middot; ')}</div>
         </div>
         <div class="queue-item__actions">
           <button type="button" class="queue-item__menu-btn" data-action="toggle-menu" aria-haspopup="true" aria-expanded="false" title="More actions">&#8942;</button>
@@ -685,6 +673,9 @@
   // close enough to the bottom of the visible list.
   function openQueueMenu(talkerId, buttonEl) {
     queueMenuTalkerId = talkerId;
+    const idx = queue.findIndex((t) => t.id === talkerId);
+    els.queueItemMenu.querySelector('[data-action="move-up"]').disabled = idx <= 0;
+    els.queueItemMenu.querySelector('[data-action="move-down"]').disabled = idx === -1 || idx >= queue.length - 1;
     const rect = buttonEl.getBoundingClientRect();
     els.queueItemMenu.style.top = `${rect.bottom + 4}px`;
     els.queueItemMenu.style.right = `${window.innerWidth - rect.right}px`;
@@ -698,6 +689,16 @@
     els.queueGrid.querySelectorAll('.queue-item__menu-btn').forEach((b) => b.setAttribute('aria-expanded', 'false'));
   }
 
+  els.queueItemMenu.querySelector('[data-action="move-up"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    moveTalker(id, -1);
+  });
+  els.queueItemMenu.querySelector('[data-action="move-down"]').addEventListener('click', () => {
+    const id = queueMenuTalkerId;
+    closeQueueMenu();
+    moveTalker(id, 1);
+  });
   els.queueItemMenu.querySelector('[data-action="edit"]').addEventListener('click', () => {
     const id = queueMenuTalkerId;
     closeQueueMenu();
@@ -728,9 +729,23 @@
     els.cancelEditBtn.hidden = false;
     document.querySelector('.tab[data-tab="manual"]').click();
     previewMode = 'single';
-    els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
     renderPreview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Queue order is print order: buildSheets keeps each layout group's
+  // existing order when it chunks it into sheets, so moving an item changes
+  // which sheet - and where on it - the talker lands.
+  function moveTalker(id, delta) {
+    const idx = queue.findIndex((t) => t.id === id);
+    if (idx === -1) return;
+    const target = idx + delta;
+    if (target < 0 || target >= queue.length) return;
+    [queue[idx], queue[target]] = [queue[target], queue[idx]];
+    saveQueue();
+    renderQueue();
+    refreshPreview();
   }
 
   function duplicateTalker(id) {
@@ -803,7 +818,8 @@
       if (queue.length > 0 && !confirm('Opening a queue file will replace your current queue. Continue?')) {
         return;
       }
-      queue = openedQueue;
+      queue = normalizeQueue(openedQueue);
+      expandedQueueItemIds.clear();
       saveQueue();
       renderQueue();
       refreshPreview();
@@ -873,7 +889,7 @@
         theme: els.theme.value,
       });
       previewMode = 'single';
-      els.previewToggleBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.preview === 'single'));
+      setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
       renderPreview();
       document.querySelector('.tab[data-tab="manual"]').click();
       els.importStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
@@ -982,7 +998,7 @@
           rowEl.className = 'sheet__row';
           row.items.forEach((talker) => {
             const el = buildPrintableElement(talker);
-            el.style.setProperty('--print-w', SIGN_LAYOUTS[layoutKeyFor(talker)].printWidth);
+            el.style.setProperty('--print-w', printWidthCss(layoutKeyFor(talker)));
             rowEl.appendChild(el);
           });
           sheetEl.appendChild(rowEl);
@@ -996,7 +1012,7 @@
         sheetEl.className = 'sheet';
         sheetEl.style.setProperty('--cols', layout.cols);
         sheetEl.style.setProperty('--rows', layout.rows);
-        sheetEl.style.setProperty('--print-w', layout.printWidth);
+        sheetEl.style.setProperty('--print-w', printWidthCss(layoutKey));
         items.forEach((talker) => sheetEl.appendChild(buildPrintableElement(talker)));
         els.printRoot.appendChild(sheetEl);
       });
@@ -1005,9 +1021,20 @@
 
   function printNow() {
     buildPrintDom();
-    // Cards/signs need to be laid out at print size before we can measure/shrink text.
+    // Cards/signs need to be laid out at print size before we can
+    // measure/shrink text - and #printRoot is `display: none` outside
+    // @media print, where scrollHeight/clientHeight both read 0. That made
+    // every one of fitCardText's fit checks false, so it silently shrank
+    // nothing and the printer got unfitted cards (titles truncated with an
+    // ellipsis, the price block pushed off the bottom of the card) even
+    // though the on-screen Print Preview - which *is* laid out - showed them
+    // fitting fine. `.is-measuring` lays the same DOM out off-screen at true
+    // print width just long enough to measure it; the font sizes fitCardText
+    // sets are inline styles, so they survive the class coming back off.
+    els.printRoot.classList.add('is-measuring');
     requestAnimationFrame(() => {
       els.printRoot.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
+      els.printRoot.classList.remove('is-measuring');
       requestAnimationFrame(triggerPrint);
     });
   }
@@ -1018,11 +1045,39 @@
   // the system print dialog. Also offers an opt-in "Auto-arrange (beta)"
   // mode that can stack different sign types on the same sheet to save
   // paper (see buildAutoArrangedPages) - off by default since it's new.
+  // Focus moves into the dialog on open and back to the button that opened
+  // it on close, and Tab cycles inside it while it's up - otherwise keyboard
+  // focus stays behind on the page underneath, which for a modal means
+  // tabbing through controls you can't see.
+  let printPreviewReturnFocus = null;
+
+  function focusableInModal() {
+    return [...els.printPreviewOverlay.querySelectorAll('button, input, [href], select, textarea')]
+      .filter((el) => !el.disabled && el.offsetParent !== null);
+  }
+
   function openPrintPreview() {
     if (queue.length === 0) return;
+    printPreviewReturnFocus = document.activeElement;
     els.printPreviewOverlay.hidden = false;
     renderPrintPreviewContents();
+    els.printPreviewCloseBtn.focus();
   }
+
+  els.printPreviewOverlay.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const items = focusableInModal();
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   function renderPrintPreviewContents() {
     els.printPreviewSheets.innerHTML = '';
@@ -1063,7 +1118,7 @@
     requestAnimationFrame(() => {
       sheetEls.forEach(({ grid, layout }) => {
         const containerWidth = grid.getBoundingClientRect().width;
-        const widthPx = containerWidth * (parseFloat(layout.printWidth) / 11);
+        const widthPx = containerWidth * (layout.printWidth / PAGE_WIDTH_IN);
         const elements = grid.querySelectorAll('.card, .sign');
         elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
       });
@@ -1135,7 +1190,7 @@
         const pxPerIn = containerWidth / 11;
         sheetDiv.style.padding = `${pxPerIn * PAGE_MARGIN_IN}px`;
         itemEls.forEach(({ el, layoutKey }) => {
-          const widthPx = containerWidth * (parseFloat(SIGN_LAYOUTS[layoutKey].printWidth) / 11);
+          const widthPx = containerWidth * (SIGN_LAYOUTS[layoutKey].printWidth / PAGE_WIDTH_IN);
           el.style.setProperty('--w', `${widthPx}px`);
         });
       });
@@ -1148,6 +1203,8 @@
   function closePrintPreview() {
     els.printPreviewOverlay.hidden = true;
     els.printPreviewSheets.innerHTML = '';
+    if (printPreviewReturnFocus && printPreviewReturnFocus.isConnected) printPreviewReturnFocus.focus();
+    printPreviewReturnFocus = null;
   }
 
   els.printBtn.addEventListener('click', openPrintPreview);

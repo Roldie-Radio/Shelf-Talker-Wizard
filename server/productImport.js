@@ -2,6 +2,8 @@ const cheerio = require('cheerio');
 
 const FETCH_TIMEOUT_MS = 10000;
 const USER_AGENT = 'ShelfTalkerWizard/1.0 (+product data import)';
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 // Basic guard against pointing the importer at internal/private network addresses.
 const BLOCKED_HOSTNAME_PATTERNS = [
@@ -13,6 +15,8 @@ const BLOCKED_HOSTNAME_PATTERNS = [
   /^172\.(1[6-9]|2\d|3[0-1])\./,
   /^169\.254\./,
   /^\[?::1\]?$/,
+  /^\[?f[cd][0-9a-f]{2}:/i, // IPv6 unique-local (fc00::/7)
+  /^\[?fe80:/i, // IPv6 link-local
   /\.local$/i,
 ];
 
@@ -24,18 +28,43 @@ function assertPublicUrl(url) {
 }
 
 async function fetchHtml(url) {
-  assertPublicUrl(url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const resp = await fetch(url, {
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        'User-Agent': USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    });
+    // Redirects are followed by hand (`redirect: 'manual'`) so that
+    // assertPublicUrl runs on *every* hop. With redirect: 'follow' only the
+    // URL typed into the form was ever checked, so a public-looking host
+    // could 302 the fetch onto a private address (127.0.0.1, 10.x, ...) and
+    // hand its contents back through the import fields - the guard cleared
+    // the first URL and never saw the one actually read.
+    let currentUrl = url;
+    let resp;
+    for (let hop = 0; ; hop++) {
+      assertPublicUrl(currentUrl);
+      resp = await fetch(currentUrl, {
+        redirect: 'manual',
+        signal: controller.signal,
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'text/html,application/xhtml+xml',
+        },
+      });
+      if (!REDIRECT_STATUSES.has(resp.status)) break;
+
+      const location = resp.headers.get('location');
+      if (!location) {
+        throw new Error(`The page responded with ${resp.status} but no redirect target.`);
+      }
+      if (hop >= MAX_REDIRECTS) {
+        throw new Error('That page redirected too many times.');
+      }
+      currentUrl = new URL(location, currentUrl).toString();
+      const { protocol } = new URL(currentUrl);
+      if (protocol !== 'http:' && protocol !== 'https:') {
+        throw new Error('That page redirected somewhere unsupported.');
+      }
+    }
+
     if (!resp.ok) {
       throw new Error(`The page responded with ${resp.status} ${resp.statusText}.`);
     }
