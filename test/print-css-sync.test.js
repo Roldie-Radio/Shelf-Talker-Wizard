@@ -153,6 +153,38 @@ test('preview boxes are not allowed to shrink below their own --w', () => {
     'preview cards must not be shrinkable, or their text will not match their box');
 });
 
+// Dark mode themes the application chrome. It must never reach the colours
+// of the talkers and signs themselves, which describe ink on paper - a
+// talker prints the same whatever the app looks like on screen, and the
+// preview is only trustworthy if it keeps showing that.
+test('dark mode overrides UI tokens only, never the print palette', () => {
+  const body = ruleBody(':root[data-theme="dark"]');
+  const overridden = [...body.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]);
+  assert.ok(overridden.length > 0, 'expected the dark theme to define some tokens');
+
+  const printTokens = ['--ink', '--muted', '--accent', '--sale-red',
+    '--amber-band', '--amber-band-dark', '--purple-band', '--purple-band-dark', '--chilled-blue'];
+  const leaked = overridden.filter((t) => printTokens.includes(t));
+  assert.deepEqual(leaked, [],
+    `dark mode re-points ${leaked.join(', ')} - these colour the printed talkers and signs, `
+    + 'so theming them changes what the preview claims will come out of the printer');
+
+  const nonUi = overridden.filter((t) => !t.startsWith('--ui-') && t !== '--radius');
+  assert.deepEqual(nonUi, [],
+    `dark mode should only re-point --ui-* tokens; found ${nonUi.join(', ')}`);
+});
+
+test('cards and signs pin the print palette instead of inheriting the theme', () => {
+  // Most rules inside .card/.sign set no colour of their own, so without an
+  // explicit anchor they inherit the body's - which dark mode turns light,
+  // putting pale text on the white card it prints on.
+  const body = ruleBody('.card,\n.sign');
+  assert.match(body, /color:\s*var\(--ink\)/,
+    'cards and signs must anchor their text to the fixed print ink colour');
+  assert.match(body, /background:\s*#fff/,
+    'cards and signs print on white paper regardless of the app theme');
+});
+
 test('the off-screen measuring pass is wide enough for a full sheet', () => {
   // printNow() lays the print DOM out under .is-measuring so fitCardText can
   // measure it. If that box were narrower than the page content area, the
