@@ -114,6 +114,45 @@ test('card and sign aspect ratios match SIGN_LAYOUTS', () => {
   assert.equal(L.SIGN_LAYOUTS['talker-quarter'].aspect, L.SIGN_LAYOUTS.talker.aspect);
 });
 
+// The on-screen sheet previews are laid out at literal print size and then
+// scaled down as a whole by a CSS transform (see .preview-scaler and
+// scalePreview in app.js), so that a preview is a photograph of the printed
+// page rather than an independent re-layout at a different size. That only
+// holds if the preview's own page box is the printed page box, which is what
+// these pin down. Before this, the preview used percentage padding and gaps
+// that merely approximated the print rules.
+test('the sheet preview page box is the printed page box', () => {
+  assertSameLength(declaration('.sheet-preview', 'width'), L.PAGE_WIDTH_IN,
+    'the sheet preview must be a full page wide, or it is not showing the printed layout');
+  assertSameLength(declaration('.sheet-preview', 'height'), L.PAGE_HEIGHT_IN,
+    'the sheet preview must be a full page tall, or it is not showing the printed layout');
+  assertSameLength(declaration('.sheet-preview', 'padding'), L.PAGE_MARGIN_IN,
+    'the sheet preview margin must be the @page margin');
+});
+
+test('the sheet preview uses the same gaps as the printed sheet', () => {
+  const [previewRow, previewCol] = declaration('.sheet-preview', 'gap').split(/\s+/);
+  const [printRow, printCol] = declaration('.sheet', 'gap').split(/\s+/);
+  assert.equal(previewRow, printRow, 'preview row gap differs from the printed row gap');
+  assert.equal(previewCol, printCol, 'preview column gap differs from the printed column gap');
+
+  assert.equal(declaration('.sheet-preview--auto', 'gap'), declaration('.sheet--auto', 'gap'),
+    'auto-arrange preview row gap differs from the printed one');
+  assert.equal(declaration('.sheet-preview__row', 'gap'), declaration('.sheet__row', 'gap'),
+    'auto-arrange preview item gap differs from the printed one');
+});
+
+test('preview boxes are not allowed to shrink below their own --w', () => {
+  // .card/.sign set width from --w but size every font inside with
+  // calc(var(--w) * ...). As flex items they would otherwise shrink below
+  // that width in a narrow container while the text stayed at the old size -
+  // which is exactly how resizing the window blew the live preview apart,
+  // overflowing the description and pushing the price block off the card.
+  const body = ruleBody('.preview-stage .card,\n.preview-stage .sign,\n.sheet-preview .card,\n.sheet-preview .sign');
+  assert.match(body, /flex-shrink:\s*0/,
+    'preview cards must not be shrinkable, or their text will not match their box');
+});
+
 test('the off-screen measuring pass is wide enough for a full sheet', () => {
   // printNow() lays the print DOM out under .is-measuring so fitCardText can
   // measure it. If that box were narrower than the page content area, the

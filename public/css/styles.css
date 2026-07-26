@@ -218,6 +218,29 @@ h1, h2, h3 { margin: 0; }
 
 .preview-stage { display: flex; justify-content: center; padding: 1rem 0; }
 
+/* Every preview is laid out at TRUE PRINT SIZE and then shrunk to fit with a
+   CSS transform, rather than being re-laid-out at whatever pixel size the
+   panel happens to be. A transform is purely visual: line breaks, the
+   shrink-to-fit pass in fitCardText, and every rounding decision all happen
+   at the real printed dimensions, so a preview is a photograph of the
+   printed card instead of an independent rendering that merely resembles
+   it. Text fitting in particular is not scale-invariant - the same title
+   can break onto a different number of lines at a different size - so this
+   is the only way "the preview matches the paper" can actually hold.
+   scalePreview() in app.js sets the transform and sizes the wrapper. */
+.preview-scaler { position: relative; overflow: hidden; }
+.preview-scaler > * { transform-origin: top left; flex-shrink: 0; }
+
+/* Belt and braces: .card/.sign set their own width from --w, and as flex
+   items they would otherwise shrink below it when the container is narrow -
+   leaving the box smaller while every calc(var(--w) * ...) font size inside
+   stayed at the old size, which is exactly how resizing the window used to
+   blow the preview apart. */
+.preview-stage .card,
+.preview-stage .sign,
+.sheet-preview .card,
+.sheet-preview .sign { flex-shrink: 0; }
+
 .preview-toggle { display: flex; gap: 0.3rem; }
 .toggle-btn {
   border: 1px solid var(--border);
@@ -231,31 +254,25 @@ h1, h2, h3 { margin: 0; }
 }
 .toggle-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* A scaled-down stand-in for a printed Letter-landscape sheet (11in x
-   8.5in), showing the whole current print queue 6-up like the real print
-   output. Proportions (margin/gap/card size) mirror the @media print rules
-   below; card --w is set in JS from the container's actual rendered width. */
+/* A stand-in for a printed Letter-landscape sheet, laid out at its literal
+   printed size - 11in x 8.5in, with the same 0.28in page margin and the
+   same inch gaps as the @media print rules below - and then scaled down as
+   a whole by .preview-scaler. Everything here is in inches rather than
+   percentages precisely so it can be compared against the print rules
+   (test/print-css-sync.test.js does exactly that). */
 .sheet-preview {
   position: relative;
-  width: 100%;
-  max-width: 620px;
-  aspect-ratio: 11 / 8.5;
-  margin: 0 auto;
+  width: 11in;
+  height: 8.5in;
   background: #fff;
   border: 1px solid var(--border);
   box-shadow: 0 2px 10px rgba(0,0,0,0.12);
   box-sizing: border-box;
-  /* All four sides are 2.6%, not 3.3% vertical: percentage padding resolves
-     against the containing block's *width* on every side, so 2.6% of the
-     11in sheet width is the 0.28in @page margin the print rules use - 3.3%
-     rendered as 0.36in and made the preview's top/bottom margins wider than
-     what actually prints. */
-  padding: 2.6%;
+  padding: 0.28in;
   display: grid;
   grid-template-columns: repeat(var(--cols, 3), 1fr);
   grid-template-rows: repeat(var(--rows, 2), 1fr);
-  /* 0.2in and 0.3in of the 11in width, matching the print gap. */
-  gap: 1.8% 2.7%;
+  gap: 0.2in 0.3in;
   justify-items: center;
   align-items: center;
 }
@@ -270,13 +287,13 @@ h1, h2, h3 { margin: 0; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.4%;
+  gap: 0.2in;
 }
 .sheet-preview__row {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2.7%;
+  gap: 0.3in;
   width: 100%;
   flex: 0 0 auto;
 }
@@ -371,13 +388,10 @@ h1, h2, h3 { margin: 0; }
 .print-preview-sheet__fill { font-weight: 500; color: var(--muted); }
 .print-preview-sheet__fill.is-partial { color: var(--sale-red); font-weight: 700; }
 
-/* Was capped at 480px inside a 920px modal, which left half the dialog empty
-   and rendered the cards too small to actually check before committing to a
-   print run. */
-.print-preview-sheet__grid {
-  max-width: 100%;
-  margin: 0;
-}
+/* No max-width: like every other preview this is laid out at a literal 11in
+   and scaled down by its .preview-scaler, so constraining its width here
+   would shrink the page box itself while its contents stayed printed-size. */
+.print-preview-sheet__grid { margin: 0; }
 
 .print-preview-modal__footer {
   display: flex;

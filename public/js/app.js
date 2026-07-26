@@ -7,8 +7,6 @@
   // layout.js, apart from this file's DOM wiring so they can be unit tested
   // against the @media print rules they have to agree with.
   const {
-    PAGE_WIDTH_IN,
-    PAGE_MARGIN_IN,
     SIGN_LAYOUTS,
     printWidthCss,
     layoutKeyFor,
@@ -470,28 +468,52 @@
 
   // ---------- Preview ----------
 
-  // Scales the single-talker preview to the space the panel actually has,
-  // instead of leaving it at the 320px/600px CSS default that left a small
-  // card marooned in the middle of a much wider panel. --w has to stay an
-  // absolute length (every font size and offset inside a card is a calc()
-  // against it), so it's measured here rather than expressed in CSS.
-  const PREVIEW_MIN_W = 260;
-  function sizePreviewElement(el) {
-    const stageWidth = els.previewStage.clientWidth;
-    if (!stageWidth) return;
-    // Leave room for whatever sits above the stage so a tall portrait card
-    // doesn't grow past the bottom of the window. In the stacked layout the
-    // stage can be scrolled well out of view, where its viewport-relative
-    // top is not a meaningful height budget - fall back to the full window.
+  // Wraps an element that has been laid out at true print size so it can be
+  // shrunk to fit on screen. The transform is purely visual - the element
+  // keeps its printed dimensions for layout, line breaking and fitCardText -
+  // which is what makes a preview an exact copy of the printed page rather
+  // than a separate rendering at a different size that merely looks similar.
+  function makeScaler(inner) {
+    const scaler = document.createElement('div');
+    scaler.className = 'preview-scaler';
+    scaler.appendChild(inner);
+    return scaler;
+  }
+
+  // Sizing a scaler is deliberately separate from building its contents:
+  // rescaling on a window resize is just a new multiplier, with no re-layout
+  // and no re-fitting, so the preview can never drift from the print output
+  // just because the window changed size.
+  function scalePreview(scaler, availableWidth, availableHeight) {
+    const inner = scaler.firstElementChild;
+    if (!inner) return;
+    inner.style.transform = 'none';
+    const naturalWidth = inner.offsetWidth;
+    const naturalHeight = inner.offsetHeight;
+    if (!naturalWidth || !naturalHeight || !availableWidth) return;
+    // Deliberately allowed to magnify past 1, not just shrink: a 2.8in card
+    // is small on a 1440px screen, and scaling a print-size layout up is
+    // just as faithful as scaling it down - the line breaks and fitted font
+    // sizes are the printed ones either way, only the viewing size changes.
+    const scale = Math.min(availableWidth / naturalWidth, availableHeight / naturalHeight);
+    inner.style.transform = `scale(${scale})`;
+    scaler.style.width = `${naturalWidth * scale}px`;
+    scaler.style.height = `${naturalHeight * scale}px`;
+  }
+
+  // Height the preview stage can use before running off the bottom of the
+  // window. In the stacked layout the stage can be scrolled well out of
+  // view, where its viewport-relative top is not a meaningful budget - fall
+  // back to the full window there.
+  function previewAvailableHeight() {
     const stageTop = els.previewStage.getBoundingClientRect().top;
     const headroom = stageTop > 0 && stageTop < window.innerHeight ? stageTop : 0;
-    const availableHeight = window.innerHeight - headroom - 40;
-    // aspect-ratio computes to "830 / 1136" (or a bare number), not a value
-    // parseFloat can read on its own.
-    const [aw, ah] = getComputedStyle(el).aspectRatio.split('/').map((n) => parseFloat(n));
-    const aspect = Number.isFinite(aw) && Number.isFinite(ah) && ah > 0 ? aw / ah : (aw || 1);
-    const widthPx = Math.max(PREVIEW_MIN_W, Math.min(stageWidth, availableHeight * aspect));
-    el.style.setProperty('--w', `${widthPx}px`);
+    return Math.max(240, window.innerHeight - headroom - 40);
+  }
+
+  function rescalePreviewStage() {
+    const scaler = els.previewStage.querySelector('.preview-scaler');
+    if (scaler) scalePreview(scaler, els.previewStage.clientWidth, previewAvailableHeight());
   }
 
   function renderPreview() {
@@ -499,10 +521,14 @@
     const talker = readForm();
     els.previewStage.innerHTML = '';
     const card = buildPrintableElement(talker);
-    els.previewStage.appendChild(card);
+    // Lay the card out at the exact width it will be printed at, so the text
+    // fitting below produces the same result the printer will get.
+    card.style.setProperty('--w', printWidthCss(layoutKeyFor(talker)));
+    const scaler = makeScaler(card);
+    els.previewStage.appendChild(scaler);
     requestAnimationFrame(() => {
-      sizePreviewElement(card);
-      requestAnimationFrame(() => fitCardText(card));
+      fitCardText(card);
+      rescalePreviewStage();
     });
   }
 
@@ -539,24 +565,11 @@
     const sheet = sheets[sheetPage];
     const layout = SIGN_LAYOUTS[sheet.layoutKey];
 
-    const sheetDiv = document.createElement('div');
-    sheetDiv.className = 'sheet-preview';
-    sheetDiv.style.setProperty('--cols', layout.cols);
-    sheetDiv.style.setProperty('--rows', layout.rows);
-    sheet.items.forEach((talker) => sheetDiv.appendChild(buildPrintableElement(talker)));
-    els.previewStage.appendChild(sheetDiv);
-
-    // Card/sign font sizes are driven by --w (see card.js/styles.css);
-    // compute it in px from the sheet's actual rendered width, using the
-    // same ratio the print layout uses (its printWidth against the full
-    // 11in sheet width), so text scales correctly at whatever size the
-    // preview panel happens to be.
+    const sheetDiv = buildSheetPreviewElement(sheet);
+    els.previewStage.appendChild(makeScaler(sheetDiv));
     requestAnimationFrame(() => {
-      const containerWidth = sheetDiv.getBoundingClientRect().width;
-      const widthPx = containerWidth * (layout.printWidth / PAGE_WIDTH_IN);
-      const elements = sheetDiv.querySelectorAll('.card, .sign');
-      elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
-      requestAnimationFrame(() => elements.forEach((el) => fitCardText(el)));
+      sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
+      rescalePreviewStage();
     });
 
     els.sheetPagination.hidden = totalPages <= 1;
@@ -565,10 +578,59 @@
     els.nextPageBtn.disabled = sheetPage >= totalPages - 1;
   }
 
+  // One 11in x 8.5in sheet, built at its literal printed size with each item
+  // at its own printed width. Shared by the Full Page preview and the Print
+  // Preview modal so the two can't drift apart from each other or from the
+  // real print DOM (see buildPrintDom, which builds the same shapes).
+  function buildSheetPreviewElement(sheet) {
+    const layout = SIGN_LAYOUTS[sheet.layoutKey];
+    const sheetDiv = document.createElement('div');
+    sheetDiv.className = 'sheet-preview';
+    sheetDiv.style.setProperty('--cols', layout.cols);
+    sheetDiv.style.setProperty('--rows', layout.rows);
+    sheet.items.forEach((talker) => {
+      const el = buildPrintableElement(talker);
+      el.style.setProperty('--w', printWidthCss(sheet.layoutKey));
+      sheetDiv.appendChild(el);
+    });
+    return sheetDiv;
+  }
+
+  // The auto-arrange equivalent: a vertical stack of rows that can each mix
+  // item types/sizes, so --w is set per item rather than per sheet.
+  function buildAutoSheetPreviewElement(page) {
+    const sheetDiv = document.createElement('div');
+    sheetDiv.className = 'sheet-preview sheet-preview--auto';
+    page.rows.forEach((row) => {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'sheet-preview__row';
+      row.items.forEach((talker) => {
+        const el = buildPrintableElement(talker);
+        el.style.setProperty('--w', printWidthCss(layoutKeyFor(talker)));
+        rowDiv.appendChild(el);
+      });
+      sheetDiv.appendChild(rowDiv);
+    });
+    return sheetDiv;
+  }
+
   function refreshPreview() {
     if (previewMode === 'sheet') renderSheetPreview();
     else renderPreview();
   }
+
+  // Resizing the window (or changing Windows display scaling) only changes
+  // how far the preview is scaled down - never how it is laid out - so this
+  // is a cheap recompute rather than a re-render. Without it the transform
+  // kept a multiplier calculated for the old window size.
+  let resizeDebounce;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(() => {
+      rescalePreviewStage();
+      rescalePrintPreviewSheets();
+    }, 100);
+  });
 
   let previewDebounce;
   function schedulePreview() {
@@ -1104,35 +1166,34 @@
           <span class="print-preview-sheet__fill ${isPartial ? 'is-partial' : ''}">${sheet.items.length} of ${layout.perSheet} slots used</span>
         </div>
       `;
-      const grid = document.createElement('div');
-      grid.className = 'sheet-preview print-preview-sheet__grid';
-      grid.style.setProperty('--cols', layout.cols);
-      grid.style.setProperty('--rows', layout.rows);
-      sheet.items.forEach((talker) => grid.appendChild(buildPrintableElement(talker)));
-      wrap.appendChild(grid);
+      const grid = buildSheetPreviewElement(sheet);
+      grid.classList.add('print-preview-sheet__grid');
+      const scaler = makeScaler(grid);
+      wrap.appendChild(scaler);
       els.printPreviewSheets.appendChild(wrap);
-      return { grid, layout };
+      return grid;
     });
 
-    // Sizing needs the grids laid out first to know their real pixel width.
     requestAnimationFrame(() => {
-      sheetEls.forEach(({ grid, layout }) => {
-        const containerWidth = grid.getBoundingClientRect().width;
-        const widthPx = containerWidth * (layout.printWidth / PAGE_WIDTH_IN);
-        const elements = grid.querySelectorAll('.card, .sign');
-        elements.forEach((el) => el.style.setProperty('--w', `${widthPx}px`));
-      });
-      requestAnimationFrame(() => {
-        sheetEls.forEach(({ grid }) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
-      });
+      sheetEls.forEach((grid) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
+      rescalePrintPreviewSheets();
+    });
+  }
+
+  // The modal's sheets are laid out at full 11in width and scaled to whatever
+  // the dialog can give them, same as the Full Page preview.
+  function rescalePrintPreviewSheets() {
+    const width = els.printPreviewSheets.clientWidth
+      - parseFloat(getComputedStyle(els.printPreviewSheets).paddingLeft || 0)
+      - parseFloat(getComputedStyle(els.printPreviewSheets).paddingRight || 0);
+    els.printPreviewSheets.querySelectorAll('.preview-scaler').forEach((scaler) => {
+      scalePreview(scaler, width, window.innerHeight);
     });
   }
 
   // Renders auto-arranged pages: each page is a vertical stack of full-width
   // shelves (see buildAutoArrangedPages), and a shelf can mix item
-  // types/sizes, so - unlike renderGroupedPreview, where one --w fits an
-  // entire sheet - every item needs its own --w computed from its own
-  // layout's printWidth.
+  // types/sizes.
   function renderAutoArrangePreview() {
     const groupedSheets = buildSheets(queue);
     const pages = buildAutoArrangedPages(queue);
@@ -1152,51 +1213,16 @@
           <span>Sheet ${i + 1} of ${pages.length} &mdash; Auto-arranged</span>
         </div>
       `;
-      const sheetDiv = document.createElement('div');
-      sheetDiv.className = 'sheet-preview sheet-preview--auto print-preview-sheet__grid';
-      const itemEls = [];
-      page.rows.forEach((row) => {
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'sheet-preview__row';
-        row.items.forEach((talker) => {
-          const el = buildPrintableElement(talker);
-          rowDiv.appendChild(el);
-          itemEls.push({ el, layoutKey: layoutKeyFor(talker) });
-        });
-        sheetDiv.appendChild(rowDiv);
-      });
-      wrap.appendChild(sheetDiv);
+      const sheetDiv = buildAutoSheetPreviewElement(page);
+      sheetDiv.classList.add('print-preview-sheet__grid');
+      wrap.appendChild(makeScaler(sheetDiv));
       els.printPreviewSheets.appendChild(wrap);
-      pageEls.push({ sheetDiv, itemEls });
+      pageEls.push(sheetDiv);
     });
 
-    // Use the *sheet's* own rendered width (representing the full 11in page,
-    // same as renderGroupedPreview) as the basis for each row's --w, not the
-    // row's own width - the row sits inside the sheet's padded content box,
-    // so its width is narrower than the true 11in-page reference.
-    //
-    // .sheet-preview's CSS padding is a percentage, which (per spec) always
-    // resolves against its containing block's *width* - including for
-    // top/bottom padding - and against the parent's width, not this box's
-    // own max-width-capped width. Grid mode never notices, since its grid
-    // rows/cols just auto-divide whatever content space is left; this flex
-    // column can't, since row heights are computed from real inches
-    // (matching PAGE_CONTENT_HEIGHT_IN) independent of the padding CSS
-    // ends up producing, so the padding must be pinned to match: uniform
-    // PAGE_MARGIN_IN on every side, in px, derived from this same width.
     requestAnimationFrame(() => {
-      pageEls.forEach(({ sheetDiv, itemEls }) => {
-        const containerWidth = sheetDiv.getBoundingClientRect().width;
-        const pxPerIn = containerWidth / 11;
-        sheetDiv.style.padding = `${pxPerIn * PAGE_MARGIN_IN}px`;
-        itemEls.forEach(({ el, layoutKey }) => {
-          const widthPx = containerWidth * (SIGN_LAYOUTS[layoutKey].printWidth / PAGE_WIDTH_IN);
-          el.style.setProperty('--w', `${widthPx}px`);
-        });
-      });
-      requestAnimationFrame(() => {
-        pageEls.forEach(({ sheetDiv }) => sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
-      });
+      pageEls.forEach((sheetDiv) => sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
+      rescalePrintPreviewSheets();
     });
   }
 
