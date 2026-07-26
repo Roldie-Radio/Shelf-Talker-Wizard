@@ -1,3 +1,16 @@
+// cheerio's HTTP dependency (undici) references the global File class at
+// module-load time (undici/lib/web/webidl/index.js), which Node only added
+// to the global scope itself starting in the 20.x line - on Node 18 this
+// throws "ReferenceError: File is not defined" the instant anything
+// requires cheerio, before a single line of this file's own code runs.
+// node:buffer has exported the same File class since well before that
+// (confirmed present on 18.20.8), so re-exposing it as a global is a
+// no-op on any Node that already has it and a real fix on any that don't -
+// this has to run before the require('cheerio') below.
+if (typeof globalThis.File === 'undefined') {
+  globalThis.File = require('node:buffer').File;
+}
+
 const cheerio = require('cheerio');
 
 const FETCH_TIMEOUT_MS = 10000;

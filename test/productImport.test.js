@@ -9,6 +9,8 @@
 // changing what an import fills in.
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
 
 const { parseBeerHtml } = require('../server/productImport');
 
@@ -165,6 +167,36 @@ test('parseBeerHtml never returns price, salePrice or size fields', () => {
   assert.equal('price' in result, false);
   assert.equal('salePrice' in result, false);
   assert.equal('size' in result, false);
+});
+
+// Regression test for a real crash: cheerio's HTTP dependency (undici)
+// reads the global File class the instant anything requires cheerio, and
+// Node only started providing that global itself in the 20.x line - on
+// Node 18 (confirmed against the real v18.20.8 binary while diagnosing
+// this) requiring productImport.js throws "ReferenceError: File is not
+// defined" before any of this file's own code runs. productImport.js works
+// around it by re-exposing node:buffer's File as the global before it
+// requires cheerio.
+//
+// This can't be tested by just requiring productImport.js in-process,
+// because whichever Node version happens to run this suite already defines
+// globalThis.File (true for every version currently in the CI matrix) -
+// that would make the test pass whether or not the workaround is even
+// there. Spawning a subprocess that deletes the global first reproduces the
+// missing-global condition deterministically, regardless of the host Node
+// version - including if Node 18 itself is ever dropped from the CI matrix,
+// which is exactly when a test relying on actually running under 18 would
+// stop meaning anything.
+test('productImport.js loads even when the platform has no global File (Node 18)', () => {
+  const script = `
+    delete globalThis.File;
+    require(${JSON.stringify(path.join(__dirname, '..', 'server', 'productImport.js'))});
+    console.log('loaded-ok');
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+  assert.equal(result.status, 0,
+    `expected productImport.js to load without a global File; stderr:\n${result.stderr}`);
+  assert.match(result.stdout, /loaded-ok/);
 });
 
 test('parseBeerHtml handles a title with no "by <brewery>" clause', () => {
