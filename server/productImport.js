@@ -367,6 +367,41 @@ function normalizeIbu(raw) {
   return /^n\/a$/i.test(raw) ? 'N/A' : raw;
 }
 
+// Untappd's real, brewery-written tasting note (confirmed against a real
+// page via a user-supplied DevTools inspection, not assumed) sits in one of
+// two sibling divs depending on whether the text needed a "show more"
+// truncation: .beer-descrption-read-less (yes, Untappd's own typo, not
+// ours) holds the full text and is shown by default, with a "Show Less"
+// link inside it; its sibling .beer-descrption-read-more holds a truncated
+// version with a "Show More" link and stays hidden until clicked. Both
+// exist in the static HTML regardless of which is visible, so the full
+// text is readable without running any JavaScript - tried in the order a
+// visitor would actually see them (expanded first).
+//
+// This is a different, and better, source than the og:description meta tag
+// this file already reads (see ogDescription above): that tag is an
+// auto-generated SEO/link-preview summary Untappd writes itself
+// ("<Beer> by <Brewery> is a <Style> which has a rating of N.N out of 5,
+// with N,NNN ratings and reviews on Untappd."), not anything the brewery
+// wrote - it's still useful as a last-resort fallback for a page whose
+// markup has moved on, just not as the first choice when the real text is
+// available.
+function extractBeerDescriptionFromDom($) {
+  for (const selector of ['.beer-descrption-read-less', '.beer-descrption-read-more']) {
+    const el = $(selector).first();
+    if (!el.length) continue;
+    // The "Show Less"/"Show More" toggle is itself an <a> nested inside the
+    // same div as the text (see the note above) - strip it before reading
+    // the text, or every description would end with that link's own label
+    // stuck onto it.
+    const clone = el.clone();
+    clone.find('a').remove();
+    const text = clone.text().replace(/\s+/g, ' ').trim();
+    if (text) return text;
+  }
+  return undefined;
+}
+
 // Split out from extractBeer so it can be exercised directly against fixture
 // HTML in tests - a real fetch to Untappd isn't available to test against
 // (see the note above), so this is the part that can actually be pinned
@@ -381,6 +416,8 @@ function parseBeerHtml(html, sourceUrl) {
     $('meta[name="description"]').attr('content')
   );
   const fromTitle = splitBeerTitle(ogTitle);
+
+  const description = firstNonEmpty(extractBeerDescriptionFromDom($), ogDescription);
 
   const domName = $('.name h1, h1[itemprop="name"], .beer-details .name').first().text();
   const domBrewery = $('.brewery a, .brewery-name, [itemprop="brand"] [itemprop="name"]').first().text();
@@ -432,7 +469,7 @@ function parseBeerHtml(html, sourceUrl) {
 
   const imageUrl = $('meta[property="og:image"]').attr('content');
 
-  if (!title && !brewery && !abv && !ibu && !untappdRating && !ogDescription) {
+  if (!title && !brewery && !abv && !ibu && !untappdRating && !description) {
     throw new Error(
       'Could not find beer details on that page. Untappd may be blocking automated '
       + 'requests - try a direct beer page URL, or enter the details manually.'
@@ -441,7 +478,7 @@ function parseBeerHtml(html, sourceUrl) {
 
   return {
     title: title || '',
-    description: ogDescription || '',
+    description: description || '',
     brewery: brewery || '',
     location: location || '',
     style: style || '',

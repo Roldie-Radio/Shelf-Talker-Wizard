@@ -219,6 +219,57 @@ test('parseBeerHtml does not misread a parenthesized decimal outside Untappd\'s 
   assert.equal(result.untappdRating, '');
 });
 
+// Regression fixture built from a real Untappd page (a user reported the
+// description field pulling the wrong text after the rating/IBU fixes
+// shipped - a DevTools screenshot of the actual page showed why). The
+// brewery's real tasting note lives in a div with Untappd's own typo'd
+// class name, not in og:description, which is an auto-generated SEO
+// summary Untappd writes itself. The div also contains a "Show Less"
+// toggle link nested inside the same element as the text.
+test('parseBeerHtml prefers the real tasting note in .beer-descrption-read-less over the auto-generated og:description', () => {
+  const html = page({
+    head: '<meta property="og:description" content="Full Circle by Autodidact Beer is a IPA - Imperial / Double New England / Hazy which has a rating of 4.2 out of 5, with 1,382 ratings and reviews on Untappd." />',
+    body: `
+      <h1>Full Circle</h1>
+      <div class="desc">
+        <div class="beer-descrption-read-more" style="display: none;">Daylily's biggest sibling...</div>
+        <div class="beer-descrption-read-less" style="display: block;">
+          Daylily's biggest sibling. Full Circle is a double IPA hopped brewed with
+          Citra and Mosaic hops, but pushed even further for more drippy hoppy
+          goodness. Drink fresh and enjoy!
+          <a class="read-less track-click" href="#" data-track="beer" data-href="#:info/readless">Show Less</a>
+        </div>
+      </div>
+    `,
+  });
+  const result = parseBeerHtml(html, 'https://untappd.com/b/x/1');
+  assert.equal(
+    result.description,
+    "Daylily's biggest sibling. Full Circle is a double IPA hopped brewed with Citra and Mosaic hops, but pushed even further for more drippy hoppy goodness. Drink fresh and enjoy!"
+  );
+});
+
+test('parseBeerHtml falls back to .beer-descrption-read-more when -read-less is absent', () => {
+  const html = page({
+    head: '<meta property="og:description" content="d" />',
+    body: `
+      <h1>Steez</h1>
+      <div class="beer-descrption-read-more">A hazy IPA with notes of citrus and pine.</div>
+    `,
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.description, 'A hazy IPA with notes of citrus and pine.');
+});
+
+test('parseBeerHtml falls back to og:description when neither beer-descrption div is present', () => {
+  const html = page({
+    head: '<meta property="og:description" content="A hazy IPA with notes of citrus and pine." />',
+    body: '<h1>Steez</h1>',
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.description, 'A hazy IPA with notes of citrus and pine.');
+});
+
 test('parseBeerHtml throws when the page has nothing usable', () => {
   const html = page({ body: '<p>This page is not a beer at all.</p>' });
   assert.throws(() => parseBeerHtml(html, 'https://example.com/nope'), /Could not find beer details/);
