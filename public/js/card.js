@@ -151,17 +151,20 @@ function buildRatingsInlineHtml(talker) {
   return `${escapeHtml(first.score || '')} Pts ${escapeHtml(first.reviewer || '')}`.trim();
 }
 
-// Top row: badge/rating/supersale-heading on the left, size on the right.
-function buildSignTopRowHtml(talker, leftHtml) {
+// The rating/badge and size row. Sits directly above the price row at the
+// bottom of the sign (see .sign__footer-block), so the rating lines up over
+// the sale price and the size over the regular price, matching the store's
+// printed Large signs.
+function buildSignMetaRowHtml(talker, leftHtml) {
   const talkerType = talker.talkerType || 'standard';
-  let left = leftHtml || '';
+  let left = leftHtml ? `<div class="sign__rating">${leftHtml}</div>` : '';
   if (talkerType === 'closeout') left = '<div class="sign__closeout-badge">CLOSEOUT!!</div>';
   else if (talkerType === 'supersale') left = '<div class="sign__supersale-text">Super Sale Price!!!</div>';
   else if (talkerType === 'chilled') left = '<div class="sign__chilled-badge">Also Available Chilled</div>';
   if (!left && !talker.size) return '';
   return `
-    <div class="sign__top-row">
-      <div class="sign__top-row-left">${left}</div>
+    <div class="sign__meta-row">
+      <div class="sign__meta-row-left">${left}</div>
       ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
     </div>
   `;
@@ -200,8 +203,10 @@ function buildLargeSignBodyHtml(talker) {
     <div class="sign__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
     <div class="sign__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
     ${isBeer ? buildBeerRatingHtml(talker) : ''}
-    ${buildSignTopRowHtml(talker, ratingHtml)}
-    ${buildSignPriceRowHtml(talker)}
+    <div class="sign__footer-block">
+      ${buildSignMetaRowHtml(talker, ratingHtml)}
+      ${buildSignPriceRowHtml(talker)}
+    </div>
   `;
 }
 

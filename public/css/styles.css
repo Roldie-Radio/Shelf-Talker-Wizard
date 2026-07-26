@@ -937,7 +937,7 @@ h1, h2, h3 { margin: 0; }
 .sign__content .card__beer-dot { width: calc(var(--w) * 0.011 * var(--price-fit, 1)); height: calc(var(--w) * 0.011 * var(--price-fit, 1)); }
 .sign__content .card__beer-rating-num { font-size: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
 
-.sign__top-row,
+.sign__meta-row,
 .sign__price-row,
 .sign__bottom-row {
   display: flex;
@@ -946,15 +946,30 @@ h1, h2, h3 { margin: 0; }
   width: 100%;
   flex: 0 0 auto;
 }
-.sign__top-row-left { text-align: left; }
+.sign__meta-row-left { text-align: left; }
 
-/* Always anchored to the very bottom of the sign body (pushed down via
-   flex auto-margin), regardless of how much title/description/rating
-   content precedes it - matches the store's printed signs, where the
-   price is the last thing before the footer band on every sign. */
-.sign__price-row { margin-top: auto; }
+/* The rating/size row and the price row are pinned to the bottom of the sign
+   body as ONE block, not individually: on the store's printed Large signs
+   the rating sits directly above the sale price and the size directly above
+   the regular price, so the slack left by a short description has to open up
+   above the pair rather than between them (which is what happened when only
+   the price row carried the auto margin). */
+.sign__footer-block {
+  margin-top: auto;
+  width: 100%;
+  flex: 0 0 auto;
+}
 
 .sign__size {
+  font-weight: 800;
+  font-size: calc(var(--w) * 0.016 * var(--price-fit, 1));
+}
+
+/* Matched to .sign__size, its partner across the row. Previously the rating
+   had no rule at all, so it inherited the page's absolute 16px instead of
+   scaling with --w like everything else on the sign - meaning it rendered at
+   a fixed size no matter how large the sign was printed. */
+.sign__rating {
   font-weight: 800;
   font-size: calc(var(--w) * 0.016 * var(--price-fit, 1));
 }
