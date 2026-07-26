@@ -34,6 +34,7 @@
     </div>
     <div class="appbar__actions">
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
+      <button type="button" id="helpBtn" class="btn" title="Help">Help</button>
       <button type="button" id="themeToggle" class="btn btn--icon" aria-pressed="false" title="Switch to dark mode">
         <span class="theme-toggle__icon" aria-hidden="true">&#9789;</span>
         <span class="theme-toggle__label">Dark</span>
@@ -256,9 +257,9 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
     <button type="button" data-action="delete">Delete</button>
   </div>
 
-  <div id="printPreviewOverlay" class="print-preview-overlay no-print" hidden>
-    <div class="print-preview-modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
-      <div class="print-preview-modal__header">
+  <div id="printPreviewOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
+      <div class="modal__header">
         <h2 id="printPreviewTitle">Print Preview</h2>
         <button type="button" class="btn btn--ghost btn--small" id="printPreviewCloseBtn">&times; Close</button>
       </div>
@@ -268,9 +269,60 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
       </label>
       <p class="help-text" id="printPreviewSummary" role="status" aria-live="polite"></p>
       <div class="print-preview-sheets" id="printPreviewSheets"></div>
-      <div class="print-preview-modal__footer">
+      <div class="modal__footer">
         <button type="button" class="btn" id="printPreviewCancelBtn">Cancel</button>
         <button type="button" class="btn btn--primary" id="printPreviewConfirmBtn">Print Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="modal__header">
+        <h2 id="helpTitle">Help</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="helpCloseBtn">&times; Close</button>
+      </div>
+      <div class="help-content">
+
+        <h3>Adding a shelf talker</h3>
+        <p>There are three ways to add a product, as tabs on the left:</p>
+        <ul>
+          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings, for example).</li>
+          <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
+          <li><strong>Bulk CSV Import</strong> &mdash; paste a CSV to add many wine/spirits shelf talkers at once. Columns: <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required; <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</li>
+        </ul>
+
+        <h3>Talker sizes and styles</h3>
+        <p><strong>Talker Size</strong> (Full/Half/Quarter) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
+
+        <h3>Importing from a website</h3>
+        <p>On the <strong>Import from Website</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match what you're importing:</p>
+        <ul>
+          <li><strong>Wine / Spirits</strong> &mdash; paste a product page URL from the store's website. Pulls the title, description, and price.</li>
+          <li><strong>Beer</strong> &mdash; paste a beer's Untappd page URL (<code>untappd.com/b/...</code>). Pulls the brewery, location, style, ABV, IBU, rating, and description &mdash; not price or size, since Untappd doesn't sell anything, so add those two yourself.</li>
+        </ul>
+        <p>Either way, review the fields before adding to the queue &mdash; a field the importer can't find just comes back blank. If a beer import reports Untappd blocked the request, wait a bit and try again, or enter the details by hand.</p>
+
+        <h3>The queue</h3>
+        <p>Everything you've added sits in the <strong>Queue</strong> panel on the right, and is saved automatically in the browser so it survives closing the app. Click the &#8942; menu on any item to <strong>Edit</strong>, <strong>Copy</strong>, <strong>Delete</strong>, or <strong>Move Up</strong>/<strong>Move Down</strong> it &mdash; queue order is print order, so moving an item changes where it lands on the printed sheet.</p>
+
+        <h3>Preview</h3>
+        <p>The <strong>Live Preview</strong> panel shows either the single talker you're currently editing (<strong>Current Talker</strong>) or a scaled-down full printed sheet with everything queued (<strong>Full Page</strong>), with Prev/Next to page through multiple sheets. Both are laid out at the exact size they'll print at, just shrunk to fit your screen &mdash; what you see here is what comes out of the printer.</p>
+
+        <h3>Printing</h3>
+        <p>Click <strong>Print Sheet(s)&hellip;</strong> to open the Print Preview, which shows every sheet that will print and how full each one is. <strong>Auto-arrange (Beta)</strong> can pack different talker/sign sizes onto shared sheets to save paper &mdash; off by default since it's newer. Click <strong>Print Now</strong> to open the system print dialog; choose "Save as PDF" there instead of a printer if you just want a file.</p>
+
+        <h3>Dark mode</h3>
+        <p>The <strong>Dark</strong>/<strong>Light</strong> button in the top right switches the app's own colors. It never changes the shelf talkers or signs themselves &mdash; those always preview and print in their normal colors on white paper, regardless of which theme the app is in.</p>
+
+        <div data-electron-only>
+          <h3>Saving and opening a queue file</h3>
+          <p>Use the <strong>File</strong> menu's <strong>Save Queue</strong> and <strong>Open Queue&hellip;</strong> to back up the current queue to a file, or load one on another PC. This is separate from the automatic save mentioned above &mdash; it's for moving a queue between computers or keeping an archive of a batch.</p>
+        </div>
+
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="helpCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

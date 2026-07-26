@@ -12,4 +12,8 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   onSaveRequested: (callback) => ipcRenderer.on('queue:save-requested', () => callback()),
   saveQueueToFile: (payload) => ipcRenderer.invoke('queue:save', payload),
   onQueueOpened: (callback) => ipcRenderer.on('queue:opened', (_event, queue) => callback(queue)),
+
+  // Help menu "Help" (see main.js) - opens the same in-app panel the app
+  // bar's own Help button does, rather than a separate window.
+  onShowHelpRequested: (callback) => ipcRenderer.on('help:show-requested', () => callback()),
 });

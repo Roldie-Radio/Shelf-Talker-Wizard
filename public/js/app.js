@@ -186,6 +186,11 @@
     printPreviewCancelBtn: document.getElementById('printPreviewCancelBtn'),
     printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
     autoArrangeToggle: document.getElementById('autoArrangeToggle'),
+
+    helpBtn: document.getElementById('helpBtn'),
+    helpOverlay: document.getElementById('helpOverlay'),
+    helpCloseBtn: document.getElementById('helpCloseBtn'),
+    helpCloseFooterBtn: document.getElementById('helpCloseFooterBtn'),
   };
 
   // ---------- Theme ----------
@@ -1197,45 +1202,82 @@
     });
   }
 
+  // Shared accessible-dialog behavior for every full-screen overlay in the
+  // app (Print Preview, Help): Tab cycles within it instead of escaping
+  // into controls hidden behind the backdrop, Escape and a backdrop click
+  // both close it, and focus moves onto the dialog's own close button on
+  // open and back to whatever had it beforehand on close. Written once
+  // rather than per-dialog now that there are two.
+  //
+  // Assumes each overlay's first focusable element in DOM order is a close
+  // button, which is true for both dialogs today (the header's &times;
+  // button always comes before any footer buttons) - a future dialog that
+  // wants something else focused first would need its own opening logic.
+  function createModal({ overlay, closeBtns = [], onOpen, onClose }) {
+    let returnFocus = null;
+
+    function focusable() {
+      return [...overlay.querySelectorAll('button, input, [href], select, textarea')]
+        .filter((el) => !el.disabled && el.offsetParent !== null);
+    }
+
+    function open() {
+      returnFocus = document.activeElement;
+      overlay.hidden = false;
+      if (onOpen) onOpen();
+      focusable()[0]?.focus();
+    }
+
+    function close() {
+      overlay.hidden = true;
+      if (onClose) onClose();
+      if (returnFocus && returnFocus.isConnected) returnFocus.focus();
+      returnFocus = null;
+    }
+
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+    closeBtns.forEach((btn) => btn.addEventListener('click', close));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !overlay.hidden) close();
+    });
+
+    return { open, close };
+  }
+
   // Shows every sheet that will be printed - grouped and shaped exactly
   // like the real print output - so staff can see how full each sheet is
   // (and whether it's worth queuing more items first) before committing to
   // the system print dialog. Also offers an opt-in "Auto-arrange (beta)"
   // mode that can stack different sign types on the same sheet to save
   // paper (see buildAutoArrangedPages) - off by default since it's new.
-  // Focus moves into the dialog on open and back to the button that opened
-  // it on close, and Tab cycles inside it while it's up - otherwise keyboard
-  // focus stays behind on the page underneath, which for a modal means
-  // tabbing through controls you can't see.
-  let printPreviewReturnFocus = null;
-
-  function focusableInModal() {
-    return [...els.printPreviewOverlay.querySelectorAll('button, input, [href], select, textarea')]
-      .filter((el) => !el.disabled && el.offsetParent !== null);
-  }
+  const printPreviewModal = createModal({
+    overlay: els.printPreviewOverlay,
+    closeBtns: [els.printPreviewCloseBtn, els.printPreviewCancelBtn],
+    onOpen: renderPrintPreviewContents,
+    onClose: () => { els.printPreviewSheets.innerHTML = ''; },
+  });
 
   function openPrintPreview() {
     if (queue.length === 0) return;
-    printPreviewReturnFocus = document.activeElement;
-    els.printPreviewOverlay.hidden = false;
-    renderPrintPreviewContents();
-    els.printPreviewCloseBtn.focus();
+    printPreviewModal.open();
   }
-
-  els.printPreviewOverlay.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab') return;
-    const items = focusableInModal();
-    if (!items.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  });
 
   function renderPrintPreviewContents() {
     els.printPreviewSheets.innerHTML = '';
@@ -1322,30 +1364,38 @@
     });
   }
 
-  function closePrintPreview() {
-    els.printPreviewOverlay.hidden = true;
-    els.printPreviewSheets.innerHTML = '';
-    if (printPreviewReturnFocus && printPreviewReturnFocus.isConnected) printPreviewReturnFocus.focus();
-    printPreviewReturnFocus = null;
-  }
-
   els.printBtn.addEventListener('click', openPrintPreview);
-  els.printPreviewCloseBtn.addEventListener('click', closePrintPreview);
-  els.printPreviewCancelBtn.addEventListener('click', closePrintPreview);
-  els.printPreviewOverlay.addEventListener('click', (e) => {
-    if (e.target === els.printPreviewOverlay) closePrintPreview();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !els.printPreviewOverlay.hidden) closePrintPreview();
-  });
   els.autoArrangeToggle.addEventListener('change', () => {
     autoArrangeEnabled = els.autoArrangeToggle.checked;
     renderPrintPreviewContents();
   });
   els.printPreviewConfirmBtn.addEventListener('click', () => {
-    closePrintPreview();
+    printPreviewModal.close();
     printNow();
   });
+
+  // ---------- Help ----------
+
+  const helpModal = createModal({
+    overlay: els.helpOverlay,
+    closeBtns: [els.helpCloseBtn, els.helpCloseFooterBtn],
+  });
+  els.helpBtn.addEventListener('click', helpModal.open);
+
+  // Save/Open Queue are Electron-only (see the File menu note above) - the
+  // help text mentioning them is written directly into index.html but kept
+  // hidden by default (see [data-electron-only] in styles.css) so it isn't
+  // shown - and doesn't reference menu items that don't exist - in a plain
+  // browser tab.
+  if (window.shelfTalker) {
+    document.querySelectorAll('[data-electron-only]').forEach((el) => { el.style.display = ''; });
+  }
+
+  // The Electron Help menu's own "Help" item (see main.js) opens this same
+  // panel rather than a separate window - one help doc, reachable two ways.
+  if (window.shelfTalker && window.shelfTalker.onShowHelpRequested) {
+    window.shelfTalker.onShowHelpRequested(() => helpModal.open());
+  }
 
   function triggerPrint() {
     // Inside the packaged desktop app, print through the main process (see
