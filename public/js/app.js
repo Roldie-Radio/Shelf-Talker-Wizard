@@ -350,6 +350,11 @@
 
   function setCategory(category) {
     currentCategory = category === 'beer' ? 'beer' : 'wine';
+    // Purple reads as the store's beer theme, amber as wine/spirits - only
+    // while composing a new entry, though. Switching category mid-edit
+    // (editId set) must not silently overwrite an already-saved item's
+    // deliberately-chosen theme just because someone toggled the label.
+    if (!els.editId.value) els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
     applyFormMode();
   }
 
@@ -442,6 +447,12 @@
     // puts the control back in sync with the state, which also keeps the
     // selected size across a batch of entries.
     applyFormMode();
+    // Same idea for Theme: form.reset() always snaps it back to Amber (the
+    // markup's first <option>), which would silently un-purple every beer
+    // after the first one in a batch. currentCategory persists across a
+    // reset the same way currentTalkerSize does, so re-derive the default
+    // from it here too.
+    els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
