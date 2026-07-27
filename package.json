@@ -1,6 +1,6 @@
 {
   "name": "shelf-talker-wizard",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Shelf talker generator for Liquor Outlet Wine Cellars - manual entry or import from the website, standardized print-ready sizes.",
   "author": "Liquor Outlet Wine Cellars",
   "main": "electron/main.js",
@@ -19,8 +19,9 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "electron-updater": "^6.8.9",
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "electron": "^31.3.1",
@@ -29,7 +30,11 @@
   "build": {
     "appId": "com.liquoroutletwinecellars.shelftalkerwizard",
     "productName": "Shelf Talker Wizard",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "Roldie-Radio",
+      "repo": "Shelf-Talker-Wizard"
+    },
     "files": [
       "electron/**/*",
       "server/**/*",

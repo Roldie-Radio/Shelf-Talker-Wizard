@@ -36,7 +36,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ShelfTalkerWizard-Windows-Installer
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.blockmap
           retention-days: 30
 
       # Figure out the release tag to use: the pushed tag itself when this run
@@ -62,6 +65,12 @@ jobs:
       # and its default branch is just whichever feature branch happened to
       # be pushed first; without it, a tag created from any other branch
       # silently points at that unrelated default branch's tip instead.
+      # latest.yml and the .blockmap are electron-updater's own update feed -
+      # electron-builder writes them into dist/ alongside the installer
+      # whenever build.publish is configured (see package.json), even with
+      # --publish never above. Without them uploaded here too, the in-app
+      # auto-updater has nothing to check against and every install stays on
+      # whatever version it shipped with.
       - name: Publish release
         if: steps.release_tag.outputs.tag != ''
         uses: softprops/action-gh-release@v2
@@ -69,5 +78,8 @@ jobs:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Shelf Talker Wizard ${{ steps.release_tag.outputs.tag }}
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.blockmap
           generate_release_notes: true
