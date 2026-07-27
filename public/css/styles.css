@@ -770,7 +770,10 @@ h1, h2, h3 { margin: 0; }
   color: var(--ink);
 }
 
-.card__beer-rating-detail { flex: 1 1 auto; min-width: 0; }
+/* Fixed to its own content width (the dots row is a fixed 5 dots) rather
+   than 1 1 auto, so .card__beer-style below gets the rest of the row's
+   width instead of the two splitting it evenly regardless of content. */
+.card__beer-rating-detail { flex: 0 0 auto; min-width: 0; }
 
 .card__beer-rating-label {
   font-weight: 700;
@@ -798,6 +801,21 @@ h1, h2, h3 { margin: 0; }
   color: var(--ink);
   margin-left: calc(var(--w) * 0.015);
   font-size: calc(var(--w) * 0.045 * var(--price-fit, 1));
+}
+
+/* Style, called out next to the Untappd rating instead of buried as a row
+   in .card__beer-table further down (see buildBeerRatingHtml's
+   includeStyle) - takes whatever width .card__beer-rating-detail (fixed to
+   its own content) doesn't need, and wraps rather than truncating since
+   Untappd style names ("IPA - Imperial / Double New England / Hazy") run
+   long. */
+.card__beer-style { flex: 1 1 auto; min-width: 0; }
+
+.card__beer-style-value {
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  font-size: calc(var(--w) * 0.036 * var(--price-fit, 1));
 }
 
 .card__beer-table { flex: 0 0 auto; margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0; }

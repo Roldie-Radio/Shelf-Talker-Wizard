@@ -28,12 +28,17 @@ function buildRatingsHtml(talker) {
 
 // Untappd-style rating callout: a big circled score (e.g. "94") next to a
 // 5-dot rating with its decimal value (e.g. "4.27"). Either half can be
-// left off if the field wasn't filled in.
-function buildBeerRatingHtml(talker) {
+// left off if the field wasn't filled in. includeStyle adds the beer's
+// style to the right of the rating, replacing its old spot as a plain row
+// in buildBeerTableHtml - opt-in (Shelf Talkers only, not Display Signs,
+// which don't call buildBeerTableHtml at all and were never asked about
+// here) rather than baking it into every caller of this shared function.
+function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
   const score = talker.untappdScore != null ? String(talker.untappdScore).trim() : '';
   const ratingNum = Number(talker.untappdRating);
   const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
-  if (!score && !hasRating) return '';
+  const style = includeStyle && talker.style ? String(talker.style).trim() : '';
+  if (!score && !hasRating && !style) return '';
 
   const scoreHtml = score ? `<div class="card__beer-score">${escapeHtml(score)}</div>` : '';
 
@@ -53,17 +58,25 @@ function buildBeerRatingHtml(talker) {
     `;
   }
 
-  return `<div class="card__beer-rating">${scoreHtml}${detailHtml}</div>`;
+  const styleHtml = style ? `
+    <div class="card__beer-style">
+      <div class="card__beer-rating-label">Style</div>
+      <div class="card__beer-style-value">${escapeHtml(style)}</div>
+    </div>
+  ` : '';
+
+  return `<div class="card__beer-rating">${scoreHtml}${detailHtml}${styleHtml}</div>`;
 }
 
-// Brewery/Location/Style/ABV/IBU info table, matching an Untappd product
-// page. Rows with no value (IBU is often not on file) are left out rather
-// than shown blank.
+// Brewery/Location/ABV/IBU info table, matching an Untappd product page.
+// Style used to be a row here too; it's now called out next to the Untappd
+// rating instead (see buildBeerRatingHtml's includeStyle) for more visual
+// weight, so it isn't repeated here. Rows with no value (IBU is often not
+// on file) are left out rather than shown blank.
 function buildBeerTableHtml(talker) {
   const rows = [
     ['Brewery', talker.brewery],
     ['Location', talker.location],
-    ['Style', talker.style],
     ['ABV', talker.abv],
     ['IBU', talker.ibu],
   ].filter(([, value]) => value && String(value).trim() !== '');
@@ -297,7 +310,7 @@ function buildCardElement(talker) {
     </div>
     <div class="card__body">
       <div class="card__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
-      ${isBeer ? buildBeerRatingHtml(talker) : ''}
+      ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
       ${isBeer ? '' : buildRatingsHtml(talker)}
