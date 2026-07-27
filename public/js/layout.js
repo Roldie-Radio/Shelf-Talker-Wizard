@@ -41,7 +41,11 @@
     // half the printWidth), so both cols and rows increase.
     'talker-half': { cols: 3, rows: 3, perSheet: 9, printWidth: 2.8, aspect: 830 / 568, label: 'Half Size Shelf Talkers' },
     'talker-quarter': { cols: 6, rows: 3, perSheet: 18, printWidth: 1.4, aspect: 830 / 1136, label: 'Quarter Size Shelf Talkers' },
-    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: 10.1, aspect: 2.7, label: 'Large Display Signs' },
+    // Sized to match the in-store laminated signs (8.5in x 3.25in) rather
+    // than filling most of the sheet width - a user compared a printed
+    // Large Display Sign against the physical one already in use and asked
+    // for it to come down to the same size.
+    'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: 8.5, aspect: 8.5 / 3.25, label: 'Large Display Signs' },
     'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: 4.9, aspect: 2, label: 'Small Display Signs' },
   };
 
