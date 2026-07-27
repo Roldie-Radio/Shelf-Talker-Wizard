@@ -9,14 +9,65 @@ const PORT = 17321;
 
 let mainWindow = null;
 let httpServer = null;
+let progressWindow = null;
+let lastProgressData = null;
 
 // Only true while a check was started from the "Check for Updates…" menu
 // item - lets the shared autoUpdater event handlers below decide whether to
-// bother the user with "you're already up to date"/error dialogs. A silent
+// bother the user with "you're already up to date" dialogs. A silent
 // background check on launch should never interrupt someone with a dialog
 // just to say nothing was wrong; someone who asked directly should always
-// get an answer either way.
+// get an answer either way. Unlike that dialog, a failure is always worth
+// surfacing once a download has actually started (see downloadInProgress
+// below) - staff watching a progress window deserves to know if it stalls,
+// regardless of what triggered the check that started it.
 let manualCheckInProgress = false;
+let downloadInProgress = false;
+
+// A small always-on-top window showing live download progress - a user
+// reported seeing the one-line "downloading now" message and then nothing
+// else, with no way to tell whether it was still working or had silently
+// failed. Kept separate from the main app window/renderer entirely (its own
+// tiny HTML file + preload) since this is purely an Electron-shell concern,
+// the same reasoning that already keeps this file's other native-dialog
+// flows out of public/.
+function createProgressWindow(version) {
+  if (progressWindow) return progressWindow;
+  progressWindow = new BrowserWindow({
+    width: 420,
+    height: 210,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    parent: mainWindow || undefined,
+    title: 'Shelf Talker Wizard Update',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'updateProgressPreload.js'),
+    },
+  });
+  progressWindow.setMenuBarVisibility(false);
+  progressWindow.loadFile(path.join(__dirname, 'updateProgress.html'));
+  lastProgressData = { percent: 0, transferredMB: '0.0', totalMB: '0.0', speedMB: '0.0', version };
+  progressWindow.webContents.on('did-finish-load', () => {
+    if (progressWindow) progressWindow.webContents.send('update-progress-data', lastProgressData);
+  });
+  progressWindow.on('closed', () => { progressWindow = null; });
+  return progressWindow;
+}
+
+function sendProgress(data) {
+  lastProgressData = { ...lastProgressData, ...data };
+  if (progressWindow) progressWindow.webContents.send('update-progress-data', lastProgressData);
+}
+
+function closeProgressWindow() {
+  if (progressWindow) progressWindow.close();
+  progressWindow = null;
+  lastProgressData = null;
+}
 
 // electron-updater reads its own update feed config from app-update.yml,
 // which electron-builder only writes into a packaged build (see
@@ -26,22 +77,35 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('error', (err) => {
-    if (manualCheckInProgress) {
-      dialog.showErrorBox('Could not check for updates', err.message);
+    const wasDownloading = downloadInProgress;
+    downloadInProgress = false;
+    closeProgressWindow();
+    // A failure before any download started (e.g. can't reach the update
+    // feed at all) only needs to interrupt someone who went looking for it;
+    // a failure after the progress window was already showing always does,
+    // or "downloading now" would be the last thing anyone ever saw.
+    if (manualCheckInProgress || wasDownloading) {
+      dialog.showErrorBox('Update failed', err.message);
     }
     manualCheckInProgress = false;
   });
 
+  // Always opens the progress window, not just for a manual check - the
+  // whole point is confirming a background-triggered download is actually
+  // happening instead of leaving it invisible until (or unless) it finishes.
   autoUpdater.on('update-available', (info) => {
-    if (manualCheckInProgress) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Update Available',
-        message: `Version ${info.version} is available and downloading now.`,
-        detail: "You'll get another message when it's ready to install.",
-      });
-    }
     manualCheckInProgress = false;
+    downloadInProgress = true;
+    createProgressWindow(info.version);
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    sendProgress({
+      percent: progress.percent,
+      transferredMB: (progress.transferred / 1e6).toFixed(1),
+      totalMB: (progress.total / 1e6).toFixed(1),
+      speedMB: (progress.bytesPerSecond / 1e6).toFixed(2),
+    });
   });
 
   autoUpdater.on('update-not-available', () => {
@@ -59,6 +123,8 @@ function setupAutoUpdater() {
   // manual - an update sitting downloaded and ready is always worth
   // surfacing, not just when someone happened to go looking for it.
   autoUpdater.on('update-downloaded', (info) => {
+    downloadInProgress = false;
+    closeProgressWindow();
     dialog
       .showMessageBox(mainWindow, {
         type: 'info',
@@ -86,10 +152,10 @@ function handleCheckForUpdates() {
     return;
   }
   manualCheckInProgress = true;
-  autoUpdater.checkForUpdates().catch((err) => {
-    manualCheckInProgress = false;
-    dialog.showErrorBox('Could not check for updates', err.message);
-  });
+  // Swallow the promise rejection here - the 'error' event above is the
+  // single source of truth for reporting a failed check, so this doesn't
+  // also show its own dialog for the same failure.
+  autoUpdater.checkForUpdates().catch(() => {});
 }
 
 // Opens the same in-app Help panel the app bar's own Help button does,
