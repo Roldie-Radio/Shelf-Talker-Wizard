@@ -918,9 +918,18 @@ h1, h2, h3 { margin: 0; }
 .sign[data-size="large"] { aspect-ratio: 8.5 / 3.25; }
 .sign[data-size="small"] { aspect-ratio: 2; }
 
+/* A user measured a printed Large Display Sign against the physical
+   laminated sign already in use in the store (after the size itself was
+   already matched - see the aspect-ratio above) and asked for its type to
+   run bigger too, closer to the reference sign's own proportions. Scoped to
+   large only, not the shared --sign-text on .sign above, so Small Display
+   Signs (never compared against a physical reference, not part of this
+   request) are unaffected. */
+.sign[data-size="large"] { --sign-text: 1.4; }
+
 /* Band heights are set per size, not shared, because they need to be a
    consistent fraction of the SIGN'S OWN HEIGHT (like the shelf talker's
-   bands are of its height) - and Large (aspect-ratio 2.7) and Small
+   bands are of its height) - and Large (aspect-ratio 8.5/3.25) and Small
    (aspect-ratio 2) have very different height-to-width ratios, so the same
    width-relative percentage would eat very different shares of the much
    shorter body underneath. */
