@@ -713,6 +713,13 @@ h1, h2, h3 { margin: 0; }
   text-overflow: ellipsis;
 }
 
+/* Beer's title sits closer to the header band than wine/spirits' does -
+   frees up vertical room for the Style text on the row below, which can
+   run long enough to wrap ("IPA - Imperial / Double New England / Hazy")
+   and was asked for specifically in that context, so this doesn't touch
+   the wine/spirits title-to-band spacing. */
+.card[data-category="beer"] .card__title { margin-top: calc(0.5% * var(--price-fit, 1)); }
+
 /* Optional vintage line, wine/spirits only - same size/weight as
    .card__title now (a staff mockup asked for it to read with the same
    prominence as the title, not blend in with the description below it),
@@ -768,7 +775,14 @@ h1, h2, h3 { margin: 0; }
 .card__beer-rating {
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
+  /* Untappd Rating and Style must always start on the same line: center
+     used to vertically center each column against the taller of the two,
+     which nudged "Untappd Rating" down (and out of line with "Style")
+     whenever the style value was long enough to wrap - see .sign__content
+     override below, which keeps the old centered look for Display Signs
+     (score circle + rating only, no Style, so there's nothing to misalign
+     there and this was never asked about for signs). */
+  align-items: flex-start;
   gap: calc(var(--w) * 0.035);
   margin: calc(var(--w) * 0.025 * var(--price-fit, 1)) 0;
 }
@@ -1153,7 +1167,7 @@ h1, h2, h3 { margin: 0; }
 /* The Untappd-style rating block is reused from the Beer Shelf Talker,
    which is sized relative to a much taller card; scale it way down for the
    short Display Sign body. */
-.sign__content .card__beer-rating { flex: 0 0 auto; gap: calc(var(--w) * var(--sign-text) * 0.012); margin: 0; }
+.sign__content .card__beer-rating { flex: 0 0 auto; align-items: center; gap: calc(var(--w) * var(--sign-text) * 0.012); margin: 0; }
 .sign__content .card__beer-score {
   width: calc(var(--w) * var(--sign-text) * 0.075 * var(--price-fit, 1));
   height: calc(var(--w) * var(--sign-text) * 0.075 * var(--price-fit, 1));

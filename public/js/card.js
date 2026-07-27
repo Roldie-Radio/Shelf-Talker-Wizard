@@ -339,6 +339,7 @@ function buildCardElement(talker) {
   card.dataset.theme = talker.theme === 'purple' ? 'purple' : 'amber';
   card.dataset.size = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
   const isBeer = talker.category === 'beer';
+  card.dataset.category = isBeer ? 'beer' : 'wine';
 
   card.innerHTML = `
     <div class="card__band">
