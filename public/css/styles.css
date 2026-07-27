@@ -980,6 +980,12 @@ h1, h2, h3 { margin: 0; }
   overflow: hidden;
   padding: 1.5% 2.5%;
 }
+/* A user measured the reference sign's SALE/PRICE rail sitting much closer
+   to the card's own edge than this - about 1.2% of the card's width in,
+   versus 2.5% here. Tightened for large only; the rail's horizontal
+   position is entirely this padding (.sign__rail itself has none), so this
+   is the whole fix, not just a partial one. */
+.sign[data-size="large"] .sign__body { padding-left: 1.3%; padding-right: 1.3%; }
 
 .sign__content {
   flex: 1;
@@ -1018,6 +1024,18 @@ h1, h2, h3 { margin: 0; }
   line-height: 1;
   font-size: calc(var(--w) * var(--sign-text) * 0.03);
 }
+/* Measured against the reference sign's own rail letters: about 32% taller
+   there than this, at matching card sizes. Capped below that measured
+   target, though - "PRICE" is 5 stacked letters that justify-content:
+   space-between spreads across the rail's own full height, a fixed budget
+   this sign doesn't get more of; 0.04 (the full 32%) made that column
+   taller than the rail had room for and pushed the whole sign's body into
+   overflow on any sign with a rating or badge row. 0.036 is the largest
+   value confirmed (via Playwright, not the node:test suite - see the
+   commit that introduced this) not to, across every talkerType/rating/size
+   combination this app builds. Scoped to large only, same reasoning as the
+   --sign-text override above. */
+.sign[data-size="large"] .sign__rail-col { font-size: calc(var(--w) * var(--sign-text) * 0.036); }
 
 .sign__title {
   font-weight: 800;
@@ -1031,6 +1049,19 @@ h1, h2, h3 { margin: 0; }
   line-clamp: 2;
   overflow: hidden;
 }
+/* A user compared a printed sign's title against the reference sign's and
+   found it still ran noticeably narrower even after the --sign-text bump
+   above - measuring per-character width and cap-height, isolated from the
+   two titles' different lengths, pointed to roughly a 30% gap. The title
+   itself was never what caused the overflow described above the rail
+   override - it stayed within its own 2-line box the whole time - but
+   0.037 (not the full 30%) was kept anyway to leave a couple pixels of
+   margin under the tightest real content combination tried (a beer sign
+   with rating, brewery/location/style, and both prices), rather than
+   shipping something that fits with nothing to spare. Scoped to large
+   only, same reasoning as the other overrides here; still caught by
+   fitCardText's shrink-to-fit if a long title would otherwise overflow. */
+.sign[data-size="large"] .sign__title { font-size: calc(var(--w) * var(--sign-text) * 0.037); }
 .sign__title--small { font-size: calc(var(--w) * var(--sign-text) * 0.06); }
 
 .sign__description {
@@ -1130,14 +1161,6 @@ h1, h2, h3 { margin: 0; }
 .sign__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1)); }
 .sign__regular-price { font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
 .sign[data-size="small"] .sign__regular-price { font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1)); }
-
-.sign__supersale-price {
-  color: var(--sale-red);
-  font-weight: 800;
-  flex: 1 1 auto;
-  text-align: center;
-  font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1));
-}
 
 .sign__small-price {
   font-weight: 800;
