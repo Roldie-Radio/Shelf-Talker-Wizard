@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs/promises');
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const { start } = require('../server/index.js');
 
 // Fixed local port: this app only ever talks to itself on the same PC.
@@ -8,6 +9,88 @@ const PORT = 17321;
 
 let mainWindow = null;
 let httpServer = null;
+
+// Only true while a check was started from the "Check for Updates…" menu
+// item - lets the shared autoUpdater event handlers below decide whether to
+// bother the user with "you're already up to date"/error dialogs. A silent
+// background check on launch should never interrupt someone with a dialog
+// just to say nothing was wrong; someone who asked directly should always
+// get an answer either way.
+let manualCheckInProgress = false;
+
+// electron-updater reads its own update feed config from app-update.yml,
+// which electron-builder only writes into a packaged build (see
+// build.publish in package.json) - calling any of this against an unpacked
+// dev copy throws immediately, so the whole feature stays off there.
+function setupAutoUpdater() {
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('error', (err) => {
+    if (manualCheckInProgress) {
+      dialog.showErrorBox('Could not check for updates', err.message);
+    }
+    manualCheckInProgress = false;
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    if (manualCheckInProgress) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Available',
+        message: `Version ${info.version} is available and downloading now.`,
+        detail: "You'll get another message when it's ready to install.",
+      });
+    }
+    manualCheckInProgress = false;
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    if (manualCheckInProgress) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'No Updates Available',
+        message: `You're already running the latest version (${app.getVersion()}).`,
+      });
+    }
+    manualCheckInProgress = false;
+  });
+
+  // Fires regardless of whether the check that found it was silent or
+  // manual - an update sitting downloaded and ready is always worth
+  // surfacing, not just when someone happened to go looking for it.
+  autoUpdater.on('update-downloaded', (info) => {
+    dialog
+      .showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Ready',
+        message: `Version ${info.version} has been downloaded.`,
+        detail: 'Restart now to install it, or it will install automatically the next time '
+          + 'the app is closed.',
+        buttons: ['Restart Now', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+}
+
+function handleCheckForUpdates() {
+  if (!app.isPackaged) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Check for Updates',
+      message: 'Automatic updates are only available in the installed app, not this development copy.',
+    });
+    return;
+  }
+  manualCheckInProgress = true;
+  autoUpdater.checkForUpdates().catch((err) => {
+    manualCheckInProgress = false;
+    dialog.showErrorBox('Could not check for updates', err.message);
+  });
+}
 
 // Opens the same in-app Help panel the app bar's own Help button does,
 // rather than a separate window - the renderer owns the actual content
@@ -87,6 +170,8 @@ function buildMenu() {
       label: 'Help',
       submenu: [
         { label: 'Help', click: handleShowHelp },
+        { type: 'separator' },
+        { label: 'Check for Updates…', click: handleCheckForUpdates },
         { type: 'separator' },
         {
           label: 'About Shelf Talker Wizard',
@@ -179,7 +264,15 @@ async function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  await createWindow();
+  if (!app.isPackaged) return;
+  setupAutoUpdater();
+  // A few seconds after launch, not blocking startup on it - this is a
+  // background check for staff who just leave the app running, not
+  // something the window needs to wait on.
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000);
+});
 
 app.on('window-all-closed', () => {
   if (httpServer) {
