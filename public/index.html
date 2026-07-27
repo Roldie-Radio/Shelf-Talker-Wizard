@@ -75,6 +75,11 @@
             <input type="text" id="fTitle" maxlength="120" required placeholder="Josh Cellars Cabernet Sauvignon 2025" />
           </label>
 
+          <label class="field" id="vintageField">
+            <span>Vintage</span>
+            <input type="text" id="fVintage" maxlength="20" placeholder="2022" />
+          </label>
+
           <label class="field" id="descriptionField">
             <span>Description</span>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
@@ -287,7 +292,7 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
         <h3>Adding a shelf talker</h3>
         <p>There are three ways to add a product, as tabs on the left:</p>
         <ul>
-          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings, for example).</li>
+          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description.</li>
           <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
           <li><strong>Bulk CSV Import</strong> &mdash; paste a CSV to add many wine/spirits shelf talkers at once. Columns: <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required; <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</li>
         </ul>

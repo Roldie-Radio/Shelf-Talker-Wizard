@@ -713,6 +713,18 @@ h1, h2, h3 { margin: 0; }
   text-overflow: ellipsis;
 }
 
+/* Optional vintage line, wine/spirits only - same size/weight/color as
+   .card__description (it's meant to read as a continuation of the title,
+   not a second heading), just centered under the title instead of left-
+   aligned like the description block below it. */
+.card__vintage {
+  text-align: center;
+  font-size: calc(var(--w) * 0.052 * var(--price-fit, 1));
+  line-height: 1.3;
+  color: #171717;
+  flex: 0 0 auto;
+}
+
 .card__description {
   font-size: calc(var(--w) * 0.052 * var(--price-fit, 1));
   line-height: 1.3;
@@ -780,16 +792,16 @@ h1, h2, h3 { margin: 0; }
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--muted);
-  font-size: calc(var(--w) * 0.032 * var(--price-fit, 1));
-  margin-bottom: calc(var(--w) * 0.012 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.042 * var(--price-fit, 1));
+  margin-bottom: calc(var(--w) * 0.014 * var(--price-fit, 1));
 }
 
 .card__beer-dots-row { display: flex; align-items: center; gap: calc(var(--w) * 0.01); }
 
 .card__beer-dot {
   flex-shrink: 0;
-  width: calc(var(--w) * 0.032 * var(--price-fit, 1));
-  height: calc(var(--w) * 0.032 * var(--price-fit, 1));
+  width: calc(var(--w) * 0.042 * var(--price-fit, 1));
+  height: calc(var(--w) * 0.042 * var(--price-fit, 1));
   border-radius: 50%;
   background: #ddd6cc;
 }
@@ -800,7 +812,7 @@ h1, h2, h3 { margin: 0; }
   font-weight: 800;
   color: var(--ink);
   margin-left: calc(var(--w) * 0.015);
-  font-size: calc(var(--w) * 0.045 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.058 * var(--price-fit, 1));
 }
 
 /* Style, called out next to the Untappd rating instead of buried as a row
@@ -815,17 +827,18 @@ h1, h2, h3 { margin: 0; }
   font-weight: 700;
   color: var(--ink);
   line-height: 1.2;
-  font-size: calc(var(--w) * 0.036 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
 }
 
 .card__beer-table { flex: 0 0 auto; margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0; }
 
 .card__beer-table-row {
   display: flex;
+  align-items: center;
   gap: calc(var(--w) * 0.03);
   padding: calc(var(--w) * 0.012 * var(--price-fit, 1)) 0;
   border-bottom: 1px solid #e5ddd0;
-  font-size: calc(var(--w) * 0.038 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.044 * var(--price-fit, 1));
 }
 .card__beer-table-row:first-child { border-top: 1px solid #e5ddd0; }
 
@@ -839,6 +852,28 @@ h1, h2, h3 { margin: 0; }
 }
 
 .card__beer-table-value { flex: 1 1 auto; min-width: 0; font-weight: 600; color: var(--ink); }
+
+/* ABV/IBU share one row (see buildBeerTableHtml): each is a "cell" flexing
+   equally, with its own label above/left of its value, split by a thin
+   divider. The cell's label no longer needs the full row's fixed 0.22*--w
+   width budget (that was sized for a full-width row's left column), so it's
+   overridden here to hug its own short text ("ABV"/"IBU") instead. */
+.card__beer-table-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--w) * 0.015);
+}
+.card__beer-table-cell .card__beer-table-label { flex: 0 0 auto; width: auto; }
+.card__beer-table-cell .card__beer-table-value { flex: 1 1 auto; }
+
+.card__beer-table-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  align-self: stretch;
+  background: #e5ddd0;
+}
 
 /* "CLOSEOUT!!" burst - a bold, slightly-tilted comic-style badge with a
    heavy outline, matching the store's existing closeout shelf talkers. */
@@ -1087,6 +1122,16 @@ h1, h2, h3 { margin: 0; }
 .sign[data-size="large"] .sign__title { font-size: calc(var(--w) * var(--sign-text) * 0.037); }
 .sign__title--small { font-size: calc(var(--w) * var(--sign-text) * 0.06); }
 
+/* Optional vintage line, wine/spirits only - same size/weight/color as
+   .sign__description (see .card__vintage's note above), inheriting the
+   center alignment .sign__content already sets on every child. */
+.sign__vintage {
+  font-weight: 700;
+  font-size: calc(var(--w) * var(--sign-text) * 0.014);
+  line-height: 1.3;
+  color: #171717;
+}
+
 .sign__description {
   font-weight: 700;
   font-size: calc(var(--w) * var(--sign-text) * 0.014);
@@ -1172,18 +1217,31 @@ h1, h2, h3 { margin: 0; }
   font-size: calc(var(--w) * var(--sign-text) * 0.02 * var(--price-fit, 1));
 }
 
+/* A staff mockup of the printed Small Super Sale signs shows a bold
+   italic serif face (not the handwriting-style script this used to
+   assume) for both "Super Sale Price!!!" and the price number below it -
+   see .sign__supersale-price. */
 .sign__supersale-text {
-  font-family: "Segoe Script", "Brush Script MT", cursive;
+  font-family: Georgia, "Times New Roman", Times, serif;
   color: var(--sale-red);
   font-weight: 800;
   font-style: italic;
   font-size: calc(var(--w) * var(--sign-text) * 0.018 * var(--price-fit, 1));
 }
-.sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1)); }
+.sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * var(--sign-text) * 0.042 * var(--price-fit, 1)); }
 
 .sign__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1)); }
 .sign__regular-price { font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
 .sign[data-size="small"] .sign__regular-price { font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1)); }
+
+/* Small Super Sale sign's price number - same bold italic serif face as
+   .sign__supersale-text above, in place of the plain upright sans every
+   other Small sign price (.sign__small-price) uses. */
+.sign__supersale-price {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-style: italic;
+  color: var(--sale-red);
+}
 
 .sign__small-price {
   font-weight: 800;
