@@ -33,8 +33,12 @@ function buildRatingsHtml(talker) {
 // in buildBeerTableHtml - opt-in (Shelf Talkers only, not Display Signs,
 // which don't call buildBeerTableHtml at all and were never asked about
 // here) rather than baking it into every caller of this shared function.
-function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
-  const score = talker.untappdScore != null ? String(talker.untappdScore).trim() : '';
+// includeScore is the same idea in reverse: Shelf Talkers drop the score
+// circle so the row is just Untappd Rating + Style, while Display Signs
+// (which never show Style) keep it, so it stays the default.
+function buildBeerRatingHtml(talker, { includeStyle = false, includeScore = true } = {}) {
+  const hasScore = includeScore && talker.untappdScore != null && String(talker.untappdScore).trim() !== '';
+  const score = hasScore ? String(talker.untappdScore).trim() : '';
   const ratingNum = Number(talker.untappdRating);
   const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
   const style = includeStyle && talker.style ? String(talker.style).trim() : '';
@@ -335,6 +339,7 @@ function buildCardElement(talker) {
   card.dataset.theme = talker.theme === 'purple' ? 'purple' : 'amber';
   card.dataset.size = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
   const isBeer = talker.category === 'beer';
+  card.dataset.category = isBeer ? 'beer' : 'wine';
 
   card.innerHTML = `
     <div class="card__band">
@@ -343,7 +348,7 @@ function buildCardElement(talker) {
     <div class="card__body">
       <div class="card__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
-      ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
+      ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true, includeScore: false }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
       ${isBeer ? '' : buildRatingsHtml(talker)}

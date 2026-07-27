@@ -142,6 +142,7 @@
     talkerSizeField: document.getElementById('talkerSizeField'),
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
+    talkerTypeSupersaleOption: document.getElementById('talkerTypeSupersaleOption'),
     ratingReviewer: document.getElementById('fRatingReviewer'),
     ratingScore: document.getElementById('fRatingScore'),
     addRatingBtn: document.getElementById('addRatingBtn'),
@@ -309,6 +310,13 @@
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
+    // The store never runs a Super Sale on beer, so the option isn't just
+    // hidden for beer - a value of 'supersale' left over from switching
+    // category (or from an older saved item, see fillForm) is actively
+    // cleared back to Standard rather than kept around invisibly selected.
+    els.talkerTypeSupersaleOption.hidden = isBeer;
+    if (isBeer && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
+
     applyImportMode();
   }
 
@@ -431,6 +439,10 @@
     els.price.value = talker.price || '';
     els.salePrice.value = talker.salePrice || '';
     els.talkerType.value = talker.talkerType || 'standard';
+    // applyFormMode's own supersale-vs-beer clamp ran above, before this
+    // line existed to overwrite it - re-check here so loading an older
+    // saved beer item that predates this rule doesn't restore Super Sale.
+    if (currentCategory === 'beer' && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
     currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
     renderRatingsList();
     els.brewery.value = talker.brewery || '';
