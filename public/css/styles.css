@@ -1170,10 +1170,23 @@ h1, h2, h3 { margin: 0; }
 
   @page { size: letter landscape; margin: 0.28in; }
 
+  /* Pins the card itself to white paper regardless of the on-screen theme
+     (see the dark mode print-palette rules elsewhere in this file) - but
+     .card__band is the colored header/footer band *on* that white card
+     (amber/purple, with white text in .card__footer-text), not the card's
+     own background, so it must not be forced white here too. It was for a
+     while, wiping out both its background-color/background-image and, since
+     its own text is white-on-band, making the footer URL print as
+     white-on-white. print-color-adjust still applies to it below so its
+     real background color/image actually survives printing instead of
+     being dropped to save ink. */
+  body,
+  .card {
+    background: #fff;
+  }
   body,
   .card,
   .card__band {
-    background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     color-adjust: exact;
