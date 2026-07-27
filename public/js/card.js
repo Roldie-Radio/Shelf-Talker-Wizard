@@ -270,7 +270,7 @@ function buildSmallSignBodyHtml(talker) {
     const bigPrice = hasSale ? talker.salePrice : talker.price;
     priceHtml = `
       <div class="sign__supersale-text">Super Sale Price!!!</div>
-      <div class="sign__small-price is-sale">${formatMoney(bigPrice)}</div>
+      <div class="sign__small-price sign__supersale-price">${formatMoney(bigPrice)}</div>
     `;
   } else {
     priceHtml = `

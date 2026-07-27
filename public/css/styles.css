@@ -1217,18 +1217,31 @@ h1, h2, h3 { margin: 0; }
   font-size: calc(var(--w) * var(--sign-text) * 0.02 * var(--price-fit, 1));
 }
 
+/* A staff mockup of the printed Small Super Sale signs shows a bold
+   italic serif face (not the handwriting-style script this used to
+   assume) for both "Super Sale Price!!!" and the price number below it -
+   see .sign__supersale-price. */
 .sign__supersale-text {
-  font-family: "Segoe Script", "Brush Script MT", cursive;
+  font-family: Georgia, "Times New Roman", Times, serif;
   color: var(--sale-red);
   font-weight: 800;
   font-style: italic;
   font-size: calc(var(--w) * var(--sign-text) * 0.018 * var(--price-fit, 1));
 }
-.sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1)); }
+.sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * var(--sign-text) * 0.042 * var(--price-fit, 1)); }
 
 .sign__sale-price { color: var(--sale-red); font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1)); }
 .sign__regular-price { font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
 .sign[data-size="small"] .sign__regular-price { font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1)); }
+
+/* Small Super Sale sign's price number - same bold italic serif face as
+   .sign__supersale-text above, in place of the plain upright sans every
+   other Small sign price (.sign__small-price) uses. */
+.sign__supersale-price {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-style: italic;
+  color: var(--sale-red);
+}
 
 .sign__small-price {
   font-weight: 800;
