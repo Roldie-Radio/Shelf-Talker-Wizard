@@ -68,29 +68,60 @@ function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
   return `<div class="card__beer-rating">${scoreHtml}${detailHtml}${styleHtml}</div>`;
 }
 
+function beerTableCellHtml(label, value) {
+  return `
+    <div class="card__beer-table-cell">
+      <div class="card__beer-table-label">${escapeHtml(label)}</div>
+      <div class="card__beer-table-value">${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
 // Brewery/Location/ABV/IBU info table, matching an Untappd product page.
 // Style used to be a row here too; it's now called out next to the Untappd
 // rating instead (see buildBeerRatingHtml's includeStyle) for more visual
 // weight, so it isn't repeated here. Rows with no value (IBU is often not
-// on file) are left out rather than shown blank.
+// on file) are left out rather than shown blank. ABV and IBU share one row
+// with a vertical divider between them instead of each getting a full-width
+// row to themselves - both are short values, so a shared row reads as one
+// glance instead of two, and frees a row's worth of height for the rest of
+// the beer facts, which run larger now too (see the CSS this pairs with).
 function buildBeerTableHtml(talker) {
-  const rows = [
+  const simpleRows = [
     ['Brewery', talker.brewery],
     ['Location', talker.location],
-    ['ABV', talker.abv],
-    ['IBU', talker.ibu],
   ].filter(([, value]) => value && String(value).trim() !== '');
-  if (!rows.length) return '';
-  return `
-    <div class="card__beer-table">
-      ${rows.map(([label, value]) => `
-        <div class="card__beer-table-row">
-          <div class="card__beer-table-label">${escapeHtml(label)}</div>
-          <div class="card__beer-table-value">${escapeHtml(value)}</div>
-        </div>
-      `).join('')}
+
+  const abv = talker.abv && String(talker.abv).trim() !== '' ? talker.abv : '';
+  const ibu = talker.ibu && String(talker.ibu).trim() !== '' ? talker.ibu : '';
+
+  let abvIbuHtml = '';
+  if (abv && ibu) {
+    abvIbuHtml = `
+      <div class="card__beer-table-row">
+        ${beerTableCellHtml('ABV', abv)}
+        <div class="card__beer-table-divider"></div>
+        ${beerTableCellHtml('IBU', ibu)}
+      </div>
+    `;
+  } else if (abv || ibu) {
+    abvIbuHtml = `
+      <div class="card__beer-table-row">
+        <div class="card__beer-table-label">${abv ? 'ABV' : 'IBU'}</div>
+        <div class="card__beer-table-value">${escapeHtml(abv || ibu)}</div>
+      </div>
+    `;
+  }
+
+  const simpleRowsHtml = simpleRows.map(([label, value]) => `
+    <div class="card__beer-table-row">
+      <div class="card__beer-table-label">${escapeHtml(label)}</div>
+      <div class="card__beer-table-value">${escapeHtml(value)}</div>
     </div>
-  `;
+  `).join('');
+
+  if (!simpleRowsHtml && !abvIbuHtml) return '';
+  return `<div class="card__beer-table">${simpleRowsHtml}${abvIbuHtml}</div>`;
 }
 
 function buildPricingHtml(talker) {
