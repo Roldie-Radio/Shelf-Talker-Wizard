@@ -55,10 +55,20 @@ two ways to trigger it:
   [**Releases**](../../releases) page (named e.g. "Shelf Talker Wizard v1.0.1") &mdash; a stable
   link that won't expire, so that's the one to send to the store PCs.
 
-Either way, copy the resulting installer to each OptiPlex and run it. No Node.js or other
-dependencies needed on the PC; everything (including a private copy of Node) is bundled inside.
-There's no auto-update yet, so updating a PC just means re-running the newer installer on it
-&mdash; NSIS installs over the existing copy in place and keeps the same shortcuts.
+Either way, copy the resulting installer to each OptiPlex and run it once to get it installed. No
+Node.js or other dependencies needed on the PC; everything (including a private copy of Node) is
+bundled inside. After that, the app checks for updates itself (a few seconds after launch, and via
+**Help &gt; Check for Updates&hellip;**), downloads new releases in the background with a visible
+progress window, and prompts to restart when one's ready &mdash; re-running the installer by hand
+is only needed for the very first install on a PC.
+
+`nsis.artifactName` in `package.json` is pinned to `Shelf-Talker-Wizard-Setup-${version}.exe`
+(no spaces) on purpose: electron-builder's own auto-update metadata (`latest.yml`) references a
+hyphenated filename regardless of what the installer itself is actually named, and GitHub
+additionally mangles spaces in uploaded asset names into dots - leaving the default artifactName
+(which does have spaces) means those three names disagree and the in-app updater 404s trying to
+download the mismatch. Don't remove or reintroduce spaces into this without re-checking that a
+real release's `latest.yml` and its uploaded `.exe` asset name still match exactly.
 
 To build it yourself instead, on a Windows machine with Node 18+:
 
