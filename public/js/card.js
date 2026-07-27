@@ -217,6 +217,7 @@ function buildLargeSignBodyHtml(talker) {
   const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
   return `
     <div class="sign__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
+    ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
     <div class="sign__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
     ${isBeer ? buildBeerRatingHtml(talker) : ''}
     <div class="sign__footer-block">
@@ -310,6 +311,7 @@ function buildCardElement(talker) {
     </div>
     <div class="card__body">
       <div class="card__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
+      ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>

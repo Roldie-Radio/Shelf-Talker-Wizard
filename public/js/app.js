@@ -119,6 +119,8 @@
     categoryToggleBtns: document.querySelectorAll('.category-toggle .toggle-btn'),
     titleLabel: document.getElementById('fTitleLabel'),
     descriptionField: document.getElementById('descriptionField'),
+    vintageField: document.getElementById('vintageField'),
+    vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
     beerFields: document.getElementById('beerFields'),
     brewery: document.getElementById('fBrewery'),
@@ -303,6 +305,7 @@
     els.talkerSizeField.hidden = isSign;
     els.talkerSize.value = currentTalkerSize;
     els.descriptionField.hidden = isSmallSign;
+    els.vintageField.hidden = isBeer || isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
@@ -396,6 +399,7 @@
       talkerSize: currentTalkerSize,
       category: currentCategory,
       title: els.title.value.trim(),
+      vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
       size: els.size.value.trim(),
       theme: els.theme.value,
@@ -420,6 +424,7 @@
     currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
     applyFormMode();
     els.title.value = talker.title || '';
+    els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
     els.size.value = talker.size || '';
     els.theme.value = talker.theme || 'amber';
