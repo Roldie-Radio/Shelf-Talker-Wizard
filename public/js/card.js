@@ -159,7 +159,6 @@ function buildSignMetaRowHtml(talker, leftHtml) {
   const talkerType = talker.talkerType || 'standard';
   let left = leftHtml ? `<div class="sign__rating">${leftHtml}</div>` : '';
   if (talkerType === 'closeout') left = '<div class="sign__closeout-badge">CLOSEOUT!!</div>';
-  else if (talkerType === 'supersale') left = '<div class="sign__supersale-text">Super Sale Price!!!</div>';
   else if (talkerType === 'chilled') left = '<div class="sign__chilled-badge">Also Available Chilled</div>';
   if (!left && !talker.size) return '';
   return `
@@ -172,22 +171,26 @@ function buildSignMetaRowHtml(talker, leftHtml) {
 
 // Price row for Large signs: sale/super-sale price on the left, regular
 // price on the right (or regular price alone, right-aligned, when there's
-// no sale).
+// no sale). Super Sale matches the reference sign's own printed layout
+// exactly: same .sign__sale-price line as a normal sale, just with "Super"
+// prepended - not a separate larger/centered price treatment (that's still
+// what Small signs use; this is Large-only, same as the rest of this
+// function).
 function buildSignPriceRowHtml(talker) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
+  const regular = formatMoney(talker.price);
 
   if (talkerType === 'supersale') {
     const bigPrice = hasSale ? talker.salePrice : talker.price;
     return `
       <div class="sign__price-row">
-        <div class="sign__supersale-price">${formatMoney(bigPrice)}</div>
-        ${hasSale ? `<div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '<div></div>'}
+        <div class="sign__sale-price">Super Sale Price ${formatMoney(bigPrice)}</div>
+        ${hasSale ? `<div class="sign__regular-price">Regular Price ${regular}</div>` : '<div></div>'}
       </div>
     `;
   }
 
-  const regular = formatMoney(talker.price);
   return `
     <div class="sign__price-row">
       ${hasSale ? `<div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : '<div></div>'}

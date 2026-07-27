@@ -1162,14 +1162,6 @@ h1, h2, h3 { margin: 0; }
 .sign__regular-price { font-weight: 800; font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
 .sign[data-size="small"] .sign__regular-price { font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1)); }
 
-.sign__supersale-price {
-  color: var(--sale-red);
-  font-weight: 800;
-  flex: 1 1 auto;
-  text-align: center;
-  font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1));
-}
-
 .sign__small-price {
   font-weight: 800;
   font-size: calc(var(--w) * var(--sign-text) * 0.09 * var(--price-fit, 1));
