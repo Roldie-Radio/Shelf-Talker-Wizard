@@ -967,12 +967,18 @@ h1, h2, h3 { margin: 0; }
 
 /* "Also Available Chilled" - a plain bold blue callout, not a sale/discount
    type, so it skips the comic-badge/script-callout treatment those get. */
+/* Verdana 11pt bold italic blue, same pt-to-fraction conversion as the
+   rest of the Shelf Talker fonts (fraction-of-w = pt / 72 / 2.8). Shelf
+   Talker only - Display Signs use their own separate .sign__chilled-badge,
+   untouched here. */
 .card__chilled-badge {
   flex: 0 0 auto;
   text-align: center;
   font-weight: 800;
+  font-style: italic;
+  font-family: Verdana, Geneva, sans-serif;
   color: var(--chilled-blue);
-  font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.0546 * var(--price-fit, 1));
   margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
 }
 
