@@ -274,6 +274,35 @@ h1, h2, h3 { margin: 0; }
 .reviewer-manager__list { display: flex; flex-direction: column; gap: 0.25rem; }
 .reviewer-manager__list .rating-chip { background: var(--ui-panel); }
 
+/* ---------- Awards / other ratings ---------- */
+
+.awards-input-row { display: flex; gap: 0.4rem; align-items: flex-start; }
+.awards-input-row textarea { flex: 1; margin: 0; resize: vertical; }
+
+/* A native <input type="color"> - clicking it opens the browser/OS color
+   picker (a wheel or spectrum, depending on platform) with no extra JS
+   needed. Reset to look like a small round swatch button instead of the
+   default rectangular control, so it reads as an icon next to the
+   textarea rather than its own input field. Selector is scoped to
+   .awards-input-row (not just .color-swatch-input) so its specificity
+   beats the generic ".field input" rule's width: 100%/padding - without
+   that, this input stretched to fill the whole row instead of sitting as
+   a small swatch next to the textarea. */
+.awards-input-row .color-swatch-input {
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+}
+.awards-input-row .color-swatch-input::-webkit-color-swatch-wrapper { padding: 0.2rem; }
+.awards-input-row .color-swatch-input::-webkit-color-swatch { border: none; border-radius: 50%; }
+.awards-input-row .color-swatch-input::-moz-color-swatch { border: none; border-radius: 50%; }
+
 /* ---------- Preview ---------- */
 
 /* The preview is the thing staff are actually checking, so it sticks to the
@@ -763,6 +792,22 @@ h1, h2, h3 { margin: 0; }
   margin-top: calc(var(--w) * 0.035 * var(--price-fit, 1));
   padding-top: calc(var(--w) * 0.025 * var(--price-fit, 1));
   border-top: 1px solid #e5ddd0;
+}
+
+/* Awards or Other Ratings - same font as .card__ratings above (bold,
+   identical size/line-height) since it's meant to read as part of the
+   same block, just free text for honors that don't fit the reviewer-
+   plus-score format. Color is whatever the form's color swatch picked
+   (defaulted/validated in buildAwardsHtml), not a fixed ink color. No
+   border-top of its own - it sits directly under Ratings (or under the
+   description, if Ratings is empty) without a second divider line. */
+.card__awards {
+  text-align: center;
+  font-weight: 800;
+  font-size: calc(var(--w) * 0.06 * var(--price-fit, 1));
+  line-height: 1.35;
+  flex: 0 0 auto;
+  margin-top: calc(var(--w) * 0.02 * var(--price-fit, 1));
 }
 
 .card__spacer { flex: 1 1 auto; }

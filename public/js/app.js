@@ -122,6 +122,9 @@
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
+    awardsField: document.getElementById('awardsField'),
+    awards: document.getElementById('fAwards'),
+    awardsColor: document.getElementById('fAwardsColor'),
     beerFields: document.getElementById('beerFields'),
     brewery: document.getElementById('fBrewery'),
     location: document.getElementById('fLocation'),
@@ -308,6 +311,11 @@
     els.descriptionField.hidden = isSmallSign;
     els.vintageField.hidden = isBeer || isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
+    // Shelf Talkers only, unlike Ratings above (which Large Display Signs
+    // also show) - Awards only ever renders onto the .card printout, so
+    // showing the field for a sign would offer input with no visible
+    // effect there.
+    els.awardsField.hidden = isBeer || isSign;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
     // The store never runs a Super Sale on beer, so the option isn't just
@@ -415,6 +423,8 @@
       salePrice: els.salePrice.value.trim(),
       talkerType: els.talkerType.value,
       ratings: currentRatings.slice(),
+      awards: els.awards.value.trim(),
+      awardsColor: els.awardsColor.value,
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
       style: els.style.value.trim(),
@@ -445,6 +455,8 @@
     if (currentCategory === 'beer' && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
     currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
     renderRatingsList();
+    els.awards.value = talker.awards || '';
+    els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
     els.style.value = talker.style || '';
