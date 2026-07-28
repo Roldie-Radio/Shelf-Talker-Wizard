@@ -1083,17 +1083,18 @@ h1, h2, h3 { margin: 0; }
 }
 .sign[data-size="large"] .sign__band { flex: 0 0 calc(var(--w) * 0.0482); }
 .sign[data-size="large"] .sign__band--footer { flex-basis: calc(var(--w) * 0.0333); }
-/* Measured directly from the real Small Sale Display Sign template (a
-   Word doc exported to PDF, with each sign's background as one image per
-   cell): the header band is 17.4% of the sign's own height and the
-   footer band 21.2%, versus the ~13%/9% this used to assume - the white
-   body area this used to leave was far taller than the template's,
-   leaving the (correctly-sized) text looking lost in a big empty gap
-   instead of filling the sign the way the reference does. Converted to
-   a fraction of --w (not height) same as every other band rule here:
-   0.174 * (w / aspect 2) / w = 0.087, 0.212 * (w / 2) / w = 0.106. */
-.sign[data-size="small"] .sign__band { flex: 0 0 calc(var(--w) * 0.087); }
-.sign[data-size="small"] .sign__band--footer { flex-basis: calc(var(--w) * 0.106); }
+/* The previous numbers here (0.087 / 0.106) came from measuring where the
+   TEXT started/ended in the PDF and wrongly assuming that was flush with
+   the band edge - it isn't, there's a real gap on both sides (confirmed
+   below). Corrected by extracting the template's actual background image
+   (PyMuPDF page.get_images(), not just its placement bbox) and sampling
+   a text-free pixel column straight down it: the gold-to-white
+   transition lands at 13.7% of the image's own height for the header and
+   14.0% for the footer, not 17.4%/21.2%. Converted to a fraction of --w
+   (not height) same as every other band rule here: 0.137 * (w / aspect
+   2) / w = 0.0685, 0.140 * (w / 2) / w = 0.07. */
+.sign[data-size="small"] .sign__band { flex: 0 0 calc(var(--w) * 0.0685); }
+.sign[data-size="small"] .sign__band--footer { flex-basis: calc(var(--w) * 0.07); }
 .sign[data-theme="purple"] .sign__band { background-color: var(--purple-band); }
 
 .sign__tagline {
