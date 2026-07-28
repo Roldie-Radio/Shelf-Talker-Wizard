@@ -26,6 +26,20 @@ function buildRatingsHtml(talker) {
   return `<div class="card__ratings">${lines.join('<br>')}</div>`;
 }
 
+// Free-text line(s) under the numeric Ratings list, for medals/honors that
+// don't fit the reviewer+score format ("Gold Medal - SF Chronicle Wine
+// Competition"). Printed in .card__ratings' exact font (see the shared
+// font-size/weight in styles.css), just in a user-chosen color instead of
+// a fixed ink color - validated here since it lands in a style attribute.
+function buildAwardsHtml(talker) {
+  const text = talker.awards ? String(talker.awards).trim() : '';
+  if (!text) return '';
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return '';
+  const color = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor || '') ? talker.awardsColor : '#171717';
+  return `<div class="card__awards" style="color: ${color}">${lines.map(escapeHtml).join('<br>')}</div>`;
+}
+
 // Untappd-style rating callout: a big circled score (e.g. "94") next to a
 // 5-dot rating with its decimal value (e.g. "4.27"). Either half can be
 // left off if the field wasn't filled in. includeStyle adds the beer's
@@ -352,6 +366,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
       ${isBeer ? '' : buildRatingsHtml(talker)}
+      ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>
       ${talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : ''}
       ${buildPricingHtml(talker)}

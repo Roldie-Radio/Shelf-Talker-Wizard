@@ -173,6 +173,14 @@
             </div>
           </div>
 
+          <div class="field" id="awardsField">
+            <span>Awards or Other Ratings (optional)</span>
+            <div class="awards-input-row">
+              <textarea id="fAwards" rows="2" maxlength="200" placeholder="Gold Medal - SF Chronicle Wine Competition" aria-label="Awards or other ratings"></textarea>
+              <input type="color" id="fAwardsColor" value="#171717" class="color-swatch-input" title="Text color when printed" aria-label="Awards text color" />
+            </div>
+          </div>
+
           <div class="field-row">
             <label class="field">
               <span>Regular Price *</span>
@@ -292,7 +300,7 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
         <h3>Adding a shelf talker</h3>
         <p>There are three ways to add a product, as tabs on the left:</p>
         <ul>
-          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description.</li>
+          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
           <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
           <li><strong>Bulk CSV Import</strong> &mdash; paste a CSV to add many wine/spirits shelf talkers at once. Columns: <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required; <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</li>
         </ul>
