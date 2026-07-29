@@ -751,13 +751,29 @@ const TASTING_NOTE_PROVIDERS = [
   { name: 'Wine.com', search: searchWineCom },
 ];
 
-async function findTastingNotes({ title, vintage }) {
+// Names only, for the "Find Tasting Notes" dialog's Source dropdown (see
+// app.js) - lets the client build that list without duplicating it, and
+// without exposing the provider objects' search functions.
+const TASTING_NOTE_PROVIDER_NAMES = TASTING_NOTE_PROVIDERS.map((p) => p.name);
+
+// `source` picks one named provider to search instead of the full ordered
+// list - what the "Find Tasting Notes" dialog sends once staff choose a
+// specific site from the dropdown, rather than the default "Any source"
+// (which still tries them in order, same as before that dialog existed).
+async function findTastingNotes({ title, vintage, source }) {
   if (!title || !title.trim()) {
     throw new Error('Enter a product title first.');
   }
 
+  const providers = source
+    ? TASTING_NOTE_PROVIDERS.filter((p) => p.name === source)
+    : TASTING_NOTE_PROVIDERS;
+  if (source && providers.length === 0) {
+    throw new Error(`Unknown tasting notes source: "${source}".`);
+  }
+
   const errors = [];
-  for (const provider of TASTING_NOTE_PROVIDERS) {
+  for (const provider of providers) {
     try {
       return await provider.search(title, vintage);
     } catch (err) {
@@ -779,6 +795,7 @@ module.exports = {
   parseBreweryHtml,
   extractBreweryUrl,
   findTastingNotes,
+  TASTING_NOTE_PROVIDER_NAMES,
   buildTastingNotesQuery,
   pickBestMatch,
   parseWineComSearchResults,

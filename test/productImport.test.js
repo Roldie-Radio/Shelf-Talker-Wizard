@@ -16,7 +16,7 @@ const path = require('node:path');
 const {
   parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl,
   buildTastingNotesQuery, pickBestMatch, parseWineComSearchResults, parseWineComProductHtml,
-  wineComSearchUrl, findTastingNotes,
+  wineComSearchUrl, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -702,4 +702,36 @@ test('findTastingNotes surfaces a clear error when nothing matches', async () =>
 
 test('findTastingNotes rejects immediately when there is no title to search with', async () => {
   await assert.rejects(() => findTastingNotes({ title: '' }), /Enter a product title first\./);
+});
+
+test('TASTING_NOTE_PROVIDER_NAMES lists Wine.com - the Source dropdown in the Find Tasting Notes dialog reads straight from this', () => {
+  assert.deepEqual(TASTING_NOTE_PROVIDER_NAMES, ['Wine.com']);
+});
+
+test('findTastingNotes with a matching source only searches that provider', async () => {
+  const searchHtml = page({
+    body: '<a href="/product/josh-cellars-cabernet-sauvignon-2022/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
+  });
+  const productHtml = page({ head: '<meta property="og:description" content="Rich dark fruit." />' });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/search/') ? searchHtml : productHtml }),
+    async () => {
+      const result = await findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Wine.com' });
+      assert.equal(result.sourceName, 'Wine.com');
+    }
+  );
+});
+
+test('findTastingNotes rejects an unrecognized source without making any request', async () => {
+  let calls = 0;
+  await withMockFetch(
+    async () => { calls += 1; return mockResponse({ status: 200 }); },
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Vivino' }),
+        /Unknown tasting notes source: "Vivino"/
+      );
+    }
+  );
+  assert.equal(calls, 0, 'an unrecognized source name should short-circuit before any fetch');
 });

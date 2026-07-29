@@ -102,9 +102,14 @@ If a page doesn't expose any of this, the fields will come back blank and you ca
 
 ### Finding tasting notes automatically
 
-On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under the Description field. Unlike the website importer above, there's no URL to paste: it searches Wine.com using whatever's already in **Product Title** (plus **Vintage**, if set) and, on a confident match, fills in the Description field for you (asking first if you'd overwrite something you've already typed). If it can't find a confident match, or the matched page has no description, you'll see a message explaining why and can fill the description in by hand as usual.
+On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under the Description field. Unlike the website importer above, there's no URL to paste: click it (with a Product Title already filled in) to open a dialog that searches using **Product Title** (plus **Vintage**, if set).
 
-The lookup is written as an ordered list of providers (Wine.com today) so another source (e.g. Vivino) can be added later without changing how the button works.
+- The **Source** dropdown picks which site to search &mdash; **Any source** (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one.
+- Whatever's found shows in an editable preview box, so you can review or tweak it before it goes anywhere near the queue.
+- **Use This Description** copies the preview into the form's Description field (asking first if you'd overwrite something already typed) and closes the dialog; **Cancel** closes it without changing anything.
+- If a source can't be reached or has nothing for that product, the dialog shows why (e.g. a 403 from a site blocking the request) right there, and you can pick a different source, click **Search Again**, or just type the description into the preview box by hand.
+
+The lookup is written as an ordered list of providers (Wine.com today) so another source (e.g. Vivino) can be added later without changing how the dialog works &mdash; it would just show up as another option in the Source dropdown.
 
 ### Importing a beer from Untappd
 

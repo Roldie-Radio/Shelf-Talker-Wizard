@@ -1,6 +1,6 @@
 const path = require('path');
 const express = require('express');
-const { extractProduct, extractBeer, findTastingNotes } = require('./productImport');
+const { extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES } = require('./productImport');
 
 function createApp() {
   const app = express();
@@ -39,12 +39,21 @@ function createApp() {
     }
   });
 
-  // Backs the "Find Tasting Notes" button next to the Description field
-  // (Manual Entry, Wine/Spirits only) - unlike /api/import-url above, there's
-  // no URL here: title/vintage come straight from whatever's already in the
-  // form, and the server does the searching (see findTastingNotes).
+  // Populates the Source dropdown in the "Find Tasting Notes" dialog - a
+  // plain list of provider names, so a new provider added to
+  // TASTING_NOTE_PROVIDERS shows up there without an app.js change.
+  app.get('/api/tasting-notes/sources', (req, res) => {
+    res.json({ sources: TASTING_NOTE_PROVIDER_NAMES });
+  });
+
+  // Backs the "Find Tasting Notes" dialog (Manual Entry, Wine/Spirits only) -
+  // unlike /api/import-url above, there's no URL here: title/vintage come
+  // straight from whatever's already in the form, and the server does the
+  // searching (see findTastingNotes). An optional `source` restricts the
+  // search to one named provider (the dialog's Source dropdown) instead of
+  // trying all of them in order.
   app.post('/api/tasting-notes', async (req, res) => {
-    const { title, vintage } = req.body || {};
+    const { title, vintage, source } = req.body || {};
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'A product title is required.' });
@@ -54,6 +63,7 @@ function createApp() {
       const result = await findTastingNotes({
         title: title.trim(),
         vintage: typeof vintage === 'string' ? vintage.trim() : '',
+        source: typeof source === 'string' && source.trim() ? source.trim() : undefined,
       });
       res.json(result);
     } catch (err) {
