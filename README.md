@@ -2,7 +2,7 @@
 
 A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talkers without opening Photoshop. It reproduces the look of the existing amber/purple templates (same logo, layout, and card size) and adds:
 
-- **Manual entry** form for title, description, size/unit, regular price, and sale price.
+- **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description searches Wine.com using the Product Title (and Vintage, if set) and fills the field in for you &mdash; no URL to paste, just a title to search with.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **Bulk CSV import** for adding many products at once.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
@@ -100,6 +100,12 @@ Click **Import from Website**, paste a product page URL from liquoroutletwinecel
 
 If a page doesn't expose any of this, the fields will come back blank and you can fill them in manually &mdash; the import is a shortcut, not a requirement.
 
+### Finding tasting notes automatically
+
+On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under the Description field. Unlike the website importer above, there's no URL to paste: it searches Wine.com using whatever's already in **Product Title** (plus **Vintage**, if set) and, on a confident match, fills in the Description field for you (asking first if you'd overwrite something you've already typed). If it can't find a confident match, or the matched page has no description, you'll see a message explaining why and can fill the description in by hand as usual.
+
+The lookup is written as an ordered list of providers (Wine.com today) so another source (e.g. Vivino) can be added later without changing how the button works.
+
 ### Importing a beer from Untappd
 
 Switch the Import tab to **Beer**, paste an Untappd beer page URL (`https://untappd.com/b/...`), and click **Fetch Beer Data**. This fills in the beer name, brewery, location, style, ABV, IBU, Untappd rating, and description &mdash; not price or size, since Untappd doesn't sell anything; add those two by hand.
@@ -126,7 +132,8 @@ Location isn't on the beer page itself &mdash; the importer follows the brewery 
 ```
 server/
   index.js            Express app: serves the frontend and the URL-import API
-  productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details
+  productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
+                      plus the Wine.com tasting-notes search behind the Find Tasting Notes button
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout

@@ -558,6 +558,219 @@ async function extractBeer(url) {
   return result;
 }
 
+// ================================================================
+// Wine/spirits tasting notes lookup - the one-click "Find Tasting Notes"
+// button next to the Description field on the Manual Entry form (see
+// app.js). Unlike the product/beer importers above, there's no URL to
+// paste here: the lookup is driven entirely by whatever's already typed
+// into the Product Title (and Vintage, if set), the same way someone would
+// type a product name into a search box.
+//
+// Structured as a list of providers (TASTING_NOTE_PROVIDERS below) tried in
+// order, so a second source (e.g. Vivino) can be added later as one more
+// entry rather than a rewrite - findTastingNotes just walks the list and
+// returns the first provider that turns up something usable.
+//
+// As with the Untappd beer importer above, this was written and unit
+// tested against hand-built fixture HTML only - the environment this was
+// built in blocks every outbound request to wine.com before it arrives (see
+// the note above BEER_HEADER_SETS for the equivalent situation with
+// Untappd), so none of the URL pattern or selectors below have been
+// confirmed against the real site. Every step degrades to "found nothing"
+// rather than throwing on a shape it doesn't recognize, and the caller
+// falls back to the next provider (and ultimately to "enter it by hand")
+// instead of surfacing a confusing error.
+// ================================================================
+
+// wine.com's search results page - unconfirmed from this environment (see
+// note above), based on the site's publicly known URL structure. If this
+// pattern has changed, parseWineComSearchResults below just finds no
+// candidates and the lookup reports "nothing found" rather than a wrong
+// result.
+function wineComSearchUrl(query) {
+  return `https://www.wine.com/search/${encodeURIComponent(query)}`;
+}
+
+// A plain-text search query built from whatever's already in the form -
+// staff never type anything new for this. Most manually-entered titles
+// already include a vintage year (see the form's own placeholder, "Josh
+// Cellars Cabernet Sauvignon 2025"), so the separate Vintage field is only
+// appended when the title doesn't already carry a 4-digit year - otherwise
+// a query like "...Cabernet Sauvignon 2025 2022" would read as two
+// conflicting vintages to wine.com's own search.
+function buildTastingNotesQuery(title, vintage) {
+  const trimmedTitle = (title || '').trim();
+  const trimmedVintage = (vintage || '').trim();
+  if (trimmedVintage && !/\b\d{4}\b/.test(trimmedTitle)) {
+    return `${trimmedTitle} ${trimmedVintage}`;
+  }
+  return trimmedTitle;
+}
+
+function tokenize(text) {
+  return (text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+}
+
+// Search results pages routinely list several unrelated products (other
+// vintages, other bottlings from the same producer) alongside the actual
+// match - picking "the first result" blindly risks pulling tasting notes
+// for the wrong wine entirely. Candidates are scored by how many of the
+// query's own words (title + vintage) appear in their listed title, and
+// only accepted if at least half of them do - a weak or absent match
+// returns nothing rather than a confident-looking wrong answer.
+function pickBestMatch(candidates, query) {
+  const queryTokens = tokenize(query);
+  if (queryTokens.length === 0 || candidates.length === 0) return undefined;
+  const threshold = Math.max(1, Math.ceil(queryTokens.length / 2));
+
+  let best;
+  let bestScore = 0;
+  for (const candidate of candidates) {
+    const candidateTokens = new Set(tokenize(candidate.title));
+    const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = candidate;
+    }
+  }
+  return bestScore >= threshold ? best : undefined;
+}
+
+// schema.org ItemList JSON-LD, as emitted by many large e-commerce sites on
+// search/category pages for search-engine rich results - the same
+// @graph-flattening trick as findJsonLdProduct above, just looking for
+// itemListElement instead of a Product node.
+function findJsonLdItemListEntries($) {
+  const entries = [];
+  $('script[type="application/ld+json"]').each((_, el) => {
+    const raw = $(el).contents().text();
+    if (!raw || !raw.trim()) return;
+    try {
+      const parsed = JSON.parse(raw);
+      const nodes = Array.isArray(parsed) ? parsed : [parsed];
+      for (const node of nodes) {
+        const graphNodes = Array.isArray(node && node['@graph']) ? node['@graph'] : [node];
+        for (const graphNode of graphNodes) {
+          if (Array.isArray(graphNode && graphNode.itemListElement)) {
+            entries.push(...graphNode.itemListElement);
+          }
+        }
+      }
+    } catch {
+      // Ignore malformed JSON-LD blocks, same as findJsonLdProduct above.
+    }
+  });
+  return entries;
+}
+
+// Pulls candidate {url, title} product links out of a wine.com search
+// results page. Tried in two tiers:
+//
+// 1. The ItemList JSON-LD above - far more stable than markup, since it's
+//    meant to be machine-read rather than styled.
+// 2. A plain scan for anchors whose href matches wine.com's own
+//    product-page URL shape (`/product/<slug>/<id>`, per the site's
+//    publicly visible link structure) - this survives a template/class
+//    rename that would break a CSS-selector-based scrape, since it keys
+//    off the URL path rather than the page's visual markup.
+function parseWineComSearchResults(html, baseUrl) {
+  const $ = cheerio.load(html);
+  const candidates = [];
+
+  for (const entry of findJsonLdItemListEntries($)) {
+    const item = entry && entry.item ? entry.item : entry;
+    const url = item && (item.url || item['@id']);
+    const title = item && (item.name || (entry && entry.name));
+    if (!url || !title) continue;
+    try {
+      candidates.push({ url: new URL(url, baseUrl).toString(), title: String(title).trim() });
+    } catch {
+      // Skip an unparseable URL rather than failing the whole search.
+    }
+  }
+
+  if (candidates.length === 0) {
+    $('a[href*="/product/"]').each((_, el) => {
+      const href = $(el).attr('href');
+      const title = $(el).text().replace(/\s+/g, ' ').trim();
+      if (!href || !title) return;
+      try {
+        candidates.push({ url: new URL(href, baseUrl).toString(), title });
+      } catch {
+        // Skip an unparseable URL rather than failing the whole search.
+      }
+    });
+  }
+
+  return candidates;
+}
+
+// Extracts a description/tasting note from a wine.com product page. Same
+// tiered approach as extractProduct above - JSON-LD Product schema first,
+// then Open Graph/meta description - since wine.com is a standard retail
+// storefront rather than something with its own bespoke markup the way
+// Untappd's beer pages are.
+function parseWineComProductHtml(html, url) {
+  const $ = cheerio.load(html);
+  const ld = findJsonLdProduct($) || {};
+  const title = firstNonEmpty(ld.name, $('meta[property="og:title"]').attr('content'), $('h1').first().text());
+  const description = firstNonEmpty(
+    ld.description,
+    $('meta[property="og:description"]').attr('content'),
+    $('meta[name="description"]').attr('content')
+  );
+  return { title: title || '', description: description || '', sourceUrl: url };
+}
+
+async function searchWineCom(title, vintage) {
+  const query = buildTastingNotesQuery(title, vintage);
+  if (!query) throw new Error('Enter a product title first.');
+
+  const searchUrl = wineComSearchUrl(query);
+  const searchHtml = await fetchHtml(searchUrl);
+  const candidates = parseWineComSearchResults(searchHtml, searchUrl);
+  const match = pickBestMatch(candidates, query);
+  if (!match) {
+    throw new Error(`Could not find "${title}" on Wine.com.`);
+  }
+
+  const productHtml = await fetchHtml(match.url);
+  const { description } = parseWineComProductHtml(productHtml, match.url);
+  if (!description) {
+    throw new Error(`Found "${match.title}" on Wine.com, but it has no description to import.`);
+  }
+
+  return { description, sourceUrl: match.url, sourceName: 'Wine.com', matchedTitle: match.title };
+}
+
+// Ordered list of tasting-notes sources - see the module comment above.
+// Adding a second source later (e.g. Vivino) is just another entry here;
+// findTastingNotes already tries each in order and stops at the first one
+// that returns something.
+const TASTING_NOTE_PROVIDERS = [
+  { name: 'Wine.com', search: searchWineCom },
+];
+
+async function findTastingNotes({ title, vintage }) {
+  if (!title || !title.trim()) {
+    throw new Error('Enter a product title first.');
+  }
+
+  const errors = [];
+  for (const provider of TASTING_NOTE_PROVIDERS) {
+    try {
+      return await provider.search(title, vintage);
+    } catch (err) {
+      errors.push({ provider: provider.name, message: err.message });
+    }
+  }
+
+  const detail = errors.length === 1
+    ? errors[0].message
+    : errors.map((e) => `${e.provider}: ${e.message}`).join(' ');
+  throw new Error(`${detail} Try a different title, or enter the description by hand.`);
+}
+
 module.exports = {
   extractProduct,
   extractBeer,
@@ -565,4 +778,10 @@ module.exports = {
   fetchBeerHtml,
   parseBreweryHtml,
   extractBreweryUrl,
+  findTastingNotes,
+  buildTastingNotesQuery,
+  pickBestMatch,
+  parseWineComSearchResults,
+  parseWineComProductHtml,
+  wineComSearchUrl,
 };

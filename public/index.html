@@ -80,10 +80,14 @@
             <input type="text" id="fVintage" maxlength="20" placeholder="2022" />
           </label>
 
-          <label class="field" id="descriptionField">
+          <div class="field" id="descriptionField">
             <span>Description</span>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
-          </label>
+            <div class="tasting-notes-row" id="tastingNotesRow">
+              <button type="button" class="btn btn--small btn--ghost" id="findTastingNotesBtn">Find Tasting Notes <span class="beta-badge">Beta</span></button>
+              <span class="help-text" id="tastingNotesStatus" role="status" aria-live="polite"></span>
+            </div>
+          </div>
 
           <div class="field-row">
             <label class="field">
@@ -300,13 +304,16 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
         <h3>Adding a shelf talker</h3>
         <p>There are three ways to add a product, as tabs on the left:</p>
         <ul>
-          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
+          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
           <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
           <li><strong>Bulk CSV Import</strong> &mdash; paste a CSV to add many wine/spirits shelf talkers at once. Columns: <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required; <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</li>
         </ul>
 
         <h3>Talker sizes and styles</h3>
         <p><strong>Talker Size</strong> (Full/Half/Quarter) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> (Wine / Spirits only &mdash; the store doesn't run Super Sales on beer) to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
+
+        <h3>Finding tasting notes automatically</h3>
+        <p>On the Manual Entry form, Wine / Spirits entries have a <strong>Find Tasting Notes</strong> button (marked <strong>Beta</strong> &mdash; it's new, so double-check what it finds) under the Description field. It searches Wine.com using whatever's already in <strong>Product Title</strong> (plus <strong>Vintage</strong>, if set) &mdash; no URL to paste, just fill in the title and click the button. If it finds a confident match, the Description field is filled in for you (it'll ask before overwriting anything you've already typed); review it before adding the item to the queue. If it can't find a match, or the site doesn't have a description for that product, you'll see a message and can enter the description by hand as usual.</p>
 
         <h3>Importing from a website</h3>
         <p>On the <strong>Import from Website</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match what you're importing:</p>

@@ -1,6 +1,6 @@
 const path = require('path');
 const express = require('express');
-const { extractProduct, extractBeer } = require('./productImport');
+const { extractProduct, extractBeer, findTastingNotes } = require('./productImport');
 
 function createApp() {
   const app = express();
@@ -36,6 +36,28 @@ function createApp() {
       res.json(product);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not read product data from that page.' });
+    }
+  });
+
+  // Backs the "Find Tasting Notes" button next to the Description field
+  // (Manual Entry, Wine/Spirits only) - unlike /api/import-url above, there's
+  // no URL here: title/vintage come straight from whatever's already in the
+  // form, and the server does the searching (see findTastingNotes).
+  app.post('/api/tasting-notes', async (req, res) => {
+    const { title, vintage } = req.body || {};
+
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'A product title is required.' });
+    }
+
+    try {
+      const result = await findTastingNotes({
+        title: title.trim(),
+        vintage: typeof vintage === 'string' ? vintage.trim() : '',
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not find tasting notes for that product.' });
     }
   });
 
