@@ -567,19 +567,23 @@ async function extractBeer(url) {
 // type a product name into a search box.
 //
 // Structured as a list of providers (TASTING_NOTE_PROVIDERS below) tried in
-// order, so a second source (e.g. Vivino) can be added later as one more
-// entry rather than a rewrite - findTastingNotes just walks the list and
-// returns the first provider that turns up something usable.
+// order, so a source can be added as one more entry rather than a rewrite -
+// findTastingNotes just walks the list and returns the first provider that
+// turns up something usable. Currently two: Wine.com and Vivino.
 //
 // As with the Untappd beer importer above, this was written and unit
 // tested against hand-built fixture HTML only - the environment this was
-// built in blocks every outbound request to wine.com before it arrives (see
-// the note above BEER_HEADER_SETS for the equivalent situation with
-// Untappd), so none of the URL pattern or selectors below have been
-// confirmed against the real site. Every step degrades to "found nothing"
-// rather than throwing on a shape it doesn't recognize, and the caller
-// falls back to the next provider (and ultimately to "enter it by hand")
-// instead of surfacing a confusing error.
+// built in blocks every outbound request to wine.com and vivino.com before
+// it arrives (see the note above BEER_HEADER_SETS for the equivalent
+// situation with Untappd), so none of the URL patterns or selectors below
+// have been confirmed against the real sites. Confirmed in real-world use,
+// though: wine.com has been seen actively blocking this app's requests
+// (a 403) rather than just having an unconfirmed URL/markup guess, so a
+// second source existing at all - not just its specific implementation -
+// is meaningfully useful here, not merely "nice to have." Every step
+// degrades to "found nothing" rather than throwing on a shape it doesn't
+// recognize, and the caller falls back to the next provider (and
+// ultimately to "enter it by hand") instead of surfacing a confusing error.
 // ================================================================
 
 // wine.com's search results page - unconfirmed from this environment (see
@@ -663,17 +667,20 @@ function findJsonLdItemListEntries($) {
   return entries;
 }
 
-// Pulls candidate {url, title} product links out of a wine.com search
+// Pulls candidate {url, title} product/wine links out of a catalog search
 // results page. Tried in two tiers:
 //
 // 1. The ItemList JSON-LD above - far more stable than markup, since it's
 //    meant to be machine-read rather than styled.
-// 2. A plain scan for anchors whose href matches wine.com's own
-//    product-page URL shape (`/product/<slug>/<id>`, per the site's
-//    publicly visible link structure) - this survives a template/class
-//    rename that would break a CSS-selector-based scrape, since it keys
-//    off the URL path rather than the page's visual markup.
-function parseWineComSearchResults(html, baseUrl) {
+// 2. A plain scan for anchors whose href contains `hrefMarker` - each
+//    provider's own stable, permanent link shape (wine.com's
+//    `/product/<slug>/<id>`, Vivino's `/w/<id>`) rather than a CSS class,
+//    so this survives a template/markup rename that would break a
+//    selector-based scrape.
+//
+// Shared by every catalog-site provider below (wine.com, Vivino) since the
+// approach - not the specific pattern - is what's common between them.
+function parseGenericSearchResults(html, baseUrl, hrefMarker) {
   const $ = cheerio.load(html);
   const candidates = [];
 
@@ -690,7 +697,7 @@ function parseWineComSearchResults(html, baseUrl) {
   }
 
   if (candidates.length === 0) {
-    $('a[href*="/product/"]').each((_, el) => {
+    $(`a[href*="${hrefMarker}"]`).each((_, el) => {
       const href = $(el).attr('href');
       const title = $(el).text().replace(/\s+/g, ' ').trim();
       if (!href || !title) return;
@@ -705,12 +712,26 @@ function parseWineComSearchResults(html, baseUrl) {
   return candidates;
 }
 
-// Extracts a description/tasting note from a wine.com product page. Same
+function parseWineComSearchResults(html, baseUrl) {
+  return parseGenericSearchResults(html, baseUrl, '/product/');
+}
+
+// Vivino wine pages are permalinked as `.../w/<numeric id>` regardless of
+// locale or slug - the most stable part of the URL to key a fallback scan
+// off of, same rationale as wine.com's `/product/` marker above.
+function parseVivinoSearchResults(html, baseUrl) {
+  return parseGenericSearchResults(html, baseUrl, '/w/');
+}
+
+// Extracts a description/tasting note from a catalog product page. Same
 // tiered approach as extractProduct above - JSON-LD Product schema first,
-// then Open Graph/meta description - since wine.com is a standard retail
-// storefront rather than something with its own bespoke markup the way
-// Untappd's beer pages are.
-function parseWineComProductHtml(html, url) {
+// then Open Graph/meta description - since a standard retail/catalog
+// storefront usually emits at least one of these for search-engine rich
+// results, regardless of how much of the rest of the page needs JavaScript
+// to render. Shared by every catalog-site provider below, unlike Untappd's
+// bespoke beer-page parsing further up, which has a real dedicated
+// tasting-note element to prefer over this.
+function parseGenericProductDescription(html, url) {
   const $ = cheerio.load(html);
   const ld = findJsonLdProduct($) || {};
   const title = firstNonEmpty(ld.name, $('meta[property="og:title"]').attr('content'), $('h1').first().text());
@@ -722,33 +743,82 @@ function parseWineComProductHtml(html, url) {
   return { title: title || '', description: description || '', sourceUrl: url };
 }
 
-async function searchWineCom(title, vintage) {
+function parseWineComProductHtml(html, url) {
+  return parseGenericProductDescription(html, url);
+}
+
+function parseVivinoProductHtml(html, url) {
+  return parseGenericProductDescription(html, url);
+}
+
+// Vivino's own search - unconfirmed from this environment, same caveat as
+// wine.com above, but worth calling out specifically here: Vivino is a
+// heavier single-page app than wine.com, so there's a real chance more of
+// its content (search results, the tasting-note text itself) is filled in
+// client-side after the initial HTML loads, which this plain HTTP fetch
+// would never see - if this comes back empty even for wines that visibly
+// have notes in a browser, that's the likely reason, and isn't fixable
+// without actually rendering the page (e.g. a headless browser), which this
+// app doesn't do.
+function vivinoSearchUrl(query) {
+  return `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
+}
+
+// Shared search-and-extract flow for every catalog-site provider: build the
+// query, search, pick the best match, then pull a description off the
+// matched product page. Only the search URL, the two parsers, and the
+// site's own name differ between wine.com and Vivino - see
+// TASTING_NOTE_PROVIDERS below for where those get plugged in.
+async function searchProductCatalog({ title, vintage, siteName, searchUrlFor, parseSearchResults, parseProductPage }) {
   const query = buildTastingNotesQuery(title, vintage);
   if (!query) throw new Error('Enter a product title first.');
 
-  const searchUrl = wineComSearchUrl(query);
+  const searchUrl = searchUrlFor(query);
   const searchHtml = await fetchHtml(searchUrl);
-  const candidates = parseWineComSearchResults(searchHtml, searchUrl);
+  const candidates = parseSearchResults(searchHtml, searchUrl);
   const match = pickBestMatch(candidates, query);
   if (!match) {
-    throw new Error(`Could not find "${title}" on Wine.com.`);
+    throw new Error(`Could not find "${title}" on ${siteName}.`);
   }
 
   const productHtml = await fetchHtml(match.url);
-  const { description } = parseWineComProductHtml(productHtml, match.url);
+  const { description } = parseProductPage(productHtml, match.url);
   if (!description) {
-    throw new Error(`Found "${match.title}" on Wine.com, but it has no description to import.`);
+    throw new Error(`Found "${match.title}" on ${siteName}, but it has no description to import.`);
   }
 
-  return { description, sourceUrl: match.url, sourceName: 'Wine.com', matchedTitle: match.title };
+  return { description, sourceUrl: match.url, sourceName: siteName, matchedTitle: match.title };
+}
+
+function searchWineCom(title, vintage) {
+  return searchProductCatalog({
+    title,
+    vintage,
+    siteName: 'Wine.com',
+    searchUrlFor: wineComSearchUrl,
+    parseSearchResults: parseWineComSearchResults,
+    parseProductPage: parseWineComProductHtml,
+  });
+}
+
+function searchVivino(title, vintage) {
+  return searchProductCatalog({
+    title,
+    vintage,
+    siteName: 'Vivino',
+    searchUrlFor: vivinoSearchUrl,
+    parseSearchResults: parseVivinoSearchResults,
+    parseProductPage: parseVivinoProductHtml,
+  });
 }
 
 // Ordered list of tasting-notes sources - see the module comment above.
-// Adding a second source later (e.g. Vivino) is just another entry here;
-// findTastingNotes already tries each in order and stops at the first one
-// that returns something.
+// findTastingNotes tries each in order (unless a specific one was
+// requested) and stops at the first that returns something; adding a third
+// source later is just one more entry here.
 const TASTING_NOTE_PROVIDERS = [
   { name: 'Wine.com', search: searchWineCom },
+  { name: 'Vivino', search: searchVivino },
 ];
 
 // Names only, for the "Find Tasting Notes" dialog's Source dropdown (see
@@ -801,4 +871,7 @@ module.exports = {
   parseWineComSearchResults,
   parseWineComProductHtml,
   wineComSearchUrl,
+  parseVivinoSearchResults,
+  parseVivinoProductHtml,
+  vivinoSearchUrl,
 };

@@ -2,7 +2,7 @@
 
 A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talkers without opening Photoshop. It reproduces the look of the existing amber/purple templates (same logo, layout, and card size) and adds:
 
-- **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description searches Wine.com using the Product Title (and Vintage, if set) and fills the field in for you &mdash; no URL to paste, just a title to search with.
+- **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **Bulk CSV import** for adding many products at once.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
@@ -109,7 +109,7 @@ On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under
 - **Use This Description** copies the preview into the form's Description field (asking first if you'd overwrite something already typed) and closes the dialog; **Cancel** closes it without changing anything.
 - If a source can't be reached or has nothing for that product, the dialog shows why (e.g. a 403 from a site blocking the request) right there, and you can pick a different source, click **Search Again**, or just type the description into the preview box by hand.
 
-The lookup is written as an ordered list of providers (Wine.com today) so another source (e.g. Vivino) can be added later without changing how the dialog works &mdash; it would just show up as another option in the Source dropdown.
+The lookup is written as an ordered list of providers (Wine.com and Vivino today) so another source can be added later without changing how the dialog works &mdash; it would just show up as another option in the Source dropdown.
 
 ### Importing a beer from Untappd
 
@@ -138,7 +138,7 @@ Location isn't on the beer page itself &mdash; the importer follows the brewery 
 server/
   index.js            Express app: serves the frontend and the URL-import API
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
-                      plus the Wine.com tasting-notes search behind the Find Tasting Notes button
+                      plus the Wine.com/Vivino tasting-notes search behind the Find Tasting Notes button
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout

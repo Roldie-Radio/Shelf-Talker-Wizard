@@ -17,6 +17,7 @@ const {
   parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl,
   buildTastingNotesQuery, pickBestMatch, parseWineComSearchResults, parseWineComProductHtml,
   wineComSearchUrl, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
+  parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -669,6 +670,81 @@ test('wineComSearchUrl encodes the query', () => {
   assert.equal(wineComSearchUrl('Josh Cellars 2022'), 'https://www.wine.com/search/Josh%20Cellars%202022');
 });
 
+// ================================================================
+// Vivino - the second tasting-notes provider. Reuses the same
+// parseGenericSearchResults/parseGenericProductDescription logic as
+// wine.com under the hood (see productImport.js), so these tests mirror
+// the wine.com ones above but through Vivino's own exported names and URL
+// shape (`/w/<id>` instead of `/product/<slug>/<id>`).
+// ================================================================
+
+test('parseVivinoSearchResults falls back to /w/ links when there is no ItemList JSON-LD', () => {
+  const html = page({
+    body: `
+      <a href="/US/en/josh-cellars-cabernet-sauvignon/w/123456">Josh Cellars Cabernet Sauvignon 2022</a>
+      <a href="/sign-in">Sign In</a>
+    `,
+  });
+  const candidates = parseVivinoSearchResults(html, 'https://www.vivino.com/search/wines?q=josh%20cellars');
+  assert.deepEqual(candidates, [
+    { url: 'https://www.vivino.com/US/en/josh-cellars-cabernet-sauvignon/w/123456', title: 'Josh Cellars Cabernet Sauvignon 2022' },
+  ]);
+});
+
+test('parseVivinoProductHtml prefers JSON-LD Product description, falling back to Open Graph', () => {
+  const withLd = page({
+    head: `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Product',
+      name: 'Josh Cellars Cabernet Sauvignon 2022',
+      description: 'Rich dark fruit with a hint of oak and vanilla.',
+    })}</script>`,
+  });
+  assert.equal(
+    parseVivinoProductHtml(withLd, 'https://www.vivino.com/US/en/x/w/1').description,
+    'Rich dark fruit with a hint of oak and vanilla.'
+  );
+
+  const ogOnly = page({ head: '<meta property="og:description" content="Bold and full-bodied." />' });
+  assert.equal(parseVivinoProductHtml(ogOnly, 'https://www.vivino.com/US/en/x/w/1').description, 'Bold and full-bodied.');
+});
+
+test('vivinoSearchUrl encodes the query', () => {
+  assert.equal(vivinoSearchUrl('Josh Cellars 2022'), 'https://www.vivino.com/search/wines?q=Josh%20Cellars%202022');
+});
+
+test('findTastingNotes with source "Vivino" only searches Vivino', async () => {
+  const searchHtml = page({
+    body: '<a href="/US/en/josh-cellars-cabernet-sauvignon/w/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
+  });
+  const productHtml = page({ head: '<meta property="og:description" content="Rich dark fruit." />' });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/search/wines') ? searchHtml : productHtml }),
+    async () => {
+      const result = await findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Vivino' });
+      assert.equal(result.sourceName, 'Vivino');
+    }
+  );
+});
+
+test('findTastingNotes with "Any source" falls through to Vivino when Wine.com finds nothing', async () => {
+  const vivinoSearchHtml = page({
+    body: '<a href="/US/en/josh-cellars-cabernet-sauvignon/w/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
+  });
+  const vivinoProductHtml = page({ head: '<meta property="og:description" content="Found on Vivino instead." />' });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('wine.com')) return mockResponse({ status: 404 });
+      if (url.includes('/search/wines')) return mockResponse({ status: 200, body: vivinoSearchHtml });
+      return mockResponse({ status: 200, body: vivinoProductHtml });
+    },
+    async () => {
+      const result = await findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022' });
+      assert.equal(result.sourceName, 'Vivino');
+      assert.equal(result.description, 'Found on Vivino instead.');
+    }
+  );
+});
+
 test('findTastingNotes returns a description end-to-end against fixture search + product pages', async () => {
   const searchHtml = page({
     body: '<a href="/product/josh-cellars-cabernet-sauvignon-2022/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
@@ -704,8 +780,8 @@ test('findTastingNotes rejects immediately when there is no title to search with
   await assert.rejects(() => findTastingNotes({ title: '' }), /Enter a product title first\./);
 });
 
-test('TASTING_NOTE_PROVIDER_NAMES lists Wine.com - the Source dropdown in the Find Tasting Notes dialog reads straight from this', () => {
-  assert.deepEqual(TASTING_NOTE_PROVIDER_NAMES, ['Wine.com']);
+test('TASTING_NOTE_PROVIDER_NAMES lists both providers - the Source dropdown in the Find Tasting Notes dialog reads straight from this', () => {
+  assert.deepEqual(TASTING_NOTE_PROVIDER_NAMES, ['Wine.com', 'Vivino']);
 });
 
 test('findTastingNotes with a matching source only searches that provider', async () => {
@@ -728,8 +804,8 @@ test('findTastingNotes rejects an unrecognized source without making any request
     async () => { calls += 1; return mockResponse({ status: 200 }); },
     async () => {
       await assert.rejects(
-        () => findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Vivino' }),
-        /Unknown tasting notes source: "Vivino"/
+        () => findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Total Wine' }),
+        /Unknown tasting notes source: "Total Wine"/
       );
     }
   );
