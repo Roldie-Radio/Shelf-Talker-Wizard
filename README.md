@@ -107,7 +107,7 @@ On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under
 - The **Source** dropdown picks which site to search &mdash; **Any source** (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one.
 - Whatever's found shows in an editable preview box, so you can review or tweak it before it goes anywhere near the queue.
 - **Use This Description** copies the preview into the form's Description field (asking first if you'd overwrite something already typed) and closes the dialog; **Cancel** closes it without changing anything.
-- If a source can't be reached or has nothing for that product, the dialog shows why (e.g. a 403 from a site blocking the request) right there, and you can pick a different source, click **Search Again**, or just type the description into the preview box by hand.
+- If a source blocks the request outright, it automatically retries once with a different set of request headers before giving up &mdash; same as the Untappd import below. If a source still can't be reached, or has nothing for that product, the dialog shows why right there, and you can pick a different source, click **Search Again**, or just type the description into the preview box by hand.
 
 The lookup is written as an ordered list of providers (Wine.com and Vivino today) so another source can be added later without changing how the dialog works &mdash; it would just show up as another option in the Source dropdown.
 

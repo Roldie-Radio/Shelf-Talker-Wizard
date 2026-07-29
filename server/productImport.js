@@ -248,28 +248,17 @@ async function extractProduct(url) {
 }
 
 // ================================================================
-// Beer import - focused on Untappd beer pages (https://untappd.com/b/...),
-// which is where staff are expected to paste links from for a Beer talker.
-//
-// This could not be verified against Untappd's live markup from the
-// environment it was originally written in - every outbound request from
-// there was blocked before it reached Untappd at all, regardless of
-// headers, which is a property of that environment's network, not
-// something this code can detect or reason about. The selectors here are
-// best-effort, based on Untappd's long-documented classic page structure,
-// but every one of them is optional and the parser leans harder on things
-// far less likely to break if that markup has moved on: Open Graph tags
-// (title/description are close to universal across site redesigns) and
-// plain-text regex scans for the numeric facts (ABV/IBU/rating), rather
-// than brittle class names. A field the parser can't find just comes back
-// blank, same as the product importer above - staff review and fill in the
-// rest either way.
+// Resilient fetch - retries a blocked-looking request once with a
+// different, more browser-like header set. Originally built for the beer
+// importer's Untappd requests below; wine.com and Vivino (see the tasting
+// notes section further down) hit the same wall in real use, so this is
+// shared infrastructure rather than something owned by any one provider.
 // ================================================================
 
-// Two header sets, tried in order (see fetchBeerHtml below):
+// Two header sets, tried in order (see fetchHtmlResilient below):
 //
-// 1. Plain: the product importer's own honest, self-identifying UA. This
-//    is what's actually gotten data back from Untappd in real use.
+// 1. Plain: this app's own honest, self-identifying UA. This is what's
+//    actually gotten data back from Untappd in real use.
 // 2. Full-browser: a complete, internally-consistent set of headers a real
 //    Chrome navigation sends together (UA + Accept-Language + the
 //    sec-fetch-*/sec-ch-ua client hints). A bare User-Agent claiming to be
@@ -278,8 +267,9 @@ async function extractProduct(url) {
 //    MORE suspicious than a plain script UA that isn't pretending to be
 //    anything, which is the opposite of what an earlier version of this
 //    file assumed. Kept as a second attempt rather than the default, since
-//    it's an untested hypothesis, not confirmed against the live site.
-const BEER_HEADER_SETS = [
+//    it's an untested hypothesis, not confirmed against any of the three
+//    live sites this now runs against.
+const RESILIENT_HEADER_SETS = [
   {},
   {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -305,12 +295,12 @@ const BLOCKED_STATUSES = new Set([403, 429, 503]);
 // a block, not for other failures (a bad URL, a timeout, a redirect loop) -
 // those would fail identically on a second attempt and just cost the user
 // extra time waiting for it.
-async function fetchBeerHtml(url) {
-  for (let i = 0; i < BEER_HEADER_SETS.length; i++) {
+async function fetchHtmlResilient(url, headerSets = RESILIENT_HEADER_SETS) {
+  for (let i = 0; i < headerSets.length; i++) {
     try {
-      return await fetchHtml(url, BEER_HEADER_SETS[i]);
+      return await fetchHtml(url, headerSets[i]);
     } catch (err) {
-      const hasMoreAttempts = i < BEER_HEADER_SETS.length - 1;
+      const hasMoreAttempts = i < headerSets.length - 1;
       if (!hasMoreAttempts || !BLOCKED_STATUSES.has(err.httpStatus)) throw err;
     }
   }
@@ -319,6 +309,30 @@ async function fetchBeerHtml(url) {
   // could fall off the end and return undefined.
   throw new Error('Could not fetch that page.');
 }
+
+// ================================================================
+// Beer import - focused on Untappd beer pages (https://untappd.com/b/...),
+// which is where staff are expected to paste links from for a Beer talker.
+//
+// This could not be verified against Untappd's live markup from the
+// environment it was originally written in - every outbound request from
+// there was blocked before it reached Untappd at all, regardless of
+// headers, which is a property of that environment's network, not
+// something this code can detect or reason about. The selectors here are
+// best-effort, based on Untappd's long-documented classic page structure,
+// but every one of them is optional and the parser leans harder on things
+// far less likely to break if that markup has moved on: Open Graph tags
+// (title/description are close to universal across site redesigns) and
+// plain-text regex scans for the numeric facts (ABV/IBU/rating), rather
+// than brittle class names. A field the parser can't find just comes back
+// blank, same as the product importer above - staff review and fill in the
+// rest either way.
+// ================================================================
+
+// Kept as its own name (rather than switching every beer call site to
+// fetchHtmlResilient) since it's what the beer import's own tests and
+// error handling below already refer to by name.
+const fetchBeerHtml = fetchHtmlResilient;
 
 // "8.00" -> "8", "5.50" -> "5.5" - matches the plain "8%" style already used
 // by the manual entry form's own placeholder, instead of a raw regex capture
@@ -574,10 +588,10 @@ async function extractBeer(url) {
 // As with the Untappd beer importer above, this was written and unit
 // tested against hand-built fixture HTML only - the environment this was
 // built in blocks every outbound request to wine.com and vivino.com before
-// it arrives (see the note above BEER_HEADER_SETS for the equivalent
+// it arrives (see the note above RESILIENT_HEADER_SETS for the equivalent
 // situation with Untappd), so none of the URL patterns or selectors below
 // have been confirmed against the real sites. Confirmed in real-world use,
-// though: wine.com has been seen actively blocking this app's requests
+// though: both sites have been seen actively blocking this app's requests
 // (a 403) rather than just having an unconfirmed URL/markup guess, so a
 // second source existing at all - not just its specific implementation -
 // is meaningfully useful here, not merely "nice to have." Every step
@@ -764,6 +778,32 @@ function vivinoSearchUrl(query) {
   return `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
 }
 
+// Both wine.com and Vivino have been seen actively blocking this app's
+// requests (a 403) in real use - not just a hypothetical per the
+// RESILIENT_HEADER_SETS comment above. fetchHtmlResilient already retries
+// once with a more browser-like header set; if a block still gets through
+// that, this turns the raw "403 Forbidden" into the same kind of
+// actionable message extractBeer already gives for a blocked Untappd
+// request, instead of a bare HTTP status staff have no way to act on.
+async function fetchCatalogHtml(url, siteName) {
+  try {
+    return await fetchHtmlResilient(url);
+  } catch (err) {
+    if (BLOCKED_STATUSES.has(err.httpStatus)) {
+      // Deliberately doesn't end with its own "...or enter it by hand" -
+      // findTastingNotes's caller already appends that once for every
+      // provider's error, single or combined; repeating it here read as a
+      // stutter ("...enter the description by hand. Try a different title,
+      // or enter the description by hand.").
+      throw new Error(
+        `${siteName} blocked this request. This can happen from certain networks or hosting `
+        + 'providers - try again in a bit, from a different network, or pick a different source above.'
+      );
+    }
+    throw err;
+  }
+}
+
 // Shared search-and-extract flow for every catalog-site provider: build the
 // query, search, pick the best match, then pull a description off the
 // matched product page. Only the search URL, the two parsers, and the
@@ -774,14 +814,14 @@ async function searchProductCatalog({ title, vintage, siteName, searchUrlFor, pa
   if (!query) throw new Error('Enter a product title first.');
 
   const searchUrl = searchUrlFor(query);
-  const searchHtml = await fetchHtml(searchUrl);
+  const searchHtml = await fetchCatalogHtml(searchUrl, siteName);
   const candidates = parseSearchResults(searchHtml, searchUrl);
   const match = pickBestMatch(candidates, query);
   if (!match) {
     throw new Error(`Could not find "${title}" on ${siteName}.`);
   }
 
-  const productHtml = await fetchHtml(match.url);
+  const productHtml = await fetchCatalogHtml(match.url, siteName);
   const { description } = parseProductPage(productHtml, match.url);
   if (!description) {
     throw new Error(`Found "${match.title}" on ${siteName}, but it has no description to import.`);
