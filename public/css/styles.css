@@ -785,6 +785,14 @@ h1, h2, h3 { margin: 0; }
   flex: 0 0 auto;
 }
 
+/* Pulls the vintage line back up into .card__title's margin-bottom (3%,
+   sized for the gap before .card__description) so title-to-vintage reads
+   like just another wrapped title line - line-height only, no added
+   margin - instead of a description-sized gap. */
+.card__title + .card__vintage {
+  margin-top: calc(-2.5% * var(--price-fit, 1));
+}
+
 .card__description {
   font-family: Arial, Helvetica, sans-serif;
   font-size: calc(var(--w) * 0.0521 * var(--price-fit, 1));
