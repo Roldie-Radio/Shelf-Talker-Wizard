@@ -40,6 +40,33 @@ function buildAwardsHtml(talker) {
   return `<div class="card__awards" style="color: ${color}">${lines.map(escapeHtml).join('<br>')}</div>`;
 }
 
+// Beer style -> accent color for the pill behind the Style value below.
+// Matched by keyword against the free-text Style field (typed by hand or
+// scraped from Untappd, e.g. "IPA - Imperial / Double New England / Hazy"),
+// so there's no fixed vocabulary to keep in sync with Untappd's. Buckets
+// and colors loosely follow the style-color conventions Untappd/
+// BeerAdvocate already use, so the color reads as familiar rather than
+// invented. Order matters: checked top to bottom, so a style that could
+// match two buckets (e.g. "India Pale Lager") takes the first/more
+// specific one rather than whichever regex happens to be more general.
+const BEER_STYLE_COLORS = [
+  { test: /ipa|india pale ale/i, bg: '#e08a1e', fg: '#ffffff' },
+  { test: /stout|porter/i, bg: '#3b2415', fg: '#ffffff' },
+  { test: /sour|wild|gose|lambic|fruited/i, bg: '#c23b6b', fg: '#ffffff' },
+  { test: /lager|pilsner|pils\b|helles|m[aä]rzen|oktoberfest|bock/i, bg: '#e8c14a', fg: '#3b2415' },
+  { test: /wheat|hefeweizen|witbier|belgian|saison|tripel|dubbel/i, bg: '#f0d98c', fg: '#3b2415' },
+  { test: /red ale|amber ale|irish red/i, bg: '#a8432a', fg: '#ffffff' },
+  { test: /brown ale|dunkel|schwarzbier|dark ale/i, bg: '#5c3a21', fg: '#ffffff' },
+  { test: /pale ale|blonde|golden ale/i, bg: '#d9a441', fg: '#3b2415' },
+  { test: /cider/i, bg: '#8bb04a', fg: '#ffffff' },
+];
+const BEER_STYLE_FALLBACK_COLOR = { bg: '#ddd6cc', fg: '#3b2415' };
+
+function beerStyleColor(style) {
+  const found = style && BEER_STYLE_COLORS.find(({ test }) => test.test(style));
+  return found || BEER_STYLE_FALLBACK_COLOR;
+}
+
 // Untappd-style rating callout: a big circled score (e.g. "94") next to a
 // 5-dot rating with its decimal value (e.g. "4.27"). Either half can be
 // left off if the field wasn't filled in. includeStyle adds the beer's
@@ -76,12 +103,16 @@ function buildBeerRatingHtml(talker, { includeStyle = false, includeScore = true
     `;
   }
 
-  const styleHtml = style ? `
-    <div class="card__beer-style">
-      <div class="card__beer-rating-label">Style</div>
-      <div class="card__beer-style-value">${escapeHtml(style)}</div>
-    </div>
-  ` : '';
+  let styleHtml = '';
+  if (style) {
+    const swatch = beerStyleColor(style);
+    styleHtml = `
+      <div class="card__beer-style">
+        <div class="card__beer-rating-label">Style</div>
+        <div class="card__beer-style-value" style="background: ${swatch.bg}; color: ${swatch.fg}">${escapeHtml(style)}</div>
+      </div>
+    `;
+  }
 
   return `<div class="card__beer-rating">${scoreHtml}${detailHtml}${styleHtml}</div>`;
 }
