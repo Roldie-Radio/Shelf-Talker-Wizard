@@ -745,6 +745,62 @@ test('findTastingNotes with "Any source" falls through to Vivino when Wine.com f
   );
 });
 
+// ================================================================
+// Catalog-site requests being blocked outright (403) - confirmed in real
+// use against both wine.com and Vivino, not just a hypothetical. Both
+// routes through fetchCatalogHtml (see productImport.js): the
+// browser-header retry already covered by the fetchBeerHtml tests above
+// (same fetchHtmlResilient underneath), and turning a still-blocked
+// response into the same kind of actionable message extractBeer already
+// gives for a blocked Untappd request.
+// ================================================================
+
+test('findTastingNotes retries a blocked Wine.com response with browser headers before giving up', async () => {
+  const searchHtml = page({
+    body: '<a href="/product/josh-cellars-cabernet-sauvignon-2022/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
+  });
+  const productHtml = page({ head: '<meta property="og:description" content="Rich dark fruit." />' });
+  const calls = [];
+  await withMockFetch(
+    async (url, opts) => {
+      calls.push(opts.headers);
+      // Every attempt without the full-browser header set is blocked; only
+      // the retry (which carries it) gets through.
+      if (!opts.headers['Sec-Fetch-Mode']) return mockResponse({ status: 403 });
+      return mockResponse({ status: 200, body: url.includes('/search/') ? searchHtml : productHtml });
+    },
+    async () => {
+      const result = await findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Wine.com' });
+      assert.equal(result.sourceName, 'Wine.com');
+    }
+  );
+  assert.ok(calls.length >= 2, 'a blocked first attempt should trigger the browser-header retry');
+});
+
+test('findTastingNotes turns a persistently blocked Wine.com response into an actionable message, not a bare HTTP status', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Wine.com' }),
+        /Wine\.com blocked this request/
+      );
+    }
+  );
+});
+
+test('findTastingNotes turns a persistently blocked Vivino response into an actionable message too', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022', source: 'Vivino' }),
+        /Vivino blocked this request/
+      );
+    }
+  );
+});
+
 test('findTastingNotes returns a description end-to-end against fixture search + product pages', async () => {
   const searchHtml = page({
     body: '<a href="/product/josh-cellars-cabernet-sauvignon-2022/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
