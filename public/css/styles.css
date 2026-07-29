@@ -450,6 +450,14 @@ h1, h2, h3 { margin: 0; }
   border-top: 1px solid var(--ui-border);
 }
 
+/* Find Tasting Notes is a small form, not a full sheet/help-doc preview -
+   the default 920px .modal width (sized for the Print Preview grid) would
+   leave it swimming in empty space. */
+.modal--narrow { max-width: 480px; }
+
+.tasting-notes-modal-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.tasting-notes-modal-body .field { margin-bottom: 0; }
+
 /* ---------- Print preview ---------- */
 
 .auto-arrange-toggle {

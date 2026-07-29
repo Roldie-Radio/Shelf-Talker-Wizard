@@ -122,6 +122,15 @@
     tastingNotesRow: document.getElementById('tastingNotesRow'),
     findTastingNotesBtn: document.getElementById('findTastingNotesBtn'),
     tastingNotesStatus: document.getElementById('tastingNotesStatus'),
+    tastingNotesOverlay: document.getElementById('tastingNotesOverlay'),
+    tastingNotesModalCloseBtn: document.getElementById('tastingNotesModalCloseBtn'),
+    tastingNotesCancelBtn: document.getElementById('tastingNotesCancelBtn'),
+    tastingNotesSearchBtn: document.getElementById('tastingNotesSearchBtn'),
+    tastingNotesConfirmBtn: document.getElementById('tastingNotesConfirmBtn'),
+    tastingNotesSourceSelect: document.getElementById('tastingNotesSourceSelect'),
+    tastingNotesQueryLabel: document.getElementById('tastingNotesQueryLabel'),
+    tastingNotesModalStatus: document.getElementById('tastingNotesModalStatus'),
+    tastingNotesPreview: document.getElementById('tastingNotesPreview'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
@@ -1052,41 +1061,136 @@
 
   // Unlike the website importer below, this has no URL to paste - it
   // searches using whatever's already in the Product Title/Vintage fields,
-  // the same way a person would type a product name into a search box.
-  els.findTastingNotesBtn.addEventListener('click', async () => {
+  // the same way a person would type a product name into a search box. The
+  // dialog (not just a status line) exists because a single site can be
+  // blocked or wrong for a given product - staff need to see what actually
+  // came back, try another source, or tweak the text, before it lands in
+  // the form (see createModal below, shared with Print Preview/Help).
+
+  // "Any source" isn't a real provider name from the server - sending no
+  // `source` at all is what tells findTastingNotes (server-side) to try
+  // every provider in order, same as before this dialog existed.
+  const ANY_TASTING_NOTES_SOURCE = 'Any source (recommended)';
+  let tastingNotesSourceNames = [];
+  let tastingNotesSourcesLoaded = false;
+
+  function renderTastingNotesSourceOptions() {
+    const current = els.tastingNotesSourceSelect.value;
+    const options = [ANY_TASTING_NOTES_SOURCE, ...tastingNotesSourceNames];
+    els.tastingNotesSourceSelect.innerHTML = options
+      .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+      .join('');
+    if (options.includes(current)) els.tastingNotesSourceSelect.value = current;
+  }
+
+  // Fetched once per page load rather than hardcoded, so a provider added to
+  // TASTING_NOTE_PROVIDERS server-side (see productImport.js) shows up here
+  // without an app.js change.
+  async function ensureTastingNotesSourcesLoaded() {
+    if (tastingNotesSourcesLoaded) return;
+    tastingNotesSourcesLoaded = true; // don't retry every open - a failure here just leaves "Any source" as the only option
+    try {
+      const resp = await fetch('/api/tasting-notes/sources');
+      const data = await resp.json();
+      if (resp.ok && Array.isArray(data.sources)) tastingNotesSourceNames = data.sources;
+    } catch {
+      // Fall through with "Any source" only - the search itself still tries
+      // every provider server-side regardless of whether this list loaded.
+    }
+    renderTastingNotesSourceOptions();
+  }
+
+  async function runTastingNotesSearch() {
     const title = els.title.value.trim();
     if (!title) {
-      els.tastingNotesStatus.textContent = 'Enter a product title first.';
+      els.tastingNotesModalStatus.textContent = 'Enter a product title first.';
       return;
     }
-    if (els.description.value.trim()
-      && !confirm('Replace the current description with tasting notes found online?')) {
-      return;
-    }
-
     const vintage = els.vintage.value.trim();
-    els.findTastingNotesBtn.disabled = true;
-    els.tastingNotesStatus.textContent = 'Searching for tasting notes...';
+    const selected = els.tastingNotesSourceSelect.value;
+    const source = selected && selected !== ANY_TASTING_NOTES_SOURCE ? selected : undefined;
+
+    els.tastingNotesSearchBtn.disabled = true;
+    els.tastingNotesModalStatus.textContent = source ? `Searching ${source}...` : 'Searching...';
 
     try {
       const resp = await fetch('/api/tasting-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, vintage }),
+        body: JSON.stringify({ title, vintage, source }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not find tasting notes.');
 
       // Respects the field's own maxlength, which only guards user typing,
       // not a value assigned from here.
-      els.description.value = (data.description || '').slice(0, 600);
-      els.tastingNotesStatus.textContent = `Found via ${data.sourceName || 'the web'} - review before adding.`;
-      if (previewMode === 'single') renderPreview();
+      els.tastingNotesPreview.value = (data.description || '').slice(0, 600);
+      els.tastingNotesModalStatus.textContent = `Found via ${data.sourceName || source || 'the web'}.`;
+      els.tastingNotesConfirmBtn.disabled = !els.tastingNotesPreview.value.trim();
     } catch (err) {
-      els.tastingNotesStatus.textContent = err.message || 'Something went wrong finding tasting notes.';
+      els.tastingNotesModalStatus.textContent = err.message || 'Something went wrong finding tasting notes.';
     } finally {
-      els.findTastingNotesBtn.disabled = false;
+      els.tastingNotesSearchBtn.disabled = false;
     }
+  }
+
+  const tastingNotesModal = createModal({
+    overlay: els.tastingNotesOverlay,
+    closeBtns: [els.tastingNotesModalCloseBtn, els.tastingNotesCancelBtn],
+    onOpen: () => {
+      const title = els.title.value.trim();
+      const vintage = els.vintage.value.trim();
+      // Mirrors buildTastingNotesQuery's own rule server-side (productImport.js)
+      // so this label shows the query that will actually be sent, instead of
+      // a misleading double year when the title already carries one (e.g.
+      // "...Cabernet Sauvignon 2025" plus a separate Vintage of "2022").
+      const showVintage = vintage && !/\b\d{4}\b/.test(title);
+      els.tastingNotesQueryLabel.textContent = `Searching for: ${title}${showVintage ? ` ${vintage}` : ''}`;
+      els.tastingNotesPreview.value = '';
+      els.tastingNotesModalStatus.textContent = '';
+      els.tastingNotesConfirmBtn.disabled = true;
+      renderTastingNotesSourceOptions();
+      els.tastingNotesSourceSelect.value = ANY_TASTING_NOTES_SOURCE;
+      ensureTastingNotesSourcesLoaded().then(() => {
+        els.tastingNotesSourceSelect.value = ANY_TASTING_NOTES_SOURCE;
+        runTastingNotesSearch();
+      });
+    },
+  });
+
+  els.findTastingNotesBtn.addEventListener('click', () => {
+    if (!els.title.value.trim()) {
+      els.tastingNotesStatus.textContent = 'Enter a product title first.';
+      return;
+    }
+    els.tastingNotesStatus.textContent = '';
+    tastingNotesModal.open();
+  });
+
+  els.tastingNotesSearchBtn.addEventListener('click', runTastingNotesSearch);
+
+  // Switching sources doesn't search automatically - without this, the
+  // status line would keep reading "Found via Wine.com" after switching the
+  // dropdown to a different source, misleadingly describing a search that
+  // was never run against it.
+  els.tastingNotesSourceSelect.addEventListener('change', () => {
+    els.tastingNotesModalStatus.textContent = 'Click "Search Again" to search this source.';
+  });
+
+  els.tastingNotesPreview.addEventListener('input', () => {
+    els.tastingNotesConfirmBtn.disabled = !els.tastingNotesPreview.value.trim();
+  });
+
+  els.tastingNotesConfirmBtn.addEventListener('click', () => {
+    const text = els.tastingNotesPreview.value.trim();
+    if (!text) return;
+    const existing = els.description.value.trim();
+    if (existing && existing !== text && !confirm('Replace the current description with this?')) {
+      return;
+    }
+    els.description.value = text.slice(0, 600);
+    tastingNotesModal.close();
+    if (previewMode === 'single') renderPreview();
   });
 
   // ---------- Import from website ----------

@@ -274,6 +274,32 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
     <button type="button" data-action="delete">Delete</button>
   </div>
 
+  <div id="tastingNotesOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="tastingNotesModalTitle">
+      <div class="modal__header">
+        <h2 id="tastingNotesModalTitle">Find Tasting Notes <span class="beta-badge">Beta</span></h2>
+        <button type="button" class="btn btn--ghost btn--small" id="tastingNotesModalCloseBtn">&times; Close</button>
+      </div>
+      <div class="tasting-notes-modal-body">
+        <p class="help-text" id="tastingNotesQueryLabel"></p>
+        <label class="field">
+          <span>Source</span>
+          <select id="tastingNotesSourceSelect"></select>
+        </label>
+        <p class="help-text" id="tastingNotesModalStatus" role="status" aria-live="polite"></p>
+        <label class="field">
+          <span>Preview &mdash; edit before adding, if you'd like</span>
+          <textarea id="tastingNotesPreview" rows="6" maxlength="600" placeholder="Nothing found yet..."></textarea>
+        </label>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="tastingNotesSearchBtn">Search Again</button>
+        <button type="button" class="btn" id="tastingNotesCancelBtn">Cancel</button>
+        <button type="button" class="btn btn--primary" id="tastingNotesConfirmBtn">Use This Description</button>
+      </div>
+    </div>
+  </div>
+
   <div id="printPreviewOverlay" class="modal-overlay no-print" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
       <div class="modal__header">
@@ -313,7 +339,7 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
         <p><strong>Talker Size</strong> (Full/Half/Quarter) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> (Wine / Spirits only &mdash; the store doesn't run Super Sales on beer) to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
 
         <h3>Finding tasting notes automatically</h3>
-        <p>On the Manual Entry form, Wine / Spirits entries have a <strong>Find Tasting Notes</strong> button (marked <strong>Beta</strong> &mdash; it's new, so double-check what it finds) under the Description field. It searches Wine.com using whatever's already in <strong>Product Title</strong> (plus <strong>Vintage</strong>, if set) &mdash; no URL to paste, just fill in the title and click the button. If it finds a confident match, the Description field is filled in for you (it'll ask before overwriting anything you've already typed); review it before adding the item to the queue. If it can't find a match, or the site doesn't have a description for that product, you'll see a message and can enter the description by hand as usual.</p>
+        <p>On the Manual Entry form, Wine / Spirits entries have a <strong>Find Tasting Notes</strong> button (marked <strong>Beta</strong> &mdash; it's new, so double-check what it finds) under the Description field. Click it (with a <strong>Product Title</strong> already filled in) to open a dialog that searches using the title and <strong>Vintage</strong>, if set &mdash; no URL to paste. The <strong>Source</strong> dropdown picks which site to search &mdash; currently Wine.com and Vivino: <strong>Any source</strong> (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one. Whatever it finds shows in an editable preview box &mdash; tweak it if you'd like, then click <strong>Use This Description</strong> to drop it into the form (it'll ask before overwriting anything already typed), or <strong>Cancel</strong> to close without changing anything. If a site can't be reached or has nothing for that product, the dialog shows why (e.g. "The page responded with 403 Forbidden") and you can try a different source or type the description in by hand.</p>
 
         <h3>Importing from a website</h3>
         <p>On the <strong>Import from Website</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match what you're importing:</p>
