@@ -909,11 +909,18 @@ h1, h2, h3 { margin: 0; }
    long. */
 .card__beer-style { flex: 1 1 auto; min-width: 0; }
 
+/* Colored pill (background/text set inline per talker - see beerStyleColor
+   in card.js) so a style's category reads at a glance from across the
+   aisle, not just from the label above it. inline-block rather than the
+   block it used to be so the color only wraps the text itself instead of
+   painting the full width of .card__beer-style's remaining row space. */
 .card__beer-style-value {
+  display: inline-block;
   font-weight: 700;
-  color: var(--ink);
   line-height: 1.2;
   font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.008 * var(--price-fit, 1)) calc(var(--w) * 0.022 * var(--price-fit, 1));
+  border-radius: calc(var(--w) * 0.018);
 }
 
 .card__beer-table { flex: 0 0 auto; margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0; }
