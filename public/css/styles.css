@@ -217,6 +217,9 @@ h1, h2, h3 { margin: 0; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .field-row .field { min-width: 0; }
 
+.tasting-notes-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.tasting-notes-row .help-text { margin: 0; }
+
 .form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
 .form-error { color: var(--ui-danger); font-size: 0.85rem; margin-top: 0.5rem; }
 .help-text { font-size: 0.85rem; color: var(--ui-muted); margin: 0 0 0.75rem; }

@@ -13,7 +13,11 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const { parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl } = require('../server/productImport');
+const {
+  parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl,
+  buildTastingNotesQuery, pickBestMatch, parseWineComSearchResults, parseWineComProductHtml,
+  wineComSearchUrl, findTastingNotes,
+} = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
@@ -572,4 +576,130 @@ test('extractBeer does not request the brewery page at all when there is no brew
     }
   );
   assert.equal(calls, 1, 'no .brewery a link means nothing to follow - must not make a second request');
+});
+
+// ================================================================
+// Wine/spirits "Find Tasting Notes" lookup (searchWineCom, via
+// findTastingNotes). Same testing constraint as the beer importer above -
+// no real fetch to wine.com is available from here - so these pin the
+// query-building, result-matching, and page-parsing logic against
+// hand-built fixtures instead.
+// ================================================================
+
+test('buildTastingNotesQuery appends the vintage only when the title has no year of its own', () => {
+  assert.equal(
+    buildTastingNotesQuery('Josh Cellars Cabernet Sauvignon', '2022'),
+    'Josh Cellars Cabernet Sauvignon 2022'
+  );
+  assert.equal(
+    buildTastingNotesQuery('Josh Cellars Cabernet Sauvignon 2025', '2022'),
+    'Josh Cellars Cabernet Sauvignon 2025',
+    'title already has a year - do not tack on a second, conflicting one'
+  );
+  assert.equal(buildTastingNotesQuery('Josh Cellars Cabernet Sauvignon', ''), 'Josh Cellars Cabernet Sauvignon');
+});
+
+test('pickBestMatch prefers the candidate whose title overlaps the query the most', () => {
+  const candidates = [
+    { url: 'https://www.wine.com/product/a/1', title: 'Josh Cellars Chardonnay 2022' },
+    { url: 'https://www.wine.com/product/b/2', title: 'Josh Cellars Cabernet Sauvignon 2022' },
+  ];
+  const match = pickBestMatch(candidates, 'Josh Cellars Cabernet Sauvignon 2022');
+  assert.equal(match.url, 'https://www.wine.com/product/b/2');
+});
+
+test('pickBestMatch returns nothing when no candidate meaningfully overlaps the query', () => {
+  const candidates = [{ url: 'https://www.wine.com/product/a/1', title: 'Completely Unrelated Wine 2019' }];
+  assert.equal(pickBestMatch(candidates, 'Josh Cellars Cabernet Sauvignon 2022'), undefined);
+});
+
+test('pickBestMatch returns nothing for an empty candidate list', () => {
+  assert.equal(pickBestMatch([], 'Josh Cellars Cabernet Sauvignon 2022'), undefined);
+});
+
+test('parseWineComSearchResults reads candidates from ItemList JSON-LD', () => {
+  const html = page({
+    head: `<script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, item: { name: 'Josh Cellars Cabernet Sauvignon 2022', url: '/product/josh-cellars-cabernet-sauvignon-2022/123456' } },
+      ],
+    })}</script>`,
+  });
+  const candidates = parseWineComSearchResults(html, 'https://www.wine.com/search/josh%20cellars');
+  assert.deepEqual(candidates, [
+    { url: 'https://www.wine.com/product/josh-cellars-cabernet-sauvignon-2022/123456', title: 'Josh Cellars Cabernet Sauvignon 2022' },
+  ]);
+});
+
+test('parseWineComSearchResults falls back to /product/ links when there is no ItemList JSON-LD', () => {
+  const html = page({
+    body: `
+      <a href="/product/josh-cellars-cabernet-sauvignon-2022/123456">Josh Cellars Cabernet Sauvignon 2022</a>
+      <a href="/account/login">Sign In</a>
+    `,
+  });
+  const candidates = parseWineComSearchResults(html, 'https://www.wine.com/search/josh%20cellars');
+  assert.deepEqual(candidates, [
+    { url: 'https://www.wine.com/product/josh-cellars-cabernet-sauvignon-2022/123456', title: 'Josh Cellars Cabernet Sauvignon 2022' },
+  ]);
+});
+
+test('parseWineComProductHtml prefers JSON-LD Product description, falling back to Open Graph', () => {
+  const withLd = page({
+    head: `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Product',
+      name: 'Josh Cellars Cabernet Sauvignon 2022',
+      description: 'Rich dark fruit with a hint of oak and vanilla.',
+    })}</script>`,
+  });
+  assert.equal(
+    parseWineComProductHtml(withLd, 'https://www.wine.com/product/x/1').description,
+    'Rich dark fruit with a hint of oak and vanilla.'
+  );
+
+  const ogOnly = page({
+    head: '<meta property="og:description" content="Bold and full-bodied." />',
+  });
+  assert.equal(parseWineComProductHtml(ogOnly, 'https://www.wine.com/product/x/1').description, 'Bold and full-bodied.');
+});
+
+test('wineComSearchUrl encodes the query', () => {
+  assert.equal(wineComSearchUrl('Josh Cellars 2022'), 'https://www.wine.com/search/Josh%20Cellars%202022');
+});
+
+test('findTastingNotes returns a description end-to-end against fixture search + product pages', async () => {
+  const searchHtml = page({
+    body: '<a href="/product/josh-cellars-cabernet-sauvignon-2022/123456">Josh Cellars Cabernet Sauvignon 2022</a>',
+  });
+  const productHtml = page({
+    head: '<meta property="og:description" content="Rich dark fruit with a hint of oak and vanilla." />',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/search/') ? searchHtml : productHtml }),
+    async () => {
+      const result = await findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022' });
+      assert.equal(result.description, 'Rich dark fruit with a hint of oak and vanilla.');
+      assert.equal(result.sourceName, 'Wine.com');
+      assert.equal(result.sourceUrl, 'https://www.wine.com/product/josh-cellars-cabernet-sauvignon-2022/123456');
+    }
+  );
+});
+
+test('findTastingNotes surfaces a clear error when nothing matches', async () => {
+  const searchHtml = page({ body: '<a href="/product/unrelated-wine/1">Completely Unrelated Wine 2019</a>' });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: searchHtml }),
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Josh Cellars Cabernet Sauvignon 2022' }),
+        /Could not find "Josh Cellars Cabernet Sauvignon 2022" on Wine\.com/
+      );
+    }
+  );
+});
+
+test('findTastingNotes rejects immediately when there is no title to search with', async () => {
+  await assert.rejects(() => findTastingNotes({ title: '' }), /Enter a product title first\./);
 });

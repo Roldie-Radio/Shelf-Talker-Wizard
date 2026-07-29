@@ -119,6 +119,9 @@
     categoryToggleBtns: document.querySelectorAll('.category-toggle .toggle-btn'),
     titleLabel: document.getElementById('fTitleLabel'),
     descriptionField: document.getElementById('descriptionField'),
+    tastingNotesRow: document.getElementById('tastingNotesRow'),
+    findTastingNotesBtn: document.getElementById('findTastingNotesBtn'),
+    tastingNotesStatus: document.getElementById('tastingNotesStatus'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
@@ -309,6 +312,10 @@
     els.talkerSizeField.hidden = isSign;
     els.talkerSize.value = currentTalkerSize;
     els.descriptionField.hidden = isSmallSign;
+    // Wine.com wouldn't have anything for a beer, and Beer already has its
+    // own tasting-note source (the Untappd import tab) - only show the
+    // button for Wine/Spirits.
+    els.tastingNotesRow.hidden = isBeer;
     els.vintageField.hidden = isBeer || isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     // Shelf Talkers only, unlike Ratings above (which Large Display Signs
@@ -1039,6 +1046,47 @@
     saveQueue();
     renderQueue();
     resetForm();
+  });
+
+  // ---------- Find tasting notes (Wine/Spirits) ----------
+
+  // Unlike the website importer below, this has no URL to paste - it
+  // searches using whatever's already in the Product Title/Vintage fields,
+  // the same way a person would type a product name into a search box.
+  els.findTastingNotesBtn.addEventListener('click', async () => {
+    const title = els.title.value.trim();
+    if (!title) {
+      els.tastingNotesStatus.textContent = 'Enter a product title first.';
+      return;
+    }
+    if (els.description.value.trim()
+      && !confirm('Replace the current description with tasting notes found online?')) {
+      return;
+    }
+
+    const vintage = els.vintage.value.trim();
+    els.findTastingNotesBtn.disabled = true;
+    els.tastingNotesStatus.textContent = 'Searching for tasting notes...';
+
+    try {
+      const resp = await fetch('/api/tasting-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, vintage }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not find tasting notes.');
+
+      // Respects the field's own maxlength, which only guards user typing,
+      // not a value assigned from here.
+      els.description.value = (data.description || '').slice(0, 600);
+      els.tastingNotesStatus.textContent = `Found via ${data.sourceName || 'the web'} - review before adding.`;
+      if (previewMode === 'single') renderPreview();
+    } catch (err) {
+      els.tastingNotesStatus.textContent = err.message || 'Something went wrong finding tasting notes.';
+    } finally {
+      els.findTastingNotesBtn.disabled = false;
+    }
   });
 
   // ---------- Import from website ----------
