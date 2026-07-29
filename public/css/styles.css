@@ -1333,19 +1333,13 @@ h1, h2, h3 { margin: 0; }
 /* The actual WordArt from the store's Small Super Sale sign template
    (extracted from the source .doc's own Word window, not a photo this
    time): bold italic sans - not the serif face a prior mockup had
-   suggested - solid red fill, a heavy black outline, and a hard-edged
-   (no blur) black drop shadow offset down-right, giving it a stamped/
-   comic look. Same technique .card__closeout-badge already uses
-   elsewhere in this file (stroke + shadow), just sans instead of comic
-   script and a fully opaque shadow instead of that badge's soft one -
-   the WordArt's shadow reads as a solid silhouette, not a soft blur. */
+   suggested - solid red fill and a heavy black outline, no drop shadow. */
 .sign__supersale-text {
   font-family: Arial, Helvetica, sans-serif;
   color: var(--sale-red);
   font-weight: 800;
   font-style: italic;
   -webkit-text-stroke: calc(var(--w) * 0.0025) #000;
-  text-shadow: calc(var(--w) * 0.004) calc(var(--w) * 0.004) 0 #000;
   font-size: calc(var(--w) * var(--sign-text) * 0.018 * var(--price-fit, 1));
 }
 .sign[data-size="small"] .sign__supersale-text { font-size: calc(var(--w) * var(--sign-text) * 0.042 * var(--price-fit, 1)); }
@@ -1362,14 +1356,13 @@ h1, h2, h3 { margin: 0; }
 
 /* Small Super Sale sign's price number - same WordArt look as
    .sign__supersale-text above (bold italic sans, red fill, black
-   outline + hard drop shadow), in place of the plain Arial Black every
+   outline, no drop shadow), in place of the plain Arial Black every
    other Small sign price (.sign__small-price) uses. */
 .sign__supersale-price {
   font-family: Arial, Helvetica, sans-serif;
   font-style: italic;
   color: var(--sale-red);
   -webkit-text-stroke: calc(var(--w) * 0.0025) #000;
-  text-shadow: calc(var(--w) * 0.004) calc(var(--w) * 0.004) 0 #000;
 }
 
 /* The reference Small sign's price (whichever of standard/closeout/chilled
