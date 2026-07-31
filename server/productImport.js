@@ -372,6 +372,28 @@ function asRating(text) {
   return /^[0-5](\.\d{1,2})?$/.test(trimmed) ? trimmed : undefined;
 }
 
+// Untappd's current beer page (confirmed via a user-supplied DevTools
+// screenshot of a real page) no longer shows a precise rating anywhere in
+// visible text at all - just a whole number rounded for display, in
+// parentheses next to the 5-cap widget ("(4)"), which is why domRating and
+// every ratingRaw pattern below started coming back empty: none of them
+// scan anything but rendered text, and "(4)" has no decimal point for
+// \(([\d]\.\d{1,2})\) to match. The actual precise value (e.g. "3.99866")
+// lives in a data-rating attribute on that same widget
+// (<div class="caps" data-rating="3.99866">), which nothing here ever read.
+// Rounded to 2 decimals up front rather than passed through asRating() as-is,
+// since that function's stricter "shaped like 0-5 with 1-2 decimals" check
+// exists to filter unrelated numbers out of free-text scans - not a concern
+// for a value read directly out of an attribute literally named
+// "data-rating", but its shape (more than 2 raw decimal digits) would
+// otherwise fail that check for an unrelated reason.
+function asRatingAttr(raw) {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return undefined;
+  const num = Number(trimmed);
+  return Number.isFinite(num) && num >= 0 && num <= 5 ? num.toFixed(2) : undefined;
+}
+
 // Untappd shows "N/A" in place of a number for a beer with no listed IBU
 // (confirmed against a real page - see the note above ibuRaw below), which
 // none of the digit-only patterns match. Regardless of which case the page
@@ -468,6 +490,7 @@ function parseBeerHtml(html, sourceUrl) {
   const domLocation = $('.brewery-location, .brewery .location').first().text();
   const domStyle = $('.style, [itemprop="style"]').first().text();
   const domRating = $('.rating .num, [itemprop="ratingValue"]').first().text();
+  const domRatingAttr = $('.caps[data-rating]').first().attr('data-rating');
 
   const title = firstNonEmpty(domName, fromTitle.name);
   const brewery = firstNonEmpty(domBrewery, fromTitle.brewery);
@@ -509,7 +532,7 @@ function parseBeerHtml(html, sourceUrl) {
 
   const abv = abvRaw ? `${trimNumber(abvRaw)}%` : undefined;
   const ibu = normalizeIbu(ibuRaw);
-  const untappdRating = firstNonEmpty(asRating(domRating), asRating(ratingRaw));
+  const untappdRating = firstNonEmpty(asRatingAttr(domRatingAttr), asRating(domRating), asRating(ratingRaw));
 
   const imageUrl = $('meta[property="og:image"]').attr('content');
 

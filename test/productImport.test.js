@@ -225,6 +225,65 @@ test('parseBeerHtml does not misread a parenthesized decimal outside Untappd\'s 
 });
 
 // Regression fixture built from a real Untappd page (a user reported the
+// importer no longer pulling ratings at all; a DevTools screenshot of the
+// actual page - untappd.com/b/autodidact-beer-daylily/5251415 - showed why).
+// The rendered page shows only a rounded whole number in parentheses next to
+// the 5-cap widget ("(4)"), not the two-decimal text every existing pattern
+// looked for - the precise value lives exclusively in a data-rating
+// attribute on div.caps, which nothing here read before now.
+test('parseBeerHtml reads the precise rating from the caps widget\'s data-rating attribute', () => {
+  const html = page({
+    body: `
+      <h1>Daylily</h1>
+      <p class="brewery"><a href="#">Autodidact Beer</a></p>
+      <div class="details">
+        <p class="abv">5.8% ABV</p>
+        <p class="ibu">N/A IBU</p>
+        <div class="caps" data-rating="3.99866">
+          <div class="cap cap-100"></div>
+          <div class="cap cap-100"></div>
+          <div class="cap cap-100"></div>
+          <div class="cap cap-100"></div>
+          <div class="cap"></div>
+        </div>
+        <span>(4)</span>
+      </div>
+      <meta property="og:description" content="d" />
+    `,
+  });
+  const result = parseBeerHtml(html, 'https://untappd.com/b/autodidact-beer-daylily/5251415');
+  assert.equal(result.untappdRating, '4.00');
+  assert.equal(result.abv, '5.8%');
+  assert.equal(result.ibu, 'N/A');
+});
+
+test('parseBeerHtml prefers the data-rating attribute over a rounded visible-text match', () => {
+  const html = page({
+    body: `
+      <div class="caps" data-rating="3.99866"></div>
+      <p>(4)</p>
+      <meta property="og:description" content="d" />
+    `,
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.untappdRating, '4.00');
+});
+
+test('parseBeerHtml ignores an out-of-range or non-numeric data-rating attribute', () => {
+  const outOfRange = parseBeerHtml(
+    page({ body: '<div class="caps" data-rating="7.2"></div><meta property="og:description" content="d" />' }),
+    'https://example.com/a'
+  );
+  assert.equal(outOfRange.untappdRating, '');
+
+  const nonNumeric = parseBeerHtml(
+    page({ body: '<div class="caps" data-rating="tbd"></div><meta property="og:description" content="d" />' }),
+    'https://example.com/b'
+  );
+  assert.equal(nonNumeric.untappdRating, '');
+});
+
+// Regression fixture built from a real Untappd page (a user reported the
 // description field pulling the wrong text after the rating/IBU fixes
 // shipped - a DevTools screenshot of the actual page showed why). The
 // brewery's real tasting note lives in a div with Untappd's own typo'd
