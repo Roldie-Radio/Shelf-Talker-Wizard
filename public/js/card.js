@@ -49,7 +49,15 @@ function buildAwardsHtml(talker) {
 // invented. Order matters: checked top to bottom, so a style that could
 // match two buckets (e.g. "India Pale Lager") takes the first/more
 // specific one rather than whichever regex happens to be more general.
+//
+// IPA is split into three shades of the same orange rather than three
+// unrelated colors, so any IPA still reads as "IPA" at a glance and the
+// shade only tells you which kind. Hazy/New England is checked before
+// Double/Imperial, so a style tagged as both (e.g. "Hazy Double IPA")
+// renders as Hazy - swap the two if strength should win over haze.
 const BEER_STYLE_COLORS = [
+  { test: /hazy|new england|neipa/i, bg: '#f4b942', fg: '#3b2415' },
+  { test: /double|imperial|dipa|triple ipa/i, bg: '#c1571a', fg: '#ffffff' },
   { test: /ipa|india pale ale/i, bg: '#e08a1e', fg: '#ffffff' },
   { test: /stout|porter/i, bg: '#3b2415', fg: '#ffffff' },
   { test: /sour|wild|gose|lambic|fruited/i, bg: '#c23b6b', fg: '#ffffff' },
