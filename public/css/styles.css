@@ -728,6 +728,11 @@ h1, h2, h3 { margin: 0; }
   padding: calc(3% * var(--price-fit, 1)) 6% calc(4% * var(--price-fit, 1));
   min-height: 0;
   overflow: hidden;
+  /* Positioning context for .card__state-badge below - without this, an
+     absolutely positioned badge would fall back to .card (the nearest
+     positioned ancestor) and land relative to the whole card, including
+     the amber band above, instead of staying inside the white body. */
+  position: relative;
 }
 
 /* Font sizes below match a set of reference talkers measured in point
@@ -759,6 +764,37 @@ h1, h2, h3 { margin: 0; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Brewery's home state, top-right corner of .card__body - see
+   buildStateBadgeHtml in card.js. Sized/inset as fractions of --w like
+   everything else here, so it scales the same way across Full/Half/Quarter
+   Size and print. Fixed green fill, not themed - it's part of the printed
+   talker, same as the beer style pill. */
+.card__state-badge {
+  position: absolute;
+  top: calc(var(--w) * 0.012);
+  right: calc(var(--w) * 0.012);
+  width: calc(var(--w) * 0.11);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--w) * 0.003);
+  line-height: 1;
+}
+.card__state-badge svg { display: block; width: 100%; height: auto; }
+.card__state-badge path { fill: #2e7d32; }
+.card__state-badge-label {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-size: calc(var(--w) * 0.024 * var(--price-fit, 1));
+}
+
+/* Reserves room so the centered title (which spans nearly the full card
+   width via its own negative side margins, see below) doesn't run under
+   the state badge above - only applied when a badge is actually present,
+   so beer cards without a resolvable state keep the plain centered title. */
+.card__title--badge { padding-right: calc(var(--w) * 0.16); }
 
 /* Beer's title sits closer to the header band than wine/spirits' does -
    frees up vertical room for the Style text on the row below, which can
