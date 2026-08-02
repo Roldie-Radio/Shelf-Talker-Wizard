@@ -497,8 +497,8 @@ function buildSignElement(talker) {
 
 /**
  * @param {object} talker - { category, title, description, size, price,
- *   salePrice, theme, talkerType, ratings: [{reviewer, score}], brewery,
- *   location, style, abv, ibu, untappdRating }
+ *   salePrice, theme, talkerType, titleAlign, ratings: [{reviewer, score}],
+ *   brewery, location, style, abv, ibu, untappdRating }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -509,6 +509,12 @@ function buildCardElement(talker) {
   const isBeer = talker.category === 'beer';
   card.dataset.category = isBeer ? 'beer' : 'wine';
   const stateBadgeHtml = isBeer ? buildStateBadgeHtml(talker) : '';
+  // Center is the default look; Title Align (Shelf Talkers only, see
+  // #titleAlignField in index.html) opts a talker into left-aligning
+  // instead - Display Signs' own title has no such toggle.
+  const titleClasses = ['card__title'];
+  if (stateBadgeHtml) titleClasses.push('card__title--badge');
+  if (talker.titleAlign === 'left') titleClasses.push('card__title--left');
 
   card.innerHTML = `
     <div class="card__band">
@@ -516,7 +522,7 @@ function buildCardElement(talker) {
     </div>
     <div class="card__body">
       ${stateBadgeHtml}
-      <div class="card__title${stateBadgeHtml ? ' card__title--badge' : ''}" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
+      <div class="${titleClasses.join(' ')}" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
