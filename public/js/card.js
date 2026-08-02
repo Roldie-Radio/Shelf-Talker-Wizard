@@ -578,6 +578,39 @@ function fitCardText(cardEl) {
     body.style.setProperty('--price-fit', priceFit);
     priceGuard -= 1;
   }
+
+  growDescriptionToFillSlack(cardEl, body);
+}
+
+// A short description (common on beer talkers, which have no vintage/
+// ratings/awards blocks to take up the rest of the space) leaves a lot of
+// blank room above the price block - still pinned to the very bottom via
+// .card__spacer / .sign__footer-block's margin-top: auto so prices line up
+// across a printed sheet regardless of how much each talker has to say.
+// Grow the description into that slack instead of leaving it blank -
+// mirrors the shrink loop above but in reverse. Capped at 2x its base size
+// so a one- or two-word description doesn't balloon to fill the whole card
+// on its own; anything longer naturally stops growing once it fills the
+// available room, well under the cap.
+function growDescriptionToFillSlack(cardEl, body) {
+  const description = cardEl.querySelector('[data-fit="description"]');
+  if (!description || !description.textContent.trim()) return;
+
+  const startPx = parseFloat(getComputedStyle(description).fontSize);
+  const maxPx = startPx * 2;
+
+  let fontSize = startPx;
+  let guard = 40;
+  while (fontSize < maxPx && guard > 0) {
+    const nextSize = Math.min(fontSize * 1.03, maxPx);
+    description.style.fontSize = `${nextSize}px`;
+    if (description.scrollHeight > description.clientHeight + 1 || body.scrollHeight > body.clientHeight + 1) {
+      description.style.fontSize = `${fontSize}px`;
+      break;
+    }
+    fontSize = nextSize;
+    guard -= 1;
+  }
 }
 
 /**
