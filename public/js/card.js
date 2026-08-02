@@ -198,25 +198,17 @@ function buildStateBadgeHtml(talker) {
   `;
 }
 
-// Untappd-style rating callout: a big circled score (e.g. "94") next to a
-// 5-dot rating with its decimal value (e.g. "4.27"). Either half can be
-// left off if the field wasn't filled in. includeStyle adds the beer's
+// Untappd-style rating callout: a 5-dot rating with its decimal value (e.g.
+// "4.27"), optionally next to the beer's style. includeStyle adds the
 // style to the right of the rating, replacing its old spot as a plain row
 // in buildBeerTableHtml - opt-in (Shelf Talkers only, not Display Signs,
 // which don't call buildBeerTableHtml at all and were never asked about
 // here) rather than baking it into every caller of this shared function.
-// includeScore is the same idea in reverse: Shelf Talkers drop the score
-// circle so the row is just Untappd Rating + Style, while Display Signs
-// (which never show Style) keep it, so it stays the default.
-function buildBeerRatingHtml(talker, { includeStyle = false, includeScore = true } = {}) {
-  const hasScore = includeScore && talker.untappdScore != null && String(talker.untappdScore).trim() !== '';
-  const score = hasScore ? String(talker.untappdScore).trim() : '';
+function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
   const ratingNum = Number(talker.untappdRating);
   const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
   const style = includeStyle && talker.style ? String(talker.style).trim() : '';
-  if (!score && !hasRating && !style) return '';
-
-  const scoreHtml = score ? `<div class="card__beer-score">${escapeHtml(score)}</div>` : '';
+  if (!hasRating && !style) return '';
 
   let detailHtml = '';
   if (hasRating) {
@@ -245,7 +237,7 @@ function buildBeerRatingHtml(talker, { includeStyle = false, includeScore = true
     `;
   }
 
-  return `<div class="card__beer-rating">${scoreHtml}${detailHtml}${styleHtml}</div>`;
+  return `<div class="card__beer-rating">${detailHtml}${styleHtml}</div>`;
 }
 
 function beerTableCellHtml(label, value) {
@@ -506,7 +498,7 @@ function buildSignElement(talker) {
 /**
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, ratings: [{reviewer, score}], brewery,
- *   location, style, abv, ibu, untappdScore, untappdRating }
+ *   location, style, abv, ibu, untappdRating }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -526,7 +518,7 @@ function buildCardElement(talker) {
       ${stateBadgeHtml}
       <div class="card__title${stateBadgeHtml ? ' card__title--badge' : ''}" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
-      ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true, includeScore: false }) : ''}
+      ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
       ${isBeer ? '' : buildRatingsHtml(talker)}

@@ -143,7 +143,6 @@
     style: document.getElementById('fStyle'),
     abv: document.getElementById('fAbv'),
     ibu: document.getElementById('fIbu'),
-    untappdScore: document.getElementById('fUntappdScore'),
     untappdRating: document.getElementById('fUntappdRating'),
 
     form: document.getElementById('talkerForm'),
@@ -446,7 +445,6 @@
       style: els.style.value.trim(),
       abv: els.abv.value.trim(),
       ibu: els.ibu.value.trim(),
-      untappdScore: els.untappdScore.value.trim(),
       untappdRating: els.untappdRating.value.trim(),
     };
   }
@@ -478,7 +476,6 @@
     els.style.value = talker.style || '';
     els.abv.value = talker.abv || '';
     els.ibu.value = talker.ibu || '';
-    els.untappdScore.value = talker.untappdScore || '';
     els.untappdRating.value = talker.untappdRating || '';
   }
 
