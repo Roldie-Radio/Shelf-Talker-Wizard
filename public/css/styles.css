@@ -742,7 +742,7 @@ h1, h2, h3 { margin: 0; }
    this file. Title/size/reviews/prices are Verdana; only the body copy
    (.card__description below) is Arial and not bold. */
 .card__title {
-  text-align: center;
+  text-align: left;
   text-transform: uppercase;
   font-weight: 800;
   font-family: Verdana, Geneva, sans-serif;
@@ -790,10 +790,11 @@ h1, h2, h3 { margin: 0; }
   font-size: calc(var(--w) * 0.024 * var(--price-fit, 1));
 }
 
-/* Reserves room so the centered title (which spans nearly the full card
-   width via its own negative side margins, see below) doesn't run under
-   the state badge above - only applied when a badge is actually present,
-   so beer cards without a resolvable state keep the plain centered title. */
+/* Reserves room so the left-aligned title (which spans nearly the full
+   card width via its own negative side margins, see below) doesn't run
+   under the state badge above - only applied when a badge is actually
+   present, so beer cards without a resolvable state keep the full-width
+   title. */
 .card__title--badge { padding-right: calc(var(--w) * 0.16); }
 
 /* Beer's title sits closer to the header band than wine/spirits' does -
@@ -878,11 +879,11 @@ h1, h2, h3 { margin: 0; }
 
 .card__spacer { flex: 1 1 auto; }
 
-/* Beer talker: Untappd-style rating callout (circled score + 5-dot rating)
-   and Brewery/Location/Style/ABV/IBU info table. Font sizes/vertical
-   spacing use --price-fit too, so the same whole-block shrink in
-   fitCardText() that already protects the price/badge area also covers
-   these when a long title/description leaves less room to work with. */
+/* Beer talker: Untappd-style rating callout (5-dot rating) and
+   Brewery/Location/Style/ABV/IBU info table. Font sizes/vertical spacing
+   use --price-fit too, so the same whole-block shrink in fitCardText()
+   that already protects the price/badge area also covers these when a
+   long title/description leaves less room to work with. */
 .card__beer-rating {
   flex: 0 0 auto;
   display: flex;
@@ -891,25 +892,11 @@ h1, h2, h3 { margin: 0; }
      which nudged "Untappd Rating" down (and out of line with "Style")
      whenever the style value was long enough to wrap - see .sign__content
      override below, which keeps the old centered look for Display Signs
-     (score circle + rating only, no Style, so there's nothing to misalign
-     there and this was never asked about for signs). */
+     (rating only, no Style, so there's nothing to misalign there and this
+     was never asked about for signs). */
   align-items: flex-start;
   gap: calc(var(--w) * 0.035);
   margin: calc(var(--w) * 0.025 * var(--price-fit, 1)) 0;
-}
-
-.card__beer-score {
-  flex: 0 0 auto;
-  width: calc(var(--w) * 0.22 * var(--price-fit, 1));
-  height: calc(var(--w) * 0.22 * var(--price-fit, 1));
-  border-radius: 50%;
-  border: calc(var(--w) * 0.012 * var(--price-fit, 1)) solid var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: calc(var(--w) * 0.09 * var(--price-fit, 1));
-  color: var(--ink);
 }
 
 /* Fixed to its own content width (the dots row is a fixed 5 dots) rather
@@ -1321,12 +1308,6 @@ h1, h2, h3 { margin: 0; }
    which is sized relative to a much taller card; scale it way down for the
    short Display Sign body. */
 .sign__content .card__beer-rating { flex: 0 0 auto; align-items: center; gap: calc(var(--w) * var(--sign-text) * 0.012); margin: 0; }
-.sign__content .card__beer-score {
-  width: calc(var(--w) * var(--sign-text) * 0.075 * var(--price-fit, 1));
-  height: calc(var(--w) * var(--sign-text) * 0.075 * var(--price-fit, 1));
-  font-size: calc(var(--w) * var(--sign-text) * 0.028 * var(--price-fit, 1));
-  border-width: calc(var(--w) * var(--sign-text) * 0.005 * var(--price-fit, 1));
-}
 .sign__content .card__beer-rating-label { font-size: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * var(--sign-text) * 0.004 * var(--price-fit, 1)); }
 .sign__content .card__beer-dot { width: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); height: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); }
 .sign__content .card__beer-rating-num { font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
