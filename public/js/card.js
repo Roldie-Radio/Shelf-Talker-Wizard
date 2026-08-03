@@ -250,6 +250,28 @@ function flagStar(cx, cy, r, color, rotationDeg = -90) {
   }
   return `<polygon points="${pts.join(' ')}" fill="${color}"/>`;
 }
+// Staggered star field for the US flag's canton - real long rows (6 stars)
+// alternate with short rows offset by half a column (5 stars) 9 times over;
+// a plain grid reads as dots rather than a starfield even at this icon
+// size, so this keeps the same offset structure, just fewer rows.
+function flagStarField(cantonW, cantonH, rows, colsLong, colsShort, r) {
+  const marginX = cantonW * 0.11;
+  const marginY = cantonH * 0.12;
+  const usableW = cantonW - marginX * 2;
+  const usableH = cantonH - marginY * 2;
+  const rowH = usableH / (rows - 1);
+  const colW = usableW / (colsLong - 1);
+  let out = '';
+  for (let row = 0; row < rows; row++) {
+    const long = row % 2 === 0;
+    const cols = long ? colsLong : colsShort;
+    const xOffset = long ? 0 : colW / 2;
+    for (let c = 0; c < cols; c++) {
+      out += flagStar(marginX + xOffset + c * colW, marginY + row * rowH, r, '#fff');
+    }
+  }
+  return out;
+}
 function flagUnionJackInner() {
   return flagBase('#00247D')
     + '<line x1="0" y1="0" x2="60" y2="40" stroke="#fff" stroke-width="7"/>'
@@ -263,9 +285,9 @@ function flagUnionJackInner() {
 const COUNTRY_FLAGS = {
   US: {
     label: 'US',
-    svg: flagStripesH(['#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234'])
-      + '<rect x="0" y="0" width="26" height="22.86" fill="#3C3B6E"/>'
-      + [0, 1, 2].flatMap((r) => [0, 1, 2, 3].map((c) => `<circle cx="${4 + c * 6}" cy="${4 + r * 6}" r="1" fill="#fff"/>`)).join(''),
+    svg: flagStripesH(['#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234'])
+      + '<rect x="0" y="0" width="26" height="21.54" fill="#3C3B6E"/>'
+      + flagStarField(26, 21.54, 5, 5, 4, 1.05),
   },
   MX: { label: 'MX', svg: flagStripesV(['#006847', '#fff', '#CE1126']) + '<circle cx="30" cy="20" r="6" fill="#8B5A2B"/><circle cx="30" cy="20" r="3" fill="#2E7D32"/>' },
   CA: {
