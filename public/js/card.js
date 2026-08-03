@@ -198,6 +198,167 @@ function buildStateBadgeHtml(talker) {
   `;
 }
 
+// Country flag, top-left corner of the card body - mirrors the state
+// silhouette badge above (same trigger: the free-text Location field, same
+// size/position math, opposite corner). Flags are built from plain SVG
+// primitives (rects/polygons/circles) rather than traced artwork, on a
+// shared 60x40 (3:2) viewBox so every entry lines up the same way; a few
+// helpers below cover the shapes that repeat across many flags (equal
+// stripes, an offset Nordic cross, a five-point star) so each flag's own
+// definition is just its colors/placements, not hand-typed coordinates.
+// Only the countries a bottle shop is actually likely to stock show up
+// here - an unresolvable or not-yet-covered country just means no badge,
+// same fallback the state badge already uses.
+function flagBase(color) {
+  return `<rect x="0" y="0" width="60" height="40" fill="${color}"/>`;
+}
+function flagStripesH(colors) {
+  const h = 40 / colors.length;
+  return colors.map((c, i) => `<rect x="0" y="${(i * h).toFixed(2)}" width="60" height="${h.toFixed(2)}" fill="${c}"/>`).join('');
+}
+function flagStripesV(colors) {
+  const w = 60 / colors.length;
+  return colors.map((c, i) => `<rect x="${(i * w).toFixed(2)}" y="0" width="${w.toFixed(2)}" height="40" fill="${c}"/>`).join('');
+}
+function flagNordicCross(bg, crossColor, { barX = 18, barW = 8, barY = 16, barH = 8 } = {}) {
+  return flagBase(bg) + `<rect x="${barX}" y="0" width="${barW}" height="40" fill="${crossColor}"/><rect x="0" y="${barY}" width="60" height="${barH}" fill="${crossColor}"/>`;
+}
+function flagStar(cx, cy, r, color, rotationDeg = -90) {
+  const rot = (rotationDeg * Math.PI) / 180;
+  const pts = [];
+  for (let i = 0; i < 5; i++) {
+    const outer = rot + (i * 2 * Math.PI) / 5;
+    const inner = outer + Math.PI / 5;
+    pts.push(`${(cx + r * Math.cos(outer)).toFixed(1)},${(cy + r * Math.sin(outer)).toFixed(1)}`);
+    pts.push(`${(cx + r * 0.38 * Math.cos(inner)).toFixed(1)},${(cy + r * 0.38 * Math.sin(inner)).toFixed(1)}`);
+  }
+  return `<polygon points="${pts.join(' ')}" fill="${color}"/>`;
+}
+function flagUnionJackInner() {
+  return flagBase('#00247D')
+    + '<line x1="0" y1="0" x2="60" y2="40" stroke="#fff" stroke-width="7"/>'
+    + '<line x1="60" y1="0" x2="0" y2="40" stroke="#fff" stroke-width="7"/>'
+    + '<line x1="0" y1="0" x2="60" y2="40" stroke="#CF142B" stroke-width="3"/>'
+    + '<line x1="60" y1="0" x2="0" y2="40" stroke="#CF142B" stroke-width="3"/>'
+    + '<rect x="0" y="15" width="60" height="10" fill="#fff"/><rect x="25" y="0" width="10" height="40" fill="#fff"/>'
+    + '<rect x="0" y="17" width="60" height="6" fill="#CF142B"/><rect x="27" y="0" width="6" height="40" fill="#CF142B"/>';
+}
+
+const COUNTRY_FLAGS = {
+  US: {
+    label: 'US',
+    svg: flagStripesH(['#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234'])
+      + '<rect x="0" y="0" width="26" height="22.86" fill="#3C3B6E"/>'
+      + [0, 1, 2].flatMap((r) => [0, 1, 2, 3].map((c) => `<circle cx="${4 + c * 6}" cy="${4 + r * 6}" r="1" fill="#fff"/>`)).join(''),
+  },
+  MX: { label: 'MX', svg: flagStripesV(['#006847', '#fff', '#CE1126']) + '<circle cx="30" cy="20" r="6" fill="#8B5A2B"/><circle cx="30" cy="20" r="3" fill="#2E7D32"/>' },
+  CA: {
+    label: 'CA',
+    svg: '<rect x="0" y="0" width="15" height="40" fill="#FF0000"/><rect x="15" y="0" width="30" height="40" fill="#fff"/><rect x="45" y="0" width="15" height="40" fill="#FF0000"/>'
+      + '<path d="M30,8 L33,15 L40,13 L36,20 L42,24 L34,23 L35,31 L30,26 L25,31 L26,23 L18,24 L24,20 L20,13 L27,15 Z" fill="#FF0000"/>',
+  },
+  GB: { label: 'UK', svg: flagUnionJackInner() },
+  IE: { label: 'IE', svg: flagStripesV(['#169B62', '#fff', '#FF883E']) },
+  DE: { label: 'DE', svg: flagStripesH(['#000000', '#DD0000', '#FFCE00']) },
+  BE: { label: 'BE', svg: flagStripesV(['#000000', '#FDDA24', '#EF3340']) },
+  NL: { label: 'NL', svg: flagStripesH(['#AE1C28', '#fff', '#21468B']) },
+  FR: { label: 'FR', svg: flagStripesV(['#0055A4', '#fff', '#EF4135']) },
+  IT: { label: 'IT', svg: flagStripesV(['#009246', '#fff', '#CE2B37']) },
+  ES: { label: 'ES', svg: '<rect x="0" y="0" width="60" height="40" fill="#AA151B"/><rect x="0" y="10" width="60" height="20" fill="#F1BF00"/>' },
+  PT: { label: 'PT', svg: '<rect x="0" y="0" width="24" height="40" fill="#046A38"/><rect x="24" y="0" width="36" height="40" fill="#DA291C"/><circle cx="24" cy="20" r="7" fill="#FFCC00" stroke="#046A38" stroke-width="1"/>' },
+  CZ: { label: 'CZ', svg: '<rect x="0" y="0" width="60" height="40" fill="#fff"/><rect x="0" y="20" width="60" height="20" fill="#D7141A"/><polygon points="0,0 0,40 26,20" fill="#11457E"/>' },
+  PL: { label: 'PL', svg: flagStripesH(['#fff', '#DC143C']) },
+  AT: { label: 'AT', svg: flagStripesH(['#ED2939', '#fff', '#ED2939']) },
+  CH: { label: 'CH', svg: flagBase('#D52B1E') + '<rect x="24" y="10" width="12" height="20" fill="#fff"/><rect x="16" y="16" width="28" height="8" fill="#fff"/>' },
+  DK: { label: 'DK', svg: flagNordicCross('#C60C30', '#fff') },
+  SE: { label: 'SE', svg: flagNordicCross('#006AA7', '#FECC00') },
+  NO: {
+    label: 'NO',
+    svg: flagNordicCross('#EF2B2D', '#fff', { barX: 17, barW: 10, barY: 15, barH: 10 })
+      + '<rect x="19" y="0" width="6" height="40" fill="#002868"/><rect x="0" y="17" width="60" height="6" fill="#002868"/>',
+  },
+  FI: { label: 'FI', svg: flagNordicCross('#fff', '#003580') },
+  JP: { label: 'JP', svg: '<rect x="0" y="0" width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="12" fill="#BC002D"/>' },
+  CN: {
+    label: 'CN',
+    svg: flagBase('#DE2910') + flagStar(13, 10, 6, '#FFDE00') + flagStar(22, 5, 2, '#FFDE00') + flagStar(26, 9, 2, '#FFDE00') + flagStar(26, 15, 2, '#FFDE00') + flagStar(22, 19, 2, '#FFDE00'),
+  },
+  AU: {
+    label: 'AU',
+    svg: flagBase('#00247D') + `<g transform="scale(0.5)">${flagUnionJackInner()}</g>`
+      + flagStar(48, 10, 3, '#fff') + flagStar(44, 20, 2, '#fff') + flagStar(50, 26, 3, '#fff') + flagStar(40, 30, 2, '#fff') + flagStar(17, 30, 4.5, '#fff'),
+  },
+  BR: { label: 'BR', svg: flagBase('#009639') + '<polygon points="30,4 56,20 30,36 4,20" fill="#FEDF00"/><circle cx="30" cy="20" r="9" fill="#002776"/>' },
+};
+
+// Country name -> flag key, for matching the same free-text Location field
+// the state badge reads. Sorted longest-name-first so 'northern ireland'
+// (-> UK) is checked before the shorter 'ireland' (-> IE) it contains, same
+// precedence trick as STATE_NAMES_BY_LENGTH_DESC. Matched with word-ish
+// boundaries (see countryNameMatches) rather than plain substring search,
+// so short tokens like 'uk' don't fire inside an unrelated word (e.g.
+// 'Milwaukee').
+const COUNTRY_NAME_TO_CODE = {
+  'united states of america': 'US', 'united states': 'US', 'u.s.a.': 'US', 'u.s.': 'US', usa: 'US',
+  mexico: 'MX',
+  canada: 'CA',
+  'united kingdom': 'GB', 'great britain': 'GB', britain: 'GB', 'u.k.': 'GB', uk: 'GB',
+  'northern ireland': 'GB', england: 'GB', scotland: 'GB', wales: 'GB',
+  ireland: 'IE',
+  germany: 'DE',
+  belgium: 'BE',
+  netherlands: 'NL', holland: 'NL',
+  france: 'FR',
+  italy: 'IT',
+  spain: 'ES',
+  portugal: 'PT',
+  'czech republic': 'CZ', czechia: 'CZ',
+  poland: 'PL',
+  austria: 'AT',
+  switzerland: 'CH',
+  denmark: 'DK',
+  sweden: 'SE',
+  norway: 'NO',
+  finland: 'FI',
+  japan: 'JP',
+  china: 'CN',
+  australia: 'AU',
+  brazil: 'BR',
+};
+const COUNTRY_NAMES_BY_LENGTH_DESC = Object.keys(COUNTRY_NAME_TO_CODE).sort((a, b) => b.length - a.length);
+
+function countryNameMatches(lowerText, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`).test(lowerText);
+}
+
+// Same precedence as the state lookup: a resolvable US state means the
+// country is the US, full stop, even when the Location text never spells
+// out 'United States' (the common case for a hand-typed 'City, ST'). Only
+// falls through to matching a country name when no US state was found, so
+// a domestic 'Portland, ME' can never get shadowed by 'New England'-style
+// text, and a US state name never collides with a same-named country.
+function countryCodeFromLocation(location) {
+  const text = location ? String(location).trim() : '';
+  if (!text) return null;
+  if (stateAbbrFromLocation(text)) return 'US';
+  const lower = text.toLowerCase();
+  const nameMatch = COUNTRY_NAMES_BY_LENGTH_DESC.find((name) => countryNameMatches(lower, name));
+  return nameMatch ? COUNTRY_NAME_TO_CODE[nameMatch] : null;
+}
+
+function buildCountryFlagHtml(talker) {
+  const code = countryCodeFromLocation(talker.location);
+  const flag = code && COUNTRY_FLAGS[code];
+  if (!flag) return '';
+  return `
+    <div class="card__country-badge">
+      <div class="card__country-badge-image"><svg viewBox="0 0 60 40" aria-hidden="true">${flag.svg}</svg></div>
+      <span class="card__country-badge-label">${flag.label}</span>
+    </div>
+  `;
+}
+
 // Untappd-style rating callout: a 5-dot rating with its decimal value (e.g.
 // "4.27"), optionally next to the beer's style. includeStyle adds the
 // style to the right of the rating, replacing its old spot as a plain row
@@ -515,11 +676,13 @@ function buildCardElement(talker) {
   const isBeer = talker.category === 'beer';
   card.dataset.category = isBeer ? 'beer' : 'wine';
   const stateBadgeHtml = isBeer ? buildStateBadgeHtml(talker) : '';
+  const countryFlagHtml = isBeer ? buildCountryFlagHtml(talker) : '';
   // Center is the default look; Title Align (Shelf Talkers only, see
   // #titleAlignField in index.html) opts a talker into left-aligning
   // instead - Display Signs' own title has no such toggle.
   const titleClasses = ['card__title'];
-  if (stateBadgeHtml) titleClasses.push('card__title--badge');
+  if (stateBadgeHtml) titleClasses.push('card__title--badge-right');
+  if (countryFlagHtml) titleClasses.push('card__title--badge-left');
   if (talker.titleAlign === 'left') titleClasses.push('card__title--left');
 
   card.innerHTML = `
@@ -527,6 +690,7 @@ function buildCardElement(talker) {
       <img class="card__logo" src="assets/logo.png" alt="" />
     </div>
     <div class="card__body">
+      ${countryFlagHtml}
       ${stateBadgeHtml}
       <div class="${titleClasses.join(' ')}" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
