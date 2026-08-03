@@ -200,6 +200,7 @@
     themeToggle: document.getElementById('themeToggle'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
+    guideBtn: document.getElementById('guideBtn'),
 
     printPreviewOverlay: document.getElementById('printPreviewOverlay'),
     printPreviewSummary: document.getElementById('printPreviewSummary'),
@@ -208,6 +209,12 @@
     printPreviewCancelBtn: document.getElementById('printPreviewCancelBtn'),
     printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
     autoArrangeToggle: document.getElementById('autoArrangeToggle'),
+
+    guidePreviewOverlay: document.getElementById('guidePreviewOverlay'),
+    guidePreviewStage: document.getElementById('guidePreviewStage'),
+    guidePreviewCloseBtn: document.getElementById('guidePreviewCloseBtn'),
+    guidePreviewCancelBtn: document.getElementById('guidePreviewCancelBtn'),
+    guidePreviewConfirmBtn: document.getElementById('guidePreviewConfirmBtn'),
 
     helpBtn: document.getElementById('helpBtn'),
     helpOverlay: document.getElementById('helpOverlay'),
@@ -771,6 +778,7 @@
     resizeDebounce = setTimeout(() => {
       rescalePreviewStage();
       rescalePrintPreviewSheets();
+      rescaleGuidePreview();
     }, 100);
   });
 
@@ -1452,6 +1460,202 @@
     });
   }
 
+  // ---------- "How to Read" guide ----------
+
+  // Fixed sample data for the diagram - a beer talker exercises every
+  // callout (origin badges, style pill, rating, ABV/IBU, description, size,
+  // price), which a wine/spirits example wouldn't. Not read from the queue;
+  // this is a fixed reference document, not tied to what's currently loaded.
+  const GUIDE_SAMPLE_TALKER = {
+    signType: 'talker',
+    category: 'beer',
+    theme: 'amber',
+    talkerSize: 'full',
+    talkerType: 'standard',
+    title: 'Coastal Drift Salt Line IPA',
+    description: 'Juicy citrus and pine resin up front, backed by a firm bitter finish. Brewed with Citra and Mosaic hops.',
+    size: '16oz Can · 4 Pack',
+    price: 14.99,
+    salePrice: 12.99,
+    brewery: 'Coastal Drift Brewing Co.',
+    location: 'San Diego, CA',
+    style: 'IPA',
+    abv: '6.8%',
+    ibu: '62',
+    untappdRating: 4.32,
+    untappdRatingCount: 1842,
+  };
+
+  const GUIDE_LEGEND = [
+    { title: "Where it's from", body: "A small flag and/or state outline shows the brewery's home, when we know it — either or both may appear." },
+    { title: 'Style, color-coded', body: 'The colored badge is the beer style at a glance — match its color to the key.' },
+    { title: 'Community rating', body: "Untappd's average score out of 5, and how many people rated it." },
+    { title: 'Brewery &amp; details', body: 'Who makes it and where, plus ABV (alcohol %) and IBU (bitterness — higher IBU means more bitter).' },
+    { title: 'Tasting notes', body: "Our staff's own description of what to expect." },
+    { title: 'Size', body: 'Bottle, can, or pack size.' },
+    { title: 'Price', body: "Regular price in black. A red price means it's on sale." },
+  ];
+
+  // [background, text color, pill label, plain-English description] - the
+  // colors/order mirror BEER_STYLE_COLORS in card.js (pale-to-dark malt
+  // axis, then the non-malt breaks: sour/cider/mead), so this key visually
+  // matches how the style pill actually gets colored.
+  const GUIDE_COLOR_KEY = [
+    ['#e8d887', '#3b2415', 'LAGER', 'Crisp, light, easy-drinking'],
+    ['#ddac3c', '#3b2415', 'PALE ALE', 'Balanced, mildly hoppy'],
+    ['#ccc566', '#3b2415', 'WHEAT', 'Smooth, fruity or spiced'],
+    ['#f3a23f', '#3b2415', 'HAZY IPA', 'Juicy, soft, low bitterness'],
+    ['#de6e12', '#ffffff', 'IPA', 'Hoppy, citrus &amp; pine'],
+    ['#af461d', '#ffffff', 'DOUBLE IPA', 'Extra hoppy, higher ABV'],
+    ['#952e23', '#ffffff', 'RED ALE', 'Malty, toasty'],
+    ['#593622', '#ffffff', 'BROWN ALE', 'Nutty, roasted'],
+    ['#311f16', '#ffffff', 'STOUT', 'Dark, full-bodied'],
+    ['#b03b6c', '#ffffff', 'SOUR', 'Tart, tangy, fruited'],
+    ['#58913b', '#ffffff', 'CIDER', 'Crisp apple, not a beer'],
+    ['#653b72', '#ffffff', 'MEAD', 'Honey wine, not a beer'],
+    ['#ddd6cc', '#3b2415', 'OTHER', 'Unique or mixed styles'],
+  ];
+
+  // Which real .card element each legend number points at, and which
+  // corner of it to pin the callout to - 'tr' for anything right-aligned
+  // (.card__beer-style-value, .card__state-badge, .card__size) so the
+  // number lands in the empty margin outside the card's own text instead
+  // of overlapping whatever sits above it (a right-aligned element's own
+  // rect.left falls mid-card, not at the margin). Both origin badges share
+  // callout 1 since either or both can appear for a given location.
+  const GUIDE_CALLOUTS = [
+    { sel: '.card__country-badge', num: 1, corner: 'tl' },
+    { sel: '.card__state-badge', num: 1, corner: 'tr' },
+    { sel: '.card__beer-style-value', num: 2, corner: 'tr' },
+    { sel: '.card__beer-rating-detail', num: 3, corner: 'tl' },
+    { sel: '.card__beer-table', num: 4, corner: 'tl' },
+    { sel: '.card__description', num: 5, corner: 'tl' },
+    { sel: '.card__size', num: 6, corner: 'tr' },
+    { sel: '.card__prices', num: 7, corner: 'tl' },
+  ];
+
+  // Builds a standalone guide DOM tree - not attached anywhere, and not
+  // yet size-fitted (caller must lay it out, call fitCardText on the
+  // returned card, then placeGuideCallouts, same order as every other
+  // printable element in this app). Called once for the on-screen preview
+  // and again for the real #printRoot copy when the user confirms Print
+  // Now - two separate DOM trees rather than moving one, since a preview
+  // node lives inside a .preview-scaler transform that the print copy must
+  // not inherit.
+  function buildGuideElement() {
+    const guide = document.createElement('div');
+    guide.className = 'guide';
+    guide.innerHTML = `
+      <div class="guide__header">
+        <img class="guide__logo" src="assets/logo.png" alt="" />
+        <div class="guide__header-text">
+          <h2>About the Shelf Talker</h2>
+          <p>Every price tag on our shelves carries the same information, laid out the same way. Here's what each part means.</p>
+        </div>
+      </div>
+      <div class="guide__rule"></div>
+      <div class="guide__body">
+        <div class="guide__diagram"></div>
+        <div class="guide__legend">
+          ${GUIDE_LEGEND.map((item, i) => `
+            <div class="guide__legend-item">
+              <span class="guide__legend-num">${i + 1}</span>
+              <div class="guide__legend-text">
+                <h3>${item.title}</h3>
+                <p>${item.body}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="guide__key">
+          <h3>Beer Style Color Key</h3>
+          <div class="guide__keygrid">
+            ${GUIDE_COLOR_KEY.map(([bg, fg, label, desc]) => `
+              <div class="guide__swatch">
+                <span class="guide__swatch-pill" style="background:${bg};color:${fg}">${label}</span>
+                <span class="guide__swatch-desc">${desc}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="guide__footer"><span>Liquor Outlet Wine Cellars &middot; www.liquoroutletwinecellars.com</span></div>
+    `;
+
+    const diagramWrap = guide.querySelector('.guide__diagram');
+    const card = buildCardElement(GUIDE_SAMPLE_TALKER);
+    card.style.setProperty('--w', '1.85in');
+    diagramWrap.appendChild(card);
+
+    return { guide, diagramWrap, card };
+  }
+
+  // Positions each numbered callout against the real rendered .card's own
+  // child geometry (must run after fitCardText, since that can resize/
+  // reflow everything below the title/description) - see the corner-choice
+  // note on GUIDE_CALLOUTS above.
+  function placeGuideCallouts(diagramWrap, card) {
+    const wrapRect = diagramWrap.getBoundingClientRect();
+    const GAP = 4;
+    GUIDE_CALLOUTS.forEach((spec) => {
+      const el = card.querySelector(spec.sel);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const badge = document.createElement('div');
+      badge.textContent = spec.num;
+      if (spec.corner === 'tl') {
+        badge.className = 'guide__callout-num guide__callout-num--tl';
+        badge.style.left = `${rect.left - wrapRect.left - GAP}px`;
+        badge.style.top = `${rect.top - wrapRect.top - GAP}px`;
+      } else {
+        badge.className = 'guide__callout-num guide__callout-num--tr';
+        badge.style.left = `${rect.right - wrapRect.left + GAP}px`;
+        badge.style.top = `${rect.top - wrapRect.top - GAP}px`;
+      }
+      diagramWrap.appendChild(badge);
+    });
+  }
+
+  // Rebuilds the guide into #printRoot (clearing whatever was there before -
+  // the guide and shelf-talker sheets never print at once, so reusing the
+  // same root rather than a second .print-only container guarantees that)
+  // and sends it to the system print dialog. Only reached from the guide
+  // preview modal's "Print Now", never directly from the app bar button -
+  // see guidePreviewModal below.
+  function printGuide() {
+    els.printRoot.innerHTML = '';
+    const { guide, diagramWrap, card } = buildGuideElement();
+    els.printRoot.appendChild(guide);
+    els.printRoot.classList.add('is-measuring');
+    requestAnimationFrame(() => {
+      fitCardText(card);
+      placeGuideCallouts(diagramWrap, card);
+      els.printRoot.classList.remove('is-measuring');
+      requestAnimationFrame(triggerPrint);
+    });
+  }
+
+  // On-screen preview of the guide, laid out and scaled exactly like the
+  // shelf-talker Print Preview above (same makeScaler/scalePreview
+  // helpers) - so what's shown here really is what Print Now sends to the
+  // printer, not a separate approximation of it.
+  function renderGuidePreviewContents() {
+    els.guidePreviewStage.innerHTML = '';
+    const { guide, diagramWrap, card } = buildGuideElement();
+    const scaler = makeScaler(guide);
+    els.guidePreviewStage.appendChild(scaler);
+    requestAnimationFrame(() => {
+      fitCardText(card);
+      placeGuideCallouts(diagramWrap, card);
+      rescaleGuidePreview();
+    });
+  }
+
+  function rescaleGuidePreview() {
+    const scaler = els.guidePreviewStage.querySelector('.preview-scaler');
+    if (scaler) scalePreview(scaler, els.guidePreviewStage.clientWidth, window.innerHeight * 0.75);
+  }
+
   // Shared accessible-dialog behavior for every full-screen overlay in the
   // app (Print Preview, Help): Tab cycles within it instead of escaping
   // into controls hidden behind the backdrop, Escape and a backdrop click
@@ -1528,6 +1732,16 @@
     if (queue.length === 0) return;
     printPreviewModal.open();
   }
+
+  // Same preview-before-printing pattern as the shelf-talker Print Preview
+  // above, for the one-page guide - see renderGuidePreviewContents/
+  // printGuide.
+  const guidePreviewModal = createModal({
+    overlay: els.guidePreviewOverlay,
+    closeBtns: [els.guidePreviewCloseBtn, els.guidePreviewCancelBtn],
+    onOpen: renderGuidePreviewContents,
+    onClose: () => { els.guidePreviewStage.innerHTML = ''; },
+  });
 
   function renderPrintPreviewContents() {
     els.printPreviewSheets.innerHTML = '';
@@ -1622,6 +1836,11 @@
   els.printPreviewConfirmBtn.addEventListener('click', () => {
     printPreviewModal.close();
     printNow();
+  });
+  els.guideBtn.addEventListener('click', guidePreviewModal.open);
+  els.guidePreviewConfirmBtn.addEventListener('click', () => {
+    guidePreviewModal.close();
+    printGuide();
   });
 
   // ---------- Help ----------

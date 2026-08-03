@@ -513,6 +513,18 @@ h1, h2, h3 { margin: 0; }
    would shrink the page box itself while its contents stayed printed-size. */
 .print-preview-sheet__grid { margin: 0; }
 
+/* Single fixed document, not a list of sheets - just centers the one
+   .preview-scaler the guide preview renders, same scaling mechanism
+   (makeScaler/scalePreview in app.js) as every other preview. */
+.guide-preview-stage {
+  flex: 1;
+  overflow: auto;
+  padding: 0 1.2rem 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 /* ---------- Help ---------- */
 
 .help-content {
@@ -1497,6 +1509,128 @@ h1, h2, h3 { margin: 0; }
 }
 .sign__small-price:not(.sign__supersale-price) { font-family: "Arial Black", Arial, Helvetica, sans-serif; }
 .sign__small-price.is-sale { color: var(--sale-red); }
+
+/* ---------- "How to Read" customer guide ----------
+   A single printable reference sheet (built by buildGuideDom() in app.js,
+   printed through the same #printRoot / triggerPrint() path as shelf
+   talkers) showing an annotated shelf talker plus the beer-style color key.
+   Sized in absolute inches, not --w fractions, since it's one fixed
+   document rather than something that scales across Full/Half/Quarter
+   talker sizes. Deliberately NOT styled like the amber card band/footer -
+   this is a handout, not another talker, even though the diagram it
+   contains renders a real .card. Defined outside @media print (like
+   .card/.sheet .card above) so fitCardText's off-screen .is-measuring pass
+   can lay it out; the print pipeline is hard-set to landscape (see
+   ipcMain.handle('print-sheets') in electron/main.js), so this targets
+   roughly half of the landscape-Letter content height (7.94in) rather than
+   a full page, alongside shelf talkers/signs which fill the same canvas. */
+.guide {
+  width: 10.44in;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.guide__header { display: flex; align-items: center; gap: 0.24in; padding-bottom: 0.06in; }
+.guide__logo { height: 0.3in; display: block; }
+.guide__header-text h2 {
+  margin: 0;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 800;
+  font-size: 0.17in;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.guide__header-text p { margin: 0.03in 0 0; font-size: 0.105in; color: var(--muted); line-height: 1.3; max-width: 7.5in; }
+.guide__rule { height: 0.02in; margin-bottom: 0.1in; background: var(--accent); opacity: 0.5; }
+
+.guide__body {
+  display: grid;
+  grid-template-columns: auto 2.5in 1fr;
+  gap: 0.3in;
+  align-items: stretch;
+}
+
+/* Padded well beyond the .card's own edges: .card has overflow:hidden for
+   its own internal text-clamping, so placeGuideCallouts() (app.js) appends
+   the numbered callouts here, not inside .card - they sit in this padding
+   margin, never clipped no matter how close their target lands to the
+   card's own border. */
+.guide__diagram { position: relative; display: flex; align-items: center; justify-content: center; padding: 0.3in; }
+
+.guide__callout-num {
+  position: absolute;
+  width: 0.2in;
+  height: 0.2in;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 0.1in;
+  line-height: 0.2in;
+  text-align: center;
+  border: 0.02in solid #fff;
+  z-index: 5;
+}
+.guide__callout-num--tl { transform: translate(-100%, -100%); }
+.guide__callout-num--tr { transform: translate(0, -100%); }
+
+.guide__legend { display: flex; flex-direction: column; justify-content: space-between; gap: 0.03in; padding: 0.02in 0; }
+.guide__legend-item { display: flex; gap: 0.07in; align-items: flex-start; }
+.guide__legend-num {
+  flex: 0 0 auto;
+  width: 0.17in;
+  height: 0.17in;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.09in;
+  font-weight: 700;
+  line-height: 0.17in;
+  text-align: center;
+}
+.guide__legend-text h3 { margin: 0; font-size: 0.115in; font-weight: 700; }
+.guide__legend-text p { margin: 0.015in 0 0; font-size: 0.098in; line-height: 1.28; color: var(--muted); }
+
+.guide__key {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e5ddd0;
+  padding-left: 0.25in;
+}
+.guide__key h3 {
+  margin: 0 0 0.12in;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 0.16in;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.guide__keygrid {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.06in 0.18in;
+  align-content: stretch;
+}
+.guide__swatch { display: flex; flex-direction: column; justify-content: center; gap: 0.02in; }
+.guide__swatch-pill {
+  display: inline-block;
+  align-self: flex-start;
+  font-weight: 700;
+  font-size: 0.115in;
+  letter-spacing: 0.01em;
+  padding: 0.03in 0.08in;
+  border-radius: 0.045in;
+  white-space: nowrap;
+}
+.guide__swatch-desc { font-size: 0.098in; line-height: 1.28; color: var(--muted); }
+
+.guide__footer { margin-top: 0.06in; padding-top: 0.05in; border-top: 1px solid #e5ddd0; text-align: center; }
+.guide__footer span { font-size: 0.095in; color: var(--muted); letter-spacing: 0.02em; }
 
 /* ---------- Print sheets ---------- */
 
