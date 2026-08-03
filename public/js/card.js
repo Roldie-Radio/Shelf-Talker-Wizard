@@ -67,6 +67,10 @@ const BEER_STYLE_COLORS = [
   { test: /brown ale|dunkel|schwarzbier|dark ale/i, bg: '#5c3a21', fg: '#ffffff' },
   { test: /pale ale|blonde|golden ale/i, bg: '#d9a441', fg: '#3b2415' },
   { test: /cider/i, bg: '#8bb04a', fg: '#ffffff' },
+  // Not a beer style, but meads get typed into this same free-text field -
+  // honey-gold (darkgoldenrod) rather than any of the beer ambers/golds
+  // above so it reads as "honey" instead of getting mistaken for a lager.
+  { test: /mead|melomel|cyser|pyment|metheglin|braggot/i, bg: '#b8860b', fg: '#ffffff' },
 ];
 const BEER_STYLE_FALLBACK_COLOR = { bg: '#ddd6cc', fg: '#3b2415' };
 
