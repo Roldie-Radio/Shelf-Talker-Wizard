@@ -57,6 +57,7 @@ test('parseBeerHtml reads a full Untappd-style page', () => {
     abv: '8%',
     ibu: '65',
     untappdRating: '4.27',
+    untappdRatingCount: '',
     imageUrl: 'https://example.com/beer.jpg',
     sourceUrl: 'https://untappd.com/b/new-anthem-beer-project-trapped-in-a-sunbeam/1',
   });
@@ -186,6 +187,24 @@ test('parseBeerHtml matches the real page that motivated the N/A-IBU and bare-ra
   assert.equal(result.ibu, 'N/A');
   // The precise on-page number wins over the rounded one in the description.
   assert.equal(result.untappdRating, '4.23');
+  assert.equal(result.untappdRatingCount, '1382');
+});
+
+test('parseBeerHtml prefers the on-page rating count over the og:description fallback, and strips its thousands separator', () => {
+  const html = page({
+    head: '<meta property="og:description" content="d, with 500 ratings on Untappd." />',
+    body: '<div>12,004 Ratings</div>',
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.untappdRatingCount, '12004');
+});
+
+test('parseBeerHtml leaves the rating count blank when neither the page nor og:description mentions one', () => {
+  const html = page({
+    body: '<h1>Steez</h1><meta property="og:description" content="A hazy IPA with notes of citrus and pine." />',
+  });
+  const result = parseBeerHtml(html, 'https://example.com/a');
+  assert.equal(result.untappdRatingCount, '');
 });
 
 test('parseBeerHtml normalizes "N/A" IBU to a consistent case regardless of the page\'s own casing', () => {
@@ -211,6 +230,7 @@ test('parseBeerHtml falls back to the rating mentioned in og:description when no
   });
   const result = parseBeerHtml(html, 'https://example.com/a');
   assert.equal(result.untappdRating, '4.2');
+  assert.equal(result.untappdRatingCount, '500');
 });
 
 test('parseBeerHtml does not misread a parenthesized decimal outside Untappd\'s 0-5 rating range', () => {
