@@ -37,7 +37,6 @@
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
   let currentCategory = 'wine'; // 'wine' | 'beer'
-  let currentTitleAlign = 'center'; // 'center' | 'left' (Shelf Talkers only)
 
   let previewMode = 'single'; // 'single' | 'sheet'
   let sheetPage = 0;
@@ -158,8 +157,6 @@
     talkerSizeField: document.getElementById('talkerSizeField'),
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
-    titleAlignField: document.getElementById('titleAlignField'),
-    titleAlignToggleBtns: document.querySelectorAll('.titlealign-toggle .toggle-btn'),
     talkerTypeSupersaleOption: document.getElementById('talkerTypeSupersaleOption'),
     ratingReviewer: document.getElementById('fRatingReviewer'),
     ratingScore: document.getElementById('fRatingScore'),
@@ -323,11 +320,6 @@
 
     els.talkerSizeField.hidden = isSign;
     els.talkerSize.value = currentTalkerSize;
-    // Title Align only ever affects .card__title (see buildCardElement) -
-    // Display Signs' own title has no such toggle, so hide it the same way
-    // Talker Size is hidden for signs above.
-    els.titleAlignField.hidden = isSign;
-    setToggleState(els.titleAlignToggleBtns, (b) => b.dataset.titlealign === currentTitleAlign);
     els.descriptionField.hidden = isSmallSign;
     // Wine.com wouldn't have anything for a beer, and Beer already has its
     // own tasting-note source (the Untappd import tab) - only show the
@@ -391,11 +383,6 @@
     applyFormMode();
   }
 
-  function setTitleAlign(titleAlign) {
-    currentTitleAlign = titleAlign === 'left' ? 'left' : 'center';
-    applyFormMode();
-  }
-
   function setCategory(category) {
     currentCategory = category === 'beer' ? 'beer' : 'wine';
     // Purple reads as the store's beer theme, amber as wine/spirits - only
@@ -427,14 +414,6 @@
     refreshPreview();
   });
 
-  els.titleAlignToggleBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.titlealign === currentTitleAlign) return;
-      setTitleAlign(btn.dataset.titlealign);
-      refreshPreview();
-    });
-  });
-
   els.categoryToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.category === currentCategory) return;
@@ -450,7 +429,6 @@
       signType: currentSignType,
       signSize: currentSignSize,
       talkerSize: currentTalkerSize,
-      titleAlign: currentTitleAlign,
       category: currentCategory,
       title: els.title.value.trim(),
       vintage: els.vintage.value.trim(),
@@ -477,7 +455,6 @@
     currentSignType = talker.signType === 'sign' ? 'sign' : 'talker';
     currentSignSize = talker.signSize === 'small' ? 'small' : 'large';
     currentTalkerSize = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
-    currentTitleAlign = talker.titleAlign === 'left' ? 'left' : 'center';
     currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
     applyFormMode();
     els.title.value = talker.title || '';
@@ -1056,6 +1033,7 @@
 
   function validate(talker) {
     if (!talker.title) return 'Please enter a product title.';
+    if (!talker.size) return 'Please enter a size/unit.';
     if (!talker.price || Number.isNaN(Number(talker.price))) return 'Please enter a valid regular price.';
     if (talker.salePrice && Number.isNaN(Number(talker.salePrice))) return 'Sale price must be a number.';
     return null;
