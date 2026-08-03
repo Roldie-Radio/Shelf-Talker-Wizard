@@ -34,7 +34,7 @@
     </div>
     <div class="appbar__actions">
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
-      <button type="button" id="guideBtn" class="btn" title="Print a customer guide to reading shelf talkers">How to Read</button>
+      <button type="button" id="guideBtn" class="btn" title="Print a customer guide explaining how to read a shelf talker">About the Shelf Talker</button>
       <button type="button" id="helpBtn" class="btn" title="Help">Help</button>
       <button type="button" id="themeToggle" class="btn btn--icon" aria-pressed="false" title="Switch to dark mode">
         <span class="theme-toggle__icon" aria-hidden="true">&#9789;</span>
@@ -316,6 +316,20 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
       <div class="modal__footer">
         <button type="button" class="btn" id="printPreviewCancelBtn">Cancel</button>
         <button type="button" class="btn btn--primary" id="printPreviewConfirmBtn">Print Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="guidePreviewOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="guidePreviewTitle">
+      <div class="modal__header">
+        <h2 id="guidePreviewTitle">Print Preview</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="guidePreviewCloseBtn">&times; Close</button>
+      </div>
+      <div class="guide-preview-stage" id="guidePreviewStage"></div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="guidePreviewCancelBtn">Cancel</button>
+        <button type="button" class="btn btn--primary" id="guidePreviewConfirmBtn">Print Now</button>
       </div>
     </div>
   </div>

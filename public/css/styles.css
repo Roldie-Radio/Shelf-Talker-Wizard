@@ -513,6 +513,18 @@ h1, h2, h3 { margin: 0; }
    would shrink the page box itself while its contents stayed printed-size. */
 .print-preview-sheet__grid { margin: 0; }
 
+/* Single fixed document, not a list of sheets - just centers the one
+   .preview-scaler the guide preview renders, same scaling mechanism
+   (makeScaler/scalePreview in app.js) as every other preview. */
+.guide-preview-stage {
+  flex: 1;
+  overflow: auto;
+  padding: 0 1.2rem 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 /* ---------- Help ---------- */
 
 .help-content {

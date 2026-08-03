@@ -206,6 +206,12 @@
     printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
     autoArrangeToggle: document.getElementById('autoArrangeToggle'),
 
+    guidePreviewOverlay: document.getElementById('guidePreviewOverlay'),
+    guidePreviewStage: document.getElementById('guidePreviewStage'),
+    guidePreviewCloseBtn: document.getElementById('guidePreviewCloseBtn'),
+    guidePreviewCancelBtn: document.getElementById('guidePreviewCancelBtn'),
+    guidePreviewConfirmBtn: document.getElementById('guidePreviewConfirmBtn'),
+
     helpBtn: document.getElementById('helpBtn'),
     helpOverlay: document.getElementById('helpOverlay'),
     helpCloseBtn: document.getElementById('helpCloseBtn'),
@@ -768,6 +774,7 @@
     resizeDebounce = setTimeout(() => {
       rescalePreviewStage();
       rescalePrintPreviewSheets();
+      rescaleGuidePreview();
     }, 100);
   });
 
@@ -1474,19 +1481,22 @@
     { sel: '.card__prices', num: 7, corner: 'tl' },
   ];
 
-  // Clears and rebuilds #printRoot with the guide instead of shelf-talker
-  // sheets - the two never print at once, so reusing the same root (rather
-  // than a second .print-only container) guarantees that.
-  function buildGuideDom() {
-    els.printRoot.innerHTML = '';
-
+  // Builds a standalone guide DOM tree - not attached anywhere, and not
+  // yet size-fitted (caller must lay it out, call fitCardText on the
+  // returned card, then placeGuideCallouts, same order as every other
+  // printable element in this app). Called once for the on-screen preview
+  // and again for the real #printRoot copy when the user confirms Print
+  // Now - two separate DOM trees rather than moving one, since a preview
+  // node lives inside a .preview-scaler transform that the print copy must
+  // not inherit.
+  function buildGuideElement() {
     const guide = document.createElement('div');
     guide.className = 'guide';
     guide.innerHTML = `
       <div class="guide__header">
         <img class="guide__logo" src="assets/logo.png" alt="" />
         <div class="guide__header-text">
-          <h2>How to Read Your Shelf Talker</h2>
+          <h2>About the Shelf Talker</h2>
           <p>Every price tag on our shelves carries the same information, laid out the same way. Here's what each part means.</p>
         </div>
       </div>
@@ -1519,14 +1529,12 @@
       <div class="guide__footer"><span>Liquor Outlet Wine Cellars &middot; www.liquoroutletwinecellars.com</span></div>
     `;
 
-    els.printRoot.appendChild(guide);
-
     const diagramWrap = guide.querySelector('.guide__diagram');
     const card = buildCardElement(GUIDE_SAMPLE_TALKER);
     card.style.setProperty('--w', '1.85in');
     diagramWrap.appendChild(card);
 
-    return { diagramWrap, card };
+    return { guide, diagramWrap, card };
   }
 
   // Positions each numbered callout against the real rendered .card's own
@@ -1555,8 +1563,16 @@
     });
   }
 
+  // Rebuilds the guide into #printRoot (clearing whatever was there before -
+  // the guide and shelf-talker sheets never print at once, so reusing the
+  // same root rather than a second .print-only container guarantees that)
+  // and sends it to the system print dialog. Only reached from the guide
+  // preview modal's "Print Now", never directly from the app bar button -
+  // see guidePreviewModal below.
   function printGuide() {
-    const { diagramWrap, card } = buildGuideDom();
+    els.printRoot.innerHTML = '';
+    const { guide, diagramWrap, card } = buildGuideElement();
+    els.printRoot.appendChild(guide);
     els.printRoot.classList.add('is-measuring');
     requestAnimationFrame(() => {
       fitCardText(card);
@@ -1564,6 +1580,27 @@
       els.printRoot.classList.remove('is-measuring');
       requestAnimationFrame(triggerPrint);
     });
+  }
+
+  // On-screen preview of the guide, laid out and scaled exactly like the
+  // shelf-talker Print Preview above (same makeScaler/scalePreview
+  // helpers) - so what's shown here really is what Print Now sends to the
+  // printer, not a separate approximation of it.
+  function renderGuidePreviewContents() {
+    els.guidePreviewStage.innerHTML = '';
+    const { guide, diagramWrap, card } = buildGuideElement();
+    const scaler = makeScaler(guide);
+    els.guidePreviewStage.appendChild(scaler);
+    requestAnimationFrame(() => {
+      fitCardText(card);
+      placeGuideCallouts(diagramWrap, card);
+      rescaleGuidePreview();
+    });
+  }
+
+  function rescaleGuidePreview() {
+    const scaler = els.guidePreviewStage.querySelector('.preview-scaler');
+    if (scaler) scalePreview(scaler, els.guidePreviewStage.clientWidth, window.innerHeight * 0.75);
   }
 
   // Shared accessible-dialog behavior for every full-screen overlay in the
@@ -1642,6 +1679,16 @@
     if (queue.length === 0) return;
     printPreviewModal.open();
   }
+
+  // Same preview-before-printing pattern as the shelf-talker Print Preview
+  // above, for the one-page guide - see renderGuidePreviewContents/
+  // printGuide.
+  const guidePreviewModal = createModal({
+    overlay: els.guidePreviewOverlay,
+    closeBtns: [els.guidePreviewCloseBtn, els.guidePreviewCancelBtn],
+    onOpen: renderGuidePreviewContents,
+    onClose: () => { els.guidePreviewStage.innerHTML = ''; },
+  });
 
   function renderPrintPreviewContents() {
     els.printPreviewSheets.innerHTML = '';
@@ -1737,7 +1784,11 @@
     printPreviewModal.close();
     printNow();
   });
-  els.guideBtn.addEventListener('click', printGuide);
+  els.guideBtn.addEventListener('click', guidePreviewModal.open);
+  els.guidePreviewConfirmBtn.addEventListener('click', () => {
+    guidePreviewModal.close();
+    printGuide();
+  });
 
   // ---------- Help ----------
 
