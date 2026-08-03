@@ -223,6 +223,13 @@
         </label>
         <button type="button" class="btn btn--primary" id="importBtn">Fetch Product Data</button>
         <p class="help-text" id="importStatus" role="status" aria-live="polite"></p>
+
+        <button type="button" class="link-btn" id="importHtmlToggle" aria-expanded="false" aria-controls="importHtmlSection">Site blocking the fetch? Paste the page's HTML instead</button>
+        <div class="reviewer-manager" id="importHtmlSection" hidden>
+          <p class="help-text">Open the page in your own browser, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below - this works even when the site blocks the app's own request, since your browser already got past it.</p>
+          <textarea id="importHtmlInput" rows="6" aria-label="Pasted page HTML" placeholder="Paste the page's HTML source here..."></textarea>
+          <button type="button" class="btn btn--primary" id="importHtmlBtn">Parse Pasted HTML</button>
+        </div>
       </div>
 
       <div class="tab-panel" data-panel="bulk" id="panelBulk" role="tabpanel" aria-labelledby="tabBulk" tabindex="0">

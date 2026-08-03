@@ -198,8 +198,11 @@ function guessSize(...texts) {
   return undefined;
 }
 
-async function extractProduct(url) {
-  const html = await fetchHtml(url);
+// Split out from extractProduct so the parsing half can also run against
+// HTML the caller already has in hand - see parsePastedProduct below, the
+// "paste page HTML" fallback for a site whose fetch keeps getting blocked
+// (see the note above fetchProductHtml).
+function parseProductHtml(html, url) {
   const $ = cheerio.load(html);
 
   const ld = findJsonLdProduct($) || {};
@@ -245,6 +248,50 @@ async function extractProduct(url) {
     imageUrl: imageUrl || '',
     sourceUrl: url,
   };
+}
+
+// Retail product pages (the "Import from website" tab's Wine/Spirits mode)
+// get the same blocked-looking-response retry as the beer importer and the
+// wine.com/Vivino tasting-notes lookups further down (see fetchHtmlResilient
+// and BLOCKED_STATUSES below) - a plain fetch with no retry at all was the
+// gap that let a wine.com product URL pasted here 403 immediately, even
+// though the shared retry logic already existed and already worked for
+// Untappd. Kept generic ("That site", not a named provider) since, unlike
+// the catalog-search providers below, this path is meant to work against
+// any retailer's product page, not one specific site.
+async function fetchProductHtml(url) {
+  try {
+    return await fetchHtmlResilient(url);
+  } catch (err) {
+    if (BLOCKED_STATUSES.has(err.httpStatus)) {
+      throw new Error(
+        'That site blocked this automated request. This can happen from certain networks or '
+        + 'hosting providers - try again in a bit, from a different network, paste the page\'s '
+        + 'HTML instead, or enter the details manually.'
+      );
+    }
+    throw err;
+  }
+}
+
+async function extractProduct(url) {
+  const html = await fetchProductHtml(url);
+  return parseProductHtml(html, url);
+}
+
+// The "paste page HTML" fallback itself - for when even the retry above
+// keeps getting blocked. There's no fetch here at all: the HTML is
+// whatever the staff member copied out of their own browser (which already
+// got past the block, being a real browser and not this app's fetch), so
+// this just runs the same parsing extractProduct/extractBeer would have run
+// against a successful response. `url` is optional and only used to label
+// the result's sourceUrl - the page was never fetched by this app.
+function parsePastedProduct({ html, url, category }) {
+  if (!html || !html.trim()) {
+    throw new Error("Paste the page's HTML first.");
+  }
+  const sourceUrl = typeof url === 'string' ? url.trim() : '';
+  return category === 'beer' ? parseBeerHtml(html, sourceUrl) : parseProductHtml(html, sourceUrl);
 }
 
 // ================================================================
@@ -941,6 +988,8 @@ async function findTastingNotes({ title, vintage, source }) {
 
 module.exports = {
   extractProduct,
+  parseProductHtml,
+  parsePastedProduct,
   extractBeer,
   parseBeerHtml,
   fetchBeerHtml,

@@ -100,6 +100,8 @@ Click **Import from Website**, paste a product page URL from liquoroutletwinecel
 
 If a page doesn't expose any of this, the fields will come back blank and you can fill them in manually &mdash; the import is a shortcut, not a requirement.
 
+If a site blocks the request outright (some, like wine.com, actively block automated fetches), the importer automatically retries once with a different set of request headers before giving up &mdash; same as the Untappd import below. If it's still blocked, click **Site blocking the fetch? Paste the page's HTML instead** under the Fetch button: open the same page in your own browser (which already gets past the block), copy its HTML source (right-click &rarr; View Page Source, or Ctrl/Cmd+U, then select all and copy), and paste it in. It's parsed exactly the same way a successful fetch would be, with no network request of its own.
+
 ### Finding tasting notes automatically
 
 On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under the Description field. Unlike the website importer above, there's no URL to paste: click it (with a Product Title already filled in) to open a dialog that searches using **Product Title** (plus **Vintage**, if set).
