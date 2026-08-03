@@ -772,10 +772,11 @@ h1, h2, h3 { margin: 0; }
    left-aligning instead. */
 .card__title--left { text-align: left; }
 
-/* Brewery's home state, top-right corner of .card__body - see
-   buildStateBadgeHtml in card.js. Sized/inset as fractions of --w like
+/* Brewery's home state (or, for a non-US brewery, the country itself - see
+   the --country modifier below), top-right corner of .card__body - see
+   buildRightBadgeHtml in card.js. Sized/inset as fractions of --w like
    everything else here, so it scales the same way across Full/Half/Quarter
-   Size and print. Fixed green fill, not themed - it's part of the printed
+   Size and print. Fixed fill, not themed - it's part of the printed
    talker, same as the beer style pill. */
 .card__state-badge {
   position: absolute;
@@ -790,6 +791,10 @@ h1, h2, h3 { margin: 0; }
 }
 .card__state-badge svg { display: block; width: 100%; height: auto; }
 .card__state-badge path { fill: #2e7d32; }
+/* Deliberately not green - green means "US state" throughout this corner,
+   so a country silhouette (which only ever appears when there's no state
+   to show) gets its own color rather than borrowing that meaning. */
+.card__state-badge--country path { fill: #2f6690; }
 .card__state-badge-label {
   font-weight: 800;
   letter-spacing: 0.04em;
