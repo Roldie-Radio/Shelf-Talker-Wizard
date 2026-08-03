@@ -1,6 +1,8 @@
 const path = require('path');
 const express = require('express');
-const { extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES } = require('./productImport');
+const {
+  extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
+} = require('./productImport');
 
 function createApp() {
   const app = express();
@@ -36,6 +38,26 @@ function createApp() {
       res.json(product);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not read product data from that page.' });
+    }
+  });
+
+  // Fallback for "Import from website" when a site blocks the fetch above
+  // outright (see fetchProductHtml/extractProduct in productImport.js) -
+  // staff copy the page's HTML out of their own browser, which already got
+  // past the block, and this parses it the same way a successful fetch
+  // would have. No network request happens here at all.
+  app.post('/api/import-html', (req, res) => {
+    const { html, url, category } = req.body || {};
+
+    if (!html || typeof html !== 'string' || !html.trim()) {
+      return res.status(400).json({ error: "Paste the page's HTML first." });
+    }
+
+    try {
+      const product = parsePastedProduct({ html, url, category });
+      res.json(product);
+    } catch (err) {
+      res.status(400).json({ error: err.message || 'Could not read product data from that HTML.' });
     }
   });
 

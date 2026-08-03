@@ -177,6 +177,10 @@
     importUrl: document.getElementById('importUrl'),
     importBtn: document.getElementById('importBtn'),
     importStatus: document.getElementById('importStatus'),
+    importHtmlToggle: document.getElementById('importHtmlToggle'),
+    importHtmlSection: document.getElementById('importHtmlSection'),
+    importHtmlInput: document.getElementById('importHtmlInput'),
+    importHtmlBtn: document.getElementById('importHtmlBtn'),
 
     csvInput: document.getElementById('csvInput'),
     csvImportBtn: document.getElementById('csvImportBtn'),
@@ -1199,6 +1203,45 @@
 
   // ---------- Import from website ----------
 
+  // Shared by both the live fetch below and the "paste page HTML" fallback
+  // further down - once product data has been obtained, either way, filling
+  // the form and switching to Manual Entry is identical.
+  function applyImportedProduct(data, isBeer) {
+    if (isBeer) {
+      // No price/salePrice/size here - Untappd is a rating and check-in
+      // site, not a retailer, so it has no price to pull. Staff still add
+      // those two fields by hand; everything else (name, brewery,
+      // location, style, ABV, IBU, rating, description) comes from the
+      // page.
+      fillForm({
+        category: 'beer',
+        title: data.title,
+        description: data.description,
+        brewery: data.brewery,
+        location: data.location,
+        style: data.style,
+        abv: data.abv,
+        ibu: data.ibu,
+        untappdRating: data.untappdRating,
+        untappdRatingCount: data.untappdRatingCount,
+        theme: els.theme.value,
+      });
+    } else {
+      fillForm({
+        title: data.title,
+        description: data.description,
+        size: data.size,
+        price: data.price,
+        salePrice: data.salePrice,
+        theme: els.theme.value,
+      });
+    }
+    previewMode = 'single';
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
+    renderPreview();
+    document.querySelector('.tab[data-tab="manual"]').click();
+  }
+
   els.importBtn.addEventListener('click', async () => {
     const isBeer = currentCategory === 'beer';
     const url = els.importUrl.value.trim();
@@ -1218,45 +1261,55 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Import failed.');
 
-      if (isBeer) {
-        // No price/salePrice/size here - Untappd is a rating and check-in
-        // site, not a retailer, so it has no price to pull. Staff still add
-        // those two fields by hand; everything else (name, brewery,
-        // location, style, ABV, IBU, rating, description) comes from the
-        // page.
-        fillForm({
-          category: 'beer',
-          title: data.title,
-          description: data.description,
-          brewery: data.brewery,
-          location: data.location,
-          style: data.style,
-          abv: data.abv,
-          ibu: data.ibu,
-          untappdRating: data.untappdRating,
-          untappdRatingCount: data.untappdRatingCount,
-          theme: els.theme.value,
-        });
-        els.importStatus.textContent = 'Loaded! Add the price and size, double-check the rest, then click "Add to Queue".';
-      } else {
-        fillForm({
-          title: data.title,
-          description: data.description,
-          size: data.size,
-          price: data.price,
-          salePrice: data.salePrice,
-          theme: els.theme.value,
-        });
-        els.importStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
-      }
-      previewMode = 'single';
-      setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-      renderPreview();
-      document.querySelector('.tab[data-tab="manual"]').click();
+      applyImportedProduct(data, isBeer);
+      els.importStatus.textContent = isBeer
+        ? 'Loaded! Add the price and size, double-check the rest, then click "Add to Queue".'
+        : 'Loaded! Review the fields, then click "Add to Queue".';
     } catch (err) {
       els.importStatus.textContent = err.message || 'Something went wrong fetching that page.';
     } finally {
       els.importBtn.disabled = false;
+    }
+  });
+
+  // "Site blocking the fetch? Paste the page's HTML instead" - the fallback
+  // for when the fetch above keeps getting blocked (e.g. wine.com's bot
+  // protection). Staff open the same page in their own browser, which
+  // already gets past the block, copy its HTML source, and paste it here;
+  // /api/import-html parses it the exact same way a successful fetch would
+  // have, with no network request of its own.
+  els.importHtmlToggle.addEventListener('click', () => {
+    els.importHtmlSection.hidden = !els.importHtmlSection.hidden;
+    els.importHtmlToggle.setAttribute('aria-expanded', String(!els.importHtmlSection.hidden));
+  });
+
+  els.importHtmlBtn.addEventListener('click', async () => {
+    const isBeer = currentCategory === 'beer';
+    const html = els.importHtmlInput.value;
+    if (!html.trim()) {
+      els.importStatus.textContent = "Paste the page's HTML first.";
+      return;
+    }
+    els.importHtmlBtn.disabled = true;
+    els.importStatus.textContent = 'Reading pasted HTML...';
+
+    try {
+      const resp = await fetch('/api/import-html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html, url: els.importUrl.value.trim(), category: currentCategory }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read product data from that HTML.');
+
+      applyImportedProduct(data, isBeer);
+      els.importStatus.textContent = isBeer
+        ? 'Loaded from pasted HTML! Add the price and size, double-check the rest, then click "Add to Queue".'
+        : 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.importStatus.textContent = err.message || 'Something went wrong reading that HTML.';
+    } finally {
+      els.importHtmlBtn.disabled = false;
     }
   });
 

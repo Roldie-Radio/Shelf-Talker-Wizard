@@ -18,6 +18,7 @@ const {
   buildTastingNotesQuery, pickBestMatch, parseWineComSearchResults, parseWineComProductHtml,
   wineComSearchUrl, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
   parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
+  extractProduct, parseProductHtml, parsePastedProduct,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -656,6 +657,137 @@ test('extractBeer does not request the brewery page at all when there is no brew
     }
   );
   assert.equal(calls, 1, 'no .brewery a link means nothing to follow - must not make a second request');
+});
+
+// ================================================================
+// Generic retail product import ("Import from website", Wine/Spirits mode -
+// extractProduct/parseProductHtml). Wine.com is a real-world example of a
+// site pasted in here, but this path is meant to work against any
+// retailer's product page, so these fixtures aren't wine.com-specific.
+// ================================================================
+
+test('parseProductHtml reads title/description/price/image from JSON-LD Product schema', () => {
+  const html = page({
+    head: `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Product',
+      name: 'Josh Cellars Cabernet Sauvignon 2022',
+      description: 'Bold and full-bodied.',
+      image: 'https://example.com/bottle.jpg',
+      offers: { price: '14.99' },
+    })}</script>`,
+  });
+  const result = parseProductHtml(html, 'https://example.com/products/josh-cellars-cab');
+  assert.deepEqual(result, {
+    title: 'Josh Cellars Cabernet Sauvignon 2022',
+    description: 'Bold and full-bodied.',
+    price: '14.99',
+    salePrice: '',
+    size: '',
+    imageUrl: 'https://example.com/bottle.jpg',
+    sourceUrl: 'https://example.com/products/josh-cellars-cab',
+  });
+});
+
+test('parseProductHtml falls back to Open Graph tags when there is no JSON-LD', () => {
+  const html = page({
+    head: '<meta property="og:title" content="Josh Cellars Chardonnay 2022" />'
+      + '<meta property="og:description" content="Crisp and citrusy." />',
+  });
+  const result = parseProductHtml(html, 'https://example.com/products/josh-cellars-chard');
+  assert.equal(result.title, 'Josh Cellars Chardonnay 2022');
+  assert.equal(result.description, 'Crisp and citrusy.');
+});
+
+test('parseProductHtml throws when the page has neither a title nor a price', () => {
+  const html = page({ body: '<p>Nothing recognizable here.</p>' });
+  assert.throws(
+    () => parseProductHtml(html, 'https://example.com/x'),
+    /Could not find product details/
+  );
+});
+
+test('extractProduct retries a blocked response with browser headers before giving up', async () => {
+  const html = page({
+    head: '<meta property="og:title" content="Two Attempts Wine 2022" />'
+      + '<meta property="og:description" content="d" />',
+  });
+  const calls = [];
+  await withMockFetch(
+    async (url, opts) => {
+      calls.push(opts.headers);
+      return calls.length === 1 ? mockResponse({ status: 403 }) : mockResponse({ status: 200, body: html });
+    },
+    async () => {
+      const result = await extractProduct('https://example.com/products/x');
+      assert.equal(result.title, 'Two Attempts Wine 2022');
+    }
+  );
+  assert.equal(calls.length, 2, 'a 403 on the first attempt should trigger exactly one retry');
+  assert.match(calls[1]['User-Agent'], /Chrome/, 'second attempt: the full desktop-browser header set');
+});
+
+test('extractProduct turns a block that survives both attempts into an actionable message', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => extractProduct('https://example.com/products/x'),
+        /blocked this automated request/
+      );
+    }
+  );
+});
+
+test('extractProduct passes through a non-block failure unchanged', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 404 }),
+    async () => {
+      await assert.rejects(() => extractProduct('https://example.com/products/gone'), /404/);
+    }
+  );
+});
+
+// ================================================================
+// "Paste page HTML" fallback (parsePastedProduct) - what the "Import from
+// website" tab falls back to when even extractProduct's retry above keeps
+// getting blocked. No fetch happens here; it just runs the same parsing a
+// successful fetch would have against HTML the caller already has.
+// ================================================================
+
+test('parsePastedProduct parses wine/spirits HTML the same way extractProduct would', () => {
+  const html = page({
+    head: '<meta property="og:title" content="Pasted Wine 2022" />'
+      + '<meta property="og:description" content="Tastes great." />',
+  });
+  const result = parsePastedProduct({ html, url: 'https://www.wine.com/product/x/1', category: 'wine' });
+  assert.equal(result.title, 'Pasted Wine 2022');
+  assert.equal(result.description, 'Tastes great.');
+  assert.equal(result.sourceUrl, 'https://www.wine.com/product/x/1');
+});
+
+test('parsePastedProduct parses beer HTML the same way extractBeer would', () => {
+  const html = page({
+    head: '<meta property="og:title" content="Trapped In A Sunbeam by New Anthem Beer Project | Untappd" />'
+      + '<meta property="og:description" content="Hazy double IPA." />',
+  });
+  const result = parsePastedProduct({ html, url: 'https://untappd.com/b/x/1', category: 'beer' });
+  assert.equal(result.title, 'Trapped In A Sunbeam');
+  assert.equal(result.brewery, 'New Anthem Beer Project');
+});
+
+test('parsePastedProduct treats a missing url as an optional field, not an error', () => {
+  const html = page({
+    head: '<meta property="og:title" content="No URL Wine 2022" />'
+      + '<meta property="og:description" content="d" />',
+  });
+  const result = parsePastedProduct({ html, category: 'wine' });
+  assert.equal(result.title, 'No URL Wine 2022');
+  assert.equal(result.sourceUrl, '');
+});
+
+test('parsePastedProduct rejects an empty paste without attempting to parse it', () => {
+  assert.throws(() => parsePastedProduct({ html: '   ', category: 'wine' }), /Paste the page's HTML first/);
+  assert.throws(() => parsePastedProduct({ category: 'wine' }), /Paste the page's HTML first/);
 });
 
 // ================================================================
