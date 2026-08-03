@@ -46,12 +46,14 @@
     // Large Display Sign against the physical one already in use and asked
     // for it to come down to the same size.
     'sign-large': { cols: 1, rows: 2, perSheet: 2, printWidth: 8.5, aspect: 8.5 / 3.25, label: 'Large Display Signs' },
-    // printWidth measured directly off the real Small Sale Display Sign
-    // template (each sign's own background image is 5.003in x 2.48in in
-    // the source PDF, aspect 2.017 - close enough to keep the round
-    // aspect: 2 already here, but printWidth is worth the small
-    // correction from the previous 4.9in estimate).
-    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: 5.0, aspect: 2, label: 'Small Display Signs' },
+    // The source PDF template's background image measured 5.003in x
+    // 2.48in (aspect 2.017, rounded to 2 below), but a user measured the
+    // actual physical small signs the store prints and cuts out at
+    // 4.75in x 2.3in (aspect 2.065) - a real, noticeably more compressed
+    // shape than the template file assumed, the same kind of direct
+    // physical comparison sign-large's printWidth/aspect below were
+    // already corrected against.
+    'sign-small': { cols: 2, rows: 3, perSheet: 6, printWidth: 4.75, aspect: 4.75 / 2.3, label: 'Small Display Signs' },
   };
 
   // CSS wants a length; the packing maths wants a number. Keeping the number

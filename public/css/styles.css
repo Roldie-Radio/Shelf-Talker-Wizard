@@ -1116,7 +1116,7 @@ h1, h2, h3 { margin: 0; }
   box-shadow: 0 2px 10px rgba(0,0,0,0.12);
 }
 .sign[data-size="large"] { aspect-ratio: 8.5 / 3.25; }
-.sign[data-size="small"] { aspect-ratio: 2; }
+.sign[data-size="small"] { aspect-ratio: 4.75 / 2.3; }
 
 /* A user measured a printed Large Display Sign against the physical
    laminated sign already in use in the store (after the size itself was
@@ -1143,18 +1143,19 @@ h1, h2, h3 { margin: 0; }
 }
 .sign[data-size="large"] .sign__band { flex: 0 0 calc(var(--w) * 0.0482); }
 .sign[data-size="large"] .sign__band--footer { flex-basis: calc(var(--w) * 0.0333); }
-/* The previous numbers here (0.087 / 0.106) came from measuring where the
-   TEXT started/ended in the PDF and wrongly assuming that was flush with
-   the band edge - it isn't, there's a real gap on both sides (confirmed
-   below). Corrected by extracting the template's actual background image
-   (PyMuPDF page.get_images(), not just its placement bbox) and sampling
-   a text-free pixel column straight down it: the gold-to-white
-   transition lands at 13.7% of the image's own height for the header and
-   14.0% for the footer, not 17.4%/21.2%. Converted to a fraction of --w
-   (not height) same as every other band rule here: 0.137 * (w / aspect
-   2) / w = 0.0685, 0.140 * (w / 2) / w = 0.07. */
-.sign[data-size="small"] .sign__band { flex: 0 0 calc(var(--w) * 0.0685); }
-.sign[data-size="small"] .sign__band--footer { flex-basis: calc(var(--w) * 0.07); }
+/* Extracting the template's actual background image (PyMuPDF
+   page.get_images(), not just its placement bbox) and sampling a
+   text-free pixel column straight down it, the gold-to-white transition
+   lands at 13.7% of the image's own height for the header and 14.0% for
+   the footer. Converted to a fraction of --w (not height) same as every
+   other band rule here: 0.137 * (w / aspect) / w = 0.137 / aspect,
+   0.140 / aspect. Uses the sign's real physical aspect (4.75/2.3, see
+   layout.js), not the source template's own 2.017 - the percentages
+   themselves came from the template image and are assumed to still
+   hold on the physical sign, only the aspect they convert through
+   changed. */
+.sign[data-size="small"] .sign__band { flex: 0 0 calc(var(--w) * 0.0663); }
+.sign[data-size="small"] .sign__band--footer { flex-basis: calc(var(--w) * 0.0678); }
 .sign[data-theme="purple"] .sign__band { background-color: var(--purple-band); }
 
 .sign__tagline {
@@ -1282,12 +1283,13 @@ h1, h2, h3 { margin: 0; }
    signs use their own Arial title font/size, .sign__title--small below. */
 .sign[data-size="large"] .sign__title { font-family: Verdana, Geneva, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0234); }
 /* The real Small sign template's title is 18pt (Arial-BoldMT, size 18.0,
-   confirmed straight from the source PDF - fraction-of-w = 18 / 72 / 5.0
-   (this format's corrected print width, see layout.js) / --sign-text would
-   be 0.0417), but printed at that literal spec the product name read too
-   small next to the big price number below it - bumped back up to the
-   20pt-equivalent size this app used before that pt-precision correction. */
-.sign__title--small { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0472); }
+   confirmed straight from the source PDF - fraction-of-w = 18 / 72 /
+   4.75 (the sign's real physical print width, see layout.js) /
+   --sign-text would be 0.0439), but printed at that literal spec the
+   product name read too small next to the big price number below it -
+   kept the same ~13% above-spec bump this already had before printWidth
+   was corrected from 5.0in to the physical 4.75in (0.0439 * 1.132). */
+.sign__title--small { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0497); }
 
 /* Optional vintage line, wine/spirits only, Large signs only in practice
    (Small never renders a vintage line - see buildSmallSignBodyHtml). Same
@@ -1359,11 +1361,11 @@ h1, h2, h3 { margin: 0; }
 /* Small signs are a third the width of a Large one, so a fraction tuned for
    Large renders tiny here - matches the reference sign's Size field, Arial
    bold 16pt (confirmed straight from the source PDF's text: "Regular
-   Price $X.XX     750ml" is one Arial-BoldMT 15.96pt run) at this
-   format's corrected 5.0in print width (fraction-of-w = pt / 72 / 5.0 /
+   Price $X.XX     750ml" is one Arial-BoldMT 15.96pt run) at the sign's
+   real physical 4.75in print width (fraction-of-w = pt / 72 / 4.75 /
    --sign-text), same conversion as .sign__regular-price below, which the
    reference groups with Size under the same spec. */
-.sign[data-size="small"] .sign__size { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.037 * var(--price-fit, 1)); }
+.sign[data-size="small"] .sign__size { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0389 * var(--price-fit, 1)); }
 
 /* Matched to .sign__size, its partner across the row. Previously the rating
    had no rule at all, so it inherited the page's absolute 16px instead of
@@ -1412,7 +1414,7 @@ h1, h2, h3 { margin: 0; }
    the reference) takes over for Small via higher specificity. */
 .sign__sale-price { color: var(--sale-red); font-weight: 800; font-family: Verdana, Geneva, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0257 * var(--price-fit, 1)); }
 .sign__regular-price { font-weight: 800; font-family: Verdana, Geneva, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0128 * var(--price-fit, 1)); }
-.sign[data-size="small"] .sign__regular-price { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.037 * var(--price-fit, 1)); }
+.sign[data-size="small"] .sign__regular-price { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0389 * var(--price-fit, 1)); }
 
 /* Small Super Sale sign's price number - same WordArt look as
    .sign__supersale-text above (bold italic sans, red fill, black
@@ -1428,16 +1430,17 @@ h1, h2, h3 { margin: 0; }
 /* The reference Small sign's price (whichever of standard/closeout/chilled
    or Super Sale is showing) is Arial Black bold 32pt (confirmed straight
    from the source PDF text: Arial-Black, size 32.04) - fraction-of-w =
-   pt / 72 / 5.0 / --sign-text, same conversion used throughout this
-   section. Font-family is a separate, more specific rule below rather
-   than added here directly: .sign__supersale-price sits earlier in this
-   file and sets its own Georgia italic face for the same element (both
-   classes apply together, see buildSmallSignBodyHtml) - a plain
-   .sign__small-price rule would come after it in source order and win,
-   silently undoing that already-established Super Sale look. */
+   pt / 72 / 4.75 / --sign-text (the sign's real physical print width,
+   see layout.js), same conversion used throughout this section. Font-family
+   is a separate, more specific rule below rather than added here directly:
+   .sign__supersale-price sits earlier in this file and sets its own Georgia
+   italic face for the same element (both classes apply together, see
+   buildSmallSignBodyHtml) - a plain .sign__small-price rule would come
+   after it in source order and win, silently undoing that already-established
+   Super Sale look. */
 .sign__small-price {
   font-weight: 800;
-  font-size: calc(var(--w) * var(--sign-text) * 0.0741 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.078 * var(--price-fit, 1));
   flex: 0 0 auto;
 }
 .sign__small-price:not(.sign__supersale-price) { font-family: "Arial Black", Arial, Helvetica, sans-serif; }
