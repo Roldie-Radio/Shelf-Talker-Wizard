@@ -190,7 +190,6 @@ h1, h2, h3 { margin: 0; }
 /* ---------- Form ---------- */
 
 .signtype-toggle, .signsize-toggle, .category-toggle { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
-.titlealign-toggle { display: flex; gap: 0.3rem; }
 
 .field-group { margin-bottom: 0.85rem; }
 .field-group .field { margin-bottom: 0.6rem; }
@@ -767,11 +766,6 @@ h1, h2, h3 { margin: 0; }
   text-overflow: ellipsis;
 }
 
-/* Title Align toggle (Shelf Talkers only, see #titleAlignField in
-   index.html) - center is the default look, this opts a talker into
-   left-aligning instead. */
-.card__title--left { text-align: left; }
-
 /* Brewery's home state (or, for a non-US brewery, the country itself - see
    the --country modifier below), top-right corner of .card__body - see
    buildRightBadgeHtml in card.js. Sized/inset as fractions of --w like
@@ -848,22 +842,16 @@ h1, h2, h3 { margin: 0; }
    its own negative side margins, see below) doesn't run under whichever
    corner badge(s) are present - only applied per side when that badge is
    actually there, so a beer card with neither a resolvable state nor a
-   resolvable country keeps the full-width title. Each side's own
-   reservation applies regardless of title alignment, since even a
-   left-aligned title can wrap onto a second/third line that reaches the
-   right badge, and a left badge sits right where a left-aligned title's
-   own flush-left text would otherwise start. */
+   resolvable country keeps the full-width title. */
 .card__title--badge-left { padding-left: calc(var(--w) * 0.16); }
 .card__title--badge-right { padding-right: calc(var(--w) * 0.16); }
 
 /* Centered title with a badge on only one side: mirror the reservation
    onto the empty side too, so the text block stays symmetric around the
    card's true midpoint instead of drifting toward the empty side. Not
-   needed when both badges are present (already symmetric) or when the
-   title is left-aligned (each line starts flush at its own margin, not
-   the box's visual center). */
-.card__title--badge-left:not(.card__title--badge-right):not(.card__title--left) { padding-right: calc(var(--w) * 0.16); }
-.card__title--badge-right:not(.card__title--badge-left):not(.card__title--left) { padding-left: calc(var(--w) * 0.16); }
+   needed when both badges are present (already symmetric). */
+.card__title--badge-left:not(.card__title--badge-right) { padding-right: calc(var(--w) * 0.16); }
+.card__title--badge-right:not(.card__title--badge-left) { padding-left: calc(var(--w) * 0.16); }
 
 /* Beer's title sits closer to the header band than wine/spirits' does -
    frees up vertical room for the Style text on the row below, which can

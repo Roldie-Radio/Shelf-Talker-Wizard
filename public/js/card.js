@@ -742,7 +742,7 @@ function buildSignElement(talker) {
 
 /**
  * @param {object} talker - { category, title, description, size, price,
- *   salePrice, theme, talkerType, titleAlign, ratings: [{reviewer, score}],
+ *   salePrice, theme, talkerType, ratings: [{reviewer, score}],
  *   brewery, location, style, abv, ibu, untappdRating, untappdRatingCount }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
@@ -755,13 +755,9 @@ function buildCardElement(talker) {
   card.dataset.category = isBeer ? 'beer' : 'wine';
   const rightBadgeHtml = isBeer ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = isBeer ? buildCountryFlagHtml(talker) : '';
-  // Center is the default look; Title Align (Shelf Talkers only, see
-  // #titleAlignField in index.html) opts a talker into left-aligning
-  // instead - Display Signs' own title has no such toggle.
   const titleClasses = ['card__title'];
   if (rightBadgeHtml) titleClasses.push('card__title--badge-right');
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
-  if (talker.titleAlign === 'left') titleClasses.push('card__title--left');
 
   card.innerHTML = `
     <div class="card__band">
