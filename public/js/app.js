@@ -1033,6 +1033,7 @@
 
   function validate(talker) {
     if (!talker.title) return 'Please enter a product title.';
+    if (!talker.size) return 'Please enter a size/unit.';
     if (!talker.price || Number.isNaN(Number(talker.price))) return 'Please enter a valid regular price.';
     if (talker.salePrice && Number.isNaN(Number(talker.salePrice))) return 'Sale price must be a number.';
     return null;
