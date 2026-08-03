@@ -43,30 +43,48 @@ function buildAwardsHtml(talker) {
 // Beer style -> accent color for the pill behind the Style value below.
 // Matched by keyword against the free-text Style field (typed by hand or
 // scraped from Untappd, e.g. "IPA - Imperial / Double New England / Hazy"),
-// so there's no fixed vocabulary to keep in sync with Untappd's. Buckets
-// and colors loosely follow the style-color conventions Untappd/
-// BeerAdvocate already use, so the color reads as familiar rather than
-// invented. Order matters: checked top to bottom, so a style that could
-// match two buckets (e.g. "India Pale Lager") takes the first/more
-// specific one rather than whichever regex happens to be more general.
+// so there's no fixed vocabulary to keep in sync with Untappd's. Order
+// matters: checked top to bottom, so a style that could match two buckets
+// (e.g. "India Pale Lager") takes the first/more specific one rather than
+// whichever regex happens to be more general.
 //
-// IPA is split into three shades of the same orange rather than three
-// unrelated colors, so any IPA still reads as "IPA" at a glance and the
-// shade only tells you which kind. Hazy/New England is checked before
-// Double/Imperial, so a style tagged as both (e.g. "Hazy Double IPA")
-// renders as Hazy - swap the two if strength should win over haze.
+// Lager through Stout are genuinely all on the same yellow -> amber -> brown
+// -> black axis in real life (that's the beer world's actual SRM color
+// scale, not a design choice), so they can't be scattered across the color
+// wheel without lying about what's in the glass - instead they're fanned out
+// with much bigger lightness/saturation gaps than a same-hue-family palette
+// would give you, so neighbors on that axis (e.g. Lager vs. Wheat, or Pale
+// Ale vs. Hazy) stay easy to tell apart at a glance rather than blurring
+// into "some shade of gold."
+//
+// IPA/Hazy/Double stay within that axis but as three shades of the same
+// orange rather than three unrelated colors, so any IPA still reads as
+// "IPA family" at a glance and the shade only tells you which kind.
+// Hazy/New England is checked before Double/Imperial, so a style tagged as
+// both (e.g. "Hazy Double IPA") renders as Hazy - swap the two if strength
+// should win over haze.
+//
+// Sour, Cider, and Mead aren't defined by malt color at all - fruit, apple,
+// and honey respectively - so that's where the palette's real hue variety
+// lives: pink/berry, green, and purple, none of which any malt style above
+// uses.
 const BEER_STYLE_COLORS = [
-  { test: /hazy|new england|neipa/i, bg: '#f4b942', fg: '#3b2415' },
-  { test: /double|imperial|dipa|triple ipa/i, bg: '#c1571a', fg: '#ffffff' },
-  { test: /ipa|india pale ale/i, bg: '#e08a1e', fg: '#ffffff' },
-  { test: /stout|porter/i, bg: '#3b2415', fg: '#ffffff' },
-  { test: /sour|wild|gose|lambic|fruited/i, bg: '#c23b6b', fg: '#ffffff' },
-  { test: /lager|pilsner|pils\b|helles|m[aä]rzen|oktoberfest|bock/i, bg: '#e8c14a', fg: '#3b2415' },
-  { test: /wheat|hefeweizen|witbier|belgian|saison|tripel|dubbel/i, bg: '#f0d98c', fg: '#3b2415' },
-  { test: /red ale|amber ale|irish red/i, bg: '#a8432a', fg: '#ffffff' },
-  { test: /brown ale|dunkel|schwarzbier|dark ale/i, bg: '#5c3a21', fg: '#ffffff' },
-  { test: /pale ale|blonde|golden ale/i, bg: '#d9a441', fg: '#3b2415' },
-  { test: /cider/i, bg: '#8bb04a', fg: '#ffffff' },
+  { test: /hazy|new england|neipa/i, bg: '#f3a23f', fg: '#3b2415' },
+  { test: /double|imperial|dipa|triple ipa/i, bg: '#af461d', fg: '#ffffff' },
+  { test: /ipa|india pale ale/i, bg: '#de6e12', fg: '#ffffff' },
+  { test: /stout|porter/i, bg: '#311f16', fg: '#ffffff' },
+  { test: /sour|wild|gose|lambic|fruited/i, bg: '#b03b6c', fg: '#ffffff' },
+  { test: /lager|pilsner|pils\b|helles|m[aä]rzen|oktoberfest|bock/i, bg: '#e8d887', fg: '#3b2415' },
+  { test: /wheat|hefeweizen|witbier|belgian|saison|tripel|dubbel/i, bg: '#ccc566', fg: '#3b2415' },
+  { test: /red ale|amber ale|irish red/i, bg: '#952e23', fg: '#ffffff' },
+  { test: /brown ale|dunkel|schwarzbier|dark ale/i, bg: '#593622', fg: '#ffffff' },
+  { test: /pale ale|blonde|golden ale/i, bg: '#ddac3c', fg: '#3b2415' },
+  { test: /cider/i, bg: '#58913b', fg: '#ffffff' },
+  // Not a beer style, but meads get typed into this same free-text field.
+  // Purple rather than another gold/amber - mead isn't on the malt-color
+  // axis above to begin with, and craft meaderies tend toward jewel-tone
+  // branding anyway, so it doubles as a "this isn't a beer style" signal.
+  { test: /mead|melomel|cyser|pyment|metheglin|braggot/i, bg: '#653b72', fg: '#ffffff' },
 ];
 const BEER_STYLE_FALLBACK_COLOR = { bg: '#ddd6cc', fg: '#3b2415' };
 
