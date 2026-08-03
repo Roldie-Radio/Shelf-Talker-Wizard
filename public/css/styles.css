@@ -799,8 +799,14 @@ h1, h2, h3 { margin: 0; }
 /* Reserves room so the title (which spans nearly the full card width via
    its own negative side margins, see below) doesn't run under the state
    badge above - only applied when a badge is actually present, so beer
-   cards without a resolvable state keep the full-width title. */
+   cards without a resolvable state keep the full-width title. Left-aligned
+   titles only need the right side reserved, since the text starts flush
+   left regardless. Centered titles need it mirrored on the left too -
+   right-only padding shrinks the box asymmetrically, which shifts
+   text-align: center off the card's true midpoint and toward the left
+   edge instead. */
 .card__title--badge { padding-right: calc(var(--w) * 0.16); }
+.card__title--badge:not(.card__title--left) { padding-left: calc(var(--w) * 0.16); }
 
 /* Beer's title sits closer to the header band than wine/spirits' does -
    frees up vertical room for the Style text on the row below, which can
