@@ -813,7 +813,19 @@ h1, h2, h3 { margin: 0; }
   gap: calc(var(--w) * 0.003);
   line-height: 1;
 }
-.card__country-badge svg {
+/* Flags are drawn on a 3:2 viewBox, shorter than the state silhouette's
+   square one - without this wrapper the flag (and its label below) would
+   sit noticeably higher than the state badge's label on the opposite
+   corner. Squaring off the slot to match and centering the flag inside it
+   lines up both labels at the same height. */
+.card__country-badge-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card__country-badge-image svg {
   display: block;
   width: 100%;
   height: auto;

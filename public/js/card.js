@@ -353,7 +353,7 @@ function buildCountryFlagHtml(talker) {
   if (!flag) return '';
   return `
     <div class="card__country-badge">
-      <svg viewBox="0 0 60 40" aria-hidden="true">${flag.svg}</svg>
+      <div class="card__country-badge-image"><svg viewBox="0 0 60 40" aria-hidden="true">${flag.svg}</svg></div>
       <span class="card__country-badge-label">${flag.label}</span>
     </div>
   `;
