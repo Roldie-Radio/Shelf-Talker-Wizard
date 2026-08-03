@@ -379,10 +379,16 @@ function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
       const cls = fill >= 1 ? 'is-full' : fill > 0 ? 'is-half' : 'is-empty';
       return `<span class="card__beer-dot ${cls}"></span>`;
     }).join('');
+    const countNum = Number(talker.untappdRatingCount);
+    const hasCount = talker.untappdRatingCount != null && String(talker.untappdRatingCount).trim() !== '' && Number.isFinite(countNum);
+    const countHtml = hasCount
+      ? `<div class="card__beer-rating-count">${countNum.toLocaleString('en-US')} Rating${countNum === 1 ? '' : 's'}</div>`
+      : '';
     detailHtml = `
       <div class="card__beer-rating-detail">
         <div class="card__beer-rating-label">Untappd Rating</div>
         <div class="card__beer-dots-row">${dots}<span class="card__beer-rating-num">${clamped.toFixed(2)}</span></div>
+        ${countHtml}
       </div>
     `;
   }
@@ -659,7 +665,7 @@ function buildSignElement(talker) {
 /**
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, titleAlign, ratings: [{reviewer, score}],
- *   brewery, location, style, abv, ibu, untappdRating }
+ *   brewery, location, style, abv, ibu, untappdRating, untappdRatingCount }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {

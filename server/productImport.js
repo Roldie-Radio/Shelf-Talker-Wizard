@@ -394,6 +394,14 @@ function asRatingAttr(raw) {
   return Number.isFinite(num) && num >= 0 && num <= 5 ? num.toFixed(2) : undefined;
 }
 
+// Untappd formats large counts with thousands separators ("1,382"); strip
+// those before validating so the stored value is always plain digits and
+// callers never have to re-parse a locale-specific separator to format it.
+function asCount(text) {
+  const trimmed = (text || '').replace(/,/g, '').trim();
+  return /^\d+$/.test(trimmed) ? trimmed : undefined;
+}
+
 // Untappd shows "N/A" in place of a number for a beer with no listed IBU
 // (confirmed against a real page - see the note above ibuRaw below), which
 // none of the digit-only patterns match. Regardless of which case the page
@@ -529,10 +537,20 @@ function parseBeerHtml(html, sourceUrl) {
     // visible page at all, but rounded to one decimal rather than the two
     // the on-page widget uses, so it's tried only after everything above.
   ]) || firstMatch(ogDescription || '', [/rating of\s+([\d]\.\d{1,2})\s*out of 5/i]);
+  // The count of people who rated the beer sits next to the rating widget
+  // on the page itself ("1,382 Ratings") and, as a fallback, in the same
+  // auto-generated og:description sentence the rating fallback above reads
+  // ("...has a rating of 4.2 out of 5, with 1,382 ratings and reviews on
+  // Untappd.") - tried in that order for the same reason as the rating
+  // fallback above: the real page text first, the SEO summary only when
+  // nothing on the page has it.
+  const ratingCountRaw = firstMatch(bodyText, [/([\d,]+)\s+Ratings?\b/i])
+    || firstMatch(ogDescription || '', [/with\s+([\d,]+)\s+ratings/i]);
 
   const abv = abvRaw ? `${trimNumber(abvRaw)}%` : undefined;
   const ibu = normalizeIbu(ibuRaw);
   const untappdRating = firstNonEmpty(asRatingAttr(domRatingAttr), asRating(domRating), asRating(ratingRaw));
+  const untappdRatingCount = asCount(ratingCountRaw);
 
   const imageUrl = $('meta[property="og:image"]').attr('content');
 
@@ -552,6 +570,7 @@ function parseBeerHtml(html, sourceUrl) {
     abv: abv || '',
     ibu: ibu || '',
     untappdRating: untappdRating || '',
+    untappdRatingCount: untappdRatingCount || '',
     imageUrl: imageUrl || '',
     sourceUrl,
   };

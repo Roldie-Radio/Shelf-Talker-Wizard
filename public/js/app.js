@@ -145,6 +145,7 @@
     abv: document.getElementById('fAbv'),
     ibu: document.getElementById('fIbu'),
     untappdRating: document.getElementById('fUntappdRating'),
+    untappdRatingCount: document.getElementById('fUntappdRatingCount'),
 
     form: document.getElementById('talkerForm'),
     editId: document.getElementById('editId'),
@@ -468,6 +469,7 @@
       abv: els.abv.value.trim(),
       ibu: els.ibu.value.trim(),
       untappdRating: els.untappdRating.value.trim(),
+      untappdRatingCount: els.untappdRatingCount.value.trim().replace(/,/g, ''),
     };
   }
 
@@ -500,6 +502,10 @@
     els.abv.value = talker.abv || '';
     els.ibu.value = talker.ibu || '';
     els.untappdRating.value = talker.untappdRating || '';
+    const countNum = Number(talker.untappdRatingCount);
+    els.untappdRatingCount.value = talker.untappdRatingCount && Number.isFinite(countNum)
+      ? countNum.toLocaleString('en-US')
+      : (talker.untappdRatingCount || '');
   }
 
   function resetForm() {
@@ -1250,6 +1256,7 @@
           abv: data.abv,
           ibu: data.ibu,
           untappdRating: data.untappdRating,
+          untappdRatingCount: data.untappdRatingCount,
           theme: els.theme.value,
         });
         els.importStatus.textContent = 'Loaded! Add the price and size, double-check the rest, then click "Add to Queue".';
