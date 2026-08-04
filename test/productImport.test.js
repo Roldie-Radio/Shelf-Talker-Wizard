@@ -1401,6 +1401,35 @@ test('searchUntappd finds a match and returns full parseBeerHtml fields', async 
   );
 });
 
+// Same gap as untappdBeerFromUrl's regression test above, in the automatic
+// search path this time: searchUntappd's own beerHtml fetch also went
+// straight into bare parseBeerHtml, so a real search-driven SKU lookup for
+// a beer would come back with brewery/style/ABV/rating but never location,
+// even when Untappd itself had one for that beer.
+test('searchUntappd follows the brewery link and fills in location, same as extractBeer does', async () => {
+  const searchHtml = page({ body: '<a href="/b/autodidact-beer-daylily/9999">Daylily</a>' });
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />',
+    body: '<p class="brewery"><a href="/w/autodidact-beer/432029">Autodidact Beer</a></p>',
+  });
+  const breweryHtml = page({
+    body: '<div class="basic"><div class="name"><h1>Autodidact Beer</h1>'
+      + '<p class="brewery">Wilmington, NC United States</p></div></div>',
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/search?q=')) return mockResponse({ status: 200, body: searchHtml });
+      if (url.includes('/w/autodidact-beer/432029')) return mockResponse({ status: 200, body: breweryHtml });
+      return mockResponse({ status: 200, body: beerHtml });
+    },
+    async () => {
+      const result = await searchUntappd('Daylily');
+      assert.equal(result.brewery, 'Autodidact Beer');
+      assert.equal(result.location, 'Wilmington, NC United States');
+    }
+  );
+});
+
 test('searchUntappd surfaces a clear error when nothing matches', async () => {
   await withMockFetch(
     async () => mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) }),
@@ -1774,19 +1803,54 @@ test('untappdBeerFromUrl rejects a blank URL without attempting any request', as
   assert.equal(calls, 0);
 });
 
-test('untappdBeerFromHtml parses pasted Untappd beer HTML without any network request', () => {
-  const untappdBeerHtml = page({
+// Regression test for a real user report: the manual URL fallback filled
+// in brewery/style/ABV/rating correctly but left location blank even
+// though the pasted beer had one on Untappd. Root cause was that
+// untappdBeerFromUrl called bare parseBeerHtml, which - as
+// fillBeerLocation's own comment above explains - never has location on
+// the beer's own page; only extractBeer was following the brewery link for
+// it. Same gap existed in searchUntappd below, covered separately there.
+test('untappdBeerFromUrl follows the brewery link and fills in location, same as extractBeer does', async () => {
+  const beerHtml = page({
     head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />',
-    body: '<p class="brewery"><a href="#">Autodidact Beer</a></p><p class="style">Pale Ale - New England / Hazy</p>',
+    body: '<p class="brewery"><a href="/w/autodidact-beer/432029">Autodidact Beer</a></p>',
   });
-  const fields = untappdBeerFromHtml(
-    { brewery: '', style: '' },
-    { html: untappdBeerHtml, url: 'https://untappd.com/b/autodidact-beer-daylily/9999' }
+  const breweryHtml = page({
+    body: '<div class="basic"><div class="name"><h1>Autodidact Beer</h1>'
+      + '<p class="brewery">Wilmington, NC United States</p></div></div>',
+  });
+  await withMockFetch(
+    async (url) => (url.includes('/w/autodidact-beer/432029')
+      ? mockResponse({ status: 200, body: breweryHtml })
+      : mockResponse({ status: 200, body: beerHtml })),
+    async () => {
+      const fields = await untappdBeerFromUrl({}, 'https://untappd.com/b/autodidact-beer-daylily/9999');
+      assert.equal(fields.brewery, 'Autodidact Beer');
+      assert.equal(fields.location, 'Wilmington, NC United States');
+    }
   );
-  assert.equal(fields.brewery, 'Autodidact Beer');
-  assert.equal(fields.style, 'Pale Ale - New England / Hazy');
 });
 
-test('untappdBeerFromHtml rejects an empty paste', () => {
-  assert.throws(() => untappdBeerFromHtml({}, { html: '   ' }), /Paste the beer's Untappd page HTML first\./);
+test('untappdBeerFromHtml parses pasted Untappd beer HTML without any network request when there is no brewery link to follow', async () => {
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />',
+    body: '<p class="brewery-name">Autodidact Beer</p><p class="style">Pale Ale - New England / Hazy</p>',
+  });
+  let calls = 0;
+  await withMockFetch(
+    async () => { calls += 1; return mockResponse({ status: 200 }); },
+    async () => {
+      const fields = await untappdBeerFromHtml(
+        { brewery: '', style: '' },
+        { html: untappdBeerHtml, url: 'https://untappd.com/b/autodidact-beer-daylily/9999' }
+      );
+      assert.equal(fields.brewery, 'Autodidact Beer');
+      assert.equal(fields.style, 'Pale Ale - New England / Hazy');
+    }
+  );
+  assert.equal(calls, 0, 'no .brewery a link in the pasted HTML means nothing to follow - must not make any request');
+});
+
+test('untappdBeerFromHtml rejects an empty paste', async () => {
+  await assert.rejects(() => untappdBeerFromHtml({}, { html: '   ' }), /Paste the beer's Untappd page HTML first\./);
 });
