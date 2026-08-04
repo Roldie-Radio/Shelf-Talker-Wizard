@@ -227,6 +227,18 @@ function guessSize(...texts) {
   return undefined;
 }
 
+// Best-effort guess at a 4-digit vintage year, the same fallback role
+// guessSize plays for size when a page has no dedicated spec field for it.
+function guessVintage(...texts) {
+  const pattern = /\b(?:19|20)\d{2}\b/;
+  for (const text of texts) {
+    if (!text) continue;
+    const match = text.match(pattern);
+    if (match) return match[0];
+  }
+  return undefined;
+}
+
 // Split out from extractProduct so the parsing half can also run against
 // HTML the caller already has in hand - see parsePastedProduct below, the
 // "paste page HTML" fallback for a site whose fetch keeps getting blocked
@@ -1059,6 +1071,7 @@ function parseStoreProductHtml(html, url) {
     storeSpecValue($, 'SKU')
   );
   const size = firstNonEmpty(storeSpecValue($, 'Size'), guessSize(title));
+  const vintage = firstNonEmpty(storeSpecValue($, 'Year'), guessVintage(title));
   const price = firstNonEmpty(
     money($('.pricingDetails .priceFull').first().text()),
     money($('meta[property="og:price:standard_amount"]').attr('content')),
@@ -1079,6 +1092,7 @@ function parseStoreProductHtml(html, url) {
     brand: brand || '',
     sku: sku || '',
     size: size || '',
+    vintage: vintage || '',
     price: price || '',
     salePrice: salePrice && salePrice !== price ? salePrice : '',
     description: description || '',
@@ -1199,14 +1213,43 @@ async function enrichBeerFromUntappd(product) {
   }
 }
 
+const SIZE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:ml|mL|l|L|oz|OZ)\b|\b\d+\s?-?\s?pack\b/gi;
+
+// Strips a container size out of a scraped title - e.g. "Josh Cellars
+// Cabernet Sauvignon 750mL" becomes "Josh Cellars Cabernet Sauvignon", since
+// size already has its own form field and staff don't want it duplicated in
+// the wine/spirits product title.
+function stripSize(title, size) {
+  let name = title || '';
+  if (size) name = name.split(size).join(' ');
+  return name.replace(SIZE_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Wine/spirits SKU lookups need "Producer Product Name" in the title field
+// (not just whatever the store page's own title happens to say), with the
+// size left out. The store's page title sometimes already leads with the
+// producer name, so this only prepends the brand when the title doesn't
+// already start with it, to avoid "Josh Cellars Josh Cellars Cabernet
+// Sauvignon".
+function composeWineTitle({ title, brand, size }) {
+  const name = stripSize(title, size);
+  const trimmedBrand = (brand || '').trim();
+  if (!trimmedBrand || name.toLowerCase().startsWith(trimmedBrand.toLowerCase())) {
+    return name;
+  }
+  return `${trimmedBrand} ${name}`.trim();
+}
+
 async function lookupSku({ sku, category }) {
   const product = await lookupStoreSku(sku);
-  return category === 'beer' ? enrichBeerFromUntappd(product) : product;
+  if (category === 'beer') return enrichBeerFromUntappd(product);
+  return { ...product, title: composeWineTitle(product) };
 }
 
 async function lookupSkuFromHtml({ html, url, category }) {
   const product = parsePastedStoreProduct({ html, url });
-  return category === 'beer' ? enrichBeerFromUntappd(product) : product;
+  if (category === 'beer') return enrichBeerFromUntappd(product);
+  return { ...product, title: composeWineTitle(product) };
 }
 
 // Ordered list of tasting-notes sources - see the module comment above.
@@ -1282,6 +1325,7 @@ module.exports = {
   untappdSearchUrl,
   parseUntappdSearchResults,
   searchUntappd,
+  composeWineTitle,
   lookupSku,
   lookupSkuFromHtml,
 };

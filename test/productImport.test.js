@@ -21,7 +21,7 @@ const {
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, untappdSearchUrl, parseUntappdSearchResults,
-  searchUntappd, lookupSku, lookupSkuFromHtml,
+  searchUntappd, composeWineTitle, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -1210,11 +1210,46 @@ test('parseStoreProductHtml reads title/brand/sku/size/price/description from a 
     brand: 'Anheuser-Busch',
     sku: '09144',
     size: '12pk-12oz Cans',
+    vintage: '',
     price: '8.99',
     salePrice: '7.99',
     description: 'A superior light beer. Untappd Rating: 2.49',
     sourceUrl: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/',
   });
+});
+
+test('parseStoreProductHtml reads a vintage year from the spec table\'s Year row', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>
+      <div class="pricingDetails"><span class="priceFull">$13.99</span></div>
+      <table>
+        <tr><th>Varietal</th><td>Cabernet Sauvignon</td></tr>
+        <tr><th>Year</th><td>2022</td></tr>
+        <tr><th>Size</th><td>750mL</td></tr>
+      </table>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Josh-Cellars-Cabernet-55555-1055555/');
+  assert.equal(result.vintage, '2022');
+  assert.equal(result.size, '750mL');
+});
+
+test('parseStoreProductHtml falls back to guessing a vintage year from the title when there is no Year row', () => {
+  const html = page({
+    body: '<h1 itemprop="name">Josh Cellars Cabernet Sauvignon 2022</h1>'
+      + '<div class="pricingDetails"><span class="priceFull">$13.99</span></div>',
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Josh-Cellars-Cabernet-55555-1055555/');
+  assert.equal(result.vintage, '2022');
+});
+
+test('parseStoreProductHtml leaves vintage blank when the page has no Year row and no year in the title', () => {
+  const html = page({
+    body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+  assert.equal(result.vintage, '');
 });
 
 test('parseStoreProductHtml falls back to Open Graph/meta tags when the page has no spec table', () => {
@@ -1487,6 +1522,85 @@ test('lookupSku does not attempt an Untappd search for wine/spirits', async () =
     }
   );
   assert.ok(requestedUrls.every((u) => !u.includes('untappd.com')), 'wine/spirits lookups must never call Untappd');
+});
+
+test('lookupSku prepends the producer to the title and drops the size for wine/spirits', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="55555" />
+        <a class="product-link" href="/Josh-Cellars-Cabernet-55555-1055555/">
+          <span class="productnameTitle">Cabernet Sauvignon 750mL</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Cabernet Sauvignon 750mL</h1>
+      <h6><a href="/brand/josh-cellars">Josh Cellars</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$13.99</span></div>
+      <table>
+        <tr><th>Year</th><td>2022</td></tr>
+        <tr><th>Size</th><td>750mL</td></tr>
+      </table>
+    `,
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/store/search.asp') ? storeSearchHtml : storeProductHtml }),
+    async () => {
+      const result = await lookupSku({ sku: '55555', category: 'wine' });
+      assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
+      assert.equal(result.size, '750mL');
+      assert.equal(result.vintage, '2022');
+    }
+  );
+});
+
+test('lookupSku does not duplicate the producer name when the store title already starts with it', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="55555" />
+        <a class="product-link" href="/Josh-Cellars-Cabernet-55555-1055555/">
+          <span class="productnameTitle">Josh Cellars Cabernet Sauvignon</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>
+      <h6><a href="/brand/josh-cellars">Josh Cellars</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$13.99</span></div>
+    `,
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/store/search.asp') ? storeSearchHtml : storeProductHtml }),
+    async () => {
+      const result = await lookupSku({ sku: '55555', category: 'wine' });
+      assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
+    }
+  );
+});
+
+test('composeWineTitle prepends the brand, strips the size, and leaves beer-less titles untouched', () => {
+  assert.equal(
+    composeWineTitle({ title: 'Cabernet Sauvignon 750mL', brand: 'Josh Cellars', size: '750mL' }),
+    'Josh Cellars Cabernet Sauvignon'
+  );
+  assert.equal(
+    composeWineTitle({ title: 'Josh Cellars Cabernet Sauvignon', brand: 'Josh Cellars', size: '' }),
+    'Josh Cellars Cabernet Sauvignon'
+  );
+  assert.equal(
+    composeWineTitle({ title: 'Cabernet Sauvignon', brand: '', size: '' }),
+    'Cabernet Sauvignon'
+  );
+  assert.equal(
+    composeWineTitle({ title: 'Grey Goose 1L', brand: 'Grey Goose', size: '1L' }),
+    'Grey Goose'
+  );
 });
 
 test('lookupSkuFromHtml parses pasted store HTML and still runs Untappd enrichment for beer', async () => {
