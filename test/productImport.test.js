@@ -1552,6 +1552,52 @@ test('lookupSku enriches a beer entry with Untappd data on top of the store look
   );
 });
 
+test('lookupSku leaves the description blank when Untappd matches the beer but its page has no description at all', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <div id="description"><div class="text-product-desc">Store's own generic description.</div></div>
+    `,
+  });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
+  ]);
+  // No og:description meta and no .beer-descrption-read-less/-more div - a
+  // real beer page with nothing for parseBeerHtml's description to find.
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />',
+    body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p><p class="style">Light Lager</p>',
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '09144', category: 'beer' });
+      assert.equal(result.brewery, 'Anheuser-Busch');
+      assert.equal(result.style, 'Light Lager');
+      // Untappd was found, but has no description of its own - the store's
+      // generic blurb must not silently take its place.
+      assert.equal(result.description, '');
+      assert.equal(result.untappdError, undefined);
+    }
+  );
+});
+
 test('lookupSku falls back to the store\'s own description when Untappd has nothing for that title', async () => {
   const storeSearchHtml = page({
     body: `

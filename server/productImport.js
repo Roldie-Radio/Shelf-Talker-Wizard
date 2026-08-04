@@ -1331,7 +1331,14 @@ async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
   try {
     const beer = await searchUntappd(title);
-    return { ...product, title, ...mergeUntappdBeer(product, beer) };
+    // mergeUntappdBeer's own description fallback (see its comment) is meant
+    // for the manual "paste the Untappd URL/HTML" path further down, where
+    // `current` is whatever staff already have in the form and is never
+    // supposed to be cleared. Here `current` is the store's own generic
+    // manufacturer blurb - once Untappd is found, its own (possibly blank)
+    // description is what staff want to see, not that blurb, so this
+    // overrides mergeUntappdBeer's fallback rather than reusing it.
+    return { ...product, title, ...mergeUntappdBeer(product, beer), description: beer.description || '' };
   } catch (err) {
     return { ...product, title, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
   }
