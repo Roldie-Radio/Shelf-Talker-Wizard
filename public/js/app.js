@@ -1400,6 +1400,8 @@
         untappdRating: data.untappdRating,
         untappdRatingCount: data.untappdRatingCount,
       });
+    } else {
+      fields.vintage = data.vintage;
     }
     fillForm(fields);
     previewMode = 'single';
