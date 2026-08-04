@@ -1234,26 +1234,59 @@ function composeProducerTitle({ title, brand, size }) {
 // still comes back as untappdError so the SKU Lookup tab can tell staff "we
 // tried and Untappd had nothing" instead of leaving them to guess why the
 // fields are empty.
+// Layers a parsed Untappd beer page's fields on top of whatever's already
+// on file (the store's own scrape, or a prior fill), keeping the existing
+// value wherever Untappd's own page didn't have one - shared by the
+// automatic search step below and by the manual "paste the beer's Untappd
+// URL/HTML" fallback in untappdBeerFromUrl/untappdBeerFromHtml, since both
+// end up with a parsed beer object that needs merging the same way.
+function mergeUntappdBeer(current, beer) {
+  return {
+    description: firstNonEmpty(beer.description, current.description) || '',
+    brewery: beer.brewery || current.brewery || '',
+    location: beer.location || current.location || '',
+    style: beer.style || current.style || '',
+    abv: beer.abv || current.abv || '',
+    ibu: beer.ibu || current.ibu || '',
+    untappdRating: beer.untappdRating || current.untappdRating || '',
+    untappdRatingCount: beer.untappdRatingCount || current.untappdRatingCount || '',
+  };
+}
+
 async function enrichBeerFromUntappd(product) {
   const title = stripSize(product.title, product.size);
   const searchQuery = composeProducerTitle(product);
   try {
     const beer = await searchUntappd(searchQuery);
-    return {
-      ...product,
-      title,
-      description: firstNonEmpty(beer.description, product.description) || '',
-      brewery: beer.brewery || product.brand || '',
-      location: beer.location || '',
-      style: beer.style || '',
-      abv: beer.abv || '',
-      ibu: beer.ibu || '',
-      untappdRating: beer.untappdRating || '',
-      untappdRatingCount: beer.untappdRatingCount || '',
-    };
+    return { ...product, title, ...mergeUntappdBeer(product, beer) };
   } catch (err) {
     return { ...product, title, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
   }
+}
+
+// Manual fallback for when enrichBeerFromUntappd's own search comes back
+// empty - confirmed (via a real SKU lookup, see composeProducerTitle above)
+// to be because Untappd's search-results page renders its results with a
+// client-side JS widget (Algolia InstantSearch): the raw HTML this app
+// fetches never contains them, no matter how the query is worded, so no
+// amount of query-tuning here can fix it. The beer's own page is a normal
+// server-rendered page, though (it has to be, for link-preview unfurling to
+// work at all) - so staff search Untappd themselves in a real browser,
+// where the JS-rendered results work fine, and hand this either the
+// beer page's URL (fetched directly) or, if even that gets blocked, its
+// pasted HTML.
+async function untappdBeerFromUrl(current, untappdUrl) {
+  const trimmed = String(untappdUrl || '').trim();
+  if (!trimmed) throw new Error("Enter the beer's Untappd URL first.");
+  const html = await fetchCatalogHtml(trimmed, 'Untappd');
+  const beer = parseBeerHtml(html, trimmed);
+  return mergeUntappdBeer(current || {}, beer);
+}
+
+function untappdBeerFromHtml(current, { html, url }) {
+  if (!html || !html.trim()) throw new Error("Paste the beer's Untappd page HTML first.");
+  const beer = parseBeerHtml(html, typeof url === 'string' ? url.trim() : '');
+  return mergeUntappdBeer(current || {}, beer);
 }
 
 async function lookupSku({ sku, category }) {
@@ -1342,6 +1375,8 @@ module.exports = {
   parseUntappdSearchResults,
   searchUntappd,
   composeProducerTitle,
+  untappdBeerFromUrl,
+  untappdBeerFromHtml,
   lookupSku,
   lookupSkuFromHtml,
 };
