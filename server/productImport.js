@@ -1199,22 +1199,46 @@ function stripSize(title, size) {
   return name.replace(SIZE_PATTERN, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Composes "Producer Product Name" (size left out) from a scraped product -
+// used two ways below: as the actual title field for wine/spirits SKU
+// lookups, and as the Untappd search query for beer. The store's own title
+// sometimes already leads with the producer name, so this only prepends the
+// brand when the title doesn't already start with it, to avoid "Josh
+// Cellars Josh Cellars Cabernet Sauvignon".
+function composeProducerTitle({ title, brand, size }) {
+  const name = stripSize(title, size);
+  const trimmedBrand = (brand || '').trim();
+  if (!trimmedBrand || name.toLowerCase().startsWith(trimmedBrand.toLowerCase())) {
+    return name;
+  }
+  return `${trimmedBrand} ${name}`.trim();
+}
+
 // Layers Untappd's own description/brewery/style/ABV/IBU/rating on top of
 // what the store page already gave lookupSku/lookupSkuFromHtml below - the
 // store's generic manufacturer blurb (see parseStoreProductHtml) is kept as
 // a fallback description only if Untappd search comes back empty, matching
 // what was actually asked for ("descriptions pulled from other sources,
-// such as untappd"). Best-effort only, same as extractBeer's own bonus
-// brewery-location fetch above: the store lookup already succeeded by this
-// point, so a beer Untappd can't find (or that blocks this request) just
-// leaves those fields blank/store-sourced for manual entry rather than
-// failing the whole SKU lookup - but the reason still comes back as
-// untappdError so the SKU Lookup tab can tell staff "we tried and Untappd
-// had nothing" instead of leaving them to guess why the fields are empty.
+// such as untappd"). Searches Untappd with the brewery folded into the
+// query (composeProducerTitle, same helper the wine/spirits title uses) -
+// a bare one- or two-word beer name like "Daylily" is too weak a query on
+// its own (confirmed against a real SKU lookup: searching just "Daylily"
+// came back "Could not find... on Untappd", where the beer's own page is
+// really titled "Daylily by Autodidact Beer"), but the displayed title
+// field stays brewery-free since beer already has its own dedicated
+// Brewery field on the shelf talker. Best-effort only, same as
+// extractBeer's own bonus brewery-location fetch above: the store lookup
+// already succeeded by this point, so a beer Untappd can't find (or that
+// blocks this request) just leaves those fields blank/store-sourced for
+// manual entry rather than failing the whole SKU lookup - but the reason
+// still comes back as untappdError so the SKU Lookup tab can tell staff "we
+// tried and Untappd had nothing" instead of leaving them to guess why the
+// fields are empty.
 async function enrichBeerFromUntappd(product) {
   const title = stripSize(product.title, product.size);
+  const searchQuery = composeProducerTitle(product);
   try {
-    const beer = await searchUntappd(title);
+    const beer = await searchUntappd(searchQuery);
     return {
       ...product,
       title,
@@ -1232,31 +1256,16 @@ async function enrichBeerFromUntappd(product) {
   }
 }
 
-// Wine/spirits SKU lookups need "Producer Product Name" in the title field
-// (not just whatever the store page's own title happens to say), with the
-// size left out. The store's page title sometimes already leads with the
-// producer name, so this only prepends the brand when the title doesn't
-// already start with it, to avoid "Josh Cellars Josh Cellars Cabernet
-// Sauvignon".
-function composeWineTitle({ title, brand, size }) {
-  const name = stripSize(title, size);
-  const trimmedBrand = (brand || '').trim();
-  if (!trimmedBrand || name.toLowerCase().startsWith(trimmedBrand.toLowerCase())) {
-    return name;
-  }
-  return `${trimmedBrand} ${name}`.trim();
-}
-
 async function lookupSku({ sku, category }) {
   const product = await lookupStoreSku(sku);
   if (category === 'beer') return enrichBeerFromUntappd(product);
-  return { ...product, title: composeWineTitle(product) };
+  return { ...product, title: composeProducerTitle(product) };
 }
 
 async function lookupSkuFromHtml({ html, url, category }) {
   const product = parsePastedStoreProduct({ html, url });
   if (category === 'beer') return enrichBeerFromUntappd(product);
-  return { ...product, title: composeWineTitle(product) };
+  return { ...product, title: composeProducerTitle(product) };
 }
 
 // Ordered list of tasting-notes sources - see the module comment above.
@@ -1332,7 +1341,7 @@ module.exports = {
   untappdSearchUrl,
   parseUntappdSearchResults,
   searchUntappd,
-  composeWineTitle,
+  composeProducerTitle,
   lookupSku,
   lookupSkuFromHtml,
 };
