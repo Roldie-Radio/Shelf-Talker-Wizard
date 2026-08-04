@@ -786,10 +786,11 @@ h1, h2, h3 { margin: 0; }
    talker, same as the beer style pill.
    Also scaled by --price-fit: this badge sits outside the flow (position:
    absolute) so its own height was never part of fitCardText's shrink-to-fit
-   math, but the title/rating row above the fold shrinks with --price-fit
-   on a long description. Without matching that scale here, the badge held
-   its full size while the row below it moved closer, and eventually
-   clipped into "Untappd Rating"/"Style". */
+   math, but the title/rating row above the fold shrinks with --price-fit in
+   its last-resort pass (see card.js) when the card is genuinely too full
+   even after the description has been shrunk on its own. Without matching
+   that scale here, the badge held its full size while the row below it
+   moved closer, and eventually clipped into "Untappd Rating"/"Style". */
 .card__state-badge {
   position: absolute;
   top: calc(var(--w) * 0.012 * var(--price-fit, 1));
@@ -956,9 +957,10 @@ h1, h2, h3 { margin: 0; }
 
 /* Beer talker: Untappd-style rating callout (5-dot rating) and
    Brewery/Location/Style/ABV/IBU info table. Font sizes/vertical spacing
-   use --price-fit too, so the same whole-block shrink in fitCardText()
-   that already protects the price/badge area also covers these when a
-   long title/description leaves less room to work with. */
+   use --price-fit too, so the same last-resort whole-block shrink in
+   fitCardText() that already protects the price/badge area also covers
+   these on the rare talker that's still too full after the description has
+   already been shrunk on its own (see card.js). */
 .card__beer-rating {
   flex: 0 0 auto;
   display: flex;
@@ -1378,11 +1380,14 @@ h1, h2, h3 { margin: 0; }
 
 /* Large sign only in practice (Small signs never render a description -
    see buildSmallSignBodyHtml). Verdana 10pt on the reference sign, same
-   pt-to-fraction conversion as .sign__title above. */
+   pt-to-fraction conversion as .sign__title above. Also scaled by
+   --price-fit, matching .card__description, so the last-resort
+   whole-block shrink in fitCardText() (see card.js) still shrinks the
+   description along with everything else in that fallback case. */
 .sign__description {
   font-weight: 700;
   font-family: Verdana, Geneva, sans-serif;
-  font-size: calc(var(--w) * var(--sign-text) * 0.0117);
+  font-size: calc(var(--w) * var(--sign-text) * 0.0117 * var(--price-fit, 1));
   line-height: 1.3;
   color: #171717;
   flex: 0 0 auto;
