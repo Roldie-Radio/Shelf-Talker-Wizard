@@ -2,7 +2,7 @@ const path = require('path');
 const express = require('express');
 const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
-  lookupSku, lookupSkuFromHtml,
+  lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml,
 } = require('./productImport');
 
 function createApp() {
@@ -131,6 +131,46 @@ function createApp() {
       res.json(product);
     } catch (err) {
       res.status(400).json({ error: err.message || 'Could not read product data from that HTML.' });
+    }
+  });
+
+  // Manual fallback for a beer SKU lookup whose automatic Untappd search
+  // came up empty (see enrichBeerFromUntappd's untappdError in
+  // productImport.js) - Untappd's search-results page renders client-side,
+  // so this app can never scrape it directly, but the beer's own page is a
+  // normal server-rendered page. Staff search Untappd themselves, then hand
+  // this the beer page's URL; `current` is the form's present field values
+  // (from the client's readForm()), which this only ever adds to, never
+  // clears - see mergeUntappdBeer.
+  app.post('/api/untappd-lookup', async (req, res) => {
+    const { current, untappdUrl } = req.body || {};
+
+    if (!untappdUrl || typeof untappdUrl !== 'string' || !untappdUrl.trim()) {
+      return res.status(400).json({ error: "Enter the beer's Untappd URL first." });
+    }
+
+    try {
+      const fields = await untappdBeerFromUrl(current, untappdUrl.trim());
+      res.json(fields);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not read that Untappd page.' });
+    }
+  });
+
+  // Fallback for /api/untappd-lookup above when even the beer's own page
+  // gets blocked outright - same paste-the-HTML pattern as /api/sku-lookup-html.
+  app.post('/api/untappd-lookup-html', (req, res) => {
+    const { current, html, url } = req.body || {};
+
+    if (!html || typeof html !== 'string' || !html.trim()) {
+      return res.status(400).json({ error: "Paste the beer page's HTML first." });
+    }
+
+    try {
+      const fields = untappdBeerFromHtml(current, { html, url });
+      res.json(fields);
+    } catch (err) {
+      res.status(400).json({ error: err.message || 'Could not read that pasted HTML.' });
     }
   });
 

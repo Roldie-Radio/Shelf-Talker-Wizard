@@ -21,7 +21,7 @@ const {
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, untappdSearchUrl, parseUntappdSearchResults,
-  searchUntappd, composeProducerTitle, lookupSku, lookupSkuFromHtml,
+  searchUntappd, composeProducerTitle, untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -1715,4 +1715,78 @@ test('lookupSkuFromHtml rejects an empty paste without attempting any request', 
     }
   );
   assert.equal(calls, 0);
+});
+
+// ================================================================
+// untappdBeerFromUrl / untappdBeerFromHtml - the manual fallback for when
+// enrichBeerFromUntappd's own search comes back empty (confirmed via a real
+// beer, see composeProducerTitle's comment above, to be because Untappd's
+// search-results page renders client-side). Staff search Untappd
+// themselves and hand this the beer's own page instead.
+// ================================================================
+
+test('untappdBeerFromUrl fetches a beer page directly and merges its fields onto the current ones', async () => {
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />'
+      + '<meta property="og:description" content="A hazy pale ale." />',
+    body: '<p class="brewery"><a href="#">Autodidact Beer</a></p><p class="style">Pale Ale - New England / Hazy</p>'
+      + '<div class="details"><p class="abv">5.80% ABV</p></div>',
+  });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: untappdBeerHtml }),
+    async () => {
+      const current = { description: 'Store description.', brewery: 'Autodidact', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', location: '' };
+      const fields = await untappdBeerFromUrl(current, 'https://untappd.com/b/autodidact-beer-daylily/9999');
+      assert.equal(fields.description, 'A hazy pale ale.');
+      assert.equal(fields.brewery, 'Autodidact Beer');
+      assert.equal(fields.style, 'Pale Ale - New England / Hazy');
+      assert.equal(fields.abv, '5.8%');
+    }
+  );
+});
+
+test('untappdBeerFromUrl keeps the current field wherever the Untappd page has nothing for it', async () => {
+  const untappdBeerHtml = page({ body: '<div class="name"><h1>Daylily</h1></div>' });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: untappdBeerHtml }),
+    async () => {
+      const current = {
+        description: 'Store description.', brewery: 'Autodidact', style: 'Pale Ale',
+        abv: '5%', ibu: '20', untappdRating: '4.2', untappdRatingCount: '100', location: 'Wilmington, NC',
+      };
+      const fields = await untappdBeerFromUrl(current, 'https://untappd.com/b/autodidact-beer-daylily/9999');
+      assert.equal(fields.brewery, 'Autodidact');
+      assert.equal(fields.style, 'Pale Ale');
+      assert.equal(fields.abv, '5%');
+      assert.equal(fields.location, 'Wilmington, NC');
+    }
+  );
+});
+
+test('untappdBeerFromUrl rejects a blank URL without attempting any request', async () => {
+  let calls = 0;
+  await withMockFetch(
+    async () => { calls += 1; return mockResponse({ status: 200 }); },
+    async () => {
+      await assert.rejects(() => untappdBeerFromUrl({}, '   '), /Enter the beer's Untappd URL first\./);
+    }
+  );
+  assert.equal(calls, 0);
+});
+
+test('untappdBeerFromHtml parses pasted Untappd beer HTML without any network request', () => {
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />',
+    body: '<p class="brewery"><a href="#">Autodidact Beer</a></p><p class="style">Pale Ale - New England / Hazy</p>',
+  });
+  const fields = untappdBeerFromHtml(
+    { brewery: '', style: '' },
+    { html: untappdBeerHtml, url: 'https://untappd.com/b/autodidact-beer-daylily/9999' }
+  );
+  assert.equal(fields.brewery, 'Autodidact Beer');
+  assert.equal(fields.style, 'Pale Ale - New England / Hazy');
+});
+
+test('untappdBeerFromHtml rejects an empty paste', () => {
+  assert.throws(() => untappdBeerFromHtml({}, { html: '   ' }), /Paste the beer's Untappd page HTML first\./);
 });

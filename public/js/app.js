@@ -207,6 +207,14 @@
     skuHtmlUrl: document.getElementById('skuHtmlUrl'),
     skuHtmlInput: document.getElementById('skuHtmlInput'),
     skuHtmlBtn: document.getElementById('skuHtmlBtn'),
+    skuUntappdSection: document.getElementById('skuUntappdSection'),
+    skuUntappdUrl: document.getElementById('skuUntappdUrl'),
+    skuUntappdBtn: document.getElementById('skuUntappdBtn'),
+    skuUntappdStatus: document.getElementById('skuUntappdStatus'),
+    skuUntappdHtmlToggle: document.getElementById('skuUntappdHtmlToggle'),
+    skuUntappdHtmlSection: document.getElementById('skuUntappdHtmlSection'),
+    skuUntappdHtmlInput: document.getElementById('skuUntappdHtmlInput'),
+    skuUntappdHtmlBtn: document.getElementById('skuUntappdHtmlBtn'),
 
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
@@ -1408,6 +1416,30 @@
     setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
     renderPreview();
     document.querySelector('.tab[data-tab="manual"]').click();
+
+    // Untappd's own search only ever fails for beer (see untappdError's
+    // origin in enrichBeerFromUntappd) - offer the manual "paste the beer's
+    // Untappd URL/HTML" fallback below only then, and clear out anything
+    // left over from a previous SKU's attempt at it.
+    els.skuUntappdSection.hidden = !(isBeer && data.untappdError);
+    els.skuUntappdUrl.value = '';
+    els.skuUntappdStatus.textContent = '';
+    els.skuUntappdHtmlInput.value = '';
+    els.skuUntappdHtmlSection.hidden = true;
+    els.skuUntappdHtmlToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  // Merges Untappd fields (from the manual URL/HTML fallback below) into
+  // whatever's already in the form - readForm()/fillForm() round-trip
+  // rather than a fresh applySkuLookupProduct call, since by this point
+  // staff may have already hand-edited fields the initial lookup filled in,
+  // and those edits shouldn't be discarded.
+  function applyUntappdFields(fields) {
+    fillForm({ ...readForm(), ...fields });
+    previewMode = 'single';
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
+    renderPreview();
+    document.querySelector('.tab[data-tab="manual"]').click();
   }
 
   // data.untappdError is only ever set for a beer lookup whose Untappd step
@@ -1487,6 +1519,74 @@
       els.skuStatus.textContent = err.message || 'Something went wrong reading that HTML.';
     } finally {
       els.skuHtmlBtn.disabled = false;
+    }
+  });
+
+  // Manual fallback for a beer lookup whose automatic Untappd search came
+  // back empty (see applySkuLookupProduct's untappdError check above) -
+  // confirmed against a real beer that Untappd's search results only
+  // render client-side (an Algolia widget), so this app can never scrape
+  // them directly no matter the query. The beer's own page is a normal
+  // server-rendered page, though, so staff search Untappd themselves and
+  // hand this that page's URL.
+  els.skuUntappdBtn.addEventListener('click', async () => {
+    const untappdUrl = els.skuUntappdUrl.value.trim();
+    if (!untappdUrl) {
+      els.skuUntappdStatus.textContent = "Enter the beer's Untappd URL first.";
+      return;
+    }
+    els.skuUntappdBtn.disabled = true;
+    els.skuUntappdStatus.textContent = 'Reading that Untappd page...';
+
+    try {
+      const resp = await fetch('/api/untappd-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: readForm(), untappdUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+
+      applyUntappdFields(data);
+      els.skuUntappdStatus.textContent = 'Filled in from Untappd! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.skuUntappdStatus.textContent = err.message || 'Something went wrong reading that Untappd page.';
+    } finally {
+      els.skuUntappdBtn.disabled = false;
+    }
+  });
+
+  // "Untappd blocking that too? Paste the beer page's HTML instead" - same
+  // paste-HTML pattern as skuHtmlToggle above, one level deeper.
+  els.skuUntappdHtmlToggle.addEventListener('click', () => {
+    els.skuUntappdHtmlSection.hidden = !els.skuUntappdHtmlSection.hidden;
+    els.skuUntappdHtmlToggle.setAttribute('aria-expanded', String(!els.skuUntappdHtmlSection.hidden));
+  });
+
+  els.skuUntappdHtmlBtn.addEventListener('click', async () => {
+    const html = els.skuUntappdHtmlInput.value;
+    if (!html.trim()) {
+      els.skuUntappdStatus.textContent = "Paste the beer page's HTML first.";
+      return;
+    }
+    els.skuUntappdHtmlBtn.disabled = true;
+    els.skuUntappdStatus.textContent = 'Reading pasted HTML...';
+
+    try {
+      const resp = await fetch('/api/untappd-lookup-html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: readForm(), html, url: els.skuUntappdUrl.value.trim() }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read that pasted HTML.');
+
+      applyUntappdFields(data);
+      els.skuUntappdStatus.textContent = 'Filled in from pasted HTML! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.skuUntappdStatus.textContent = err.message || 'Something went wrong reading that HTML.';
+    } finally {
+      els.skuUntappdHtmlBtn.disabled = false;
     }
   });
 
