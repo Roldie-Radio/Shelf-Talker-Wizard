@@ -1152,34 +1152,85 @@ function parsePastedStoreProduct({ html, url }) {
 // Untappd search-by-name - the SKU lookup's beer-specific second step. The
 // store site above has no idea what Untappd calls a beer, so this takes
 // whatever title the SKU lookup just filled in and searches Untappd for
-// it, the same search -> pick -> extract shape searchProductCatalog uses
-// for wine.com/Vivino above, landing on the same parseBeerHtml this file
-// already uses for a pasted Untappd URL.
+// it, then lands on the same parseBeerHtml this file already uses for a
+// pasted Untappd URL.
 //
-// Unconfirmed from this environment, same caveat as the rest of the
-// Untappd parsing further up (see the note above RESILIENT_HEADER_SETS) -
-// built the same tiered way regardless: JSON-LD ItemList first, falling
-// back to a scan for Untappd's own stable `/b/<slug>/<id>` beer-page link
-// shape (the same shape extractBreweryUrl already follows from a beer
-// page), so a markup change degrades to "found nothing" rather than a
-// wrong match.
-// ================================================================
+// Confirmed directly (a user's own DevTools, view-source and Network tab,
+// not a guess) that Untappd's search page can't be scraped for this at
+// all: its results are rendered by a client-side Algolia InstantSearch
+// widget, so the raw HTML this app fetches has an empty results container
+// no matter the query - the widget calls Algolia's own search API directly
+// from the browser afterward, and that's what actually has the data. So
+// this calls that same Algolia endpoint directly instead of Untappd's
+// search page. The credentials below (an application ID and a
+// "search-only" API key, plus the "beer" index name) are public: they're
+// embedded in every page load and sent from any visitor's browser in
+// plain sight of DevTools, the same way any Algolia InstantSearch
+// integration works - not a secret this app is extracting, just reusing
+// the same unauthenticated call Untappd's own front end already makes.
+// Untappd/Algolia could still rotate or restrict this key without notice,
+// though - if a search request ever starts failing because of that, it
+// surfaces as the same "Could not find ... on Untappd" / network-error
+// messages this function always threw on a real miss, and staff fall back
+// to the SKU Lookup tab's manual "paste the beer's Untappd URL/HTML"
+// section, same as they do for a genuine no-match today.
+const UNTAPPD_ALGOLIA_APP_ID = '9WBO4RQ3HO';
+const UNTAPPD_ALGOLIA_API_KEY = '61401542b9f2600ef4ae589e9ec97521';
+const UNTAPPD_ALGOLIA_INDEX = 'beer';
 
-function untappdSearchUrl(query) {
-  return `https://untappd.com/search?q=${encodeURIComponent(query)}`;
-}
-
-function parseUntappdSearchResults(html, baseUrl) {
-  return parseGenericSearchResults(html, baseUrl, '/b/');
+// Only asks Algolia for enough to find the right beer and its page URL -
+// the actual brewery/style/ABV/IBU/rating/location fields still come from
+// fetching and parsing that beer's own Untappd page afterward (below),
+// exactly like the manual URL fallback does, so this doesn't have to
+// duplicate parseBeerHtml's field-mapping or guess at how Algolia's own
+// field names/units line up with the on-page ones.
+async function algoliaSearchBeerCandidates(query) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let resp;
+  try {
+    resp = await fetch(
+      `https://${UNTAPPD_ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/*/queries`
+        + `?x-algolia-api-key=${UNTAPPD_ALGOLIA_API_KEY}&x-algolia-application-id=${UNTAPPD_ALGOLIA_APP_ID}`,
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{
+            indexName: UNTAPPD_ALGOLIA_INDEX,
+            params: `query=${encodeURIComponent(query)}&hitsPerPage=10&page=0`,
+          }],
+        }),
+      }
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!resp.ok) {
+    const err = new Error(`Untappd's search isn't responding right now (${resp.status}).`);
+    err.httpStatus = resp.status;
+    throw err;
+  }
+  const data = await resp.json();
+  const hits = (data && data.results && data.results[0] && data.results[0].hits) || [];
+  // beer_slug + bid reconstruct the same /b/<slug>/<id> URL a beer's own
+  // page lives at (confirmed against a real hit: beer_slug
+  // "autodidact-beer-daylily" + bid 5251415 -> the exact URL a user
+  // independently found by searching Untappd by hand). title folds the
+  // brewery in, matching what composeProducerTitle already sends as the
+  // query, for pickBestMatch below to score against.
+  return hits.map((hit) => ({
+    url: `https://untappd.com/b/${hit.beer_slug}/${hit.bid}`,
+    title: `${hit.brewery_name || ''} ${hit.beer_name || ''}`.trim(),
+  }));
 }
 
 async function searchUntappd(query) {
   const trimmed = (query || '').trim();
   if (!trimmed) throw new Error('Enter a product title first.');
 
-  const searchUrl = untappdSearchUrl(trimmed);
-  const searchHtml = await fetchCatalogHtml(searchUrl, 'Untappd');
-  const candidates = parseUntappdSearchResults(searchHtml, searchUrl);
+  const candidates = await algoliaSearchBeerCandidates(trimmed);
   const match = pickBestMatch(candidates, trimmed);
   if (!match) {
     throw new Error(`Could not find "${trimmed}" on Untappd.`);
@@ -1377,8 +1428,7 @@ module.exports = {
   parseStoreProductHtml,
   lookupStoreSku,
   parsePastedStoreProduct,
-  untappdSearchUrl,
-  parseUntappdSearchResults,
+  algoliaSearchBeerCandidates,
   searchUntappd,
   composeProducerTitle,
   untappdBeerFromUrl,
