@@ -19,6 +19,9 @@ const {
   wineComSearchUrl, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
   parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
   extractProduct, parseProductHtml, parsePastedProduct,
+  storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
+  lookupStoreSku, parsePastedStoreProduct, untappdSearchUrl, parseUntappdSearchResults,
+  searchUntappd, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -1112,4 +1115,410 @@ test('findTastingNotes rejects an unrecognized source without making any request
     }
   );
   assert.equal(calls, 0, 'an unrecognized source name should short-circuit before any fetch');
+});
+
+// ================================================================
+// Store SKU lookup (the "SKU Lookup" tab). Unlike the wine.com/Vivino/
+// Untappd parsing above, these fixtures are modeled on real markup a staff
+// member copied out of their own browser against a live SKU
+// (liquoroutletwinecellars.com, SKU 09144 "Michelob ULTRA") - both the
+// search-results page and the product page it led to - rather than a
+// guess written against an environment that couldn't reach the site at
+// all. See the note above parseStoreProductHtml in productImport.js.
+// ================================================================
+
+test('storeSearchUrl builds the store\'s GET search URL with a trailing wildcard', () => {
+  assert.equal(
+    storeSearchUrl('09144'),
+    'https://www.liquoroutletwinecellars.com/store/search.asp?keyword=09144*'
+  );
+});
+
+test('parseStoreSearchResults reads SKU/url/title/brand from product-list-item cards', () => {
+  const html = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+        <h6>Anheuser-Busch</h6>
+      </div>
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09145" />
+        <a class="product-link" href="/Michelob-ULTRA-LIGHT-09145-1009145/">
+          <span class="productnameTitle">Michelob ULTRA Light</span>
+        </a>
+        <h6>Anheuser-Busch</h6>
+      </div>
+    `,
+  });
+  const candidates = parseStoreSearchResults(html, 'https://www.liquoroutletwinecellars.com/store/search.asp?keyword=09144*');
+  assert.deepEqual(candidates, [
+    { sku: '09144', url: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/', title: 'Michelob ULTRA', brand: 'Anheuser-Busch' },
+    { sku: '09145', url: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-LIGHT-09145-1009145/', title: 'Michelob ULTRA Light', brand: 'Anheuser-Busch' },
+  ]);
+});
+
+test('parseStoreSearchResults skips a card missing a SKU or URL', () => {
+  const html = page({
+    body: `
+      <div class="product-list-item">
+        <a class="product-link" href="/no-sku-here/"><span class="productnameTitle">No SKU Item</span></a>
+      </div>
+    `,
+  });
+  assert.deepEqual(parseStoreSearchResults(html, 'https://www.liquoroutletwinecellars.com/store/search.asp?keyword=x*'), []);
+});
+
+test('pickSkuMatch finds the candidate with an exact SKU match, not a partial/fuzzy one', () => {
+  const candidates = [
+    { sku: '09144', url: 'https://example.com/a', title: 'A', brand: 'X' },
+    { sku: '09145', url: 'https://example.com/b', title: 'B', brand: 'X' },
+  ];
+  assert.deepEqual(pickSkuMatch(candidates, '09145'), candidates[1]);
+  assert.equal(pickSkuMatch(candidates, '99999'), undefined);
+  assert.equal(pickSkuMatch(candidates, '0914'), undefined, 'a partial SKU must not match');
+});
+
+test('parseStoreProductHtml reads title/brand/sku/size/price/description from a real product page shape', () => {
+  const html = page({
+    head: `
+      <meta property="og:title" content="Michelob ULTRA" />
+      <meta property="og:upc" content="09144" />
+      <meta property="og:brand" content="Anheuser-Busch" />
+    `,
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <h6><a href="/brand/anheuser-busch">Anheuser-Busch</a></h6>
+      <div class="pricingDetails">
+        <span class="priceFull">$8.99</span>
+        <span class="priceCurrent">$7.99</span>
+      </div>
+      <table>
+        <tr><th>SKU</th><td>09144</td></tr>
+        <tr><th>Size</th><td>12pk-12oz Cans</td></tr>
+      </table>
+      <div id="description">
+        <div class="text-product-desc">A superior light beer. Untappd Rating: 2.49</div>
+      </div>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+  assert.deepEqual(result, {
+    title: 'Michelob ULTRA',
+    brand: 'Anheuser-Busch',
+    sku: '09144',
+    size: '12pk-12oz Cans',
+    price: '8.99',
+    salePrice: '7.99',
+    description: 'A superior light beer. Untappd Rating: 2.49',
+    sourceUrl: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/',
+  });
+});
+
+test('parseStoreProductHtml falls back to Open Graph/meta tags when the page has no spec table', () => {
+  const html = page({
+    head: `
+      <meta property="og:title" content="Michelob ULTRA" />
+      <meta property="og:upc" content="09144" />
+      <meta property="og:brand" content="Anheuser-Busch" />
+      <meta property="og:price:standard_amount" content="8.99" />
+      <meta property="og:description" content="A superior light beer." />
+    `,
+    body: '<div class="unrelated-redesign">Some other layout entirely.</div>',
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+  assert.equal(result.title, 'Michelob ULTRA');
+  assert.equal(result.brand, 'Anheuser-Busch');
+  assert.equal(result.sku, '09144');
+  assert.equal(result.price, '8.99');
+  assert.equal(result.salePrice, '');
+  assert.equal(result.description, 'A superior light beer.');
+});
+
+test('parseStoreProductHtml throws when the page has no title at all', () => {
+  const html = page({ body: '<div>nothing useful here</div>' });
+  assert.throws(() => parseStoreProductHtml(html, 'https://example.com/x'), /Could not find product details/);
+});
+
+test('lookupStoreSku searches, exact-matches the SKU, then extracts the product page', async () => {
+  const searchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+        <h6>Anheuser-Busch</h6>
+      </div>
+    `,
+  });
+  const productHtml = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <table><tr><th>Size</th><td>12pk-12oz Cans</td></tr></table>
+    `,
+  });
+  const requestedUrls = [];
+  await withMockFetch(
+    async (url) => {
+      requestedUrls.push(url);
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: searchHtml });
+      return mockResponse({ status: 200, body: productHtml });
+    },
+    async () => {
+      const result = await lookupStoreSku('09144');
+      assert.equal(result.title, 'Michelob ULTRA');
+      assert.equal(result.price, '8.99');
+      assert.equal(result.size, '12pk-12oz Cans');
+    }
+  );
+  assert.equal(requestedUrls[0], 'https://www.liquoroutletwinecellars.com/store/search.asp?keyword=09144*');
+  assert.equal(requestedUrls[1], 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+});
+
+test('lookupStoreSku throws a clear error when no search result matches the SKU exactly', async () => {
+  const searchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09145" />
+        <a class="product-link" href="/Michelob-ULTRA-LIGHT-09145-1009145/">
+          <span class="productnameTitle">Michelob ULTRA Light</span>
+        </a>
+      </div>
+    `,
+  });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: searchHtml }),
+    async () => {
+      await assert.rejects(() => lookupStoreSku('09144'), /No product found for SKU "09144"/);
+    }
+  );
+});
+
+test('lookupStoreSku rejects immediately when given a blank SKU', async () => {
+  await assert.rejects(() => lookupStoreSku('  '), /Enter a SKU first\./);
+});
+
+test('lookupStoreSku turns a persistently blocked store response into an actionable message', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(() => lookupStoreSku('09144'), /store site blocked this automated request/);
+    }
+  );
+});
+
+test('parsePastedStoreProduct parses store product HTML the same way lookupStoreSku would', () => {
+  const html = page({
+    body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
+  });
+  const result = parsePastedStoreProduct({ html, url: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/' });
+  assert.equal(result.title, 'Michelob ULTRA');
+  assert.equal(result.sourceUrl, 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+});
+
+test('parsePastedStoreProduct rejects an empty paste without attempting to parse it', () => {
+  assert.throws(() => parsePastedStoreProduct({ html: '   ' }), /Paste the page's HTML first\./);
+});
+
+// ================================================================
+// Untappd search-by-name - the SKU lookup's beer-specific enrichment step.
+// Unconfirmed from this environment, same caveat as the rest of the
+// Untappd parsing further up in this file.
+// ================================================================
+
+test('untappdSearchUrl encodes the query', () => {
+  assert.equal(untappdSearchUrl('Michelob ULTRA'), 'https://untappd.com/search?q=Michelob%20ULTRA');
+});
+
+test('parseUntappdSearchResults falls back to /b/ links when there is no ItemList JSON-LD', () => {
+  const html = page({
+    body: `
+      <a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>
+      <a href="/login">Sign In</a>
+    `,
+  });
+  const candidates = parseUntappdSearchResults(html, 'https://untappd.com/search?q=Michelob%20ULTRA');
+  assert.deepEqual(candidates, [
+    { url: 'https://untappd.com/b/anheuser-busch-michelob-ultra/1234', title: 'Michelob ULTRA' },
+  ]);
+});
+
+test('searchUntappd finds a match and returns full parseBeerHtml fields', async () => {
+  const searchHtml = page({ body: '<a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>' });
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />'
+      + '<meta property="og:description" content="A superior light beer." />',
+    body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p><p class="style">Light Lager</p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/search?q=') ? searchHtml : beerHtml }),
+    async () => {
+      const result = await searchUntappd('Michelob ULTRA');
+      assert.equal(result.title, 'Michelob ULTRA');
+      assert.equal(result.brewery, 'Anheuser-Busch');
+      assert.equal(result.style, 'Light Lager');
+      assert.equal(result.description, 'A superior light beer.');
+    }
+  );
+});
+
+test('searchUntappd surfaces a clear error when nothing matches', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) }),
+    async () => {
+      await assert.rejects(() => searchUntappd('Nonexistent Beer'), /Could not find "Nonexistent Beer" on Untappd\./);
+    }
+  );
+});
+
+// ================================================================
+// lookupSku / lookupSkuFromHtml - the end-to-end orchestration behind
+// /api/sku-lookup and /api/sku-lookup-html: store lookup always, plus a
+// best-effort Untappd enrichment step for beer only.
+// ================================================================
+
+test('lookupSku enriches a beer entry with Untappd data on top of the store lookup', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <table><tr><th>Size</th><td>12pk-12oz Cans</td></tr></table>
+      <div id="description"><div class="text-product-desc">A superior light beer. Untappd Rating: 2.49</div></div>
+    `,
+  });
+  const untappdSearchHtml = page({ body: '<a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>' });
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />'
+      + '<meta property="og:description" content="Fallback SEO description." />',
+    body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p><p class="style">Light Lager</p>'
+      + '<div class="details"><p class="abv">4.20% ABV</p></div>',
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('untappd.com/search')) return mockResponse({ status: 200, body: untappdSearchHtml });
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '09144', category: 'beer' });
+      assert.equal(result.title, 'Michelob ULTRA');
+      assert.equal(result.price, '8.99');
+      assert.equal(result.size, '12pk-12oz Cans');
+      assert.equal(result.brewery, 'Anheuser-Busch');
+      assert.equal(result.style, 'Light Lager');
+      assert.equal(result.abv, '4.2%');
+      // Untappd's own page is preferred over the store's generic blurb once a match is found.
+      assert.equal(result.description, 'Fallback SEO description.');
+    }
+  );
+});
+
+test('lookupSku falls back to the store\'s own description when Untappd has nothing for that title', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <div id="description"><div class="text-product-desc">Store's own generic description.</div></div>
+    `,
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
+      return mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '09144', category: 'beer' });
+      assert.equal(result.description, "Store's own generic description.");
+      assert.equal(result.brewery, '');
+    }
+  );
+});
+
+test('lookupSku does not attempt an Untappd search for wine/spirits', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="55555" />
+        <a class="product-link" href="/Josh-Cellars-Cabernet-55555-1055555/">
+          <span class="productnameTitle">Josh Cellars Cabernet Sauvignon</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: '<h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>'
+      + '<div class="pricingDetails"><span class="priceFull">$13.99</span></div>',
+  });
+  const requestedUrls = [];
+  await withMockFetch(
+    async (url) => {
+      requestedUrls.push(url);
+      return mockResponse({ status: 200, body: url.includes('/store/search.asp') ? storeSearchHtml : storeProductHtml });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '55555', category: 'wine' });
+      assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
+    }
+  );
+  assert.ok(requestedUrls.every((u) => !u.includes('untappd.com')), 'wine/spirits lookups must never call Untappd');
+});
+
+test('lookupSkuFromHtml parses pasted store HTML and still runs Untappd enrichment for beer', async () => {
+  const storeProductHtml = page({
+    body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
+  });
+  const untappdSearchHtml = page({ body: '<a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>' });
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />',
+    body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('untappd.com/search') ? untappdSearchHtml : untappdBeerHtml }),
+    async () => {
+      const result = await lookupSkuFromHtml({
+        html: storeProductHtml,
+        url: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/',
+        category: 'beer',
+      });
+      assert.equal(result.title, 'Michelob ULTRA');
+      assert.equal(result.brewery, 'Anheuser-Busch');
+    }
+  );
+});
+
+test('lookupSkuFromHtml rejects an empty paste without attempting any request', async () => {
+  let calls = 0;
+  await withMockFetch(
+    async () => { calls += 1; return mockResponse({ status: 200 }); },
+    async () => {
+      await assert.rejects(() => lookupSkuFromHtml({ html: '  ', category: 'wine' }), /Paste the page's HTML first\./);
+    }
+  );
+  assert.equal(calls, 0);
 });

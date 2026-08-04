@@ -2,6 +2,37 @@
 // so it always fits the standardized card size, no matter how much the
 // store staff type in.
 
+// layout.js's script tag runs before this one (see index.html), so
+// window.ShelfTalkerLayout is already populated by the time this file's
+// top-level code runs.
+const { SIGN_LAYOUTS } = window.ShelfTalkerLayout;
+
+// Turns a user-typed point size (Title/Description Font Size on the form)
+// into the same var(--w)-relative fraction every built-in font-size in
+// styles.css already uses (see e.g. .card__title's 0.0595) - ratio = pt /
+// 72 / referenceWidthIn, then font-size: var(--w) * ratio. That keeps a
+// typed size scaling exactly like the defaults it's overriding: same
+// absolute point size on a Half Size talker as Full (same --w), half the
+// points on Quarter (half --w), unchanged between on-screen preview and
+// print (both set --w to the item's real physical width - see
+// printWidthCss in layout.js).
+//
+// referenceWidthIn is what the typed number is measured against - the
+// Full Shelf Talker's 2.8in for every Talker size, since Full/Half/Quarter
+// already share one ratio today (this just keeps that true for custom
+// sizes too), or that specific Display Sign size's own width, since Large
+// and Small are separate templates rather than proportional shrinks of
+// each other. includePriceFit matches whether the rule being overridden
+// multiplies by --price-fit today (.card__title/.card__description and
+// .sign__description do; .sign__title doesn't).
+function fontSizeOverrideAttr(pt, referenceWidthIn, includePriceFit) {
+  const value = parseFloat(pt);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  const ratio = value / 72 / referenceWidthIn;
+  const priceFit = includePriceFit ? ' * var(--price-fit, 1)' : '';
+  return ` style="font-size: calc(var(--w) * ${ratio}${priceFit})"`;
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str == null ? '' : String(str);
@@ -681,10 +712,13 @@ function buildSignPriceRowHtml(talker) {
 function buildLargeSignBodyHtml(talker) {
   const isBeer = talker.category === 'beer';
   const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
+  const refWidthIn = SIGN_LAYOUTS['sign-large'].printWidth;
+  const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, false);
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, true);
   return `
-    <div class="sign__title" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
+    <div class="sign__title"${titleStyle} data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
     ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
-    <div class="sign__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
+    <div class="sign__description"${descriptionStyle} data-fit="description">${escapeHtml(talker.description || '')}</div>
     ${isBeer ? buildBeerRatingHtml(talker) : ''}
     <div class="sign__footer-block">
       ${buildSignMetaRowHtml(talker, ratingHtml)}
@@ -699,6 +733,7 @@ function buildSmallSignBodyHtml(talker) {
   const isBeer = talker.category === 'beer';
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
+  const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, SIGN_LAYOUTS['sign-small'].printWidth, false);
 
   let priceHtml;
   if (talkerType === 'supersale') {
@@ -716,7 +751,7 @@ function buildSmallSignBodyHtml(talker) {
   }
 
   return `
-    <div class="sign__title sign__title--small" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
+    <div class="sign__title sign__title--small"${titleStyle} data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
     ${priceHtml}
     <div class="sign__bottom-row">
       ${hasSale ? `<div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '<div></div>'}
@@ -776,6 +811,9 @@ function buildCardElement(talker) {
   const titleClasses = ['card__title'];
   if (rightBadgeHtml) titleClasses.push('card__title--badge-right');
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
+  const refWidthIn = SIGN_LAYOUTS.talker.printWidth;
+  const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, true);
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, true);
 
   card.innerHTML = `
     <div class="card__band">
@@ -784,11 +822,11 @@ function buildCardElement(talker) {
     <div class="card__body">
       ${countryFlagHtml}
       ${rightBadgeHtml}
-      <div class="${titleClasses.join(' ')}" data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
+      <div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
-      <div class="card__description" data-fit="description">${escapeHtml(talker.description || '')}</div>
+      <div class="card__description"${descriptionStyle} data-fit="description">${escapeHtml(talker.description || '')}</div>
       ${isBeer ? '' : buildRatingsHtml(talker)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>

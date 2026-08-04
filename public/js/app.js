@@ -16,6 +16,20 @@
     buildAutoArrangedPages,
   } = window.ShelfTalkerLayout;
 
+  // Starting point sizes shown in the Title/Description Font Size boxes for
+  // a fresh item, before anyone types over them - one pair per sign type,
+  // not per Talker/Sign sub-size, since Full/Half/Quarter Shelf Talkers
+  // already share one title/description ratio in styles.css (see
+  // card.js's fontSizeOverrideAttr) and Large/Small Display Signs are close
+  // enough to each other that a single sign default is good enough for
+  // testing. Matches the *effective* point size the CSS ratios already
+  // produce today (card__title's 0.0595 * 72 * 2.8in ≈ 12pt, etc.), so
+  // leaving the boxes untouched renders identically to before this feature.
+  const DEFAULT_FONT_SIZE_PT = {
+    talker: { title: 12, description: 10.5 },
+    sign: { title: 20, description: 10 },
+  };
+
   // Human-readable names for the queue list's meta line (see renderQueue).
   const SIZE_LABELS = { full: 'Full', half: 'Half', quarter: 'Quarter' };
   const STYLE_LABELS = {
@@ -149,7 +163,9 @@
     form: document.getElementById('talkerForm'),
     editId: document.getElementById('editId'),
     title: document.getElementById('fTitle'),
+    titleFontSize: document.getElementById('fTitleFontSize'),
     description: document.getElementById('fDescription'),
+    descriptionFontSize: document.getElementById('fDescriptionFontSize'),
     size: document.getElementById('fSize'),
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
@@ -182,9 +198,15 @@
     importHtmlInput: document.getElementById('importHtmlInput'),
     importHtmlBtn: document.getElementById('importHtmlBtn'),
 
-    csvInput: document.getElementById('csvInput'),
-    csvImportBtn: document.getElementById('csvImportBtn'),
-    csvStatus: document.getElementById('csvStatus'),
+    skuHelpText: document.getElementById('skuHelpText'),
+    skuInput: document.getElementById('skuInput'),
+    skuLookupBtn: document.getElementById('skuLookupBtn'),
+    skuStatus: document.getElementById('skuStatus'),
+    skuHtmlToggle: document.getElementById('skuHtmlToggle'),
+    skuHtmlSection: document.getElementById('skuHtmlSection'),
+    skuHtmlUrl: document.getElementById('skuHtmlUrl'),
+    skuHtmlInput: document.getElementById('skuHtmlInput'),
+    skuHtmlBtn: document.getElementById('skuHtmlBtn'),
 
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
@@ -353,6 +375,18 @@
     if (isBeer && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
 
     applyImportMode();
+    applySkuMode();
+  }
+
+  // The SKU Lookup tab's copy - follows the same Wine/Spirits-vs-Beer
+  // toggle as Manual Entry and Import from Website (see the shared
+  // .category-toggle note in index.html), since a beer SKU lookup adds a
+  // second, Untappd-driven step the wine/spirits path doesn't have.
+  function applySkuMode() {
+    const isBeer = currentCategory === 'beer';
+    els.skuHelpText.textContent = isBeer
+      ? 'Enter the store SKU number. We\'ll look it up on liquoroutletwinecellars.com for the title, size, and pricing, then search Untappd using that title for the description, brewery, style, ABV, IBU, and rating.'
+      : 'Enter the store SKU number. We\'ll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically - review the fields before adding it to your queue.';
   }
 
   // The Import tab's copy - what it asks for and what it promises to fill
@@ -372,6 +406,18 @@
     els.importBtn.textContent = isBeer ? 'Fetch Beer Data' : 'Fetch Product Data';
   }
 
+  // Re-stamps the Title/Description Font Size boxes with the type-
+  // appropriate default from DEFAULT_FONT_SIZE_PT. Only called for a new
+  // (not mid-edit) item - same guard as the Theme auto-pick in setCategory
+  // below, so switching Shelf Talker/Display Sign while editing an already-
+  // saved item doesn't silently overwrite a font size that item's owner
+  // chose on purpose.
+  function applyFontSizeDefaults() {
+    const defaults = DEFAULT_FONT_SIZE_PT[currentSignType];
+    els.titleFontSize.value = defaults.title;
+    els.descriptionFontSize.value = defaults.description;
+  }
+
   function setSignType(signType) {
     currentSignType = signType === 'sign' ? 'sign' : 'talker';
     // The Full Page preview is scoped to this selection (see
@@ -379,6 +425,7 @@
     // page rather than keeping whatever page number the previous
     // selection's sheets happened to be on.
     sheetPage = 0;
+    if (!els.editId.value) applyFontSizeDefaults();
     applyFormMode();
   }
 
@@ -442,8 +489,10 @@
       talkerSize: currentTalkerSize,
       category: currentCategory,
       title: els.title.value.trim(),
+      titleFontSize: els.titleFontSize.value.trim(),
       vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
+      descriptionFontSize: els.descriptionFontSize.value.trim(),
       size: els.size.value.trim(),
       theme: els.theme.value,
       price: els.price.value.trim(),
@@ -469,8 +518,10 @@
     currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
     applyFormMode();
     els.title.value = talker.title || '';
+    els.titleFontSize.value = talker.titleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].title;
     els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
+    els.descriptionFontSize.value = talker.descriptionFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].description;
     els.size.value = talker.size || '';
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
@@ -512,6 +563,7 @@
     // reset the same way currentTalkerSize does, so re-derive the default
     // from it here too.
     els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
+    applyFontSizeDefaults();
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
@@ -1321,83 +1373,107 @@
     }
   });
 
-  // ---------- CSV bulk import ----------
+  // ---------- SKU lookup ----------
 
-  function parseCsv(text) {
-    const rows = [];
-    let row = [];
-    let field = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      if (inQuotes) {
-        if (ch === '"' && text[i + 1] === '"') { field += '"'; i++; }
-        else if (ch === '"') { inQuotes = false; }
-        else { field += ch; }
-      } else if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ',') {
-        row.push(field); field = '';
-      } else if (ch === '\n' || ch === '\r') {
-        if (ch === '\r' && text[i + 1] === '\n') i++;
-        row.push(field); field = '';
-        rows.push(row); row = [];
-      } else {
-        field += ch;
-      }
+  // Fills the same fields the Import tab's applyImportedProduct fills, plus
+  // price/size for a beer entry - unlike Untappd (a rating/check-in site
+  // with nothing to sell), the store lookup this feeds from always has a
+  // price and size regardless of category, so there's no "beer never gets
+  // price" split here the way applyImportedProduct has.
+  function applySkuLookupProduct(data, isBeer) {
+    const fields = {
+      category: isBeer ? 'beer' : 'wine',
+      title: data.title,
+      description: data.description,
+      size: data.size,
+      price: data.price,
+      salePrice: data.salePrice,
+      theme: els.theme.value,
+    };
+    if (isBeer) {
+      Object.assign(fields, {
+        brewery: data.brewery,
+        location: data.location,
+        style: data.style,
+        abv: data.abv,
+        ibu: data.ibu,
+        untappdRating: data.untappdRating,
+        untappdRatingCount: data.untappdRatingCount,
+      });
     }
-    if (field.length || row.length) { row.push(field); rows.push(row); }
-    return rows.filter((r) => r.some((c) => c.trim() !== ''));
+    fillForm(fields);
+    previewMode = 'single';
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
+    renderPreview();
+    document.querySelector('.tab[data-tab="manual"]').click();
   }
 
-  els.csvImportBtn.addEventListener('click', () => {
-    const text = els.csvInput.value.trim();
-    if (!text) {
-      els.csvStatus.textContent = 'Paste some CSV data first.';
+  els.skuLookupBtn.addEventListener('click', async () => {
+    const isBeer = currentCategory === 'beer';
+    const sku = els.skuInput.value.trim();
+    if (!sku) {
+      els.skuStatus.textContent = 'Enter a SKU first.';
       return;
     }
-    const rows = parseCsv(text);
-    if (rows.length < 2) {
-      els.csvStatus.textContent = 'No data rows found below the header row.';
-      return;
-    }
-    const header = rows[0].map((h) => h.trim().toLowerCase());
-    const required = ['title', 'price'];
-    const missing = required.filter((r) => !header.includes(r));
-    if (missing.length) {
-      els.csvStatus.textContent = `Missing required column(s): ${missing.join(', ')}`;
-      return;
-    }
+    els.skuLookupBtn.disabled = true;
+    els.skuStatus.textContent = isBeer ? 'Looking up SKU and searching Untappd...' : 'Looking up SKU...';
 
-    let added = 0;
-    let skipped = 0;
-    rows.slice(1).forEach((cols) => {
-      const rec = {};
-      header.forEach((key, i) => { rec[key] = (cols[i] || '').trim(); });
-      if (!rec.title || !rec.price || Number.isNaN(Number(rec.price))) { skipped++; return; }
-      const typeRaw = (rec.type || rec['talker type'] || 'standard').toLowerCase();
-      queue.push({
-        id: makeId(),
-        title: rec.title,
-        description: rec.description || '',
-        size: rec.size || '',
-        price: rec.price,
-        salePrice: rec.saleprice || rec['sale price'] || '',
-        theme: (rec.theme || 'amber').toLowerCase() === 'purple' ? 'purple' : 'amber',
-        talkerType: ['closeout', 'supersale', 'super sale', 'chilled'].includes(typeRaw)
-          ? (typeRaw === 'super sale' ? 'supersale' : typeRaw)
-          : 'standard',
-        ratings: [],
+    try {
+      const resp = await fetch('/api/sku-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku, category: currentCategory }),
       });
-      added++;
-    });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'SKU lookup failed.');
 
-    saveQueue();
-    renderQueue();
-    refreshPreview();
-    els.csvStatus.textContent = `Added ${added} shelf talker(s).${skipped ? ` Skipped ${skipped} row(s) missing title/price.` : ''}`;
-    if (added) els.csvInput.value = '';
+      applySkuLookupProduct(data, isBeer);
+      els.skuStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.skuStatus.textContent = err.message || 'Something went wrong looking up that SKU.';
+    } finally {
+      els.skuLookupBtn.disabled = false;
+    }
+  });
+
+  // "Site blocking the lookup? Paste the product page's HTML instead" - the
+  // fallback for when the store site blocks the fetch above. Staff search
+  // the SKU themselves and open the matching product page, which already
+  // gets past the block, copy its HTML source, and paste it here;
+  // /api/sku-lookup-html parses it the exact same way a successful fetch
+  // would have, with no network request of its own (beyond the Untappd
+  // search for a beer entry).
+  els.skuHtmlToggle.addEventListener('click', () => {
+    els.skuHtmlSection.hidden = !els.skuHtmlSection.hidden;
+    els.skuHtmlToggle.setAttribute('aria-expanded', String(!els.skuHtmlSection.hidden));
+  });
+
+  els.skuHtmlBtn.addEventListener('click', async () => {
+    const isBeer = currentCategory === 'beer';
+    const html = els.skuHtmlInput.value;
+    if (!html.trim()) {
+      els.skuStatus.textContent = "Paste the page's HTML first.";
+      return;
+    }
+    els.skuHtmlBtn.disabled = true;
+    els.skuStatus.textContent = 'Reading pasted HTML...';
+
+    try {
+      const resp = await fetch('/api/sku-lookup-html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html, url: els.skuHtmlUrl.value.trim(), category: currentCategory }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read product data from that HTML.');
+
+      applySkuLookupProduct(data, isBeer);
+      els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.skuStatus.textContent = err.message || 'Something went wrong reading that HTML.';
+    } finally {
+      els.skuHtmlBtn.disabled = false;
+    }
   });
 
   // ---------- Print ----------
@@ -1885,6 +1961,7 @@
 
   applyTheme(currentTheme());
   applyFormMode();
+  applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();
   renderPreview();
