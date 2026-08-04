@@ -1076,7 +1076,13 @@ function parseStoreProductHtml(html, url) {
     storeSpecValue($, 'SKU')
   );
   const size = firstNonEmpty(storeSpecValue($, 'Size'), guessSize(title));
-  const vintage = firstNonEmpty(storeSpecValue($, 'Year'), guessVintage(title));
+  // The store's own Year row reads "Not Specified" (not a blank row) for a
+  // non-vintage product, since storeSpecValue just captures whatever text
+  // follows the label - only accept it here when it actually looks like a
+  // 4-digit year, so that placeholder text doesn't end up in the Vintage
+  // field verbatim; guessVintage still gets a shot at the title either way.
+  const yearRaw = storeSpecValue($, 'Year');
+  const vintage = firstNonEmpty(/^(?:19|20)\d{2}$/.test((yearRaw || '').trim()) ? yearRaw : undefined, guessVintage(title));
   const price = firstNonEmpty(
     money($('.pricingDetails .priceFull').first().text()),
     money($('meta[property="og:price:standard_amount"]').attr('content')),
@@ -1287,14 +1293,14 @@ function composeProducerTitle({ title, brand, size }) {
 // store's generic manufacturer blurb (see parseStoreProductHtml) is kept as
 // a fallback description only if Untappd search comes back empty, matching
 // what was actually asked for ("descriptions pulled from other sources,
-// such as untappd"). Searches Untappd with the brewery folded into the
-// query (composeProducerTitle, same helper the wine/spirits title uses) -
-// a bare one- or two-word beer name like "Daylily" is too weak a query on
-// its own (confirmed against a real SKU lookup: searching just "Daylily"
-// came back "Could not find... on Untappd", where the beer's own page is
-// really titled "Daylily by Autodidact Beer"), but the displayed title
-// field stays brewery-free since beer already has its own dedicated
-// Brewery field on the shelf talker. Best-effort only, same as
+// such as untappd"). The displayed title is composeProducerTitle's
+// "Producer Product Name" (same helper the wine/spirits title uses, and
+// pulled from the store page only - never Untappd), which doubles as the
+// Untappd search query: a bare one- or two-word beer name like "Daylily" is
+// too weak a query on its own (confirmed against a real SKU lookup:
+// searching just "Daylily" came back "Could not find... on Untappd", where
+// the beer's own page is really titled "Daylily by Autodidact Beer").
+// Best-effort only, same as
 // extractBeer's own bonus brewery-location fetch above: the store lookup
 // already succeeded by this point, so a beer Untappd can't find (or that
 // blocks this request) just leaves those fields blank/store-sourced for
@@ -1322,10 +1328,9 @@ function mergeUntappdBeer(current, beer) {
 }
 
 async function enrichBeerFromUntappd(product) {
-  const title = stripSize(product.title, product.size);
-  const searchQuery = composeProducerTitle(product);
+  const title = composeProducerTitle(product);
   try {
-    const beer = await searchUntappd(searchQuery);
+    const beer = await searchUntappd(title);
     return { ...product, title, ...mergeUntappdBeer(product, beer) };
   } catch (err) {
     return { ...product, title, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };

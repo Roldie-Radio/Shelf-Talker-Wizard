@@ -1253,6 +1253,21 @@ test('parseStoreProductHtml leaves vintage blank when the page has no Year row a
   assert.equal(result.vintage, '');
 });
 
+test('parseStoreProductHtml leaves vintage blank when the store\'s Year row reads "Not Specified" instead of a year', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">NV Champagne Brut</h1>
+      <div class="pricingDetails"><span class="priceFull">$29.99</span></div>
+      <table>
+        <tr><th>Varietal</th><td>Champagne</td></tr>
+        <tr><th>Year</th><td>Not Specified</td></tr>
+      </table>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/NV-Champagne-Brut-12345-1012345/');
+  assert.equal(result.vintage, '');
+});
+
 test('parseStoreProductHtml falls back to Open Graph/meta tags when the page has no spec table', () => {
   const html = page({
     head: `
@@ -1570,7 +1585,7 @@ test('lookupSku falls back to the store\'s own description when Untappd has noth
   );
 });
 
-test('lookupSku strips the size from a beer title and searches Untappd with the brand folded into the query', async () => {
+test('lookupSku prepends the producer to a beer title, strips the size, and searches Untappd with the same producer title', async () => {
   const storeSearchHtml = page({
     body: `
       <div class="product-list-item">
@@ -1612,7 +1627,7 @@ test('lookupSku strips the size from a beer title and searches Untappd with the 
     },
     async () => {
       const result = await lookupSku({ sku: '35849', category: 'beer' });
-      assert.equal(result.title, 'Daylily');
+      assert.equal(result.title, 'Autodidact Daylily');
       assert.equal(result.style, 'Pale Ale - Hazy / Juicy');
       assert.equal(result.abv, '6%');
       assert.equal(result.untappdError, undefined);
