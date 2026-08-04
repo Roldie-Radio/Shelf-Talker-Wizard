@@ -245,6 +245,23 @@ function buildMenu() {
         },
       ],
     },
+    // This custom menu replaces Electron's default application menu wholesale
+    // (see the Menu.setApplicationMenu call below) - the default is the only
+    // place "Toggle Developer Tools" normally lives, so without an entry
+    // here there was no way to open DevTools in the packaged app at all, not
+    // even the usual Ctrl+Shift+I/F12 shortcuts. Kept under its own menu
+    // (not tucked into Help) since it's a troubleshooting tool for staff on
+    // the phone with support, not something to stumble into during normal use.
+    {
+      label: 'Advanced',
+      submenu: [
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Alt+I' : 'Ctrl+Shift+I',
+          click: () => { if (mainWindow) mainWindow.webContents.toggleDevTools(); },
+        },
+      ],
+    },
   ];
   return Menu.buildFromTemplate(template);
 }
