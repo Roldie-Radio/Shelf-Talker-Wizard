@@ -72,7 +72,14 @@
           <input type="hidden" id="editId" value="" />
 
           <label class="field">
-            <span id="fTitleLabel">Product Title *</span>
+            <div class="field-head">
+              <span id="fTitleLabel">Product Title *</span>
+              <span class="font-size-control">
+                <span class="font-size-control__icon" aria-hidden="true">Aa</span>
+                <input type="number" id="fTitleFontSize" min="6" max="72" step="0.5" inputmode="decimal" aria-label="Title font size in points" />
+                <span class="font-size-control__unit">pt</span>
+              </span>
+            </div>
             <input type="text" id="fTitle" maxlength="120" required placeholder="Josh Cellars Cabernet Sauvignon 2025" />
           </label>
 
@@ -82,7 +89,14 @@
           </label>
 
           <div class="field" id="descriptionField">
-            <span>Description</span>
+            <div class="field-head">
+              <span>Description</span>
+              <span class="font-size-control">
+                <span class="font-size-control__icon" aria-hidden="true">Aa</span>
+                <input type="number" id="fDescriptionFontSize" min="6" max="72" step="0.5" inputmode="decimal" aria-label="Description font size in points" />
+                <span class="font-size-control__unit">pt</span>
+              </span>
+            </div>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
             <div class="tasting-notes-row" id="tastingNotesRow">
               <button type="button" class="btn btn--small btn--ghost" id="findTastingNotesBtn">Find Tasting Notes <span class="beta-badge">Beta</span></button>

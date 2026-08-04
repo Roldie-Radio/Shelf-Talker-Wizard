@@ -197,6 +197,23 @@ h1, h2, h3 { margin: 0; }
 
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; min-width: 0; }
 .field span { color: var(--ui-ink-soft); }
+
+.field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.font-size-control { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; flex: none; }
+/* .field span (above) is a class+type selector, so plain .font-size-control__icon/
+   __unit class selectors need the .field prefix to outrank it and actually land
+   the muted color instead of inheriting .field span's darker --ui-ink-soft. */
+.field .font-size-control__icon, .field .font-size-control__unit { color: var(--ui-muted); }
+.font-size-control__icon { font-weight: 700; font-size: 0.72rem; }
+.font-size-control__unit { font-size: 0.78rem; }
+/* Specificity needs to beat .field input's own width/padding/font-size
+   below, which would otherwise stretch this to the field's full width. */
+.field .font-size-control input {
+  width: 3.6rem;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.78rem;
+  text-align: right;
+}
 .field input, .field textarea, .field select, #csvInput, #importHtmlInput {
   font: inherit;
   padding: 0.5rem 0.6rem;

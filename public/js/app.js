@@ -16,6 +16,20 @@
     buildAutoArrangedPages,
   } = window.ShelfTalkerLayout;
 
+  // Starting point sizes shown in the Title/Description Font Size boxes for
+  // a fresh item, before anyone types over them - one pair per sign type,
+  // not per Talker/Sign sub-size, since Full/Half/Quarter Shelf Talkers
+  // already share one title/description ratio in styles.css (see
+  // card.js's fontSizeOverrideAttr) and Large/Small Display Signs are close
+  // enough to each other that a single sign default is good enough for
+  // testing. Matches the *effective* point size the CSS ratios already
+  // produce today (card__title's 0.0595 * 72 * 2.8in ≈ 12pt, etc.), so
+  // leaving the boxes untouched renders identically to before this feature.
+  const DEFAULT_FONT_SIZE_PT = {
+    talker: { title: 12, description: 10.5 },
+    sign: { title: 20, description: 10 },
+  };
+
   // Human-readable names for the queue list's meta line (see renderQueue).
   const SIZE_LABELS = { full: 'Full', half: 'Half', quarter: 'Quarter' };
   const STYLE_LABELS = {
@@ -149,7 +163,9 @@
     form: document.getElementById('talkerForm'),
     editId: document.getElementById('editId'),
     title: document.getElementById('fTitle'),
+    titleFontSize: document.getElementById('fTitleFontSize'),
     description: document.getElementById('fDescription'),
+    descriptionFontSize: document.getElementById('fDescriptionFontSize'),
     size: document.getElementById('fSize'),
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
@@ -372,6 +388,18 @@
     els.importBtn.textContent = isBeer ? 'Fetch Beer Data' : 'Fetch Product Data';
   }
 
+  // Re-stamps the Title/Description Font Size boxes with the type-
+  // appropriate default from DEFAULT_FONT_SIZE_PT. Only called for a new
+  // (not mid-edit) item - same guard as the Theme auto-pick in setCategory
+  // below, so switching Shelf Talker/Display Sign while editing an already-
+  // saved item doesn't silently overwrite a font size that item's owner
+  // chose on purpose.
+  function applyFontSizeDefaults() {
+    const defaults = DEFAULT_FONT_SIZE_PT[currentSignType];
+    els.titleFontSize.value = defaults.title;
+    els.descriptionFontSize.value = defaults.description;
+  }
+
   function setSignType(signType) {
     currentSignType = signType === 'sign' ? 'sign' : 'talker';
     // The Full Page preview is scoped to this selection (see
@@ -379,6 +407,7 @@
     // page rather than keeping whatever page number the previous
     // selection's sheets happened to be on.
     sheetPage = 0;
+    if (!els.editId.value) applyFontSizeDefaults();
     applyFormMode();
   }
 
@@ -442,8 +471,10 @@
       talkerSize: currentTalkerSize,
       category: currentCategory,
       title: els.title.value.trim(),
+      titleFontSize: els.titleFontSize.value.trim(),
       vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
+      descriptionFontSize: els.descriptionFontSize.value.trim(),
       size: els.size.value.trim(),
       theme: els.theme.value,
       price: els.price.value.trim(),
@@ -469,8 +500,10 @@
     currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
     applyFormMode();
     els.title.value = talker.title || '';
+    els.titleFontSize.value = talker.titleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].title;
     els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
+    els.descriptionFontSize.value = talker.descriptionFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].description;
     els.size.value = talker.size || '';
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
@@ -512,6 +545,7 @@
     // reset the same way currentTalkerSize does, so re-derive the default
     // from it here too.
     els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
+    applyFontSizeDefaults();
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
     els.cancelEditBtn.hidden = true;
@@ -1885,6 +1919,7 @@
 
   applyTheme(currentTheme());
   applyFormMode();
+  applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();
   renderPreview();
