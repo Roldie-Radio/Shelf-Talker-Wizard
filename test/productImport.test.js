@@ -1381,10 +1381,12 @@ test('algoliaSearchBeerCandidates queries the "beer" index and maps hits into {u
     { beer_slug: 'fox-farm-brewery-daylily', bid: 2212715, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
   ];
   let requestedUrl;
+  let requestedOpts;
   let requestedBody;
   await withMockFetch(
     async (url, opts) => {
       requestedUrl = url;
+      requestedOpts = opts;
       requestedBody = JSON.parse(opts.body);
       return mockResponse({ status: 200, body: algoliaHitsResponse(hits) });
     },
@@ -1399,6 +1401,12 @@ test('algoliaSearchBeerCandidates queries the "beer" index and maps hits into {u
   assert.match(requestedUrl, /^https:\/\/9WBO4RQ3HO-dsn\.algolia\.net\/1\/indexes\/\*\/queries\?/);
   assert.equal(requestedBody.requests[0].indexName, 'beer');
   assert.match(requestedBody.requests[0].params, /query=daylily/);
+  // Regression test for a real 403 from Algolia itself against v2.0.6: the
+  // search-only key is locked to Untappd's own site via Algolia's
+  // HTTP-referrer restriction, which a real browser satisfies automatically
+  // but a server-side fetch has to fake by hand.
+  assert.equal(requestedOpts.headers.Referer, 'https://untappd.com/');
+  assert.equal(requestedOpts.headers.Origin, 'https://untappd.com');
 });
 
 test('algoliaSearchBeerCandidates surfaces a clear error when the Algolia request itself fails', async () => {

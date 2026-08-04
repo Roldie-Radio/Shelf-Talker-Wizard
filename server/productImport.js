@@ -1195,7 +1195,19 @@ async function algoliaSearchBeerCandidates(query) {
       {
         method: 'POST',
         signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // A first attempt without these got a live 403 from Algolia
+          // itself (confirmed by a user against the real endpoint, not
+          // guessed) - the search-only key above is near-certainly locked
+          // to Untappd's own site via Algolia's HTTP-referrer restriction
+          // feature, which the real widget satisfies automatically (every
+          // browser request carries its page's own Referer/Origin) but a
+          // server-side fetch never sends unless told to. Reproducing
+          // those two headers is what actually satisfies that restriction.
+          Referer: 'https://untappd.com/',
+          Origin: 'https://untappd.com',
+        },
         body: JSON.stringify({
           requests: [{
             indexName: UNTAPPD_ALGOLIA_INDEX,
