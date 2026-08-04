@@ -20,7 +20,7 @@ const {
   parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
-  lookupStoreSku, parsePastedStoreProduct, untappdSearchUrl, parseUntappdSearchResults,
+  lookupStoreSku, parsePastedStoreProduct, algoliaSearchBeerCandidates,
   searchUntappd, composeProducerTitle, untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
@@ -436,6 +436,7 @@ function mockResponse({ status = 200, body = '<html></html>', headers = {} } = {
     statusText: String(status),
     headers: { get: (name) => lower[name.toLowerCase()] ?? null },
     text: async () => body,
+    json: async () => JSON.parse(body),
   };
 }
 
@@ -1361,36 +1362,68 @@ test('parsePastedStoreProduct rejects an empty paste without attempting to parse
 
 // ================================================================
 // Untappd search-by-name - the SKU lookup's beer-specific enrichment step.
-// Unconfirmed from this environment, same caveat as the rest of the
-// Untappd parsing further up in this file.
+// Confirmed directly (a real user's DevTools, not a guess) that Untappd's
+// own search page can't be scraped at all - it's rendered client-side by
+// Algolia InstantSearch - so this calls that same Algolia endpoint the
+// widget itself calls, using the app ID/API key/index name pulled from a
+// real search's Network tab. The beer-page fetch and parse after a match
+// is found is unconfirmed from this environment, same caveat as the rest
+// of the Untappd parsing further up in this file.
 // ================================================================
 
-test('untappdSearchUrl encodes the query', () => {
-  assert.equal(untappdSearchUrl('Michelob ULTRA'), 'https://untappd.com/search?q=Michelob%20ULTRA');
+function algoliaHitsResponse(hits) {
+  return JSON.stringify({ results: [{ hits }] });
+}
+
+test('algoliaSearchBeerCandidates queries the "beer" index and maps hits into {url, title} candidates', async () => {
+  const hits = [
+    { beer_slug: 'autodidact-beer-daylily', bid: 5251415, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+    { beer_slug: 'fox-farm-brewery-daylily', bid: 2212715, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
+  ];
+  let requestedUrl;
+  let requestedBody;
+  await withMockFetch(
+    async (url, opts) => {
+      requestedUrl = url;
+      requestedBody = JSON.parse(opts.body);
+      return mockResponse({ status: 200, body: algoliaHitsResponse(hits) });
+    },
+    async () => {
+      const candidates = await algoliaSearchBeerCandidates('daylily');
+      assert.deepEqual(candidates, [
+        { url: 'https://untappd.com/b/autodidact-beer-daylily/5251415', title: 'Autodidact Beer Daylily' },
+        { url: 'https://untappd.com/b/fox-farm-brewery-daylily/2212715', title: 'Fox Farm Brewery Daylily' },
+      ]);
+    }
+  );
+  assert.match(requestedUrl, /^https:\/\/9WBO4RQ3HO-dsn\.algolia\.net\/1\/indexes\/\*\/queries\?/);
+  assert.equal(requestedBody.requests[0].indexName, 'beer');
+  assert.match(requestedBody.requests[0].params, /query=daylily/);
 });
 
-test('parseUntappdSearchResults falls back to /b/ links when there is no ItemList JSON-LD', () => {
-  const html = page({
-    body: `
-      <a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>
-      <a href="/login">Sign In</a>
-    `,
-  });
-  const candidates = parseUntappdSearchResults(html, 'https://untappd.com/search?q=Michelob%20ULTRA');
-  assert.deepEqual(candidates, [
-    { url: 'https://untappd.com/b/anheuser-busch-michelob-ultra/1234', title: 'Michelob ULTRA' },
-  ]);
+test('algoliaSearchBeerCandidates surfaces a clear error when the Algolia request itself fails', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => algoliaSearchBeerCandidates('daylily'),
+        /Untappd's search isn't responding right now \(403\)\./
+      );
+    }
+  );
 });
 
 test('searchUntappd finds a match and returns full parseBeerHtml fields', async () => {
-  const searchHtml = page({ body: '<a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>' });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
+  ]);
   const beerHtml = page({
     head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />'
       + '<meta property="og:description" content="A superior light beer." />',
     body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p><p class="style">Light Lager</p>',
   });
   await withMockFetch(
-    async (url) => mockResponse({ status: 200, body: url.includes('/search?q=') ? searchHtml : beerHtml }),
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
     async () => {
       const result = await searchUntappd('Michelob ULTRA');
       assert.equal(result.title, 'Michelob ULTRA');
@@ -1407,7 +1440,9 @@ test('searchUntappd finds a match and returns full parseBeerHtml fields', async 
 // a beer would come back with brewery/style/ABV/rating but never location,
 // even when Untappd itself had one for that beer.
 test('searchUntappd follows the brewery link and fills in location, same as extractBeer does', async () => {
-  const searchHtml = page({ body: '<a href="/b/autodidact-beer-daylily/9999">Daylily</a>' });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'autodidact-beer-daylily', bid: 9999, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+  ]);
   const beerHtml = page({
     head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />',
     body: '<p class="brewery"><a href="/w/autodidact-beer/432029">Autodidact Beer</a></p>',
@@ -1418,7 +1453,7 @@ test('searchUntappd follows the brewery link and fills in location, same as extr
   });
   await withMockFetch(
     async (url) => {
-      if (url.includes('/search?q=')) return mockResponse({ status: 200, body: searchHtml });
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
       if (url.includes('/w/autodidact-beer/432029')) return mockResponse({ status: 200, body: breweryHtml });
       return mockResponse({ status: 200, body: beerHtml });
     },
@@ -1432,7 +1467,7 @@ test('searchUntappd follows the brewery link and fills in location, same as extr
 
 test('searchUntappd surfaces a clear error when nothing matches', async () => {
   await withMockFetch(
-    async () => mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) }),
+    async () => mockResponse({ status: 200, body: algoliaHitsResponse([]) }),
     async () => {
       await assert.rejects(() => searchUntappd('Nonexistent Beer'), /Could not find "Nonexistent Beer" on Untappd\./);
     }
@@ -1464,7 +1499,9 @@ test('lookupSku enriches a beer entry with Untappd data on top of the store look
       <div id="description"><div class="text-product-desc">A superior light beer. Untappd Rating: 2.49</div></div>
     `,
   });
-  const untappdSearchHtml = page({ body: '<a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>' });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
+  ]);
   const untappdBeerHtml = page({
     head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />'
       + '<meta property="og:description" content="Fallback SEO description." />',
@@ -1475,7 +1512,7 @@ test('lookupSku enriches a beer entry with Untappd data on top of the store look
     async (url) => {
       if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
       if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
-      if (url.includes('untappd.com/search')) return mockResponse({ status: 200, body: untappdSearchHtml });
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
       return mockResponse({ status: 200, body: untappdBeerHtml });
     },
     async () => {
@@ -1514,7 +1551,7 @@ test('lookupSku falls back to the store\'s own description when Untappd has noth
     async (url) => {
       if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
       if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
-      return mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) });
+      return mockResponse({ status: 200, body: algoliaHitsResponse([]) });
     },
     async () => {
       const result = await lookupSku({ sku: '09144', category: 'beer' });
@@ -1543,7 +1580,9 @@ test('lookupSku strips the size from a beer title and searches Untappd with the 
       <div class="pricingDetails"><span class="priceFull">$15.99</span></div>
     `,
   });
-  const untappdSearchHtml = page({ body: '<a href="/b/autodidact-daylily/9999">Daylily</a>' });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'autodidact-daylily', bid: 9999, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+  ]);
   const untappdBeerHtml = page({
     head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />'
       + '<meta property="og:description" content="A hazy pale ale." />',
@@ -1551,12 +1590,16 @@ test('lookupSku strips the size from a beer title and searches Untappd with the 
       + '<div class="details"><p class="abv">6.00% ABV</p></div>',
   });
   const requestedUrls = [];
+  let algoliaRequestBody;
   await withMockFetch(
-    async (url) => {
+    async (url, opts) => {
       requestedUrls.push(url);
       if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
       if (url.includes('liquoroutletwinecellars.com/Daylily')) return mockResponse({ status: 200, body: storeProductHtml });
-      if (url.includes('untappd.com/search')) return mockResponse({ status: 200, body: untappdSearchHtml });
+      if (url.includes('algolia.net')) {
+        algoliaRequestBody = JSON.parse(opts.body);
+        return mockResponse({ status: 200, body: algoliaBody });
+      }
       return mockResponse({ status: 200, body: untappdBeerHtml });
     },
     async () => {
@@ -1567,10 +1610,10 @@ test('lookupSku strips the size from a beer title and searches Untappd with the 
       assert.equal(result.untappdError, undefined);
     }
   );
-  const untappdSearchRequest = requestedUrls.find((u) => u.includes('untappd.com/search'));
-  assert.ok(untappdSearchRequest, 'expected an Untappd search request');
-  assert.ok(!untappdSearchRequest.includes('16OZ') && !untappdSearchRequest.includes('16oz'), `Untappd search query should not include the size, got: ${untappdSearchRequest}`);
-  assert.equal(untappdSearchRequest, `${untappdSearchUrl('Autodidact Daylily')}`);
+  assert.ok(requestedUrls.some((u) => u.includes('algolia.net')), 'expected an Algolia search request');
+  const query = algoliaRequestBody.requests[0].params;
+  assert.ok(!query.includes('16OZ') && !query.includes('16oz'), `Untappd search query should not include the size, got: ${query}`);
+  assert.match(query, /query=Autodidact%20Daylily/);
 });
 
 test('lookupSku searches Untappd with a bare beer name when the store page has no brand to fold in', async () => {
@@ -1588,20 +1631,19 @@ test('lookupSku searches Untappd with a bare beer name when the store page has n
     body: '<h1 itemprop="name">Michelob ULTRA</h1>'
       + '<div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
   });
-  const requestedUrls = [];
+  let algoliaRequestBody;
   await withMockFetch(
-    async (url) => {
-      requestedUrls.push(url);
+    async (url, opts) => {
       if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
       if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
-      return mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) });
+      algoliaRequestBody = JSON.parse(opts.body);
+      return mockResponse({ status: 200, body: algoliaHitsResponse([]) });
     },
     async () => {
       await lookupSku({ sku: '09144', category: 'beer' });
     }
   );
-  const untappdSearchRequest = requestedUrls.find((u) => u.includes('untappd.com/search'));
-  assert.equal(untappdSearchRequest, untappdSearchUrl('Michelob ULTRA'));
+  assert.match(algoliaRequestBody.requests[0].params, /query=Michelob%20ULTRA/);
 });
 
 test('lookupSku does not attempt an Untappd search for wine/spirits', async () => {
@@ -1630,7 +1672,10 @@ test('lookupSku does not attempt an Untappd search for wine/spirits', async () =
       assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
     }
   );
-  assert.ok(requestedUrls.every((u) => !u.includes('untappd.com')), 'wine/spirits lookups must never call Untappd');
+  assert.ok(
+    requestedUrls.every((u) => !u.includes('untappd.com') && !u.includes('algolia.net')),
+    'wine/spirits lookups must never call Untappd'
+  );
 });
 
 test('lookupSku prepends the producer to the title and drops the size for wine/spirits', async () => {
@@ -1716,13 +1761,15 @@ test('lookupSkuFromHtml parses pasted store HTML and still runs Untappd enrichme
   const storeProductHtml = page({
     body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
   });
-  const untappdSearchHtml = page({ body: '<a href="/b/anheuser-busch-michelob-ultra/1234">Michelob ULTRA</a>' });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
+  ]);
   const untappdBeerHtml = page({
     head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />',
     body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p>',
   });
   await withMockFetch(
-    async (url) => mockResponse({ status: 200, body: url.includes('untappd.com/search') ? untappdSearchHtml : untappdBeerHtml }),
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : untappdBeerHtml }),
     async () => {
       const result = await lookupSkuFromHtml({
         html: storeProductHtml,
