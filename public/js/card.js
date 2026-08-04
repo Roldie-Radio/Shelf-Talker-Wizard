@@ -811,6 +811,13 @@ function buildCardElement(talker) {
  */
 function fitCardText(cardEl) {
   const targets = cardEl.querySelectorAll('[data-fit]');
+  // Captured before the loop below touches anything, so the extra
+  // description-only shrink pass further down has the description's true
+  // starting size to measure its own floor against, not whatever the loop
+  // already reduced it to.
+  const description = cardEl.querySelector('[data-fit="description"]');
+  const descriptionNaturalPx = description ? parseFloat(getComputedStyle(description).fontSize) : 0;
+
   targets.forEach((el) => {
     // Both the floor and the step are relative to the element's own starting
     // size, not absolute pixels. The same card gets rendered at wildly
@@ -831,14 +838,26 @@ function fitCardText(cardEl) {
     }
   });
 
-  // The Super Sale callout and the Closeout badge run noticeably larger
-  // than the standard regular/sale price lines. On a long title/description
-  // that combined block can still be taller than the space left on the
-  // talker, which - since the body doesn't scroll - shoves (and clips)
-  // whatever's below it. Scale the whole pricing block down (all parts
-  // together, so their relative sizes stay the same) until it fits.
   const body = cardEl.querySelector('.card__body, .sign__body');
   if (!body) return;
+
+  // The pass above only guarantees the description fits *itself* (its own
+  // line-clamp box), not whatever room its neighbors actually leave it - a
+  // description that's well within its own 12-line clamp can still be
+  // taller than the space left after the title/ratings/price block, since
+  // it's the one piece of free text on the talker with no natural cap on
+  // length. Keep shrinking just the description - not the title, badges,
+  // ratings, or price block - so a long product description only ever
+  // costs the description its own size. Its line-clamp still ellipsizes
+  // whatever's left over if it hits the floor and the body is still
+  // overflowing.
+  shrinkDescriptionToFitBody(description, descriptionNaturalPx, body);
+
+  // Last resort: something other than the description - e.g. a maxed-out
+  // three-line title stacked with a full ratings/awards list - is still too
+  // tall even with the description shrunk to its floor. Scale the whole
+  // block together (all parts, so their relative sizes stay the same) until
+  // it fits. This is the only path left that still touches the price row.
   let priceFit = 1;
   let priceGuard = 40;
   while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.35 && priceGuard > 0) {
@@ -848,6 +867,23 @@ function fitCardText(cardEl) {
   }
 
   growDescriptionToFillSlack(cardEl, body);
+}
+
+// Shrinks just the description (in place) until the body around it stops
+// overflowing, well past the shared 50% floor every [data-fit] element gets
+// in fitCardText above - the description is the one block on the talker
+// with no natural cap on how much gets typed into it, so it needs more room
+// to give before anything else does. Never touches the title/price/badges.
+function shrinkDescriptionToFitBody(description, naturalPx, body) {
+  if (!description || !naturalPx || !description.textContent.trim()) return;
+  const floorPx = Math.max(naturalPx * 0.3, 4);
+  let fontSize = parseFloat(getComputedStyle(description).fontSize);
+  let guard = 60;
+  while (body.scrollHeight > body.clientHeight + 1 && fontSize > floorPx && guard > 0) {
+    fontSize *= 0.97;
+    description.style.fontSize = `${fontSize}px`;
+    guard -= 1;
+  }
 }
 
 // A short description (common on beer talkers, which have no vintage/
