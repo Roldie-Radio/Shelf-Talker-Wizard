@@ -1491,8 +1491,56 @@ test('lookupSku falls back to the store\'s own description when Untappd has noth
       const result = await lookupSku({ sku: '09144', category: 'beer' });
       assert.equal(result.description, "Store's own generic description.");
       assert.equal(result.brewery, '');
+      assert.match(result.untappdError, /Could not find "Michelob ULTRA" on Untappd\./);
     }
   );
+});
+
+test('lookupSku strips the size from a beer title and searches Untappd with the cleaned title', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="35849" />
+        <a class="product-link" href="/Daylily-35849-1035849/">
+          <span class="productnameTitle">Daylily 16OZ</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Daylily 16OZ</h1>
+      <h6><a href="/brand/autodidact">Autodidact</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$15.99</span></div>
+    `,
+  });
+  const untappdSearchHtml = page({ body: '<a href="/b/autodidact-daylily/9999">Daylily</a>' });
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Daylily by Autodidact Beer | Untappd" />'
+      + '<meta property="og:description" content="A hazy pale ale." />',
+    body: '<p class="brewery"><a href="#">Autodidact Beer</a></p><p class="style">Pale Ale - Hazy / Juicy</p>'
+      + '<div class="details"><p class="abv">6.00% ABV</p></div>',
+  });
+  const requestedUrls = [];
+  await withMockFetch(
+    async (url) => {
+      requestedUrls.push(url);
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Daylily')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('untappd.com/search')) return mockResponse({ status: 200, body: untappdSearchHtml });
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '35849', category: 'beer' });
+      assert.equal(result.title, 'Daylily');
+      assert.equal(result.style, 'Pale Ale - Hazy / Juicy');
+      assert.equal(result.abv, '6%');
+      assert.equal(result.untappdError, undefined);
+    }
+  );
+  const untappdSearchRequest = requestedUrls.find((u) => u.includes('untappd.com/search'));
+  assert.ok(untappdSearchRequest, 'expected an Untappd search request');
+  assert.ok(!untappdSearchRequest.includes('16OZ') && !untappdSearchRequest.includes('16oz'), `Untappd search query should not include the size, got: ${untappdSearchRequest}`);
 });
 
 test('lookupSku does not attempt an Untappd search for wine/spirits', async () => {
