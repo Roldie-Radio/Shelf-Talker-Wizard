@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
+  lookupSku, lookupSkuFromHtml,
 } = require('./productImport');
 
 function createApp() {
@@ -90,6 +91,46 @@ function createApp() {
       res.json(result);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not find tasting notes for that product.' });
+    }
+  });
+
+  // Backs the "SKU Lookup" tab (which replaced Bulk CSV Import): staff type
+  // in the store's own SKU, this searches liquoroutletwinecellars.com for
+  // it and pulls title/size/price off the matching product page. For beer,
+  // lookupSku also runs a best-effort Untappd search on the title it just
+  // found (see enrichBeerFromUntappd in productImport.js) to fill in the
+  // description/brewery/style/ABV/IBU/rating a retail page wouldn't have.
+  app.post('/api/sku-lookup', async (req, res) => {
+    const { sku, category } = req.body || {};
+
+    if (!sku || typeof sku !== 'string' || !sku.trim()) {
+      return res.status(400).json({ error: 'A SKU is required.' });
+    }
+
+    try {
+      const product = await lookupSku({ sku: sku.trim(), category });
+      res.json(product);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not look up that SKU.' });
+    }
+  });
+
+  // Fallback for the SKU Lookup tab when the store site blocks the search
+  // or product-page fetch outright (see fetchStoreHtml/lookupStoreSku in
+  // productImport.js) - staff search the SKU themselves and paste the
+  // resulting product page's HTML, same pattern as /api/import-html above.
+  app.post('/api/sku-lookup-html', async (req, res) => {
+    const { html, url, category } = req.body || {};
+
+    if (!html || typeof html !== 'string' || !html.trim()) {
+      return res.status(400).json({ error: "Paste the page's HTML first." });
+    }
+
+    try {
+      const product = await lookupSkuFromHtml({ html, url, category });
+      res.json(product);
+    } catch (err) {
+      res.status(400).json({ error: err.message || 'Could not read product data from that HTML.' });
     }
   });
 

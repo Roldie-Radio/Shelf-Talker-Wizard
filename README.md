@@ -4,7 +4,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
-- **Bulk CSV import** for adding many products at once.
+- **SKU lookup** &mdash; type in the store's own SKU number and the app searches liquoroutletwinecellars.com for it, pulling the title, size, and price from the matching product page. For Beer, it also searches Untappd using that title for the description, brewery, style, ABV, IBU, and rating.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
 - **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
@@ -12,7 +12,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Full-page preview** &mdash; toggle the Live Preview between the single talker you're editing and a scaled Letter-landscape sheet showing the whole queue 6-up, with Prev/Next pagination past 6 items.
 - **Print-ready sheets** &mdash; queue up talkers and print; they're laid out 6-up on Letter-size paper (3 columns &times; 2 rows), the same arrangement as the original template, paginating automatically if you have more than 6.
 - Your queue is saved in the browser (localStorage) so it survives a refresh.
-- **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, the CSV format, importing, and printing, so staff aren't sent looking for this README.
+- **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, SKU lookup, importing, and printing, so staff aren't sent looking for this README.
 
 ## Running it
 
@@ -123,6 +123,14 @@ If Untappd blocks the request outright, the importer automatically retries once 
 
 Location isn't on the beer page itself &mdash; the importer follows the brewery name's link to that brewery's own Untappd page and pulls it from there, a second request made automatically after the first. If that second page can't be reached, the rest of the import still goes through; only location comes back blank.
 
+### Looking up a product by SKU
+
+Click **SKU Lookup**, switch between **Wine / Spirits** and **Beer** to match the product, type in the store's SKU number, and click **Look Up SKU**. This searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing from it &mdash; the SKU itself is matched exactly against each search result's own SKU, not by fuzzy title matching, so there's no "closest guess" to double-check.
+
+For **Beer**, the lookup runs a second step automatically: it searches Untappd using the title just found and, if it finds a match, fills in the description, brewery, style, ABV, IBU, and rating from there instead of the store page's own generic description &mdash; matching what Untappd import already does for a pasted beer URL. If Untappd has nothing for that title, the store page's own description is used instead, and the rest of those fields are left blank for manual entry.
+
+If the store site blocks the lookup, click **Site blocking the lookup? Paste the product page's HTML instead**: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; same fallback as the website importer above, with no network request of its own (beyond the Untappd search for a beer entry).
+
 ## Printing
 
 1. Add shelf talkers via any of the three methods.
@@ -140,13 +148,14 @@ Location isn't on the beer page itself &mdash; the importer follows the brewery 
 server/
   index.js            Express app: serves the frontend and the URL-import API
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
-                      plus the Wine.com/Vivino tasting-notes search behind the Find Tasting Notes button
+                      plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
+                      the Find Tasting Notes button and SKU Lookup tab
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
   js/layout.js         Print-sheet geometry + sheet/auto-arrange packing (no DOM)
   js/card.js           Card rendering + auto text-fit
-  js/app.js            Form, queue, import, CSV, and print wiring
+  js/app.js            Form, queue, import, SKU lookup, and print wiring
   assets/logo.png      Brand logo (extracted from the provided template)
 test/
   layout.test.js          Packing invariants: every layout fits a sheet, no item lost

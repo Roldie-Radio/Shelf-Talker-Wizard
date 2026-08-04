@@ -50,7 +50,7 @@
       <div class="tabs" role="tablist" aria-label="How to add a product">
         <button class="tab is-active" data-tab="manual" role="tab" id="tabManual" aria-controls="panelManual" aria-selected="true">Manual Entry</button>
         <button class="tab" data-tab="import" role="tab" id="tabImport" aria-controls="panelImport" aria-selected="false" tabindex="-1">Import from Website</button>
-        <button class="tab" data-tab="bulk" role="tab" id="tabBulk" aria-controls="panelBulk" aria-selected="false" tabindex="-1">Bulk CSV Import</button>
+        <button class="tab" data-tab="sku" role="tab" id="tabSku" aria-controls="panelSku" aria-selected="false" tabindex="-1">SKU Lookup</button>
       </div>
 
       <div class="tab-panel is-active" data-panel="manual" id="panelManual" role="tabpanel" aria-labelledby="tabManual" tabindex="0">
@@ -246,12 +246,33 @@
         </div>
       </div>
 
-      <div class="tab-panel" data-panel="bulk" id="panelBulk" role="tabpanel" aria-labelledby="tabBulk" tabindex="0">
-        <p class="help-text">Paste CSV with columns (header row required): <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required. <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</p>
-        <textarea id="csvInput" rows="8" aria-label="CSV data" placeholder="title,description,size,price,salePrice,theme
-Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit flavors,750ml,14.99,11.99,amber"></textarea>
-        <button type="button" class="btn btn--primary" id="csvImportBtn">Add All to Queue</button>
-        <p class="help-text" id="csvStatus" role="status" aria-live="polite"></p>
+      <div class="tab-panel" data-panel="sku" id="panelSku" role="tabpanel" aria-labelledby="tabSku" tabindex="0">
+        <!-- Shares .category-toggle with Manual Entry's own group (see the
+             note on the Import tab's copy above) - the SKU lookup itself
+             works the same way for both, but Beer gets an extra Untappd
+             enrichment step after the store lookup (see applySkuMode). -->
+        <div class="category-toggle" role="radiogroup" aria-label="Product category">
+          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
+          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
+        </div>
+        <p class="help-text" id="skuHelpText">Enter the store SKU number. We'll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically &mdash; review the fields before adding it to your queue.</p>
+        <label class="field">
+          <span>Store SKU</span>
+          <input type="text" id="skuInput" inputmode="numeric" placeholder="09144" />
+        </label>
+        <button type="button" class="btn btn--primary" id="skuLookupBtn">Look Up SKU</button>
+        <p class="help-text" id="skuStatus" role="status" aria-live="polite"></p>
+
+        <button type="button" class="link-btn" id="skuHtmlToggle" aria-expanded="false" aria-controls="skuHtmlSection">Site blocking the lookup? Paste the product page's HTML instead</button>
+        <div class="reviewer-manager" id="skuHtmlSection" hidden>
+          <p class="help-text">Search the SKU on the store site yourself, open the matching product page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
+          <label class="field">
+            <span>Product Page URL (optional)</span>
+            <input type="url" id="skuHtmlUrl" placeholder="https://www.liquoroutletwinecellars.com/..." />
+          </label>
+          <textarea id="skuHtmlInput" rows="6" aria-label="Pasted product page HTML" placeholder="Paste the page's HTML source here..."></textarea>
+          <button type="button" class="btn btn--primary" id="skuHtmlBtn">Parse Pasted HTML</button>
+        </div>
       </div>
     </section>
 
@@ -368,7 +389,7 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
         <ul>
           <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
           <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
-          <li><strong>Bulk CSV Import</strong> &mdash; paste a CSV to add many wine/spirits shelf talkers at once. Columns: <code>title,description,size,price,salePrice,theme,type</code>. Only <code>title</code> and <code>price</code> are required; <code>type</code> can be <code>standard</code>, <code>closeout</code>, <code>supersale</code>, or <code>chilled</code>.</li>
+          <li><strong>SKU Lookup</strong> &mdash; type in the store's SKU number and let the app find it on the store's website. See "Looking up a product by SKU" below.</li>
         </ul>
 
         <h3>Talker sizes and styles</h3>
@@ -384,6 +405,9 @@ Josh Cellars Cabernet Sauvignon 2025,Bold and full-bodied with rich dark fruit f
           <li><strong>Beer</strong> &mdash; paste a beer's Untappd page URL (<code>untappd.com/b/...</code>). Pulls the brewery, location, style, ABV, IBU, rating, and description &mdash; not price or size, since Untappd doesn't sell anything, so add those two yourself.</li>
         </ul>
         <p>Either way, review the fields before adding to the queue &mdash; a field the importer can't find just comes back blank. If a beer import reports Untappd blocked the request, wait a bit and try again, or enter the details by hand.</p>
+
+        <h3>Looking up a product by SKU</h3>
+        <p>On the <strong>SKU Lookup</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match the product, type in the store's SKU number, and click <strong>Look Up SKU</strong>. It searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing straight from it. For <strong>Beer</strong>, it also searches Untappd using the title it just found and fills in the description, brewery, style, ABV, IBU, and rating from there &mdash; the store page's own description is only used if that Untappd search doesn't turn up a match. Review the fields before adding to the queue, same as any other import. If the store site blocks the lookup, use <strong>Site blocking the lookup? Paste the product page's HTML instead</strong>: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; this works even when the site blocks the app's own request, since your browser already got past it.</p>
 
         <h3>The queue</h3>
         <p>Everything you've added sits in the <strong>Queue</strong> panel on the right, and is saved automatically in the browser so it survives closing the app. Click the &#8942; menu on any item to <strong>Edit</strong>, <strong>Copy</strong>, <strong>Delete</strong>, or <strong>Move Up</strong>/<strong>Move Down</strong> it &mdash; queue order is print order, so moving an item changes where it lands on the printed sheet.</p>

@@ -971,6 +971,244 @@ function searchVivino(title, vintage) {
   });
 }
 
+// ================================================================
+// Store SKU lookup - backs the "SKU Lookup" tab (which replaced Bulk CSV
+// Import): staff type in the store's own SKU number, this searches
+// liquoroutletwinecellars.com for it, picks the exact matching result, then
+// pulls title/size/price straight off that product page. For beer, a
+// second step (see enrichBeerFromUntappd below) searches Untappd by the
+// title just found and layers in the description/brewery/style/ABV/
+// IBU/rating a retail page wouldn't have.
+//
+// Unlike the wine.com/Vivino tasting-notes lookup above, this was
+// confirmed against real markup a staff member copied out of their own
+// browser (both the search-results page for a real SKU and the product
+// page it led to) - not a guess written against an environment that
+// couldn't reach the site at all. The store runs on the WineCommerce
+// platform (winepos.com): search is a plain GET
+// (`/store/search.asp?keyword=<sku>*`), each result card carries its own
+// SKU in a hidden `<input class="product-code">` so matching is an exact
+// string compare rather than the fuzzy title scoring pickBestMatch does for
+// wine.com/Vivino, and product pages carry schema.org microdata
+// (`itemprop="name"`) plus Open Graph product tags (`og:upc` = SKU)
+// alongside their own plain-text spec table (Varietal/Year/Size/SKU/Pack
+// Size) - both read here so a template tweak that drops one still leaves
+// the other.
+// ================================================================
+
+function storeSearchUrl(sku) {
+  return `https://www.liquoroutletwinecellars.com/store/search.asp?keyword=${encodeURIComponent(sku)}*`;
+}
+
+// Each result card's hidden product-code input carries the exact SKU
+// (confirmed from real search-results markup), which is what makes this an
+// exact match instead of the fuzzy scoring pickBestMatch does above - the
+// SKU staff typed in either appears verbatim on a card or it doesn't.
+function parseStoreSearchResults(html, baseUrl) {
+  const $ = cheerio.load(html);
+  const candidates = [];
+  $('.product-list-item').each((_, el) => {
+    const card = $(el);
+    const sku = card.find('.product-code').attr('value');
+    const href = card.find('a.product-link').attr('href');
+    const title = card.find('.productnameTitle').first().text().replace(/\s+/g, ' ').trim();
+    const brand = card.find('h6').first().text().replace(/\s+/g, ' ').trim();
+    if (!sku || !href) return;
+    try {
+      candidates.push({ sku: sku.trim(), url: new URL(href, baseUrl).toString(), title, brand });
+    } catch {
+      // Skip a card with an unparseable URL rather than failing the whole search.
+    }
+  });
+  return candidates;
+}
+
+function pickSkuMatch(candidates, sku) {
+  const target = String(sku || '').trim();
+  return candidates.find((c) => c.sku === target);
+}
+
+// The product page's plain-text spec table (label/value rows for "SKU",
+// "Size", "Varietal", "Year", "Pack Size" - confirmed present on a real
+// product page) reads the same regardless of which element wraps each row,
+// so this scans by visible label text rather than a specific tag/class.
+function storeSpecValue($, label) {
+  let value;
+  $('th, td, dt, li, tr').each((_, el) => {
+    const text = $(el).text().replace(/\s+/g, ' ').trim();
+    const match = text.match(new RegExp(`^${label}\\s*:?\\s*(.+)$`, 'i'));
+    if (match) { value = match[1].trim(); return false; }
+  });
+  return value;
+}
+
+function parseStoreProductHtml(html, url) {
+  const $ = cheerio.load(html);
+
+  const title = firstNonEmpty(
+    $('h1[itemprop="name"]').first().text(),
+    $('meta[property="og:title"]').attr('content'),
+    $('h1').first().text()
+  );
+  const brand = firstNonEmpty(
+    $('h6 a').first().text(),
+    $('meta[property="og:brand"]').attr('content')
+  );
+  const sku = firstNonEmpty(
+    $('meta[property="og:upc"]').attr('content'),
+    storeSpecValue($, 'SKU')
+  );
+  const size = firstNonEmpty(storeSpecValue($, 'Size'), guessSize(title));
+  const price = firstNonEmpty(
+    money($('.pricingDetails .priceFull').first().text()),
+    money($('meta[property="og:price:standard_amount"]').attr('content')),
+    money($('meta[property="product:price:amount"]').attr('content'))
+  );
+  const salePrice = firstNonEmpty(money($('.pricingDetails .priceCurrent').first().text()));
+  const description = firstNonEmpty(
+    $('#description .text-product-desc').first().text().replace(/\s+/g, ' ').trim(),
+    $('meta[property="og:description"]').attr('content')
+  );
+
+  if (!title) {
+    throw new Error('Could not find product details on that page. Enter the details manually.');
+  }
+
+  return {
+    title: title || '',
+    brand: brand || '',
+    sku: sku || '',
+    size: size || '',
+    price: price || '',
+    salePrice: salePrice && salePrice !== price ? salePrice : '',
+    description: description || '',
+    sourceUrl: url,
+  };
+}
+
+async function fetchStoreHtml(url) {
+  try {
+    return await fetchHtmlResilient(url);
+  } catch (err) {
+    if (BLOCKED_STATUSES.has(err.httpStatus)) {
+      throw new Error(
+        'The store site blocked this automated request. This can happen from certain networks or '
+        + 'hosting providers - try again in a bit, paste the product page\'s HTML instead, or enter '
+        + 'the details manually.'
+      );
+    }
+    throw err;
+  }
+}
+
+async function lookupStoreSku(sku) {
+  const trimmed = String(sku || '').trim();
+  if (!trimmed) throw new Error('Enter a SKU first.');
+
+  const searchUrl = storeSearchUrl(trimmed);
+  const searchHtml = await fetchStoreHtml(searchUrl);
+  const candidates = parseStoreSearchResults(searchHtml, searchUrl);
+  const match = pickSkuMatch(candidates, trimmed);
+  if (!match) {
+    throw new Error(`No product found for SKU "${trimmed}". Double-check the number, or enter the details manually.`);
+  }
+
+  const productHtml = await fetchStoreHtml(match.url);
+  return parseStoreProductHtml(productHtml, match.url);
+}
+
+// The "paste page HTML" fallback for the SKU Lookup tab, same shape as
+// parsePastedProduct above - for when the store site blocks the search or
+// product-page fetch outright. Staff search the SKU themselves and paste
+// the resulting product page's HTML; `url` is optional and only labels the
+// result's sourceUrl.
+function parsePastedStoreProduct({ html, url }) {
+  if (!html || !html.trim()) {
+    throw new Error("Paste the page's HTML first.");
+  }
+  return parseStoreProductHtml(html, typeof url === 'string' ? url.trim() : '');
+}
+
+// ================================================================
+// Untappd search-by-name - the SKU lookup's beer-specific second step. The
+// store site above has no idea what Untappd calls a beer, so this takes
+// whatever title the SKU lookup just filled in and searches Untappd for
+// it, the same search -> pick -> extract shape searchProductCatalog uses
+// for wine.com/Vivino above, landing on the same parseBeerHtml this file
+// already uses for a pasted Untappd URL.
+//
+// Unconfirmed from this environment, same caveat as the rest of the
+// Untappd parsing further up (see the note above RESILIENT_HEADER_SETS) -
+// built the same tiered way regardless: JSON-LD ItemList first, falling
+// back to a scan for Untappd's own stable `/b/<slug>/<id>` beer-page link
+// shape (the same shape extractBreweryUrl already follows from a beer
+// page), so a markup change degrades to "found nothing" rather than a
+// wrong match.
+// ================================================================
+
+function untappdSearchUrl(query) {
+  return `https://untappd.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function parseUntappdSearchResults(html, baseUrl) {
+  return parseGenericSearchResults(html, baseUrl, '/b/');
+}
+
+async function searchUntappd(query) {
+  const trimmed = (query || '').trim();
+  if (!trimmed) throw new Error('Enter a product title first.');
+
+  const searchUrl = untappdSearchUrl(trimmed);
+  const searchHtml = await fetchCatalogHtml(searchUrl, 'Untappd');
+  const candidates = parseUntappdSearchResults(searchHtml, searchUrl);
+  const match = pickBestMatch(candidates, trimmed);
+  if (!match) {
+    throw new Error(`Could not find "${trimmed}" on Untappd.`);
+  }
+
+  const beerHtml = await fetchCatalogHtml(match.url, 'Untappd');
+  return parseBeerHtml(beerHtml, match.url);
+}
+
+// Layers Untappd's own description/brewery/style/ABV/IBU/rating on top of
+// what the store page already gave lookupSku/lookupSkuFromHtml below - the
+// store's generic manufacturer blurb (see parseStoreProductHtml) is kept as
+// a fallback description only if Untappd search comes back empty, matching
+// what was actually asked for ("descriptions pulled from other sources,
+// such as untappd"). Best-effort only, same as extractBeer's own bonus
+// brewery-location fetch above: the store lookup already succeeded by this
+// point, so a beer Untappd can't find (or that blocks this request) just
+// leaves those fields blank/store-sourced for manual entry rather than
+// failing the whole SKU lookup.
+async function enrichBeerFromUntappd(product) {
+  try {
+    const beer = await searchUntappd(product.title);
+    return {
+      ...product,
+      description: firstNonEmpty(beer.description, product.description) || '',
+      brewery: beer.brewery || product.brand || '',
+      location: beer.location || '',
+      style: beer.style || '',
+      abv: beer.abv || '',
+      ibu: beer.ibu || '',
+      untappdRating: beer.untappdRating || '',
+      untappdRatingCount: beer.untappdRatingCount || '',
+    };
+  } catch {
+    return { ...product, brewery: product.brand || '' };
+  }
+}
+
+async function lookupSku({ sku, category }) {
+  const product = await lookupStoreSku(sku);
+  return category === 'beer' ? enrichBeerFromUntappd(product) : product;
+}
+
+async function lookupSkuFromHtml({ html, url, category }) {
+  const product = parsePastedStoreProduct({ html, url });
+  return category === 'beer' ? enrichBeerFromUntappd(product) : product;
+}
+
 // Ordered list of tasting-notes sources - see the module comment above.
 // findTastingNotes tries each in order (unless a specific one was
 // requested) and stops at the first that returns something; adding a third
@@ -1035,4 +1273,15 @@ module.exports = {
   parseVivinoSearchResults,
   parseVivinoProductHtml,
   vivinoSearchUrl,
+  storeSearchUrl,
+  parseStoreSearchResults,
+  pickSkuMatch,
+  parseStoreProductHtml,
+  lookupStoreSku,
+  parsePastedStoreProduct,
+  untappdSearchUrl,
+  parseUntappdSearchResults,
+  searchUntappd,
+  lookupSku,
+  lookupSkuFromHtml,
 };
