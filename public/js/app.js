@@ -1663,7 +1663,7 @@
   const GUIDE_SAMPLE_TALKER = {
     signType: 'talker',
     category: 'beer',
-    theme: 'amber',
+    theme: 'purple',
     talkerSize: 'full',
     talkerType: 'standard',
     title: 'Coastal Drift Salt Line IPA',
@@ -1743,7 +1743,7 @@
       <div class="guide__header">
         <img class="guide__logo" src="assets/logo.png" alt="" />
         <div class="guide__header-text">
-          <h2>About the Shelf Talker</h2>
+          <h2>Beer Talker Info</h2>
           <p>Every price tag on our shelves carries the same information, laid out the same way. Here's what each part means.</p>
         </div>
       </div>
