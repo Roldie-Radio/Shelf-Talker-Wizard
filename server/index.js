@@ -159,7 +159,7 @@ function createApp() {
 
   // Fallback for /api/untappd-lookup above when even the beer's own page
   // gets blocked outright - same paste-the-HTML pattern as /api/sku-lookup-html.
-  app.post('/api/untappd-lookup-html', (req, res) => {
+  app.post('/api/untappd-lookup-html', async (req, res) => {
     const { current, html, url } = req.body || {};
 
     if (!html || typeof html !== 'string' || !html.trim()) {
@@ -167,7 +167,7 @@ function createApp() {
     }
 
     try {
-      const fields = untappdBeerFromHtml(current, { html, url });
+      const fields = await untappdBeerFromHtml(current, { html, url });
       res.json(fields);
     } catch (err) {
       res.status(400).json({ error: err.message || 'Could not read that pasted HTML.' });

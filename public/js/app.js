@@ -1415,7 +1415,11 @@
     previewMode = 'single';
     setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
     renderPreview();
-    document.querySelector('.tab[data-tab="manual"]').click();
+    // Unlike applyImportedProduct, deliberately stays on the SKU Lookup tab
+    // instead of switching to Manual Entry - the Live Preview panel already
+    // updates live regardless of which tab is active, and for beer, staying
+    // put keeps the Untappd fallback section (right below) in view so staff
+    // can use it immediately instead of switching tabs first.
 
     // Untappd's own search only ever fails for beer (see untappdError's
     // origin in enrichBeerFromUntappd) - offer the manual "paste the beer's
@@ -1433,13 +1437,13 @@
   // whatever's already in the form - readForm()/fillForm() round-trip
   // rather than a fresh applySkuLookupProduct call, since by this point
   // staff may have already hand-edited fields the initial lookup filled in,
-  // and those edits shouldn't be discarded.
+  // and those edits shouldn't be discarded. Also stays on the SKU Lookup
+  // tab, same reasoning as applySkuLookupProduct above.
   function applyUntappdFields(fields) {
     fillForm({ ...readForm(), ...fields });
     previewMode = 'single';
     setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
     renderPreview();
-    document.querySelector('.tab[data-tab="manual"]').click();
   }
 
   // data.untappdError is only ever set for a beer lookup whose Untappd step

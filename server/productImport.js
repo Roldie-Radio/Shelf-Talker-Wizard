@@ -665,6 +665,32 @@ function parseBeerHtml(html, sourceUrl) {
   };
 }
 
+// A beer's own Untappd page never carries a location string on it at all
+// (see parseBreweryHtml's comment above) - only a link to the brewery's own
+// separate page, which does. Location is a second request away, following
+// that link (extractBreweryUrl/parseBreweryHtml above). Best-effort only:
+// the beer's own data already parsed fine by this point, so a brewery page
+// that's blocked, missing, or shaped differently just leaves location blank
+// for manual entry rather than failing the whole lookup over a field that
+// was never guaranteed. Shared by every beer-enrichment path that ends up
+// with a parsed beer object - extractBeer below, searchUntappd's automatic
+// search, and the manual untappdBeerFromUrl/untappdBeerFromHtml fallbacks
+// further down - since a bare parseBeerHtml call never fills this in on its
+// own, no matter which of those got it there.
+async function fillBeerLocation(beer, html, sourceUrl) {
+  if (beer.location) return beer;
+  const breweryUrl = extractBreweryUrl(html, sourceUrl);
+  if (!breweryUrl) return beer;
+  try {
+    const breweryHtml = await fetchBeerHtml(breweryUrl);
+    const location = parseBreweryHtml(breweryHtml);
+    if (location) return { ...beer, location };
+  } catch {
+    // Swallow - see comment above.
+  }
+  return beer;
+}
+
 async function extractBeer(url) {
   let html;
   try {
@@ -679,28 +705,7 @@ async function extractBeer(url) {
     }
     throw err;
   }
-  const result = parseBeerHtml(html, url);
-
-  // Location is a second request away - following the brewery link found
-  // above to that brewery's own page (see extractBreweryUrl/parseBreweryHtml
-  // above). Best-effort only: the beer import itself already succeeded by
-  // this point, so a brewery page that's blocked, missing, or shaped
-  // differently just leaves location blank for manual entry rather than
-  // failing the whole import over a field that was never guaranteed.
-  if (!result.location) {
-    const breweryUrl = extractBreweryUrl(html, url);
-    if (breweryUrl) {
-      try {
-        const breweryHtml = await fetchBeerHtml(breweryUrl);
-        const location = parseBreweryHtml(breweryHtml);
-        if (location) result.location = location;
-      } catch {
-        // Swallow - see comment above.
-      }
-    }
-  }
-
-  return result;
+  return fillBeerLocation(parseBeerHtml(html, url), html, url);
 }
 
 // ================================================================
@@ -1181,7 +1186,7 @@ async function searchUntappd(query) {
   }
 
   const beerHtml = await fetchCatalogHtml(match.url, 'Untappd');
-  return parseBeerHtml(beerHtml, match.url);
+  return fillBeerLocation(parseBeerHtml(beerHtml, match.url), beerHtml, match.url);
 }
 
 const SIZE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:ml|mL|l|L|oz|OZ)\b|\b\d+\s?-?\s?pack\b/gi;
@@ -1279,13 +1284,14 @@ async function untappdBeerFromUrl(current, untappdUrl) {
   const trimmed = String(untappdUrl || '').trim();
   if (!trimmed) throw new Error("Enter the beer's Untappd URL first.");
   const html = await fetchCatalogHtml(trimmed, 'Untappd');
-  const beer = parseBeerHtml(html, trimmed);
+  const beer = await fillBeerLocation(parseBeerHtml(html, trimmed), html, trimmed);
   return mergeUntappdBeer(current || {}, beer);
 }
 
-function untappdBeerFromHtml(current, { html, url }) {
+async function untappdBeerFromHtml(current, { html, url }) {
   if (!html || !html.trim()) throw new Error("Paste the beer's Untappd page HTML first.");
-  const beer = parseBeerHtml(html, typeof url === 'string' ? url.trim() : '');
+  const sourceUrl = typeof url === 'string' ? url.trim() : '';
+  const beer = await fillBeerLocation(parseBeerHtml(html, sourceUrl), html, sourceUrl);
   return mergeUntappdBeer(current || {}, beer);
 }
 
