@@ -472,6 +472,14 @@ h1, h2, h3 { margin: 0; }
    leave it swimming in empty space. */
 .modal--narrow { max-width: 480px; }
 
+/* The "About the Shelf Talker" guide (see .guide below) is a single 10.44in-
+   wide document meant to be read closely, not a scrollable list of
+   thumbnails like Print Preview - the default 920px .modal width left ~880px
+   for guide-preview-stage's padding, forcing the guide's scalePreview()
+   scale below 1x (smaller than it prints) on most screens. Wide enough that
+   typical desktop windows scale it at or above 1x instead. */
+.modal--wide { max-width: 1200px; }
+
 .tasting-notes-modal-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .tasting-notes-modal-body .field { margin-bottom: 0; }
 
