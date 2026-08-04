@@ -1410,6 +1410,18 @@
     document.querySelector('.tab[data-tab="manual"]').click();
   }
 
+  // data.untappdError is only ever set for a beer lookup whose Untappd step
+  // failed (blocked, no match, etc) - see enrichBeerFromUntappd in
+  // productImport.js. The store lookup itself still succeeded, so the form
+  // is filled either way; this just tells staff why brewery/style/ABV/IBU
+  // came back store-only instead of leaving them to guess.
+  function skuLookupLoadedMessage(data, loadedFrom) {
+    if (data.untappdError) {
+      return `Loaded from ${loadedFrom}. Untappd: ${data.untappdError}`;
+    }
+    return `Loaded from ${loadedFrom}! Review the fields, then click "Add to Queue".`;
+  }
+
   els.skuLookupBtn.addEventListener('click', async () => {
     const isBeer = currentCategory === 'beer';
     const sku = els.skuInput.value.trim();
@@ -1430,7 +1442,7 @@
       if (!resp.ok) throw new Error(data.error || 'SKU lookup failed.');
 
       applySkuLookupProduct(data, isBeer);
-      els.skuStatus.textContent = 'Loaded! Review the fields, then click "Add to Queue".';
+      els.skuStatus.textContent = skuLookupLoadedMessage(data, 'the store');
     } catch (err) {
       els.skuStatus.textContent = err.message || 'Something went wrong looking up that SKU.';
     } finally {
@@ -1470,7 +1482,7 @@
       if (!resp.ok) throw new Error(data.error || 'Could not read product data from that HTML.');
 
       applySkuLookupProduct(data, isBeer);
-      els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
+      els.skuStatus.textContent = skuLookupLoadedMessage(data, 'pasted HTML');
     } catch (err) {
       els.skuStatus.textContent = err.message || 'Something went wrong reading that HTML.';
     } finally {

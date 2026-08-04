@@ -1184,6 +1184,21 @@ async function searchUntappd(query) {
   return parseBeerHtml(beerHtml, match.url);
 }
 
+const SIZE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:ml|mL|l|L|oz|OZ)\b|\b\d+\s?-?\s?pack\b/gi;
+
+// Strips a container size out of a scraped title - e.g. "Daylily 16OZ"
+// becomes "Daylily", since size already has its own form field and staff
+// don't want it duplicated in the product title. Also used to clean up the
+// title before it's sent to Untappd as a search query below - the store's
+// own title sometimes trails off with the container size (see the real
+// SKU-lookup fixture that inspired this), which is dead weight a beer
+// search doesn't have and can hurt the match.
+function stripSize(title, size) {
+  let name = title || '';
+  if (size) name = name.split(size).join(' ');
+  return name.replace(SIZE_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+}
+
 // Layers Untappd's own description/brewery/style/ABV/IBU/rating on top of
 // what the store page already gave lookupSku/lookupSkuFromHtml below - the
 // store's generic manufacturer blurb (see parseStoreProductHtml) is kept as
@@ -1193,12 +1208,16 @@ async function searchUntappd(query) {
 // brewery-location fetch above: the store lookup already succeeded by this
 // point, so a beer Untappd can't find (or that blocks this request) just
 // leaves those fields blank/store-sourced for manual entry rather than
-// failing the whole SKU lookup.
+// failing the whole SKU lookup - but the reason still comes back as
+// untappdError so the SKU Lookup tab can tell staff "we tried and Untappd
+// had nothing" instead of leaving them to guess why the fields are empty.
 async function enrichBeerFromUntappd(product) {
+  const title = stripSize(product.title, product.size);
   try {
-    const beer = await searchUntappd(product.title);
+    const beer = await searchUntappd(title);
     return {
       ...product,
+      title,
       description: firstNonEmpty(beer.description, product.description) || '',
       brewery: beer.brewery || product.brand || '',
       location: beer.location || '',
@@ -1208,21 +1227,9 @@ async function enrichBeerFromUntappd(product) {
       untappdRating: beer.untappdRating || '',
       untappdRatingCount: beer.untappdRatingCount || '',
     };
-  } catch {
-    return { ...product, brewery: product.brand || '' };
+  } catch (err) {
+    return { ...product, title, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
   }
-}
-
-const SIZE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:ml|mL|l|L|oz|OZ)\b|\b\d+\s?-?\s?pack\b/gi;
-
-// Strips a container size out of a scraped title - e.g. "Josh Cellars
-// Cabernet Sauvignon 750mL" becomes "Josh Cellars Cabernet Sauvignon", since
-// size already has its own form field and staff don't want it duplicated in
-// the wine/spirits product title.
-function stripSize(title, size) {
-  let name = title || '';
-  if (size) name = name.split(size).join(' ');
-  return name.replace(SIZE_PATTERN, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // Wine/spirits SKU lookups need "Producer Product Name" in the title field
