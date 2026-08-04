@@ -1663,21 +1663,20 @@
   const GUIDE_SAMPLE_TALKER = {
     signType: 'talker',
     category: 'beer',
-    theme: 'amber',
+    theme: 'purple',
     talkerSize: 'full',
     talkerType: 'standard',
-    title: 'Coastal Drift Salt Line IPA',
-    description: 'Juicy citrus and pine resin up front, backed by a firm bitter finish. Brewed with Citra and Mosaic hops.',
-    size: '16oz Can · 4 Pack',
-    price: 14.99,
-    salePrice: 12.99,
-    brewery: 'Coastal Drift Brewing Co.',
-    location: 'San Diego, CA',
-    style: 'IPA',
-    abv: '6.8%',
-    ibu: '62',
-    untappdRating: 4.32,
-    untappdRatingCount: 1842,
+    title: 'Daylily',
+    description: "Daylily is brewed with loads of Citra and Mosaic hops. This one is perfect for drinking all year 'round. Bold citrus notes are rounded out by a clean bitterness. This beer is for great times with close friends. Enjoy it in good company.",
+    size: '16oz',
+    price: 15.99,
+    brewery: 'Autodidact Beer',
+    location: 'Morris Plains, NJ United States',
+    style: 'Pale Ale - New England / Hazy',
+    abv: '5.8%',
+    ibu: 'N/A',
+    untappdRating: 4.00,
+    untappdRatingCount: 2352,
   };
 
   const GUIDE_LEGEND = [
@@ -1743,7 +1742,7 @@
       <div class="guide__header">
         <img class="guide__logo" src="assets/logo.png" alt="" />
         <div class="guide__header-text">
-          <h2>About the Shelf Talker</h2>
+          <h2>Beer Talker Info</h2>
           <p>Every price tag on our shelves carries the same information, laid out the same way. Here's what each part means.</p>
         </div>
       </div>
