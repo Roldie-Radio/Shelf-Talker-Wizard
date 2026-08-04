@@ -706,6 +706,41 @@ test('parseProductHtml throws when the page has neither a title nor a price', ()
   );
 });
 
+test('parseProductHtml reads list/sale price from a single offer\'s priceSpecification array (wine.com\'s shape)', () => {
+  const html = page({
+    head: `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Product',
+      name: 'Chateau Bourdieu No.1 2018',
+      description: 'Rich and generous.',
+      offers: {
+        price: 18.99,
+        priceCurrency: 'USD',
+        priceSpecification: [
+          { priceType: 'https://schema.org/ListPrice', price: 30 },
+          { priceType: 'https://schema.org/SalePrice', price: 18.99 },
+        ],
+      },
+    })}</script>`,
+  });
+  const result = parseProductHtml(html, 'https://www.wine.com/product/chateau-bourdieu-no1-2018/4122420');
+  assert.equal(result.price, '30.00');
+  assert.equal(result.salePrice, '18.99');
+});
+
+test('parseProductHtml reads size from hasMeasurement when there is no plain "size" field (wine.com\'s shape)', () => {
+  const html = page({
+    head: `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Product',
+      name: 'Chateau Bourdieu No.1 2018',
+      description: 'Rich and generous.',
+      hasMeasurement: { value: 750, unitCode: 'MLT', unitText: 'ml' },
+      offers: { price: '18.99' },
+    })}</script>`,
+  });
+  const result = parseProductHtml(html, 'https://www.wine.com/product/chateau-bourdieu-no1-2018/4122420');
+  assert.equal(result.size, '750ml');
+});
+
 test('extractProduct retries a blocked response with browser headers before giving up', async () => {
   const html = page({
     head: '<meta property="og:title" content="Two Attempts Wine 2022" />'

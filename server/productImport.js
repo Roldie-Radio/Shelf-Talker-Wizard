@@ -139,9 +139,28 @@ function findJsonLdProduct($) {
   });
 }
 
+// Some retailers (e.g. wine.com) express list/sale pricing as a single
+// offer's priceSpecification array (ListPrice/SalePrice) rather than as
+// multiple offers - check that before falling back to the multi-offer logic.
+function pricesFromPriceSpecification(offer) {
+  const specs = offer && offer.priceSpecification;
+  if (!Array.isArray(specs)) return {};
+  const byType = (type) => specs.find((s) => s && typeof s.priceType === 'string' && s.priceType.endsWith(type));
+  const listPrice = money(byType('ListPrice') && byType('ListPrice').price);
+  const salePrice = money(byType('SalePrice') && byType('SalePrice').price);
+  if (!listPrice || !salePrice || Number(salePrice) >= Number(listPrice)) return {};
+  return { price: Number(listPrice).toFixed(2), salePrice: Number(salePrice).toFixed(2) };
+}
+
 function pricesFromOffers(offers) {
   if (!offers) return {};
   const list = Array.isArray(offers) ? offers : [offers];
+
+  if (list.length === 1) {
+    const fromSpec = pricesFromPriceSpecification(list[0]);
+    if (fromSpec.price) return fromSpec;
+  }
+
   const priceValues = list
     .map((o) => money(o && (o.price ?? o.lowPrice ?? o.highPrice)))
     .filter(Boolean)
@@ -184,6 +203,16 @@ function pricesFromCommonSelectors($) {
   };
 
   return { salePrice: readFirst(saleSelectors), price: readFirst(regularSelectors) };
+}
+
+// wine.com (and other schema.org-strict retailers) express size as a
+// QuantitativeValue under hasMeasurement rather than a plain "size" string.
+function sizeFromMeasurement(measurement) {
+  if (!measurement || typeof measurement !== 'object') return undefined;
+  const { value, unitText, unitCode } = measurement;
+  const unit = unitText || unitCode;
+  if (value == null || !unit) return undefined;
+  return `${value}${unit}`;
 }
 
 // Best-effort guess at a size/unit descriptor (e.g. "750ml", "6-pack", "1L")
@@ -232,6 +261,7 @@ function parseProductHtml(html, url) {
 
   const size = firstNonEmpty(
     ld.size,
+    sizeFromMeasurement(ld.hasMeasurement),
     guessSize(title, description)
   );
 
