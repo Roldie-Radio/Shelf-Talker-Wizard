@@ -21,7 +21,7 @@ const {
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, untappdSearchUrl, parseUntappdSearchResults,
-  searchUntappd, composeWineTitle, lookupSku, lookupSkuFromHtml,
+  searchUntappd, composeProducerTitle, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
 function page({ head = '', body = '' } = {}) {
@@ -1496,7 +1496,7 @@ test('lookupSku falls back to the store\'s own description when Untappd has noth
   );
 });
 
-test('lookupSku strips the size from a beer title and searches Untappd with the cleaned title', async () => {
+test('lookupSku strips the size from a beer title and searches Untappd with the brand folded into the query', async () => {
   const storeSearchHtml = page({
     body: `
       <div class="product-list-item">
@@ -1541,6 +1541,38 @@ test('lookupSku strips the size from a beer title and searches Untappd with the 
   const untappdSearchRequest = requestedUrls.find((u) => u.includes('untappd.com/search'));
   assert.ok(untappdSearchRequest, 'expected an Untappd search request');
   assert.ok(!untappdSearchRequest.includes('16OZ') && !untappdSearchRequest.includes('16oz'), `Untappd search query should not include the size, got: ${untappdSearchRequest}`);
+  assert.equal(untappdSearchRequest, `${untappdSearchUrl('Autodidact Daylily')}`);
+});
+
+test('lookupSku searches Untappd with a bare beer name when the store page has no brand to fold in', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: '<h1 itemprop="name">Michelob ULTRA</h1>'
+      + '<div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
+  });
+  const requestedUrls = [];
+  await withMockFetch(
+    async (url) => {
+      requestedUrls.push(url);
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
+      return mockResponse({ status: 200, body: page({ body: '<p>no results</p>' }) });
+    },
+    async () => {
+      await lookupSku({ sku: '09144', category: 'beer' });
+    }
+  );
+  const untappdSearchRequest = requestedUrls.find((u) => u.includes('untappd.com/search'));
+  assert.equal(untappdSearchRequest, untappdSearchUrl('Michelob ULTRA'));
 });
 
 test('lookupSku does not attempt an Untappd search for wine/spirits', async () => {
@@ -1632,21 +1664,21 @@ test('lookupSku does not duplicate the producer name when the store title alread
   );
 });
 
-test('composeWineTitle prepends the brand, strips the size, and leaves beer-less titles untouched', () => {
+test('composeProducerTitle prepends the brand, strips the size, and leaves brand-less titles untouched', () => {
   assert.equal(
-    composeWineTitle({ title: 'Cabernet Sauvignon 750mL', brand: 'Josh Cellars', size: '750mL' }),
+    composeProducerTitle({ title: 'Cabernet Sauvignon 750mL', brand: 'Josh Cellars', size: '750mL' }),
     'Josh Cellars Cabernet Sauvignon'
   );
   assert.equal(
-    composeWineTitle({ title: 'Josh Cellars Cabernet Sauvignon', brand: 'Josh Cellars', size: '' }),
+    composeProducerTitle({ title: 'Josh Cellars Cabernet Sauvignon', brand: 'Josh Cellars', size: '' }),
     'Josh Cellars Cabernet Sauvignon'
   );
   assert.equal(
-    composeWineTitle({ title: 'Cabernet Sauvignon', brand: '', size: '' }),
+    composeProducerTitle({ title: 'Cabernet Sauvignon', brand: '', size: '' }),
     'Cabernet Sauvignon'
   );
   assert.equal(
-    composeWineTitle({ title: 'Grey Goose 1L', brand: 'Grey Goose', size: '1L' }),
+    composeProducerTitle({ title: 'Grey Goose 1L', brand: 'Grey Goose', size: '1L' }),
     'Grey Goose'
   );
 });
