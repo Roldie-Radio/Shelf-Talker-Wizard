@@ -1169,7 +1169,19 @@ h1, h2, h3 { margin: 0; }
    outline, not the cursive script this used to assume (never checked
    against a real talker until now). Sized to stay on one line at full scale
    so it reads as a single callout instead of wrapping and eating a second
-   line's worth of vertical space. */
+   line's worth of vertical space.
+   Font-size bumped 0.062 -> 0.08 (was reading smaller than the price it's
+   introducing, backwards for what's meant to be the more shouty line of the
+   two) - still nowhere near wrapping at that size: a Playwright measurement
+   of the actual rendered glyph width against .card__supersale-text's
+   available box width left ~35% of the box still unused even before this
+   bump, so there's comfortable headroom left after it too. Margin is now
+   asymmetric and tightened on the bottom specifically (0.02 -> 0.004): the
+   gap to .card__supersale-price right below was mostly this element's own
+   bottom margin plus that element's top margin double-stacking (margins
+   don't collapse between flex children), reading as an oversized gap
+   between two lines meant to be read together as one callout - not
+   proportionate room for the larger text above. */
 .card__supersale-text {
   flex: 0 0 auto;
   text-align: center;
@@ -1177,9 +1189,9 @@ h1, h2, h3 { margin: 0; }
   font-weight: 800;
   color: var(--sale-red);
   -webkit-text-stroke: calc(var(--w) * 0.003) #000;
-  font-size: calc(var(--w) * 0.062 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.08 * var(--price-fit, 1));
   line-height: 1.2;
-  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
+  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0 calc(var(--w) * 0.004 * var(--price-fit, 1));
 }
 
 .card__size {
@@ -1205,7 +1217,10 @@ h1, h2, h3 { margin: 0; }
   -webkit-text-stroke: calc(var(--w) * 0.003) #000;
   text-align: center;
   font-size: calc(var(--w) * 0.085 * var(--price-fit, 1));
-  margin: calc(var(--w) * 0.01 * var(--price-fit, 1)) 0;
+  /* Top margin tightened to match .card__supersale-text's own tightened
+     bottom margin above - see the note there. Bottom margin (separation
+     before the optional Regular Price line) is untouched. */
+  margin: calc(var(--w) * 0.004 * var(--price-fit, 1)) 0 calc(var(--w) * 0.01 * var(--price-fit, 1));
 }
 
 /* ================================================================
