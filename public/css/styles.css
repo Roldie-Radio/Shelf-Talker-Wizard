@@ -740,7 +740,10 @@ h1, h2, h3 { margin: 0; }
   background-color: var(--amber-band);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/></svg>");
   background-blend-mode: overlay;
-  padding: 0 6%;
+  /* Tightened 20% (6 -> 4.8), same across-the-board edge-margin pass as
+     .card__body below (and the equivalent .sign__band/.sign__body pass on
+     Display Signs). */
+  padding: 0 4.8%;
 }
 .card__band--footer {
   flex: 0 0 calc(var(--w) * 0.0767);
@@ -762,7 +765,8 @@ h1, h2, h3 { margin: 0; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: calc(3% * var(--price-fit, 1)) 6% calc(4% * var(--price-fit, 1));
+  /* Tightened 20% (3/6/4 -> 2.4/4.8/3.2) - see .card__band above. */
+  padding: calc(2.4% * var(--price-fit, 1)) 4.8% calc(3.2% * var(--price-fit, 1));
   min-height: 0;
   overflow: hidden;
   /* Positioning context for .card__state-badge and .card__country-badge
@@ -1289,7 +1293,10 @@ h1, h2, h3 { margin: 0; }
   background-color: var(--amber-band);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/></svg>");
   background-blend-mode: overlay;
-  padding: 0 2.5%;
+  /* Tightened 20% (2.5 -> 2.0), same across-the-board edge-margin pass as
+     .sign__body/.sign__content below - the tagline/logo were sitting
+     further in from the sign's own left/right edge than they needed to. */
+  padding: 0 2.0%;
 }
 .sign[data-size="large"] .sign__band { flex: 0 0 calc(var(--w) * 0.0482); }
 .sign[data-size="large"] .sign__band--footer { flex-basis: calc(var(--w) * 0.0333); }
@@ -1339,14 +1346,17 @@ h1, h2, h3 { margin: 0; }
   align-items: stretch;
   min-height: 0;
   overflow: hidden;
-  padding: 1.5% 2.5%;
+  /* Tightened 20% (1.5/2.5 -> 1.2/2.0) - see .sign__band above. */
+  padding: 1.2% 2.0%;
 }
 /* A user measured the reference sign's SALE/PRICE rail sitting much closer
    to the card's own edge than this - about 1.2% of the card's width in,
-   versus 2.5% here. Tightened for large only; the rail's horizontal
-   position is entirely this padding (.sign__rail itself has none), so this
-   is the whole fix, not just a partial one. */
-.sign[data-size="large"] .sign__body { padding-left: 1.3%; padding-right: 1.3%; }
+   versus 2.5% here (now 2.0%, see .sign__body above). Tightened for large
+   only; the rail's horizontal position is entirely this padding
+   (.sign__rail itself has none), so this is the whole fix, not just a
+   partial one. Further tightened 20% here too (1.3 -> 1.04), same
+   across-the-board pass as the rest of this section. */
+.sign[data-size="large"] .sign__body { padding-left: 1.04%; padding-right: 1.04%; }
 
 .sign__content {
   flex: 1;
@@ -1357,7 +1367,8 @@ h1, h2, h3 { margin: 0; }
   justify-content: center;
   gap: calc(var(--w) * 0.008 * var(--price-fit, 1));
   text-align: center;
-  padding: 0 1.5%;
+  /* Tightened 20% (1.5 -> 1.2) - see .sign__band above. */
+  padding: 0 1.2%;
 }
 
 /* Large signs pin the product name to the top instead of centering the
