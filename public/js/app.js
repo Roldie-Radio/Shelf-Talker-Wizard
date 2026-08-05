@@ -164,6 +164,7 @@
     editId: document.getElementById('editId'),
     title: document.getElementById('fTitle'),
     titleFontSize: document.getElementById('fTitleFontSize'),
+    titleAutoSize: document.getElementById('fTitleAutoSize'),
     description: document.getElementById('fDescription'),
     descriptionFontSize: document.getElementById('fDescriptionFontSize'),
     descriptionAutoSize: document.getElementById('fDescriptionAutoSize'),
@@ -499,6 +500,7 @@
       category: currentCategory,
       title: els.title.value.trim(),
       titleFontSize: els.titleFontSize.value.trim(),
+      titleAutoSize: els.titleAutoSize.checked,
       vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
       descriptionFontSize: els.descriptionFontSize.value.trim(),
@@ -529,6 +531,7 @@
     applyFormMode();
     els.title.value = talker.title || '';
     els.titleFontSize.value = talker.titleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].title;
+    els.titleAutoSize.checked = !!talker.titleAutoSize;
     els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
     els.descriptionFontSize.value = talker.descriptionFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].description;
