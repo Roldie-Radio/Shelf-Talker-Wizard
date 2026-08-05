@@ -939,9 +939,23 @@ h1, h2, h3 { margin: 0; }
   margin-top: calc(-2.5% * var(--price-fit, 1));
 }
 
+/* Fixed at 10.5pt (0.0521 = 10.5 / 72 / 2.8, the Full Shelf Talker's own
+   width - same pt-to-fraction conversion fontSizeOverrideAttr in card.js
+   uses for a custom size) and never auto-scaled - no --price-fit here,
+   unlike most of the rest of this card, and card.js's fitCardText no longer
+   touches this element's font-size at all (it used to shrink it for a long
+   description and grow it for a short one; see clampDescriptionToAvailableSpace
+   in card.js for what happens instead). What's on screen is what prints,
+   at the point size the user actually set (see the Description Font Size
+   box, which overrides this via an inline style - fontSizeOverrideAttr in
+   card.js). A description too long to fit the room left after everything
+   else on the card just shows fewer of its 12 lines, via the line-clamp
+   below - clampDescriptionToAvailableSpace narrows that as needed, and
+   text-overflow: ellipsis marks the cut with "..." so it reads as
+   deliberately truncated rather than cut off. */
 .card__description {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: calc(var(--w) * 0.0521 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.0521);
   line-height: 1.3;
   color: #171717;
   flex: 0 0 auto;
@@ -1444,14 +1458,18 @@ h1, h2, h3 { margin: 0; }
 
 /* Large sign only in practice (Small signs never render a description -
    see buildSmallSignBodyHtml). Verdana 10pt on the reference sign, same
-   pt-to-fraction conversion as .sign__title above. Also scaled by
-   --price-fit, matching .card__description, so the last-resort
-   whole-block shrink in fitCardText() (see card.js) still shrinks the
-   description along with everything else in that fallback case. */
+   pt-to-fraction conversion as .sign__title above - fixed, not scaled by
+   --price-fit (unlike most of the rest of the sign): the description is
+   never auto-scaled, same as .card__description on the Shelf Talker card
+   (see the note there) - card.js's fitCardText only ever narrows how many
+   of its 5 lines are visible (clampDescriptionToAvailableSpace), never its
+   font-size, and text-overflow: ellipsis marks a narrowed line-clamp with
+   "..." so a too-long description reads as deliberately cut rather than
+   just cut off. */
 .sign__description {
   font-weight: 700;
   font-family: Verdana, Geneva, sans-serif;
-  font-size: calc(var(--w) * var(--sign-text) * 0.0117 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.0117);
   line-height: 1.3;
   color: #171717;
   flex: 0 0 auto;
@@ -1460,6 +1478,7 @@ h1, h2, h3 { margin: 0; }
   -webkit-line-clamp: 5;
   line-clamp: 5;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* The Untappd-style rating block is reused from the Beer Shelf Talker,

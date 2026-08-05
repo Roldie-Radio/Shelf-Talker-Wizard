@@ -1,6 +1,9 @@
-// Builds shelf-talker card DOM elements and shrinks title/description text
-// so it always fits the standardized card size, no matter how much the
-// store staff type in.
+// Builds shelf-talker card DOM elements. The title shrinks to fit the
+// standardized card size no matter how much the store staff type in;
+// the description does not - it always renders at its set point size (the
+// default, or whatever the Description Font Size box overrides it to - see
+// fontSizeOverrideAttr below) and simply shows fewer lines, ending in an
+// ellipsis, if there isn't room for all of it (see clampDescriptionToAvailableSpace).
 
 // layout.js's script tag runs before this one (see index.html), so
 // window.ShelfTalkerLayout is already populated by the time this file's
@@ -23,8 +26,10 @@ const { SIGN_LAYOUTS } = window.ShelfTalkerLayout;
 // sizes too), or that specific Display Sign size's own width, since Large
 // and Small are separate templates rather than proportional shrinks of
 // each other. includePriceFit matches whether the rule being overridden
-// multiplies by --price-fit today (.card__title/.card__description and
-// .sign__description do; .sign__title doesn't).
+// multiplies by --price-fit today (.card__title does; .card__description/
+// .sign__description deliberately don't - the description is never
+// auto-scaled, see clampDescriptionToAvailableSpace below - nor does
+// .sign__title).
 function fontSizeOverrideAttr(pt, referenceWidthIn, includePriceFit) {
   const value = parseFloat(pt);
   if (!Number.isFinite(value) || value <= 0) return '';
@@ -735,7 +740,7 @@ function buildLargeSignBodyHtml(talker) {
   const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
   const refWidthIn = SIGN_LAYOUTS['sign-large'].printWidth;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, false);
-  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, true);
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, false);
   return `
     <div class="sign__title"${titleStyle} data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
     ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
@@ -834,7 +839,7 @@ function buildCardElement(talker) {
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
   const refWidthIn = SIGN_LAYOUTS.talker.printWidth;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, true);
-  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, true);
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, false);
 
   card.innerHTML = `
     <div class="card__band">
@@ -863,21 +868,22 @@ function buildCardElement(talker) {
 }
 
 /**
- * Shrinks the title/description font sizes (in place) until their content
- * fits within the allotted band, down to a sensible minimum. Works on both
+ * Shrinks the title font size (in place) until it fits within its allotted
+ * band, down to a sensible minimum, then clips the description down to
+ * however many lines actually fit rather than resizing it. Works on both
  * the Shelf Talker (.card) and Display Sign (.sign) formats. Must be called
  * after the element is attached to the document (needs real layout).
  */
 function fitCardText(cardEl) {
-  const targets = cardEl.querySelectorAll('[data-fit]');
-  // Captured before the loop below touches anything, so the extra
-  // description-only shrink pass further down has the description's true
-  // starting size to measure its own floor against, not whatever the loop
-  // already reduced it to.
-  const description = cardEl.querySelector('[data-fit="description"]');
-  const descriptionNaturalPx = description ? parseFloat(getComputedStyle(description).fontSize) : 0;
-
-  targets.forEach((el) => {
+  // Only the title auto-shrinks its font. The description is deliberately
+  // excluded here (and from --price-fit below) - it always renders at its
+  // set point size (the 10.5pt/10pt default, or whatever the Description
+  // Font Size box was typed as) so what's on screen is what prints, with no
+  // surprise auto-shrink/auto-grow second-guessing a size the user (or the
+  // default) already chose. See clampDescriptionToAvailableSpace below for
+  // what the description does instead when it's too long to fit.
+  const titleEl = cardEl.querySelector('[data-fit="title"]');
+  if (titleEl) {
     // Both the floor and the step are relative to the element's own starting
     // size, not absolute pixels. The same card gets rendered at wildly
     // different scales - a ~120px-wide card in the Print Preview modal, a
@@ -886,37 +892,38 @@ function fitCardText(cardEl) {
     // amount of shrink was available at each scale: the small previews were
     // already at (or under) the floor before shrinking started, and truncated
     // titles that print perfectly well.
-    const startPx = parseFloat(getComputedStyle(el).fontSize);
+    const startPx = parseFloat(getComputedStyle(titleEl).fontSize);
     const minPx = Math.max(startPx * 0.5, 4);
     let fontSize = startPx;
     let guard = 40;
-    while (el.scrollHeight > el.clientHeight + 1 && fontSize > minPx && guard > 0) {
+    while (titleEl.scrollHeight > titleEl.clientHeight + 1 && fontSize > minPx && guard > 0) {
       fontSize *= 0.97;
-      el.style.fontSize = `${fontSize}px`;
+      titleEl.style.fontSize = `${fontSize}px`;
       guard -= 1;
     }
-  });
+  }
 
   const body = cardEl.querySelector('.card__body, .sign__body');
   if (!body) return;
 
-  // The pass above only guarantees the description fits *itself* (its own
-  // line-clamp box), not whatever room its neighbors actually leave it - a
-  // description that's well within its own 12-line clamp can still be
-  // taller than the space left after the title/ratings/price block, since
-  // it's the one piece of free text on the talker with no natural cap on
-  // length. Keep shrinking just the description - not the title, badges,
-  // ratings, or price block - so a long product description only ever
-  // costs the description its own size. Its line-clamp still ellipsizes
-  // whatever's left over if it hits the floor and the body is still
-  // overflowing.
-  shrinkDescriptionToFitBody(description, descriptionNaturalPx, body);
+  // The description is the one piece of free text on the talker with no
+  // natural cap on length, so it's the one that gives when there isn't
+  // enough room left after the title/badges/ratings/price block above and
+  // below it - not by shrinking its text, but by showing fewer of its lines
+  // (ending in an ellipsis, via its own line-clamp CSS).
+  const description = cardEl.querySelector('[data-fit="description"]');
+  clampDescriptionToAvailableSpace(description, body);
 
   // Last resort: something other than the description - e.g. a maxed-out
   // three-line title stacked with a full ratings/awards list - is still too
-  // tall even with the description shrunk to its floor. Scale the whole
-  // block together (all parts, so their relative sizes stay the same) until
-  // it fits. This is the only path left that still touches the price row.
+  // tall even with the description clamped down to a single line. Scale the
+  // whole block together (all parts, so their relative sizes stay the same)
+  // until it fits. This is the only path left that still touches the price
+  // row. --price-fit is deliberately left out of the description's own
+  // font-size (see .card__description/.sign__description in styles.css), so
+  // this pass can't resize the description text itself - only how many of
+  // its lines are visible was ever eligible to change, and that was already
+  // settled above.
   let priceFit = 1;
   let priceGuard = 40;
   while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.35 && priceGuard > 0) {
@@ -924,54 +931,28 @@ function fitCardText(cardEl) {
     body.style.setProperty('--price-fit', priceFit);
     priceGuard -= 1;
   }
-
-  growDescriptionToFillSlack(cardEl, body);
 }
 
-// Shrinks just the description (in place) until the body around it stops
-// overflowing, well past the shared 50% floor every [data-fit] element gets
-// in fitCardText above - the description is the one block on the talker
-// with no natural cap on how much gets typed into it, so it needs more room
-// to give before anything else does. Never touches the title/price/badges.
-function shrinkDescriptionToFitBody(description, naturalPx, body) {
-  if (!description || !naturalPx || !description.textContent.trim()) return;
-  const floorPx = Math.max(naturalPx * 0.3, 4);
-  let fontSize = parseFloat(getComputedStyle(description).fontSize);
-  let guard = 60;
-  while (body.scrollHeight > body.clientHeight + 1 && fontSize > floorPx && guard > 0) {
-    fontSize *= 0.97;
-    description.style.fontSize = `${fontSize}px`;
-    guard -= 1;
-  }
-}
-
-// A short description (common on beer talkers, which have no vintage/
-// ratings/awards blocks to take up the rest of the space) leaves a lot of
-// blank room above the price block - still pinned to the very bottom via
-// .card__spacer / .sign__footer-block's margin-top: auto so prices line up
-// across a printed sheet regardless of how much each talker has to say.
-// Grow the description into that slack instead of leaving it blank -
-// mirrors the shrink loop above but in reverse. Capped at 2x its base size
-// so a one- or two-word description doesn't balloon to fill the whole card
-// on its own; anything longer naturally stops growing once it fills the
-// available room, well under the cap.
-function growDescriptionToFillSlack(cardEl, body) {
-  const description = cardEl.querySelector('[data-fit="description"]');
+// Never resizes the description's font - only how many of its lines are
+// visible. Starts from the format's own line-clamp ceiling (12 for a Shelf
+// Talker, 5 for a Display Sign - see .card__description/.sign__description
+// in styles.css) and, only if the body is still overflowing at that point,
+// narrows it one line at a time until it fits or hits a 1-line floor.
+// Leaves the CSS-declared clamp untouched (no inline override at all) for
+// the common case where the description already fits, so a short
+// description just renders at its natural height with blank room left
+// above the price block, instead of stretching to fill it.
+function clampDescriptionToAvailableSpace(description, body) {
   if (!description || !description.textContent.trim()) return;
+  if (body.scrollHeight <= body.clientHeight + 1) return;
 
-  const startPx = parseFloat(getComputedStyle(description).fontSize);
-  const maxPx = startPx * 2;
-
-  let fontSize = startPx;
-  let guard = 40;
-  while (fontSize < maxPx && guard > 0) {
-    const nextSize = Math.min(fontSize * 1.03, maxPx);
-    description.style.fontSize = `${nextSize}px`;
-    if (description.scrollHeight > description.clientHeight + 1 || body.scrollHeight > body.clientHeight + 1) {
-      description.style.fontSize = `${fontSize}px`;
-      break;
-    }
-    fontSize = nextSize;
+  const maxLines = description.classList.contains('sign__description') ? 5 : 12;
+  let lines = maxLines;
+  let guard = maxLines;
+  while (body.scrollHeight > body.clientHeight + 1 && lines > 1 && guard > 0) {
+    lines -= 1;
+    description.style.webkitLineClamp = String(lines);
+    description.style.lineClamp = String(lines);
     guard -= 1;
   }
 }
