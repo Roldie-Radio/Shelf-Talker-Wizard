@@ -1242,9 +1242,15 @@ h1, h2, h3 { margin: 0; }
   font-weight: 800;
   color: var(--sale-red);
   -webkit-text-stroke: calc(var(--w) * 0.003) #000;
-  font-size: calc(var(--w) * 0.08 * var(--price-fit, 1));
-  line-height: 1.2;
-  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0 calc(var(--w) * 0.004 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.095 * var(--price-fit, 1));
+  /* Bumped from 1.2 - at 800 weight with a stroked outline, this glyph's
+     own ink (descenders on "p", the exclamation points) runs taller than a
+     1.2 line-height box, so it was visually bleeding into whatever margin
+     sat below it regardless of that margin's own value. The bigger
+     line-height gives the glyph itself room to breathe, so the margin
+     below can be cut without the outline touching .card__supersale-price. */
+  line-height: 1.5;
+  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0 calc(var(--w) * 0.002 * var(--price-fit, 1));
 }
 
 .card__size {
@@ -1273,7 +1279,7 @@ h1, h2, h3 { margin: 0; }
   /* Top margin tightened to match .card__supersale-text's own tightened
      bottom margin above - see the note there. Bottom margin (separation
      before the optional Regular Price line) is untouched. */
-  margin: calc(var(--w) * 0.004 * var(--price-fit, 1)) 0 calc(var(--w) * 0.01 * var(--price-fit, 1));
+  margin: calc(var(--w) * 0.002 * var(--price-fit, 1)) 0 calc(var(--w) * 0.01 * var(--price-fit, 1));
 }
 
 /* ================================================================
