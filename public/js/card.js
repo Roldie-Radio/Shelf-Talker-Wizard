@@ -1,9 +1,14 @@
-// Builds shelf-talker card DOM elements. The title shrinks to fit the
-// standardized card size no matter how much the store staff type in;
-// the description does not - it always renders at its set point size (the
-// default, or whatever the Description Font Size box overrides it to - see
-// fontSizeOverrideAttr below) and simply shows fewer lines, ending in an
-// ellipsis, if there isn't room for all of it (see clampDescriptionToAvailableSpace).
+// Builds shelf-talker card DOM elements. The title always shrinks to fit
+// the standardized card size no matter how much the store staff type in.
+// The description does not, by default - it renders at its set point size
+// (the default, or whatever the Description Font Size box overrides it to -
+// see fontSizeOverrideAttr below) and simply shows fewer lines, ending in
+// an ellipsis, if there isn't room for all of it (see
+// clampDescriptionToAvailableSpace). Checking the Auto Size box next to
+// that font size field switches the description back to the old
+// shrink-to-fit/grow-to-fill behaviour instead (see
+// shrinkDescriptionToFitBody/growDescriptionToFillSlack) - opt-in, per
+// talker, for whoever would rather have the text resize than be truncated.
 
 // layout.js's script tag runs before this one (see index.html), so
 // window.ShelfTalkerLayout is already populated by the time this file's
@@ -26,10 +31,11 @@ const { SIGN_LAYOUTS } = window.ShelfTalkerLayout;
 // sizes too), or that specific Display Sign size's own width, since Large
 // and Small are separate templates rather than proportional shrinks of
 // each other. includePriceFit matches whether the rule being overridden
-// multiplies by --price-fit today (.card__title does; .card__description/
-// .sign__description deliberately don't - the description is never
-// auto-scaled, see clampDescriptionToAvailableSpace below - nor does
-// .sign__title).
+// multiplies by --price-fit today (.card__title always does; .sign__title
+// never does; .card__description/.sign__description only do when this
+// particular talker has Auto Size checked - see the descriptionStyle call
+// sites below - since an unchecked description is never auto-scaled at
+// all, see clampDescriptionToAvailableSpace below).
 function fontSizeOverrideAttr(pt, referenceWidthIn, includePriceFit) {
   const value = parseFloat(pt);
   if (!Number.isFinite(value) || value <= 0) return '';
@@ -740,11 +746,12 @@ function buildLargeSignBodyHtml(talker) {
   const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
   const refWidthIn = SIGN_LAYOUTS['sign-large'].printWidth;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, false);
-  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, false);
+  const descriptionAutoSize = !!talker.descriptionAutoSize;
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
   return `
     <div class="sign__title"${titleStyle} data-fit="title">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
     ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
-    <div class="sign__description"${descriptionStyle} data-fit="description">${escapeHtml(talker.description || '')}</div>
+    <div class="sign__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
     ${isBeer ? buildBeerRatingHtml(talker) : ''}
     <div class="sign__footer-block">
       ${buildSignMetaRowHtml(talker, ratingHtml)}
@@ -839,7 +846,8 @@ function buildCardElement(talker) {
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
   const refWidthIn = SIGN_LAYOUTS.talker.printWidth;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, true);
-  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, false);
+  const descriptionAutoSize = !!talker.descriptionAutoSize;
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
 
   card.innerHTML = `
     <div class="card__band">
@@ -852,7 +860,7 @@ function buildCardElement(talker) {
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
-      <div class="card__description"${descriptionStyle} data-fit="description">${escapeHtml(talker.description || '')}</div>
+      <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
       ${isBeer ? '' : buildRatingsHtml(talker)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>
@@ -869,19 +877,22 @@ function buildCardElement(talker) {
 
 /**
  * Shrinks the title font size (in place) until it fits within its allotted
- * band, down to a sensible minimum, then clips the description down to
- * however many lines actually fit rather than resizing it. Works on both
+ * band, down to a sensible minimum, then settles the description - clipped
+ * to however many lines fit (the default), or shrunk/grown to fit like the
+ * title if this talker has Auto Size checked (see the data-auto-size
+ * attribute set in buildCardElement/buildLargeSignBodyHtml). Works on both
  * the Shelf Talker (.card) and Display Sign (.sign) formats. Must be called
  * after the element is attached to the document (needs real layout).
  */
 function fitCardText(cardEl) {
-  // Only the title auto-shrinks its font. The description is deliberately
-  // excluded here (and from --price-fit below) - it always renders at its
-  // set point size (the 10.5pt/10pt default, or whatever the Description
-  // Font Size box was typed as) so what's on screen is what prints, with no
-  // surprise auto-shrink/auto-grow second-guessing a size the user (or the
-  // default) already chose. See clampDescriptionToAvailableSpace below for
-  // what the description does instead when it's too long to fit.
+  // Only the title always auto-shrinks its font. The description does too,
+  // but only when Auto Size is checked for this talker - by default it's
+  // excluded here (and from --price-fit below) and renders at its set point
+  // size (the 10.5pt/10pt default, or whatever the Description Font Size
+  // box was typed as) so what's on screen is what prints, with no surprise
+  // auto-shrink/auto-grow second-guessing a size the user (or the default)
+  // already chose. See clampDescriptionToAvailableSpace below for what an
+  // unchecked description does instead when it's too long to fit.
   const titleEl = cardEl.querySelector('[data-fit="title"]');
   if (titleEl) {
     // Both the floor and the step are relative to the element's own starting
@@ -906,24 +917,43 @@ function fitCardText(cardEl) {
   const body = cardEl.querySelector('.card__body, .sign__body');
   if (!body) return;
 
-  // The description is the one piece of free text on the talker with no
-  // natural cap on length, so it's the one that gives when there isn't
-  // enough room left after the title/badges/ratings/price block above and
-  // below it - not by shrinking its text, but by showing fewer of its lines
-  // (ending in an ellipsis, via its own line-clamp CSS).
   const description = cardEl.querySelector('[data-fit="description"]');
-  clampDescriptionToAvailableSpace(description, body);
+  const autoSize = !!description && description.dataset.autoSize === 'true';
+  // Captured before either path below touches anything, so the Auto Size
+  // shrink pass has the description's true starting size (its set point
+  // size, --price-fit included) to measure its own floor against.
+  const descriptionNaturalPx = description ? parseFloat(getComputedStyle(description).fontSize) : 0;
+
+  if (autoSize) {
+    // The pass above only guarantees the title fits *itself*, not whatever
+    // room its neighbors actually leave the description - a description
+    // that's well within its own line-clamp box can still be taller than
+    // the space left after the title/ratings/price block, since it's the
+    // one piece of free text on the talker with no natural cap on length.
+    // Keep shrinking just the description - not the title, badges, ratings,
+    // or price block - so a long product description only ever costs the
+    // description its own size.
+    shrinkDescriptionToFitBody(description, descriptionNaturalPx, body);
+  } else {
+    // The description is the one piece of free text on the talker with no
+    // natural cap on length, so it's the one that gives when there isn't
+    // enough room left after the title/badges/ratings/price block above and
+    // below it - not by shrinking its text, but by showing fewer of its
+    // lines (ending in an ellipsis, via its own line-clamp CSS).
+    clampDescriptionToAvailableSpace(description, body);
+  }
 
   // Last resort: something other than the description - e.g. a maxed-out
   // three-line title stacked with a full ratings/awards list - is still too
-  // tall even with the description clamped down to a single line. Scale the
-  // whole block together (all parts, so their relative sizes stay the same)
-  // until it fits. This is the only path left that still touches the price
-  // row. --price-fit is deliberately left out of the description's own
+  // tall even with the description shrunk to its floor (Auto Size) or
+  // clamped down to a single line (default). Scale the whole block together
+  // (all parts, so their relative sizes stay the same) until it fits. This
+  // is the only path left that still touches the price row. With Auto Size
+  // off, --price-fit is deliberately left out of the description's own
   // font-size (see .card__description/.sign__description in styles.css), so
-  // this pass can't resize the description text itself - only how many of
-  // its lines are visible was ever eligible to change, and that was already
-  // settled above.
+  // this pass can't resize the description text itself in that case - only
+  // how many of its lines are visible was ever eligible to change, and that
+  // was already settled above.
   let priceFit = 1;
   let priceGuard = 40;
   while (body.scrollHeight > body.clientHeight + 1 && priceFit > 0.35 && priceGuard > 0) {
@@ -931,10 +961,13 @@ function fitCardText(cardEl) {
     body.style.setProperty('--price-fit', priceFit);
     priceGuard -= 1;
   }
+
+  if (autoSize) growDescriptionToFillSlack(cardEl, body);
 }
 
 // Never resizes the description's font - only how many of its lines are
-// visible. Starts from the format's own line-clamp ceiling (12 for a Shelf
+// visible. Used when this talker's Auto Size box is unchecked (the
+// default). Starts from the format's own line-clamp ceiling (12 for a Shelf
 // Talker, 5 for a Display Sign - see .card__description/.sign__description
 // in styles.css) and, only if the body is still overflowing at that point,
 // narrows it one line at a time until it fits or hits a 1-line floor.
@@ -953,6 +986,55 @@ function clampDescriptionToAvailableSpace(description, body) {
     lines -= 1;
     description.style.webkitLineClamp = String(lines);
     description.style.lineClamp = String(lines);
+    guard -= 1;
+  }
+}
+
+// Auto Size only: shrinks just the description (in place) until the body
+// around it stops overflowing, well past the shared 50% floor the title
+// gets in fitCardText above - the description is the one block on the
+// talker with no natural cap on how much gets typed into it, so it needs
+// more room to give before anything else does. Never touches the
+// title/price/badges.
+function shrinkDescriptionToFitBody(description, naturalPx, body) {
+  if (!description || !naturalPx || !description.textContent.trim()) return;
+  const floorPx = Math.max(naturalPx * 0.3, 4);
+  let fontSize = parseFloat(getComputedStyle(description).fontSize);
+  let guard = 60;
+  while (body.scrollHeight > body.clientHeight + 1 && fontSize > floorPx && guard > 0) {
+    fontSize *= 0.97;
+    description.style.fontSize = `${fontSize}px`;
+    guard -= 1;
+  }
+}
+
+// Auto Size only: a short description (common on beer talkers, which have
+// no vintage/ratings/awards blocks to take up the rest of the space) leaves
+// a lot of blank room above the price block - still pinned to the very
+// bottom via .card__spacer / .sign__footer-block's margin-top: auto so
+// prices line up across a printed sheet regardless of how much each talker
+// has to say. Grow the description into that slack instead of leaving it
+// blank - mirrors the shrink loop above but in reverse. Capped at 2x its
+// base size so a one- or two-word description doesn't balloon to fill the
+// whole card on its own; anything longer naturally stops growing once it
+// fills the available room, well under the cap.
+function growDescriptionToFillSlack(cardEl, body) {
+  const description = cardEl.querySelector('[data-fit="description"]');
+  if (!description || !description.textContent.trim()) return;
+
+  const startPx = parseFloat(getComputedStyle(description).fontSize);
+  const maxPx = startPx * 2;
+
+  let fontSize = startPx;
+  let guard = 40;
+  while (fontSize < maxPx && guard > 0) {
+    const nextSize = Math.min(fontSize * 1.03, maxPx);
+    description.style.fontSize = `${nextSize}px`;
+    if (description.scrollHeight > description.clientHeight + 1 || body.scrollHeight > body.clientHeight + 1) {
+      description.style.fontSize = `${fontSize}px`;
+      break;
+    }
+    fontSize = nextSize;
     guard -= 1;
   }
 }
