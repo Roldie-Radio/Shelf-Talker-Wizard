@@ -166,6 +166,7 @@
     titleFontSize: document.getElementById('fTitleFontSize'),
     description: document.getElementById('fDescription'),
     descriptionFontSize: document.getElementById('fDescriptionFontSize'),
+    descriptionAutoSize: document.getElementById('fDescriptionAutoSize'),
     size: document.getElementById('fSize'),
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
@@ -501,6 +502,7 @@
       vintage: els.vintage.value.trim(),
       description: els.description.value.trim(),
       descriptionFontSize: els.descriptionFontSize.value.trim(),
+      descriptionAutoSize: els.descriptionAutoSize.checked,
       size: els.size.value.trim(),
       theme: els.theme.value,
       price: els.price.value.trim(),
@@ -530,6 +532,7 @@
     els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
     els.descriptionFontSize.value = talker.descriptionFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].description;
+    els.descriptionAutoSize.checked = !!talker.descriptionAutoSize;
     els.size.value = talker.size || '';
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
