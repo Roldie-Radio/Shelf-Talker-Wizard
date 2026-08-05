@@ -804,13 +804,20 @@ h1, h2, h3 { margin: 0; }
    than screen mockups - fraction-of-w = pt / 72 / 2.8, so it scales
    correctly at Half/Quarter Size (same --w) same as everything else in
    this file. Title/size/reviews/prices are Verdana; only the body copy
-   (.card__description below) is Arial and not bold. */
+   (.card__description below) is Arial and not bold.
+   Fixed at its set point size by default (no --price-fit here), same
+   Auto Size opt-in as .card__description below - see the
+   [data-auto-size="true"] override right after this rule, and
+   fitCardText/clampTitleToAvailableSpace in card.js. Auto Size unchecked
+   (the default) just shows fewer of its 3 lines, via the line-clamp below,
+   if it doesn't fit; checked restores the original shrink-to-fit behavior
+   every title used to have unconditionally. */
 .card__title {
   text-align: center;
   text-transform: uppercase;
   font-weight: 800;
   font-family: Verdana, Geneva, sans-serif;
-  font-size: calc(var(--w) * 0.0595 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.0595);
   line-height: 1.15;
   margin: calc(2% * var(--price-fit, 1)) calc(var(--w) * -0.038) calc(3% * var(--price-fit, 1));
   flex: 0 0 auto;
@@ -827,6 +834,12 @@ h1, h2, h3 { margin: 0; }
   line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Auto Size checked - see the equivalent .card__description override
+   further down and its comment for the full reasoning; same idea here. */
+.card__title[data-auto-size="true"] {
+  font-size: calc(var(--w) * 0.0595 * var(--price-fit, 1));
 }
 
 /* Brewery's home state (or, for a non-US brewery, the country itself - see
@@ -1242,7 +1255,7 @@ h1, h2, h3 { margin: 0; }
   font-weight: 800;
   color: var(--sale-red);
   -webkit-text-stroke: calc(var(--w) * 0.003) #000;
-  font-size: calc(var(--w) * 0.095 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.108 * var(--price-fit, 1));
   /* Bumped from 1.2 - at 800 weight with a stroked outline, this glyph's
      own ink (descenders on "p", the exclamation points) runs taller than a
      1.2 line-height box, so it was visually bleeding into whatever margin
@@ -1250,7 +1263,15 @@ h1, h2, h3 { margin: 0; }
      line-height gives the glyph itself room to breathe, so the margin
      below can be cut without the outline touching .card__supersale-price. */
   line-height: 1.5;
-  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0 calc(var(--w) * 0.002 * var(--price-fit, 1));
+  /* Side margin is negative, same trick .card__title uses - this reclaims
+     .card__body's own side padding instead of sitting inset from it, which
+     is what makes a font-size this large still fit on one line (per a
+     requested mockup asking for it to span the card edge-to-edge). A
+     Playwright measurement of the actual glyph width against the widened
+     box confirmed it stays under 100% with room to spare, across
+     full/half/quarter sizes, both categories, and a worst-case overloaded
+     talker. */
+  margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) calc(var(--w) * -0.045) calc(var(--w) * 0.002 * var(--price-fit, 1));
 }
 
 .card__size {
@@ -1465,6 +1486,11 @@ h1, h2, h3 { margin: 0; }
    --sign-text override above. */
 .sign[data-size="large"] .sign__rail-col { font-size: calc(var(--w) * var(--sign-text) * 0.036); }
 
+/* Never included --price-fit (unlike .card__title), so there's no
+   [data-auto-size="true"] override to add here the way .card__title and
+   .card__description/.sign__description have - only the shrink-to-fit vs.
+   line-clamp behavior toggles with Auto Size (see fitCardText in card.js),
+   not this font-size formula itself. */
 .sign__title {
   font-weight: 800;
   text-transform: uppercase;
@@ -1476,6 +1502,7 @@ h1, h2, h3 { margin: 0; }
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* Superseded the old per-character-width estimate below with an exact
    figure from a reference Large sign's actual point size (Verdana 20pt,
