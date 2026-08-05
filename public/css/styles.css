@@ -902,8 +902,16 @@ h1, h2, h3 { margin: 0; }
    frees up vertical room for the Style text on the row below, which can
    run long enough to wrap ("IPA - Imperial / Double New England / Hazy")
    and was asked for specifically in that context, so this doesn't touch
-   the wine/spirits title-to-band spacing. */
-.card[data-category="beer"] .card__title { margin-top: calc(0.5% * var(--price-fit, 1)); }
+   the wine/spirits title-to-band spacing. The bottom margin is tightened
+   too (3% -> 1.5%): wine/spirits needs the fuller gap to clear a vintage
+   line, but beer's title sits directly above the rating/style row and
+   Brewery/Location/ABV/IBU table below, none of which need that much
+   breathing room - the reclaimed space goes to the description instead,
+   which is the one block on a beer talker with no natural length cap. */
+.card[data-category="beer"] .card__title {
+  margin-top: calc(0.5% * var(--price-fit, 1));
+  margin-bottom: calc(1.5% * var(--price-fit, 1));
+}
 
 /* Optional vintage line, wine/spirits only - same size/weight as
    .card__title now (a staff mockup asked for it to read with the same
@@ -998,7 +1006,11 @@ h1, h2, h3 { margin: 0; }
      was never asked about for signs). */
   align-items: flex-start;
   gap: calc(var(--w) * 0.035);
-  margin: calc(var(--w) * 0.025 * var(--price-fit, 1)) 0;
+  /* Tightened from 0.025 - this block sits between the title and the
+     Brewery/Location/ABV/IBU table, both already snug against it, so the
+     margin here was mostly just handing slack to the description's
+     shrink-to-fit floor instead of doing anything for legibility. */
+  margin: calc(var(--w) * 0.016 * var(--price-fit, 1)) 0;
 }
 
 /* Fixed to its own content width (the dots row is a fixed 5 dots) rather
@@ -1012,7 +1024,9 @@ h1, h2, h3 { margin: 0; }
   letter-spacing: 0.03em;
   color: var(--muted);
   font-size: calc(var(--w) * 0.042 * var(--price-fit, 1));
-  margin-bottom: calc(var(--w) * 0.014 * var(--price-fit, 1));
+  /* Tightened from 0.014, same reasoning as .card__beer-rating's own
+     margin above. */
+  margin-bottom: calc(var(--w) * 0.01 * var(--price-fit, 1));
 }
 
 .card__beer-dots-row { display: flex; align-items: center; gap: calc(var(--w) * 0.01); }
@@ -1037,7 +1051,10 @@ h1, h2, h3 { margin: 0; }
 .card__beer-rating-count {
   color: var(--muted);
   font-size: calc(var(--w) * 0.032 * var(--price-fit, 1));
-  margin-top: calc(var(--w) * 0.008 * var(--price-fit, 1));
+  /* Tightened from 0.008, same reasoning as .card__beer-rating's margin
+     above - only fires when a rating count is present, so this is a small
+     saving but a free one. */
+  margin-top: calc(var(--w) * 0.006 * var(--price-fit, 1));
 }
 
 /* Style, called out next to the Untappd rating instead of buried as a row
@@ -1062,13 +1079,20 @@ h1, h2, h3 { margin: 0; }
   border-radius: calc(var(--w) * 0.018);
 }
 
-.card__beer-table { flex: 0 0 auto; margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0; }
+/* Margin tightened from 0.02 - this block sits directly above the
+   description, the one part of a beer talker with no natural length cap,
+   so shaving its own clearance hands that room straight to the
+   description's shrink-to-fit floor instead. */
+.card__beer-table { flex: 0 0 auto; margin: calc(var(--w) * 0.012 * var(--price-fit, 1)) 0; }
 
 .card__beer-table-row {
   display: flex;
   align-items: center;
   gap: calc(var(--w) * 0.03);
-  padding: calc(var(--w) * 0.012 * var(--price-fit, 1)) 0;
+  /* Tightened from 0.012 - this padding repeats on every row (Brewery,
+     Location, ABV/IBU), so it's the biggest single saving in the beer
+     facts block, worth more the more rows a given talker actually has. */
+  padding: calc(var(--w) * 0.008 * var(--price-fit, 1)) 0;
   border-bottom: 1px solid #e5ddd0;
   font-size: calc(var(--w) * 0.044 * var(--price-fit, 1));
 }
