@@ -474,6 +474,27 @@ function countryCodeFromLocation(location) {
   return nameMatch ? COUNTRY_NAME_TO_CODE[nameMatch] : null;
 }
 
+// A US brewery's Location already gets its own green state-silhouette badge
+// (see buildRightBadgeHtml above) or, lacking a resolvable state, still
+// reads as domestic from context - either way, spelling out "United States"
+// again in the Brewery/Location table (see buildBeerTableHtml below) is
+// redundant in a way a non-US country never is, since every other country
+// on the card gets its own flag badge instead of a second text mention.
+// Untappd's own brewery pages are the actual source of the redundancy -
+// they render a brewery's location as e.g. "Morris Plains, NJ United
+// States" with no comma before the country (see parseBreweryHtml in
+// productImport.js) - so the match below tolerates a missing comma same as
+// a present one. Only strips a trailing US mention, and only from the
+// display copy here - buildRightBadgeHtml/buildCountryFlagHtml above still
+// read talker.location's original, unmodified text, so this can't affect
+// which badge shows up.
+const US_LOCATION_SUFFIX_RE = /,?\s*(united states of america|united states|u\.s\.a\.|usa)\.?\s*$/i;
+
+function formatLocationForDisplay(location) {
+  const text = location ? String(location).trim() : '';
+  return text.replace(US_LOCATION_SUFFIX_RE, '').trim();
+}
+
 function buildCountryFlagHtml(talker) {
   const code = countryCodeFromLocation(talker.location);
   const flag = code && COUNTRY_FLAGS[code];
@@ -555,7 +576,7 @@ function beerTableCellHtml(label, value) {
 function buildBeerTableHtml(talker) {
   const simpleRows = [
     ['Brewery', talker.brewery],
-    ['Location', talker.location],
+    ['Location', formatLocationForDisplay(talker.location)],
   ].filter(([, value]) => value && String(value).trim() !== '');
 
   const abv = talker.abv && String(talker.abv).trim() !== '' ? talker.abv : '';
