@@ -633,10 +633,16 @@ function buildPricingHtml(talker) {
     // Price!!!" callout above the actual price (the sale price if one was
     // given, otherwise just the regular price), with the regular price
     // called out separately underneath when there's a sale price to compare
-    // it to.
+    // it to. The callout's own size is user-adjustable (Super Sale Price!!!
+    // Font Size box) the same way Title/Description are - see
+    // fontSizeOverrideAttr above. .card__supersale-text's base rule always
+    // multiplies by --price-fit (unlike Title/Description, it has no Auto
+    // Size checkbox of its own to gate that on), so includePriceFit is
+    // unconditionally true here.
     const bigPrice = hasSale ? talker.salePrice : talker.price;
+    const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS.talker.printWidth, true);
     return `
-      <div class="card__supersale-text">Super Sale Price!!!</div>
+      <div class="card__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
       <div class="card__supersale-price">${formatMoney(bigPrice)}</div>
       ${hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : ''}
     `;
@@ -775,8 +781,16 @@ function buildSmallSignBodyHtml(talker) {
   let priceHtml;
   if (talkerType === 'supersale') {
     const bigPrice = hasSale ? talker.salePrice : talker.price;
+    // Same user-adjustable callout size as the Shelf Talker card's
+    // .card__supersale-text (see buildPricingHtml above) - .sign__supersale-
+    // text's base rule also always multiplies by --price-fit, so
+    // includePriceFit is true here too. --sign-text (Small vs Large's
+    // shared text-scale multiplier) is left out of the override on purpose,
+    // same as the title override two lines up - it's specific to the base
+    // CSS rule this inline style replaces, not to the typed point size.
+    const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS['sign-small'].printWidth, true);
     priceHtml = `
-      <div class="sign__supersale-text">Super Sale Price!!!</div>
+      <div class="sign__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
       <div class="sign__small-price sign__supersale-price">${formatMoney(bigPrice)}</div>
     `;
   } else {
