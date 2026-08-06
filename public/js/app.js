@@ -25,9 +25,16 @@
   // testing. Matches the *effective* point size the CSS ratios already
   // produce today (card__title's 0.0595 * 72 * 2.8in ≈ 12pt, etc.), so
   // leaving the boxes untouched renders identically to before this feature.
+  // superSalePrice matches the "Super Sale Price!!!" callout's current
+  // effective size the same way - card__supersale-text's 0.11 * 72 * 2.8in
+  // ≈ 22pt, sign__supersale-text's (small-sign-only) 0.042 * 1.2 * 72 *
+  // 4.75in ≈ 17pt (see fSuperSaleFontSize/superSaleFontSizeField, shown only
+  // for Super Sale talkers/Small Display Signs - Large Display Signs fold
+  // this text into the regular sale-price line instead, see
+  // buildSignPriceRowHtml in card.js).
   const DEFAULT_FONT_SIZE_PT = {
-    talker: { title: 12, description: 10.5 },
-    sign: { title: 20, description: 10 },
+    talker: { title: 12, description: 10.5, superSalePrice: 22 },
+    sign: { title: 20, description: 10, superSalePrice: 17 },
   };
 
   // Human-readable names for the queue list's meta line (see renderQueue).
@@ -176,6 +183,8 @@
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
     talkerTypeSupersaleOption: document.getElementById('talkerTypeSupersaleOption'),
+    superSaleFontSizeField: document.getElementById('superSaleFontSizeField'),
+    superSaleFontSize: document.getElementById('fSuperSaleFontSize'),
     ratingReviewer: document.getElementById('fRatingReviewer'),
     ratingScore: document.getElementById('fRatingScore'),
     addRatingBtn: document.getElementById('addRatingBtn'),
@@ -384,6 +393,14 @@
     els.talkerTypeSupersaleOption.hidden = isBeer;
     if (isBeer && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
 
+    // The "Super Sale Price!!!" callout only renders on the Shelf Talker
+    // card and the Small Display Sign (see buildPricingHtml/
+    // buildSmallSignBodyHtml in card.js) - Large Display Signs fold the
+    // same text into the regular sale-price line instead, so the box would
+    // have nothing to adjust there.
+    const isLargeSign = isSign && !isSmallSign;
+    els.superSaleFontSizeField.hidden = els.talkerType.value !== 'supersale' || isLargeSign;
+
     applyImportMode();
     applySkuMode();
   }
@@ -426,6 +443,7 @@
     const defaults = DEFAULT_FONT_SIZE_PT[currentSignType];
     els.titleFontSize.value = defaults.title;
     els.descriptionFontSize.value = defaults.description;
+    els.superSaleFontSize.value = defaults.superSalePrice;
   }
 
   function setSignType(signType) {
@@ -490,6 +508,11 @@
     });
   });
 
+  // Only field visibility depends on Talker Style (see applyFormMode's
+  // superSaleFontSizeField toggle above) - the preview itself already
+  // re-renders off els.form's own 'input' listener below.
+  els.talkerType.addEventListener('change', applyFormMode);
+
   // ---------- Form <-> talker object ----------
 
   function readForm() {
@@ -510,6 +533,7 @@
       price: els.price.value.trim(),
       salePrice: els.salePrice.value.trim(),
       talkerType: els.talkerType.value,
+      superSaleFontSize: els.superSaleFontSize.value.trim(),
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
@@ -545,6 +569,11 @@
     // line existed to overwrite it - re-check here so loading an older
     // saved beer item that predates this rule doesn't restore Super Sale.
     if (currentCategory === 'beer' && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
+    els.superSaleFontSize.value = talker.superSaleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].superSalePrice;
+    // Talker Style is now known, so the box's own visibility (hidden for
+    // non-Super Sale/Large Display Sign) needs a second pass - applyFormMode
+    // ran above before els.talkerType.value was set to this talker's value.
+    applyFormMode();
     currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
     renderRatingsList();
     els.awards.value = talker.awards || '';
