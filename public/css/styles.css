@@ -787,8 +787,14 @@ h1, h2, h3 { margin: 0; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  /* Tightened 20% (3/6/4 -> 2.4/4.8/3.2) - see .card__band above. */
-  padding: calc(2.4% * var(--price-fit, 1)) 4.8% calc(3.2% * var(--price-fit, 1));
+  /* Tightened 20% (3/6/4 -> 2.4/4.8/3.2) - see .card__band above. Top
+     halved again on top of that (2.4 -> 1.2) per a follow-up request to
+     close the gap between the band/header and .card__title specifically -
+     left/bottom untouched, this pass is about the header-to-title gap
+     only. .card__title's own top margin below is halved to match, since
+     the two stack (this is the flex container's padding, that's its first
+     child's margin - they don't collapse in a flex layout). */
+  padding: calc(1.2% * var(--price-fit, 1)) 4.8% calc(3.2% * var(--price-fit, 1));
   min-height: 0;
   overflow: hidden;
   /* Positioning context for .card__state-badge and .card__country-badge
@@ -819,7 +825,9 @@ h1, h2, h3 { margin: 0; }
   font-family: Verdana, Geneva, sans-serif;
   font-size: calc(var(--w) * 0.0595);
   line-height: 1.15;
-  margin: calc(2% * var(--price-fit, 1)) calc(var(--w) * -0.038) calc(3% * var(--price-fit, 1));
+  /* Top margin halved (2 -> 1) alongside .card__body's own top padding
+     above - see the note there. Left/right/bottom untouched. */
+  margin: calc(1% * var(--price-fit, 1)) calc(var(--w) * -0.038) calc(3% * var(--price-fit, 1));
   flex: 0 0 auto;
   display: -webkit-box;
   -webkit-box-orient: vertical;
