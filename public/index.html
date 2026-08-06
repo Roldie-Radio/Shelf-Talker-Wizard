@@ -282,6 +282,13 @@
         <button type="button" class="btn btn--primary" id="skuLookupBtn">Look Up SKU</button>
         <p class="help-text" id="skuStatus" role="status" aria-live="polite"></p>
 
+        <!-- Adds the fields the lookup above (or the fallbacks below) just
+             filled straight to the queue without switching to Manual Entry
+             first - see els.skuSaveBtn's click handler in app.js, which
+             reuses the Manual Entry form's own validate/save logic via
+             requestSubmit() rather than duplicating it. -->
+        <button type="button" class="btn" id="skuSaveBtn">Add to Queue</button>
+
         <button type="button" class="link-btn" id="skuHtmlToggle" aria-expanded="false" aria-controls="skuHtmlSection">Site blocking the lookup? Paste the product page's HTML instead</button>
         <div class="reviewer-manager" id="skuHtmlSection" hidden>
           <p class="help-text">Search the SKU on the store site yourself, open the matching product page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>

@@ -731,10 +731,37 @@ h1, h2, h3 { margin: 0; }
    width-relative fractions (unchanged from Full), so they end up too tall
    for the shorter body; fitCardText's existing shrink-to-fit compresses
    title/description/price down to fit, same as it already does for an
-   unusually long Full Size talker. Quarter Size needs no override here -
-   it keeps Full's aspect ratio and just gets a smaller --w (see
-   SIGN_LAYOUTS in app.js), so every fraction scales down uniformly. */
+   unusually long Full Size talker. Quarter Size needs no aspect-ratio
+   override here - it keeps Full's aspect ratio and just gets a smaller --w
+   (see SIGN_LAYOUTS in layout.js) - but see the Quarter-only font-size
+   overrides below, which do exist. */
 .card[data-size="half"] { aspect-ratio: 830 / 568; }
+
+/* Quarter Size Shelf Talkers show only Product Title/Size/Regular Price/
+   Sale Price - no vintage, ratings, awards, description, or badges (see
+   buildCardElement's isQuarter branch in card.js). With that whole middle
+   section gone, the same width-relative fractions Full/Half use would
+   leave Quarter looking sparse rather than "formatted for" its own much
+   shorter content list - .card__title also renders at literally half its
+   typed point size for free otherwise, since it shares Full's 2.8in
+   reference width while --w itself is already half that (see
+   buildCardElement's refWidthIn). Sized up specifically for this
+   format: title first, so a longer product name still gets the biggest
+   share of the (now much simpler) card. */
+.card[data-size="quarter"] .card__title {
+  font-size: calc(var(--w) * 0.119);
+}
+/* Auto Size checked - matches the plain rule above but with --price-fit
+   folded back in, same relationship the shared (non-Quarter) pair right
+   above .card__title[data-auto-size="true"] has (see the note there). */
+.card[data-size="quarter"] .card__title[data-auto-size="true"] {
+  font-size: calc(var(--w) * 0.119 * var(--price-fit, 1));
+}
+.card[data-size="quarter"] .card__size,
+.card[data-size="quarter"] .card__sale-price,
+.card[data-size="quarter"] .card__regular-price {
+  font-size: calc(var(--w) * 0.1 * var(--price-fit, 1));
+}
 
 /* .card__band/.card__band--footer/.card__logo/.card__footer-text are all
    fixed fractions of --w (not of the card's own height - see the comment

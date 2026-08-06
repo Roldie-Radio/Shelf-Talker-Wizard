@@ -213,6 +213,7 @@
     skuInput: document.getElementById('skuInput'),
     skuLookupBtn: document.getElementById('skuLookupBtn'),
     skuStatus: document.getElementById('skuStatus'),
+    skuSaveBtn: document.getElementById('skuSaveBtn'),
     skuHtmlToggle: document.getElementById('skuHtmlToggle'),
     skuHtmlSection: document.getElementById('skuHtmlSection'),
     skuHtmlUrl: document.getElementById('skuHtmlUrl'),
@@ -1166,6 +1167,32 @@
     saveQueue();
     renderQueue();
     resetForm();
+  });
+
+  // SKU Lookup's own "Add to Queue" - saves whatever the lookup (or its
+  // fallbacks) just filled into the shared form fields without making
+  // staff switch to Manual Entry first, unlike Import (which always
+  // switches there - see applyImportedProduct) since SKU Lookup is meant
+  // to support rapid repeat lookups in place (see applySkuLookupProduct's
+  // own note on staying put). Reuses the form's real submit handler via
+  // requestSubmit() - same validate/save/resetForm path as clicking "Add
+  // to Queue" on Manual Entry, not a second copy of that logic.
+  els.skuSaveBtn.addEventListener('click', () => {
+    els.form.requestSubmit();
+    if (!els.formError.hidden) {
+      // The form's own error banner lives on the Manual Entry tab-panel,
+      // not visible from here - mirror it into this tab's own status line
+      // instead of switching tabs away from the SKU workflow.
+      els.skuStatus.textContent = els.formError.textContent;
+      return;
+    }
+    // Saved successfully - resetForm() already cleared the shared fields
+    // (title/size/price/etc.), but the SKU-specific bits above live
+    // outside <form> and need their own reset so the tab is ready for the
+    // next SKU instead of still showing the one that was just added.
+    els.skuInput.value = '';
+    els.skuStatus.textContent = 'Added to queue! Enter another SKU to look up the next one.';
+    els.skuUntappdSection.hidden = true;
   });
 
   // ---------- Find tasting notes (Wine/Spirits) ----------

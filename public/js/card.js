@@ -624,11 +624,16 @@ function buildBeerTableHtml(talker) {
   return `<div class="card__beer-table">${simpleRowsHtml}${abvIbuHtml}</div>`;
 }
 
-function buildPricingHtml(talker) {
+// plain forces the bare Regular/Sale Price layout regardless of Talker
+// Style, skipping the Closeout/Chilled badge and the Super Sale callout -
+// used for Quarter Size Shelf Talkers (see buildCardElement's isQuarter
+// branch below), which only ever show Product Title/Size/Regular Price/
+// Sale Price, no matter what Talker Style is selected.
+function buildPricingHtml(talker, plain = false) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
 
-  if (talkerType === 'supersale') {
+  if (!plain && talkerType === 'supersale') {
     // Matches the store's printed Super Sale signs: a stylized "Super Sale
     // Price!!!" callout above the actual price (the sale price if one was
     // given, otherwise just the regular price), with the regular price
@@ -649,10 +654,13 @@ function buildPricingHtml(talker) {
   }
 
   // "closeout", "chilled" and "standard" all show the same regular/sale
-  // price layout; closeout/chilled just add their own badge above it.
+  // price layout; closeout/chilled just add their own badge above it
+  // (skipped entirely when plain).
   let badge = '';
-  if (talkerType === 'closeout') badge = '<div class="card__closeout-badge">CLOSEOUT!!</div>';
-  else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
+  if (!plain) {
+    if (talkerType === 'closeout') badge = '<div class="card__closeout-badge">CLOSEOUT!!</div>';
+    else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
+  }
   const regular = formatMoney(talker.price);
   return `
     ${badge}
@@ -854,28 +862,48 @@ function buildCardElement(talker) {
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.theme = talker.theme === 'purple' ? 'purple' : 'amber';
-  card.dataset.size = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
+  const talkerSize = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
+  card.dataset.size = talkerSize;
+  // Quarter Size Shelf Talkers are a deliberately stripped-down format -
+  // Product Title, Size, Regular Price and Sale Price only, nothing else
+  // (see the isQuarter branch of bodyHtml below), so the vintage/ratings/
+  // awards/beer-table/badge/description machinery is skipped entirely
+  // rather than rendered and then hidden by CSS.
+  const isQuarter = talkerSize === 'quarter';
   const isBeer = talker.category === 'beer';
   card.dataset.category = isBeer ? 'beer' : 'wine';
-  const rightBadgeHtml = isBeer ? buildRightBadgeHtml(talker) : '';
-  const countryFlagHtml = isBeer ? buildCountryFlagHtml(talker) : '';
+  const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
+  const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
   const titleClasses = ['card__title'];
   if (rightBadgeHtml) titleClasses.push('card__title--badge-right');
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
-  const refWidthIn = SIGN_LAYOUTS.talker.printWidth;
+  // Quarter gets its own reference width (its own real 1.4in print width,
+  // not Full/Half's shared 2.8in) - same trick .sign-small/.sign-large
+  // already use to scale independently of each other (see
+  // buildSmallSignBodyHtml/buildLargeSignBodyHtml below). Full/Half still
+  // share 2.8in, unaffected. Without this, the Title Font Size box's own
+  // default ("12", same for every talker size - see DEFAULT_FONT_SIZE_PT
+  // in app.js) would render at half its typed point size on Quarter simply
+  // because Quarter's --w is half of Full's, on top of Quarter now having
+  // far more room per field than Full ever did - the opposite of
+  // "formatted for" this stripped-down format.
+  const refWidthIn = isQuarter ? SIGN_LAYOUTS['talker-quarter'].printWidth : SIGN_LAYOUTS.talker.printWidth;
   const titleAutoSize = !!talker.titleAutoSize;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, titleAutoSize);
   const descriptionAutoSize = !!talker.descriptionAutoSize;
-  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
+  const descriptionStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
+  const titleHtml = `<div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>`;
+  const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : '';
 
-  card.innerHTML = `
-    <div class="card__band">
-      <img class="card__logo" src="assets/logo.png" alt="" />
-    </div>
-    <div class="card__body">
+  const bodyHtml = isQuarter ? `
+      ${titleHtml}
+      <div class="card__spacer"></div>
+      ${sizeHtml}
+      ${buildPricingHtml(talker, true)}
+  ` : `
       ${countryFlagHtml}
       ${rightBadgeHtml}
-      <div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>
+      ${titleHtml}
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
@@ -883,9 +911,15 @@ function buildCardElement(talker) {
       ${isBeer ? '' : buildRatingsHtml(talker)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>
-      ${talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : ''}
+      ${sizeHtml}
       ${buildPricingHtml(talker)}
+  `;
+
+  card.innerHTML = `
+    <div class="card__band">
+      <img class="card__logo" src="assets/logo.png" alt="" />
     </div>
+    <div class="card__body">${bodyHtml}</div>
     <div class="card__band card__band--footer">
       <span class="card__footer-text">www.liquoroutletwinecellars.com</span>
     </div>

@@ -319,20 +319,27 @@ async function createWindow() {
   mainWindow.loadURL(`http://127.0.0.1:${PORT}`);
 
   // Electron's BrowserWindow doesn't show a native copy/paste context menu on
-  // its own - the host app has to build one. Scope it to editable fields
-  // (inputs/textareas) so right-click still does nothing on non-editable
-  // content like product cards/images.
+  // its own - the host app has to build one. Editable fields (inputs/
+  // textareas) get the full cut/copy/paste/select-all set; non-editable
+  // content (e.g. the Live Preview's shelf talker/sign text, which is
+  // selectable but not editable) only gets a menu at all when there's a
+  // selection to copy - right-click still does nothing on a plain click
+  // with nothing selected, or on images/badges, same as before.
   mainWindow.webContents.on('context-menu', (_event, params) => {
-    if (!params.isEditable) return;
-
-    const template = [
-      { role: 'cut', enabled: params.editFlags.canCut },
-      { role: 'copy', enabled: params.editFlags.canCopy },
-      { role: 'paste', enabled: params.editFlags.canPaste },
-      { type: 'separator' },
-      { role: 'selectAll', enabled: params.editFlags.canSelectAll },
-    ];
-    Menu.buildFromTemplate(template).popup({ window: mainWindow });
+    if (params.isEditable) {
+      const template = [
+        { role: 'cut', enabled: params.editFlags.canCut },
+        { role: 'copy', enabled: params.editFlags.canCopy },
+        { role: 'paste', enabled: params.editFlags.canPaste },
+        { type: 'separator' },
+        { role: 'selectAll', enabled: params.editFlags.canSelectAll },
+      ];
+      Menu.buildFromTemplate(template).popup({ window: mainWindow });
+    } else if (params.selectionText) {
+      Menu.buildFromTemplate([
+        { role: 'copy', enabled: params.editFlags.canCopy },
+      ]).popup({ window: mainWindow });
+    }
   });
 
   // Any link the app tries to open in a new window/tab (e.g. target="_blank")
