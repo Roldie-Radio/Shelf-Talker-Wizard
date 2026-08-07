@@ -655,11 +655,17 @@ function buildPricingHtml(talker, plain = false) {
 
   // "closeout", "chilled" and "standard" all show the same regular/sale
   // price layout; closeout/chilled just add their own badge above it
-  // (skipped entirely when plain).
+  // (skipped entirely when plain). The badge's own size is user-adjustable
+  // (CLOSEOUT!! Font Size box) the same way Super Sale Price!!! is above -
+  // .card__closeout-badge's base rule always multiplies by --price-fit
+  // (no Auto Size checkbox of its own), so includePriceFit is
+  // unconditionally true here too.
   let badge = '';
   if (!plain) {
-    if (talkerType === 'closeout') badge = '<div class="card__closeout-badge">CLOSEOUT!!</div>';
-    else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
+    if (talkerType === 'closeout') {
+      const closeoutStyle = fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS.talker.printWidth, true);
+      badge = `<div class="card__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
+    } else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
   }
   const regular = formatMoney(talker.price);
   return `
@@ -712,12 +718,19 @@ function buildRatingsInlineHtml(talker) {
 // The rating/badge and size row. Sits directly above the price row at the
 // bottom of the sign (see .sign__footer-block), so the rating lines up over
 // the sale price and the size over the regular price, matching the store's
-// printed Large signs.
+// printed Large signs. Only called for Large signs (see
+// buildLargeSignBodyHtml below), so the CLOSEOUT!! badge's font-size
+// override is measured against the Large sign's own printWidth - same
+// user-adjustable box (CLOSEOUT!! Font Size) as the Shelf Talker card's
+// .card__closeout-badge above, and .sign__closeout-badge's base rule always
+// multiplies by --price-fit too, so includePriceFit is true here as well.
 function buildSignMetaRowHtml(talker, leftHtml) {
   const talkerType = talker.talkerType || 'standard';
   let left = leftHtml ? `<div class="sign__rating">${leftHtml}</div>` : '';
-  if (talkerType === 'closeout') left = '<div class="sign__closeout-badge">CLOSEOUT!!</div>';
-  else if (talkerType === 'chilled') left = '<div class="sign__chilled-badge">Also Available Chilled</div>';
+  if (talkerType === 'closeout') {
+    const closeoutStyle = fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS['sign-large'].printWidth, true);
+    left = `<div class="sign__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
+  } else if (talkerType === 'chilled') left = '<div class="sign__chilled-badge">Also Available Chilled</div>';
   if (!left && !talker.size) return '';
   return `
     <div class="sign__meta-row">
@@ -802,8 +815,16 @@ function buildSmallSignBodyHtml(talker) {
       <div class="sign__small-price sign__supersale-price">${formatMoney(bigPrice)}</div>
     `;
   } else {
+    // Same user-adjustable badge size as the Large sign's own
+    // .sign__closeout-badge (see buildSignMetaRowHtml above) and the Shelf
+    // Talker card's .card__closeout-badge (see buildPricingHtml above) -
+    // measured against this Small sign's own printWidth, same reasoning as
+    // the Super Sale callout's superSaleStyle just above.
+    const closeoutStyle = talkerType === 'closeout'
+      ? fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS['sign-small'].printWidth, true)
+      : '';
     priceHtml = `
-      ${talkerType === 'closeout' ? '<div class="sign__closeout-badge">CLOSEOUT!!</div>' : ''}
+      ${talkerType === 'closeout' ? `<div class="sign__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>` : ''}
       ${talkerType === 'chilled' ? '<div class="sign__chilled-badge">Also Available Chilled</div>' : ''}
       <div class="sign__small-price ${hasSale ? 'is-sale' : ''}">${formatMoney(hasSale ? talker.salePrice : talker.price)}</div>
     `;
