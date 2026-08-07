@@ -224,6 +224,19 @@ function isFresh(cached) {
   return !!cached && cached.ageMs < CACHE_FRESH_MS;
 }
 
+// Backs the "View Database" and "Server PC" dialogs (Advanced menu) - a
+// cheap sanity-check number for each table rather than anything about their
+// contents, so a store PC's staff/support can tell at a glance whether this
+// PC actually has real accumulated data (a healthy, long-used PC) versus a
+// fresh install with nothing in it yet.
+function getStats() {
+  const db = getDb();
+  return {
+    printedTalkers: db.prepare('SELECT COUNT(*) AS n FROM printed_talkers').get().n,
+    cachedProducts: db.prepare('SELECT COUNT(*) AS n FROM product_cache').get().n,
+  };
+}
+
 module.exports = {
   getDb,
   closeDb,
@@ -235,6 +248,7 @@ module.exports = {
   getCachedProduct,
   isFresh,
   CACHE_FRESH_MS,
+  getStats,
   // Exported for tests only.
   dbFilePath,
 };

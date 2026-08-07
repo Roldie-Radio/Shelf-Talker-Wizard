@@ -292,10 +292,55 @@ function lookupUpc(scannedUpc) {
   throw err;
 }
 
+// Backs the desktop app's "View Export File" dialog (Advanced menu): the
+// raw file as WinePOS actually wrote it - headers exactly as named, first
+// `limit` data rows - rather than loadCatalog's parsed/column-matched
+// index above. Deliberately separate from that lookup path: a preview is
+// for confirming what the file actually contains (does it even have a
+// column that looks like a UPC, what's it literally called) - matching it
+// against FIELD_ALIASES would hide exactly the thing staff most need to
+// see when the export isn't working. Same error codes as lookupUpc for the
+// "nothing configured yet"/"file missing" cases.
+function previewExport({ limit = 50 } = {}) {
+  const { exportPath } = readConfig();
+  if (!exportPath) {
+    const err = new Error('No export file location is set yet. Open Scan UPC → Settings and point it at the WinePOS export file.');
+    err.code = 'NO_EXPORT_PATH';
+    throw err;
+  }
+
+  let text;
+  try {
+    text = fs.readFileSync(exportPath, 'utf-8');
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      const err = new Error(`No file found at ${exportPath}. Check the export path in Scan UPC → Settings.`);
+      err.code = 'EXPORT_NOT_FOUND';
+      throw err;
+    }
+    const wrapped = new Error(e.message);
+    wrapped.code = 'EXPORT_UNREADABLE';
+    throw wrapped;
+  }
+
+  const rows = parseDelimited(text);
+  const headers = rows[0] || [];
+  const dataRows = rows.slice(1);
+  const lim = Math.min(Math.max(Number(limit) || 50, 1), 500);
+
+  return {
+    exportPath,
+    headers,
+    rows: dataRows.slice(0, lim),
+    totalRows: dataRows.length,
+  };
+}
+
 module.exports = {
   getUpcSettings,
   setUpcSettings,
   lookupUpc,
+  previewExport,
   // Exported for tests only.
   parseDelimited,
   matchColumns,

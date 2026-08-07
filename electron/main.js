@@ -228,6 +228,24 @@ ipcMain.handle('upc-export:pick-file', async () => {
   return result.filePaths[0];
 });
 
+// Advanced menu's "View Export File...", "View Database...", and "Server
+// PC..." (see buildMenu below) - the renderer owns fetching the actual data
+// (from the same-origin API the rest of the app already uses) and rendering
+// it, same split as handleShowHelp above: the main process only knows how
+// to ask the renderer to open a panel, not what goes in it.
+function handleViewExportFile() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('view-export-requested');
+}
+function handleViewDatabase() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('view-database-requested');
+}
+function handleServerPc() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('server-pc-requested');
+}
+
 ipcMain.handle('queue:save', async (_event, payload) => {
   if (!mainWindow) return { success: false };
   const result = await dialog.showSaveDialog(mainWindow, {
@@ -279,6 +297,11 @@ function buildMenu() {
           accelerator: process.platform === 'darwin' ? 'Cmd+Alt+I' : 'Ctrl+Shift+I',
           click: () => { if (mainWindow) mainWindow.webContents.toggleDevTools(); },
         },
+        { type: 'separator' },
+        { label: 'View Export File…', click: handleViewExportFile },
+        { label: 'View Database…', click: handleViewDatabase },
+        { type: 'separator' },
+        { label: 'Server PC…', click: handleServerPc },
       ],
     },
   ];

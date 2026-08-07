@@ -583,6 +583,80 @@
     </div>
   </div>
 
+  <!-- Advanced menu only (Electron) - a read-only look at the raw WinePOS
+       export file configured in Scan UPC -> Settings, so staff/support can
+       confirm it's actually hooked up right without going to find and open
+       the file themselves. Shown exactly as WinePOS wrote it (headers as
+       named, not run through Scan UPC's column-alias matching) - see the
+       note above previewExport() in server/upcCatalog.js. -->
+  <div id="exportPreviewOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="exportPreviewTitle">
+      <div class="modal__header">
+        <h2 id="exportPreviewTitle">WinePOS Export File</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="exportPreviewCloseBtn">&times; Close</button>
+      </div>
+      <div class="data-preview">
+        <p class="help-text" id="exportPreviewStatus" role="status" aria-live="polite"></p>
+        <div class="preview-table-wrap" id="exportPreviewTableWrap"></div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="exportPreviewSettingsBtn">Go to Scan UPC Settings</button>
+        <button type="button" class="btn btn--primary" id="exportPreviewCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced menu only (Electron) - a read-only look at what's actually
+       stored in the local database (see server/db.js): Print History and
+       product cache counts, plus a page of the most recent printed talkers,
+       for confirming this PC has real accumulated data. -->
+  <div id="databasePreviewOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="databasePreviewTitle">
+      <div class="modal__header">
+        <h2 id="databasePreviewTitle">Database</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="databasePreviewCloseBtn">&times; Close</button>
+      </div>
+      <div class="data-preview">
+        <p class="help-text" id="databasePreviewStatus" role="status" aria-live="polite"></p>
+        <div class="preview-table-wrap" id="databasePreviewTableWrap"></div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="databasePreviewCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced menu only (Electron) - lets staff mark this PC as the main
+       store PC. Purely a persisted flag today (see server/serverConfig.js) -
+       it doesn't change how the app runs; a first step toward sharing Print
+       History/the product cache across registers later, not that feature
+       itself. -->
+  <div id="serverPcOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="serverPcTitle">
+      <div class="modal__header">
+        <h2 id="serverPcTitle">Server PC</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="serverPcCloseBtn">&times; Close</button>
+      </div>
+      <div class="server-pc-body">
+        <p class="help-text">Marking a PC as the main store PC is a first step toward sharing Print History and the product cache across registers later &mdash; it doesn't change anything about how this app runs today. Each PC still keeps its own separate data.</p>
+        <dl class="server-pc-facts">
+          <div><dt>This PC's network address</dt><dd id="serverPcAddresses">&ndash;</dd></div>
+          <div><dt>Print History</dt><dd id="serverPcHistoryCount">&ndash;</dd></div>
+          <div><dt>Product cache</dt><dd id="serverPcCacheCount">&ndash;</dd></div>
+        </dl>
+        <label class="server-pc-checkbox">
+          <input type="checkbox" id="serverPcCheckbox" />
+          This is the main store PC
+        </label>
+        <p class="help-text" id="serverPcStatus" role="status" aria-live="polite"></p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="serverPcSaveBtn">Save</button>
+        <button type="button" class="btn" id="serverPcCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="js/layout.js"></script>

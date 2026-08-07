@@ -22,4 +22,12 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // plain browser dev copy has no native file dialog and just falls back to
   // typing/pasting the path instead.
   pickUpcExportFile: () => ipcRenderer.invoke('upc-export:pick-file'),
+
+  // Advanced menu's "View Export File...", "View Database...", and "Server
+  // PC..." (see main.js) - each just opens the matching in-app panel, same
+  // pattern as onShowHelpRequested above. Electron-only: the plain browser
+  // dev copy has no menu to trigger these from at all.
+  onViewExportRequested: (callback) => ipcRenderer.on('view-export-requested', () => callback()),
+  onViewDatabaseRequested: (callback) => ipcRenderer.on('view-database-requested', () => callback()),
+  onServerPcRequested: (callback) => ipcRenderer.on('server-pc-requested', () => callback()),
 });

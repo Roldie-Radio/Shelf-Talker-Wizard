@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
-  getUpcSettings, setUpcSettings, lookupUpc,
+  getUpcSettings, setUpcSettings, lookupUpc, previewExport,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -232,5 +232,53 @@ test('lookupUpc picks up changes to the export file after it is re-saved', () =>
     fs.utimesSync(filePath, bumped, bumped);
 
     assert.equal(lookupUpc('085000010652').price, '11.99');
+  });
+});
+
+// ---------- previewExport ----------
+
+test('previewExport returns the raw headers and rows, not the column-matched product shape', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    const preview = previewExport({ limit: 10 });
+    assert.equal(preview.exportPath, filePath);
+    assert.deepEqual(preview.headers, ['UPC', 'Item Description', 'Brand', 'Size', 'Vintage', 'Regular Price', 'Sale Price', 'Department']);
+    assert.equal(preview.totalRows, 2);
+    assert.equal(preview.rows.length, 2);
+    assert.equal(preview.rows[0][0], '085000010652');
+  });
+});
+
+test('previewExport respects the limit without changing totalRows', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    const preview = previewExport({ limit: 1 });
+    assert.equal(preview.rows.length, 1);
+    assert.equal(preview.totalRows, 2);
+  });
+});
+
+test('previewExport does not require a UPC column - unlike lookupUpc, a raw preview should work on any export', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', 'Title,Price\nJosh Cellars,13.99\n');
+    setUpcSettings(filePath);
+    const preview = previewExport({ limit: 10 });
+    assert.deepEqual(preview.headers, ['Title', 'Price']);
+    assert.equal(preview.totalRows, 1);
+  });
+});
+
+test('previewExport throws NO_EXPORT_PATH when nothing is configured', () => {
+  withTempConfigDir(() => {
+    assert.throws(() => previewExport({}), (err) => err.code === 'NO_EXPORT_PATH');
+  });
+});
+
+test('previewExport throws EXPORT_NOT_FOUND when the configured file is missing', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(path.join(dir, 'nope.csv'));
+    assert.throws(() => previewExport({}), (err) => err.code === 'EXPORT_NOT_FOUND');
   });
 });
