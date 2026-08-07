@@ -218,7 +218,14 @@
           </div>
 
           <div class="field ratings-field" id="wineRatingsField">
-            <span id="ratingsFieldLabel">Ratings (optional)</span>
+            <div class="field-head">
+              <span id="ratingsFieldLabel">Ratings (optional)</span>
+              <span class="font-size-control">
+                <span class="font-size-control__icon" aria-hidden="true">Aa</span>
+                <input type="number" id="fRatingsFontSize" min="6" max="72" step="0.5" inputmode="decimal" aria-label="Ratings font size in points" />
+                <span class="font-size-control__unit">pt</span>
+              </span>
+            </div>
             <div class="ratings-builder">
               <select id="fRatingReviewer" aria-label="Reviewer"></select>
               <input type="text" inputmode="numeric" id="fRatingScore" maxlength="3" placeholder="92" aria-label="Rating score" />

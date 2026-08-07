@@ -1162,6 +1162,10 @@ h1, h2, h3 { margin: 0; }
   font-size: calc(var(--w) * 0.0521 * var(--price-fit, 1));
 }
 
+/* Default size for the Ratings list - the Ratings Font Size box (see
+   fRatingsFontSize in app.js) overrides this with an inline style whenever
+   a point size is actually typed in, which wins over this rule (same
+   convention as .card__closeout-badge/.card__title above). */
 .card__ratings {
   text-align: center;
   font-weight: 800;
@@ -1768,7 +1772,10 @@ h1, h2, h3 { margin: 0; }
 /* Matched to .sign__size, its partner across the row. Previously the rating
    had no rule at all, so it inherited the page's absolute 16px instead of
    scaling with --w like everything else on the sign - meaning it rendered at
-   a fixed size no matter how large the sign was printed. */
+   a fixed size no matter how large the sign was printed. Default size only -
+   the Ratings Font Size box (see fRatingsFontSize in app.js) overrides this
+   with an inline style whenever a point size is actually typed in, same as
+   .sign__closeout-badge below. */
 .sign__rating {
   font-weight: 800;
   font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1));
