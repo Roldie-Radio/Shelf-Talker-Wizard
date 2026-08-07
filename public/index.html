@@ -51,7 +51,7 @@
         <button class="tab is-active" data-tab="manual" role="tab" id="tabManual" aria-controls="panelManual" aria-selected="true">Manual Entry</button>
         <button class="tab" data-tab="import" role="tab" id="tabImport" aria-controls="panelImport" aria-selected="false" tabindex="-1">Import from Website</button>
         <button class="tab" data-tab="sku" role="tab" id="tabSku" aria-controls="panelSku" aria-selected="false" tabindex="-1">SKU Lookup</button>
-        <button class="tab" data-tab="scan" role="tab" id="tabScan" aria-controls="panelScan" aria-selected="false" tabindex="-1">Scan UPC</button>
+        <button class="tab" data-tab="scan" role="tab" id="tabScan" aria-controls="panelScan" aria-selected="false" tabindex="-1">Scan UPC <span class="beta-badge">Beta</span></button>
       </div>
 
       <div class="tab-panel is-active" data-panel="manual" id="panelManual" role="tabpanel" aria-labelledby="tabManual" tabindex="0">
@@ -348,7 +348,7 @@
           <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
           <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
         </div>
-        <p class="help-text">Scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? See Settings below.</p>
+        <p class="help-text"><strong>Beta</strong> &mdash; scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? See Settings below.</p>
         <label class="field">
           <span>UPC</span>
           <input type="text" id="scanUpcInput" inputmode="numeric" autocomplete="off" placeholder="Scan or type a UPC..." />
@@ -492,7 +492,7 @@
           <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
           <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
           <li><strong>SKU Lookup</strong> &mdash; type in the store's SKU number and let the app find it on the store's website. See "Looking up a product by SKU" below.</li>
-          <li><strong>Scan UPC</strong> &mdash; scan (or type) a bottle's UPC and the app looks it up in a product file WinePOS exports on this PC &mdash; no internet needed. See "Scanning a UPC" below.</li>
+          <li><strong>Scan UPC</strong> (marked <strong>Beta</strong> &mdash; it's new, and needs a WinePOS export file set up before it can find anything) &mdash; scan (or type) a bottle's UPC and the app looks it up in a product file WinePOS exports on this PC &mdash; no internet needed. See "Scanning a UPC" below.</li>
         </ul>
 
         <h3>Talker sizes and styles</h3>
