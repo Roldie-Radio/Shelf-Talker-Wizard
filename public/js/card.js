@@ -61,13 +61,16 @@ function formatMoney(value) {
   return `$${num.toFixed(2)}`;
 }
 
-function buildRatingsHtml(talker) {
+// style is the Ratings Font Size box's override (see fontSizeOverrideAttr
+// above and fRatingsFontSize in app.js) - '' renders at .card__ratings'
+// own default size, same convention as the Closeout/Super Sale callouts.
+function buildRatingsHtml(talker, style = '') {
   if (!Array.isArray(talker.ratings) || !talker.ratings.length) return '';
   const lines = talker.ratings
     .filter((r) => r && (r.reviewer || r.score))
     .map((r) => `${escapeHtml(r.score || '')} Pts ${escapeHtml(r.reviewer || '')}`.trim());
   if (!lines.length) return '';
-  return `<div class="card__ratings">${lines.join('<br>')}</div>`;
+  return `<div class="card__ratings"${style}>${lines.join('<br>')}</div>`;
 }
 
 // Free-text line(s) under the numeric Ratings list, for medals/honors that
@@ -719,14 +722,16 @@ function buildRatingsInlineHtml(talker) {
 // bottom of the sign (see .sign__footer-block), so the rating lines up over
 // the sale price and the size over the regular price, matching the store's
 // printed Large signs. Only called for Large signs (see
-// buildLargeSignBodyHtml below), so the CLOSEOUT!! badge's font-size
-// override is measured against the Large sign's own printWidth - same
-// user-adjustable box (CLOSEOUT!! Font Size) as the Shelf Talker card's
-// .card__closeout-badge above, and .sign__closeout-badge's base rule always
-// multiplies by --price-fit too, so includePriceFit is true here as well.
+// buildLargeSignBodyHtml below), so both the CLOSEOUT!! badge's and the
+// rating's font-size overrides are measured against the Large sign's own
+// printWidth - same user-adjustable boxes (CLOSEOUT!! Font Size, Ratings
+// Font Size) as the Shelf Talker card's .card__closeout-badge/.card__ratings
+// above, and .sign__closeout-badge's/.sign__rating's base rules always
+// multiply by --price-fit too, so includePriceFit is true for both here.
 function buildSignMetaRowHtml(talker, leftHtml) {
   const talkerType = talker.talkerType || 'standard';
-  let left = leftHtml ? `<div class="sign__rating">${leftHtml}</div>` : '';
+  const ratingsStyle = fontSizeOverrideAttr(talker.ratingsFontSize, SIGN_LAYOUTS['sign-large'].printWidth, true);
+  let left = leftHtml ? `<div class="sign__rating"${ratingsStyle}>${leftHtml}</div>` : '';
   if (talkerType === 'closeout') {
     const closeoutStyle = fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS['sign-large'].printWidth, true);
     left = `<div class="sign__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
@@ -913,6 +918,7 @@ function buildCardElement(talker) {
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, titleAutoSize);
   const descriptionAutoSize = !!talker.descriptionAutoSize;
   const descriptionStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
+  const ratingsStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.ratingsFontSize, refWidthIn, true);
   const titleHtml = `<div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>`;
   const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : '';
 
@@ -929,7 +935,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
-      ${isBeer ? '' : buildRatingsHtml(talker)}
+      ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>
       ${sizeHtml}
