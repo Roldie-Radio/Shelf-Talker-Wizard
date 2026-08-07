@@ -1905,6 +1905,28 @@ test('composeProducerTitle prepends the brand, strips the size, and leaves brand
   );
 });
 
+// A real beer's scraped title/h1 sometimes carries this junk verbatim,
+// distinct from - and in addition to - the dedicated Size/Pack Size spec
+// rows that already have their own fields: the store's "Not Specified"
+// spec-table placeholder (see the Year/Pack Size handling in
+// parseStoreProductHtml) and an abbreviated pack count ("4pk", not the
+// "4-pack"/"4 pack" SIZE_PATTERN already caught). Neither belongs in the
+// Beer Name/Product Title field a shopper would see.
+test('composeProducerTitle strips a "Not Specified" placeholder and an abbreviated pack count out of the title', () => {
+  assert.equal(
+    composeProducerTitle({ title: 'Hazy IPA Not Specified', brand: 'New Anthem Beer Project', size: '' }),
+    'New Anthem Beer Project Hazy IPA'
+  );
+  assert.equal(
+    composeProducerTitle({ title: 'Hazy IPA 4pk', brand: 'New Anthem Beer Project', size: '' }),
+    'New Anthem Beer Project Hazy IPA'
+  );
+  assert.equal(
+    composeProducerTitle({ title: 'Hazy IPA 16oz 4-pk', brand: 'New Anthem Beer Project', size: '' }),
+    'New Anthem Beer Project Hazy IPA'
+  );
+});
+
 test('lookupSkuFromHtml parses pasted store HTML and still runs Untappd enrichment for beer', async () => {
   const storeProductHtml = page({
     body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
