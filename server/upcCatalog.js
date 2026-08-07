@@ -18,26 +18,17 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { getAppDataDir } = require('./appData');
 
 // ================================================================
 // Config - where the export file lives is a one-time, per-PC setting (the
 // Scan UPC tab's Settings box), so it's persisted to a small JSON file
-// rather than asked for on every lookup. SHELF_TALKER_CONFIG_DIR overrides
-// the location entirely, which both the test suite and (if ever needed) the
-// Electron main process can use instead of the real per-OS default below.
+// rather than asked for on every lookup, in the same per-PC directory
+// db.js's SQLite file lives in (see appData.js).
 // ================================================================
 
-function configDir() {
-  if (process.env.SHELF_TALKER_CONFIG_DIR) return process.env.SHELF_TALKER_CONFIG_DIR;
-  if (process.platform === 'win32' && process.env.APPDATA) {
-    return path.join(process.env.APPDATA, 'Shelf Talker Wizard');
-  }
-  return path.join(os.homedir(), '.shelf-talker-wizard');
-}
-
 function configFilePath() {
-  return path.join(configDir(), 'config.json');
+  return path.join(getAppDataDir(), 'config.json');
 }
 
 function readConfig() {
@@ -53,7 +44,7 @@ function readConfig() {
 }
 
 function writeConfig(config) {
-  fs.mkdirSync(configDir(), { recursive: true });
+  fs.mkdirSync(getAppDataDir(), { recursive: true });
   fs.writeFileSync(configFilePath(), JSON.stringify({ exportPath: config.exportPath || '' }, null, 2), 'utf-8');
 }
 

@@ -13,7 +13,9 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Full-page preview** &mdash; toggle the Live Preview between the single talker you're editing and a scaled Letter-landscape sheet showing the whole queue 6-up, with Prev/Next pagination past 6 items.
 - **Print-ready sheets** &mdash; queue up talkers and print; they're laid out 6-up on Letter-size paper (3 columns &times; 2 rows), the same arrangement as the original template, paginating automatically if you have more than 6.
 - Your queue is saved in the browser (localStorage) so it survives a refresh.
-- **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, SKU lookup, importing, and printing, so staff aren't sent looking for this README.
+- **Print History** &mdash; every talker actually printed is kept in a permanent, searchable record (a local SQLite database), separate from the queue above. Search by title or SKU and click **Reprint** to add a past talker back into the queue without re-entering it.
+- **Product cache** &mdash; SKU Lookup and Scan UPC both remember what they found for a given SKU/UPC; a repeat lookup within 24 hours skips the network/file read entirely, and a *failed* lookup falls back to whatever's cached (clearly marked, however old) rather than a hard error.
+- **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, SKU lookup, importing, History, and printing, so staff aren't sent looking for this README.
 
 ## Running it
 
@@ -91,6 +93,17 @@ The installer is written to `dist/`.
 - The `build` section of `package.json` configures `electron-builder` to produce an NSIS
   installer with Desktop/Start Menu shortcuts.
 
+`better-sqlite3` (Print History/product cache, see below) is a native module, which needs
+to be compiled against whichever runtime loads it. `npm install` builds it for plain
+Node.js, which is all `npm start`/`npm test`/`npm run dev` ever need. `npm run dist:win`
+(and CI's Windows installer build) handles rebuilding it for Electron's own Node version
+automatically as part of packaging - electron-builder does this itself, no extra step
+needed. The one case that needs a manual step is running the **unpacked** desktop shell
+directly against your local `node_modules` (`npm run electron`): run
+`npx electron-builder install-app-deps` first, or `better-sqlite3` will throw a Node
+ABI mismatch error on startup. Afterwards, running `npm test`/`npm start` again needs
+`npm rebuild better-sqlite3` to switch it back to the plain-Node build.
+
 ## Using the website import
 
 Click **Import from Website**, paste a product page URL from liquoroutletwinecellars.com, and click **Fetch Product Data**. The importer looks for (in order):
@@ -161,36 +174,69 @@ In the desktop app, **Browse&hellip;** opens a native file picker; in a plain br
 
 ## Printing
 
-1. Add shelf talkers via any of the three methods.
+1. Add shelf talkers via any of the four methods.
 2. Review them in the **Queue** panel. Each row's &vellip; menu can move it up or
    down (queue order is print order), edit it, copy it, or delete it.
 3. Click **Print Sheet(s)**. A preview shows every sheet exactly as it will print
    &mdash; including how full each one is &mdash; before anything reaches the printer.
 4. Click **Print Now**. This opens your browser's print dialog with pages already
    formatted for Letter paper, 6 talkers per sheet. Choose "Save as PDF" instead of a
-   printer if you want a PDF file.
+   printer if you want a PDF file. Every talker in the queue at this point is also
+   logged to Print History (see below) &mdash; whether or not the print dialog itself
+   is completed or cancelled, since the app has no reliable way to tell the
+   difference.
+
+## Print History
+
+The **History** button (top right) opens a permanent, searchable record of every
+talker that's actually gone through **Print Now** &mdash; unlike the Queue above, items
+here don't disappear once printed or once the browser's localStorage is cleared.
+
+- **Search** by title or SKU; results are newest-first.
+- **Reprint** adds a fresh copy of that talker back into the current Queue for
+  review &mdash; it does not print immediately, and does not touch History itself.
+- **Delete** removes a mistaken entry from History only; it has no effect on the
+  Queue.
+
+This is backed by a small local SQLite database (`data.db`), stored in the same
+per-PC folder as the Scan UPC export-file setting (see below) &mdash; nothing here
+is sent anywhere or shared between PCs.
+
+### Product cache
+
+SKU Lookup and Scan UPC both write whatever they find into the same database,
+keyed by SKU or UPC. A repeat lookup of the same SKU/UPC within 24 hours returns
+the cached copy immediately instead of hitting the network (SKU Lookup) or
+re-reading the export file (Scan UPC) again; a status line notes when this
+happened. If a *fresh* lookup fails outright (site blocked, export file missing,
+etc.), the cached copy is used as a fallback instead of a hard error, clearly
+marked as possibly stale &mdash; a review-before-you-trust-it value beats nothing.
 
 ## Project layout
 
 ```
 server/
-  index.js            Express app: serves the frontend and the URL-import API
+  index.js            Express app: serves the frontend and the URL-import/History/product-cache APIs
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
                       plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
                       the Find Tasting Notes button and SKU Lookup tab
   upcCatalog.js       Reads a local WinePOS product export file and looks products up by UPC (Scan UPC tab) -
                       no network request, unlike everything else in server/
+  db.js               Local SQLite (better-sqlite3): the Print History log and the SKU/UPC product cache
+  appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by both
+                      upcCatalog.js's config.json and db.js's data.db, so they always agree on where it lives
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
   js/layout.js         Print-sheet geometry + sheet/auto-arrange packing (no DOM)
   js/card.js           Card rendering + auto text-fit
-  js/app.js            Form, queue, import, SKU lookup, Scan UPC, and print wiring
+  js/app.js            Form, queue, import, SKU lookup, Scan UPC, History, and print wiring
   assets/logo.png      Brand logo (extracted from the provided template)
 test/
   layout.test.js          Packing invariants: every layout fits a sheet, no item lost
   print-css-sync.test.js  Guards the JS geometry against the print CSS
   upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence
+  db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness
 ```
 
 ## Tests

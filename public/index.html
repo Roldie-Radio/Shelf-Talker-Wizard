@@ -35,6 +35,7 @@
     <div class="appbar__actions">
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
       <button type="button" id="guideBtn" class="btn" title="Print a customer guide explaining how to read a shelf talker">Beer Talker Info</button>
+      <button type="button" id="historyBtn" class="btn" title="Search and reprint past shelf talkers">History</button>
       <button type="button" id="helpBtn" class="btn" title="Help">Help</button>
       <button type="button" id="themeToggle" class="btn btn--icon" aria-pressed="false" title="Switch to dark mode">
         <span class="theme-toggle__icon" aria-hidden="true">&#9789;</span>
@@ -524,6 +525,9 @@
         <h3>Printing</h3>
         <p>Click <strong>Print Sheet(s)&hellip;</strong> to open the Print Preview, which shows every sheet that will print and how full each one is. <strong>Auto-arrange (Beta)</strong> can pack different talker/sign sizes onto shared sheets to save paper &mdash; off by default since it's newer. Click <strong>Print Now</strong> to open the system print dialog; choose "Save as PDF" there instead of a printer if you just want a file.</p>
 
+        <h3>Print History</h3>
+        <p>The <strong>History</strong> button in the top bar opens a permanent, searchable record of every talker that's actually been printed &mdash; unlike the Queue, items here never disappear on their own. Search by title or SKU, then click <strong>Reprint</strong> on any result to add a fresh copy back into the current Queue (it doesn't print immediately &mdash; review it first, same as anything else in the Queue). <strong>Delete</strong> removes a mistaken entry from History only; it has no effect on the Queue.</p>
+
         <h3>Dark mode</h3>
         <p>The <strong>Dark</strong>/<strong>Light</strong> button in the top right switches the app's own colors. It never changes the shelf talkers or signs themselves &mdash; those always preview and print in their normal colors on white paper, regardless of which theme the app is in.</p>
 
@@ -535,6 +539,35 @@
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="helpCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Every talker actually printed (not the live, editable queue - that
+       stays in localStorage exactly as before) - a permanent, searchable
+       record written at print time (see server/db.js), so a past talker can
+       be found and reprinted without re-entering it. -->
+  <div id="historyOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <div class="modal__header">
+        <h2 id="historyTitle">Print History</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="historyCloseBtn">&times; Close</button>
+      </div>
+      <div class="history-body">
+        <label class="field">
+          <span>Search by title or SKU</span>
+          <input type="search" id="historySearchInput" placeholder="Josh Cellars, 09144..." />
+        </label>
+        <p class="help-text" id="historyStatus" role="status" aria-live="polite"></p>
+        <div class="history-list" id="historyList"></div>
+        <div class="history-pagination no-print" id="historyPagination" hidden>
+          <button type="button" class="btn btn--ghost btn--small" id="historyPrevBtn">&larr; Prev</button>
+          <span id="historyPageIndicator"></span>
+          <button type="button" class="btn btn--ghost btn--small" id="historyNextBtn">Next &rarr;</button>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="historyCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>
