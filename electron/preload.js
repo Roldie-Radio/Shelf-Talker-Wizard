@@ -23,10 +23,13 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // typing/pasting the path instead.
   pickUpcExportFile: () => ipcRenderer.invoke('upc-export:pick-file'),
 
-  // Advanced menu's "View Export File...", "View Database...", and "Server
-  // PC..." (see main.js) - each just opens the matching in-app panel, same
-  // pattern as onShowHelpRequested above. Electron-only: the plain browser
-  // dev copy has no menu to trigger these from at all.
+  // Advanced menu's "Export File Settings...", "View Export File...", "View
+  // Database...", and "Server PC..." (see main.js) - each just opens the
+  // matching in-app panel, same pattern as onShowHelpRequested above.
+  // Electron-only: the plain browser dev copy has no menu to trigger these
+  // from at all (though the Export File Settings panel itself is also
+  // reachable there via the Scan UPC tab's own fallback - see app.js).
+  onExportSettingsRequested: (callback) => ipcRenderer.on('export-settings-requested', () => callback()),
   onViewExportRequested: (callback) => ipcRenderer.on('view-export-requested', () => callback()),
   onViewDatabaseRequested: (callback) => ipcRenderer.on('view-database-requested', () => callback()),
   onServerPcRequested: (callback) => ipcRenderer.on('server-pc-requested', () => callback()),

@@ -244,12 +244,14 @@
     scanUpcLookupBtn: document.getElementById('scanUpcLookupBtn'),
     scanUpcStatus: document.getElementById('scanUpcStatus'),
     scanUpcSaveBtn: document.getElementById('scanUpcSaveBtn'),
-    scanUpcSettingsToggle: document.getElementById('scanUpcSettingsToggle'),
-    scanUpcSettingsSection: document.getElementById('scanUpcSettingsSection'),
-    scanUpcPathInput: document.getElementById('scanUpcPathInput'),
-    scanUpcBrowseBtn: document.getElementById('scanUpcBrowseBtn'),
-    scanUpcSavePathBtn: document.getElementById('scanUpcSavePathBtn'),
-    scanUpcSettingsStatus: document.getElementById('scanUpcSettingsStatus'),
+
+    exportSettingsOverlay: document.getElementById('exportSettingsOverlay'),
+    exportSettingsCloseBtn: document.getElementById('exportSettingsCloseBtn'),
+    exportSettingsCloseFooterBtn: document.getElementById('exportSettingsCloseFooterBtn'),
+    exportSettingsPathInput: document.getElementById('exportSettingsPathInput'),
+    exportSettingsBrowseBtn: document.getElementById('exportSettingsBrowseBtn'),
+    exportSettingsSaveBtn: document.getElementById('exportSettingsSaveBtn'),
+    exportSettingsStatus: document.getElementById('exportSettingsStatus'),
 
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
@@ -1279,77 +1281,11 @@
   // different number from the store's own SKU that SKU Lookup above
   // searches liquoroutletwinecellars.com for (see the note in
   // server/upcCatalog.js). This never makes a network request: the server
-  // reads a product file WinePOS exports locally on this PC, configured
-  // once below.
+  // reads a product file WinePOS exports locally on this PC, configured via
+  // the desktop app's Advanced -> Export File Settings... menu (see that
+  // section further down) rather than anything on this tab itself.
 
   wireEnterTriggersClick(els.scanUpcInput, els.scanUpcLookupBtn);
-
-  function describeUpcSettings(settings) {
-    if (settings.error) return `⚠ ${settings.error}`;
-    if (!settings.exportPath) return 'No export file location is set yet - enter one below and click "Save Location".';
-    if (!settings.fileExists) return `No file found yet at ${settings.exportPath}.`;
-    const count = settings.itemCount === null ? 'an unknown number of' : settings.itemCount.toLocaleString('en-US');
-    const updated = settings.lastModified ? new Date(settings.lastModified).toLocaleString() : 'an unknown time';
-    return `Loaded ${count} item${settings.itemCount === 1 ? '' : 's'} from ${settings.exportPath} (last updated ${updated}).`;
-  }
-
-  async function refreshUpcSettings() {
-    els.scanUpcSettingsStatus.textContent = 'Checking...';
-    try {
-      const resp = await fetch('/api/upc-settings');
-      const settings = await resp.json();
-      els.scanUpcPathInput.value = settings.exportPath || '';
-      els.scanUpcSettingsStatus.textContent = describeUpcSettings(settings);
-    } catch {
-      els.scanUpcSettingsStatus.textContent = 'Could not check the export file settings.';
-    }
-  }
-
-  let upcSettingsLoaded = false;
-  els.scanUpcSettingsToggle.addEventListener('click', () => {
-    els.scanUpcSettingsSection.hidden = !els.scanUpcSettingsSection.hidden;
-    els.scanUpcSettingsToggle.setAttribute('aria-expanded', String(!els.scanUpcSettingsSection.hidden));
-    // Loaded lazily on first open (same reasoning as
-    // ensureTastingNotesSourcesLoaded above) rather than on every app
-    // launch - most visits to this tab are just scanning, not configuring.
-    if (!els.scanUpcSettingsSection.hidden && !upcSettingsLoaded) {
-      upcSettingsLoaded = true;
-      refreshUpcSettings();
-    }
-  });
-
-  els.scanUpcSavePathBtn.addEventListener('click', async () => {
-    els.scanUpcSavePathBtn.disabled = true;
-    els.scanUpcSettingsStatus.textContent = 'Saving...';
-    try {
-      const resp = await fetch('/api/upc-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exportPath: els.scanUpcPathInput.value.trim() }),
-      });
-      const settings = await resp.json();
-      if (!resp.ok) throw new Error(settings.error || 'Could not save that location.');
-      els.scanUpcSettingsStatus.textContent = describeUpcSettings(settings);
-    } catch (err) {
-      els.scanUpcSettingsStatus.textContent = err.message || 'Could not save that location.';
-    } finally {
-      els.scanUpcSavePathBtn.disabled = false;
-    }
-  });
-
-  // The desktop app can offer a native file picker (see electron/main.js);
-  // the plain browser dev copy has no equivalent, so the button only shows
-  // up when that bridge actually exists (see preload.js) - typing/pasting
-  // the path is always available either way.
-  if (window.shelfTalker && window.shelfTalker.pickUpcExportFile) {
-    els.scanUpcBrowseBtn.hidden = false;
-    els.scanUpcBrowseBtn.addEventListener('click', async () => {
-      const filePath = await window.shelfTalker.pickUpcExportFile();
-      if (!filePath) return;
-      els.scanUpcPathInput.value = filePath;
-      els.scanUpcSavePathBtn.click();
-    });
-  }
 
   // Fills the same fields applySkuLookupProduct does, from whatever columns
   // the export file happened to have (see upcCatalog.js's FIELD_ALIASES) -
@@ -1408,16 +1344,16 @@
     } catch (err) {
       els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
       // A missing/unconfigured export file is the one failure staff can fix
-      // right here - open Settings (and refresh its status) automatically
-      // instead of leaving them to hunt for the link themselves. A plain
+      // right here - open Export File Settings automatically instead of
+      // leaving them to find it in the Advanced menu themselves. A plain
       // "not found" (the file loaded fine, this UPC just isn't in it) isn't
-      // a settings problem, so it doesn't force the section open.
+      // a settings problem, so it doesn't open anything. This works even in
+      // the plain browser dev copy, unlike the Advanced menu item itself -
+      // exportSettingsModal (defined further down) is just a DOM modal, not
+      // an Electron-only feature; only its usual entry point is.
       const isSettingsProblem = err.code === 'NO_EXPORT_PATH' || err.code === 'EXPORT_NOT_FOUND' || err.code === 'EXPORT_UNREADABLE';
-      if (isSettingsProblem && els.scanUpcSettingsSection.hidden) {
-        els.scanUpcSettingsSection.hidden = false;
-        els.scanUpcSettingsToggle.setAttribute('aria-expanded', 'true');
-        upcSettingsLoaded = true;
-        refreshUpcSettings();
+      if (isSettingsProblem && els.exportSettingsOverlay.hidden) {
+        exportSettingsModal.open();
       }
     } finally {
       els.scanUpcLookupBtn.disabled = false;
@@ -2589,6 +2525,76 @@
     `;
   }
 
+  // Configures the WinePOS export file path the Scan UPC tab reads from -
+  // previously an inline "Settings" box on that tab itself; moved here (see
+  // main.js's Advanced menu) so the tab stays focused on scanning and setup
+  // is a one-time admin task instead. Reuses the same /api/upc-settings
+  // routes the old inline box used - only where this lives in the UI
+  // changed, not the underlying config.
+  function describeExportSettings(settings) {
+    if (settings.error) return `⚠ ${settings.error}`;
+    if (!settings.exportPath) return 'No export file location is set yet - enter one below and click "Save Location".';
+    if (!settings.fileExists) return `No file found yet at ${settings.exportPath}.`;
+    const count = settings.itemCount === null ? 'an unknown number of' : settings.itemCount.toLocaleString('en-US');
+    const updated = settings.lastModified ? new Date(settings.lastModified).toLocaleString() : 'an unknown time';
+    return `Loaded ${count} item${settings.itemCount === 1 ? '' : 's'} from ${settings.exportPath} (last updated ${updated}).`;
+  }
+
+  async function loadExportSettings() {
+    els.exportSettingsStatus.textContent = 'Checking...';
+    try {
+      const resp = await fetch('/api/upc-settings');
+      const settings = await resp.json();
+      els.exportSettingsPathInput.value = settings.exportPath || '';
+      els.exportSettingsStatus.textContent = describeExportSettings(settings);
+    } catch {
+      els.exportSettingsStatus.textContent = 'Could not check the export file settings.';
+    }
+  }
+
+  const exportSettingsModal = createModal({
+    overlay: els.exportSettingsOverlay,
+    closeBtns: [els.exportSettingsCloseBtn, els.exportSettingsCloseFooterBtn],
+    onOpen: loadExportSettings,
+  });
+
+  els.exportSettingsSaveBtn.addEventListener('click', async () => {
+    els.exportSettingsSaveBtn.disabled = true;
+    els.exportSettingsStatus.textContent = 'Saving...';
+    try {
+      const resp = await fetch('/api/upc-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exportPath: els.exportSettingsPathInput.value.trim() }),
+      });
+      const settings = await resp.json();
+      if (!resp.ok) throw new Error(settings.error || 'Could not save that location.');
+      els.exportSettingsStatus.textContent = describeExportSettings(settings);
+    } catch (err) {
+      els.exportSettingsStatus.textContent = err.message || 'Could not save that location.';
+    } finally {
+      els.exportSettingsSaveBtn.disabled = false;
+    }
+  });
+
+  // The desktop app can offer a native file picker (see electron/main.js);
+  // the plain browser dev copy has no equivalent, so the button only shows
+  // up when that bridge actually exists (see preload.js) - typing/pasting
+  // the path is always available either way.
+  if (window.shelfTalker && window.shelfTalker.pickUpcExportFile) {
+    els.exportSettingsBrowseBtn.hidden = false;
+    els.exportSettingsBrowseBtn.addEventListener('click', async () => {
+      const filePath = await window.shelfTalker.pickUpcExportFile();
+      if (!filePath) return;
+      els.exportSettingsPathInput.value = filePath;
+      els.exportSettingsSaveBtn.click();
+    });
+  }
+
+  if (window.shelfTalker && window.shelfTalker.onExportSettingsRequested) {
+    window.shelfTalker.onExportSettingsRequested(() => exportSettingsModal.open());
+  }
+
   const exportPreviewModal = createModal({
     overlay: els.exportPreviewOverlay,
     closeBtns: [els.exportPreviewCloseBtn, els.exportPreviewCloseFooterBtn],
@@ -2613,14 +2619,12 @@
     }
   }
 
-  // Closes this dialog, switches to the Scan UPC tab, and opens its
-  // Settings box - lets someone go straight from "the export file isn't set
-  // up" to fixing it, instead of hunting for the tab themselves.
+  // Closes this dialog and opens Export File Settings directly - lets
+  // someone go straight from "the export file isn't set up" to fixing it,
+  // instead of hunting for the Advanced menu item themselves.
   els.exportPreviewSettingsBtn.addEventListener('click', () => {
     exportPreviewModal.close();
-    const scanTab = document.getElementById('tabScan');
-    if (scanTab) activateTab(scanTab);
-    if (els.scanUpcSettingsSection.hidden) els.scanUpcSettingsToggle.click();
+    exportSettingsModal.open();
   });
 
   const databasePreviewModal = createModal({
