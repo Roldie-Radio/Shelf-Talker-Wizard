@@ -63,7 +63,15 @@ function detectDelimiter(text) {
   return tabCount > commaCount ? '\t' : ',';
 }
 
-function parseDelimited(text) {
+function parseDelimited(rawText) {
+  // Strip a leading UTF-8 byte-order-mark up front, not just when matching
+  // headers below - confirmed on a real WinePOS export (common from
+  // Excel/some POS export tools). Otherwise it survives as a real U+FEFF
+  // character stuck to the very first header, which normalizeHeader's own
+  // stripping keeps out of column *matching*, but would still show up
+  // as an invisible stray character anywhere the raw header itself is
+  // displayed (error messages, the export preview table).
+  const text = rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
   const delimiter = detectDelimiter(text);
   const rows = [];
   let row = [];
@@ -109,6 +117,13 @@ function parseDelimited(text) {
 
 function normalizeHeader(h) {
   return String(h || '')
+    // A leading UTF-8 byte-order-mark (common on files saved by Excel/some
+    // POS export tools, confirmed on a real WinePOS export) survives
+    // fs.readFileSync's utf-8 decoding as a real U+FEFF character on the
+    // very first header - \s already matches it, so matching itself isn't
+    // affected, but leaving it in would show up as an invisible stray
+    // character in error messages and the export preview.
+    .replace(/^\uFEFF/, '')
     .toLowerCase()
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -116,7 +131,9 @@ function normalizeHeader(h) {
 }
 
 const FIELD_ALIASES = {
-  upc: ['upc', 'upc code', 'upc a', 'barcode', 'bar code', 'scancode', 'scan code', 'ean', 'ean13', 'ean 13'],
+  // 'upc data' confirmed against a real WinePOS inventory export - its UPC
+  // column is literally named that, not just "UPC".
+  upc: ['upc', 'upc code', 'upc a', 'upc data', 'barcode', 'bar code', 'scancode', 'scan code', 'ean', 'ean13', 'ean 13'],
   title: ['title', 'description', 'item description', 'product', 'product name', 'product title', 'item name', 'name'],
   brand: ['brand', 'vendor', 'supplier', 'winery', 'brewery', 'manufacturer'],
   sku: ['sku', 'store sku', 'item number', 'item #', 'item no', 'plu'],
@@ -165,6 +182,19 @@ function upcVariants(raw) {
   const variants = new Set([digits]);
   if (digits.length === 13 && digits[0] === '0') variants.add(digits.slice(1));
   if (digits.length === 12) variants.add(`0${digits}`);
+
+  // Confirmed against a real WinePOS export: a UPC column stored as a
+  // number (rather than text) silently drops leading zeros - a 12-digit
+  // UPC-A starting with 0 comes out looking like an 11-digit (or shorter)
+  // number in the file. Padding back up to the standard lengths recovers
+  // the same code a real barcode scanner would actually send. (This
+  // wouldn't correctly reconstruct a genuinely short code like UPC-E,
+  // which isn't just a zero-padded UPC-A - but the extra padded variant is
+  // harmless in that case, just an unused index entry.)
+  if (digits.length < 12) {
+    variants.add(digits.padStart(12, '0'));
+    variants.add(digits.padStart(13, '0'));
+  }
   return [...variants];
 }
 

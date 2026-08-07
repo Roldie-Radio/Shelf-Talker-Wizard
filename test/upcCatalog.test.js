@@ -282,3 +282,51 @@ test('previewExport throws EXPORT_NOT_FOUND when the configured file is missing'
     assert.throws(() => previewExport({}), (err) => err.code === 'EXPORT_NOT_FOUND');
   });
 });
+
+// ---------- Real WinePOS export (test/fixtures/wine-pos-inventory-demo.csv) ----------
+//
+// A real inventory export a store sent us, kept as-is (UTF-8 BOM, CRLF line
+// endings, and all) rather than a hand-written approximation - this is what
+// caught three real bugs before they ever reached a store PC: its UPC
+// column is named "UPC Data" (not in the original alias list), its UPC
+// value is stored as a number and has lost a leading zero (a checksum-
+// verified UPC-A, confirmed by hand against the real check-digit
+// algorithm), and the BOM was leaking into error messages/previews.
+
+const REAL_EXPORT_PATH = path.join(__dirname, 'fixtures', 'wine-pos-inventory-demo.csv');
+
+test('previewExport reads a real WinePOS export as-is, BOM and CRLF included', () => {
+  withTempConfigDir(() => {
+    setUpcSettings(REAL_EXPORT_PATH);
+    const preview = previewExport({ limit: 10 });
+    // No leading U+FEFF on the first header - stripped for real, not just
+    // for matching (see the note above parseDelimited).
+    assert.equal(preview.headers[0], 'Item #');
+    assert.equal(preview.headers.includes('UPC Data'), true);
+    assert.equal(preview.totalRows, 1);
+    assert.deepEqual(preview.rows[0], ['9415', '14 HANDS CABERNET', '750ML', '2022', 'ABD', '12', '1', '17.99', '0', '0', '55', '7.3333', '88', '88586001895']);
+  });
+});
+
+test('lookupUpc finds a real export row by the UPC a physical scanner would actually send', () => {
+  withTempConfigDir(() => {
+    setUpcSettings(REAL_EXPORT_PATH);
+    // The file itself stores "88586001895" (11 digits - a dropped leading
+    // zero); "088586001895" is the real, checksum-valid 12-digit UPC-A a
+    // barcode scanner reading the actual bottle would send.
+    const product = lookupUpc('088586001895');
+    assert.equal(product.title, '14 HANDS CABERNET');
+    assert.equal(product.brand, 'ABD');
+    assert.equal(product.sku, '9415');
+    assert.equal(product.size, '750ML');
+    assert.equal(product.vintage, '2022');
+    assert.equal(product.price, '17.99');
+  });
+});
+
+test('lookupUpc also finds the same real export row by the exact (zero-dropped) value stored in the file', () => {
+  withTempConfigDir(() => {
+    setUpcSettings(REAL_EXPORT_PATH);
+    assert.equal(lookupUpc('88586001895').title, '14 HANDS CABERNET');
+  });
+});

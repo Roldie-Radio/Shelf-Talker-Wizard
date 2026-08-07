@@ -157,7 +157,7 @@ The file can be comma- or tab-delimited (CSV or TSV), and its columns don't need
 
 | Field | Recognized column headers |
 | --- | --- |
-| UPC *(required)* | UPC, UPC Code, Barcode, Bar Code, Scancode, EAN, EAN13 |
+| UPC *(required)* | UPC, UPC Code, Barcode, Bar Code, Scancode, EAN, EAN13, UPC Data |
 | Title | Title, Description, Item Description, Product, Product Name, Item Name, Name |
 | Brand | Brand, Vendor, Supplier, Winery, Brewery, Manufacturer |
 | Store SKU | SKU, Store SKU, Item Number, Item #, PLU |
@@ -168,7 +168,7 @@ The file can be comma- or tab-delimited (CSV or TSV), and its columns don't need
 | Description | Tasting Notes, Notes, Long Description, Web Description |
 | Category | Category, Department, Class, Dept |
 
-If the file has no column matching one of the UPC aliases, the lookup fails with an error listing whatever columns *were* found, so the export's UPC column can be renamed (or the alias list in `server/upcCatalog.js` extended) to match. A UPC not present in the file at all just means "not in this export" &mdash; enter that item manually instead. Both the 12-digit UPC-A and 13-digit EAN-13 forms of the same code are matched automatically, since scanners and exports don't always agree on which one to use.
+If the file has no column matching one of the UPC aliases, the lookup fails with an error listing whatever columns *were* found, so the export's UPC column can be renamed (or the alias list in `server/upcCatalog.js` extended) to match. A UPC not present in the file at all just means "not in this export" &mdash; enter that item manually instead. Both the 12-digit UPC-A and 13-digit EAN-13 forms of the same code are matched automatically, since scanners and exports don't always agree on which one to use &mdash; and if the export stores the UPC column as a number rather than text (common when it's built in Excel), a dropped leading zero is recovered the same way, confirmed against a real WinePOS export.
 
 In the desktop app, **Browse&hellip;** opens a native file picker; in a plain browser (`npm start`), type or paste the path directly. The saved path lives in a small `config.json` outside the project folder (`%APPDATA%\Shelf Talker Wizard` on Windows), so it survives an app update.
 
@@ -262,9 +262,12 @@ public/
 test/
   layout.test.js          Packing invariants: every layout fits a sheet, no item lost
   print-css-sync.test.js  Guards the JS geometry against the print CSS
-  upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence, export preview
+  upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence, export preview -
+                          including a real WinePOS export (see fixtures/) with a BOM, CRLF, and a dropped-leading-zero UPC
   db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness, stats
   serverConfig.test.js    Server PC flag persistence
+  fixtures/
+    wine-pos-inventory-demo.csv  A real inventory export a store sent us, kept byte-for-byte - see upcCatalog.test.js
 ```
 
 ## Tests
