@@ -229,6 +229,17 @@
     skuUntappdHtmlInput: document.getElementById('skuUntappdHtmlInput'),
     skuUntappdHtmlBtn: document.getElementById('skuUntappdHtmlBtn'),
 
+    scanUpcInput: document.getElementById('scanUpcInput'),
+    scanUpcLookupBtn: document.getElementById('scanUpcLookupBtn'),
+    scanUpcStatus: document.getElementById('scanUpcStatus'),
+    scanUpcSaveBtn: document.getElementById('scanUpcSaveBtn'),
+    scanUpcSettingsToggle: document.getElementById('scanUpcSettingsToggle'),
+    scanUpcSettingsSection: document.getElementById('scanUpcSettingsSection'),
+    scanUpcPathInput: document.getElementById('scanUpcPathInput'),
+    scanUpcBrowseBtn: document.getElementById('scanUpcBrowseBtn'),
+    scanUpcSavePathBtn: document.getElementById('scanUpcSavePathBtn'),
+    scanUpcSettingsStatus: document.getElementById('scanUpcSettingsStatus'),
+
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
     sheetPagination: document.getElementById('sheetPagination'),
@@ -327,6 +338,13 @@
       t.tabIndex = isActive ? 0 : -1;
     });
     els.panels.forEach((p) => p.classList.toggle('is-active', p.dataset.panel === tab.dataset.tab));
+    // Scan UPC is meant for walking up and scanning immediately - put the
+    // cursor in the UPC field the moment the tab is switched to (whether by
+    // click or arrow key, both funnel through here) so the very first scan
+    // lands in the field with no extra click. No other tab needs this: a
+    // scanner is the only "device" that starts typing without clicking
+    // anything first.
+    if (tab.dataset.tab === 'scan') els.scanUpcInput.focus();
   }
 
   els.tabs.forEach((tab) => {
@@ -1198,6 +1216,171 @@
     els.skuUntappdSection.hidden = true;
   });
 
+  // ---------- Scan UPC ----------
+
+  // Looks products up by the manufacturer UPC printed on the bottle - a
+  // different number from the store's own SKU that SKU Lookup above
+  // searches liquoroutletwinecellars.com for (see the note in
+  // server/upcCatalog.js). This never makes a network request: the server
+  // reads a product file WinePOS exports locally on this PC, configured
+  // once below.
+
+  wireEnterTriggersClick(els.scanUpcInput, els.scanUpcLookupBtn);
+
+  function describeUpcSettings(settings) {
+    if (settings.error) return `⚠ ${settings.error}`;
+    if (!settings.exportPath) return 'No export file location is set yet - enter one below and click "Save Location".';
+    if (!settings.fileExists) return `No file found yet at ${settings.exportPath}.`;
+    const count = settings.itemCount === null ? 'an unknown number of' : settings.itemCount.toLocaleString('en-US');
+    const updated = settings.lastModified ? new Date(settings.lastModified).toLocaleString() : 'an unknown time';
+    return `Loaded ${count} item${settings.itemCount === 1 ? '' : 's'} from ${settings.exportPath} (last updated ${updated}).`;
+  }
+
+  async function refreshUpcSettings() {
+    els.scanUpcSettingsStatus.textContent = 'Checking...';
+    try {
+      const resp = await fetch('/api/upc-settings');
+      const settings = await resp.json();
+      els.scanUpcPathInput.value = settings.exportPath || '';
+      els.scanUpcSettingsStatus.textContent = describeUpcSettings(settings);
+    } catch {
+      els.scanUpcSettingsStatus.textContent = 'Could not check the export file settings.';
+    }
+  }
+
+  let upcSettingsLoaded = false;
+  els.scanUpcSettingsToggle.addEventListener('click', () => {
+    els.scanUpcSettingsSection.hidden = !els.scanUpcSettingsSection.hidden;
+    els.scanUpcSettingsToggle.setAttribute('aria-expanded', String(!els.scanUpcSettingsSection.hidden));
+    // Loaded lazily on first open (same reasoning as
+    // ensureTastingNotesSourcesLoaded above) rather than on every app
+    // launch - most visits to this tab are just scanning, not configuring.
+    if (!els.scanUpcSettingsSection.hidden && !upcSettingsLoaded) {
+      upcSettingsLoaded = true;
+      refreshUpcSettings();
+    }
+  });
+
+  els.scanUpcSavePathBtn.addEventListener('click', async () => {
+    els.scanUpcSavePathBtn.disabled = true;
+    els.scanUpcSettingsStatus.textContent = 'Saving...';
+    try {
+      const resp = await fetch('/api/upc-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exportPath: els.scanUpcPathInput.value.trim() }),
+      });
+      const settings = await resp.json();
+      if (!resp.ok) throw new Error(settings.error || 'Could not save that location.');
+      els.scanUpcSettingsStatus.textContent = describeUpcSettings(settings);
+    } catch (err) {
+      els.scanUpcSettingsStatus.textContent = err.message || 'Could not save that location.';
+    } finally {
+      els.scanUpcSavePathBtn.disabled = false;
+    }
+  });
+
+  // The desktop app can offer a native file picker (see electron/main.js);
+  // the plain browser dev copy has no equivalent, so the button only shows
+  // up when that bridge actually exists (see preload.js) - typing/pasting
+  // the path is always available either way.
+  if (window.shelfTalker && window.shelfTalker.pickUpcExportFile) {
+    els.scanUpcBrowseBtn.hidden = false;
+    els.scanUpcBrowseBtn.addEventListener('click', async () => {
+      const filePath = await window.shelfTalker.pickUpcExportFile();
+      if (!filePath) return;
+      els.scanUpcPathInput.value = filePath;
+      els.scanUpcSavePathBtn.click();
+    });
+  }
+
+  // Fills the same fields applySkuLookupProduct does, from whatever columns
+  // the export file happened to have (see upcCatalog.js's FIELD_ALIASES) -
+  // a local export is far less likely to carry Untappd-style beer detail
+  // (style/ABV/IBU/rating) than a real POS item record, so those are simply
+  // left for staff to fill in or fetch via Untappd on Manual Entry.
+  function applyUpcScanProduct(data, isBeer) {
+    const fields = {
+      category: isBeer ? 'beer' : 'wine',
+      title: data.title,
+      description: data.description,
+      size: data.size,
+      price: data.price,
+      salePrice: data.salePrice,
+      theme: els.theme.value,
+    };
+    if (isBeer) {
+      Object.assign(fields, {
+        sku: data.sku || els.scanUpcInput.value.trim(),
+        brewery: data.brand,
+      });
+    } else {
+      fields.vintage = data.vintage;
+    }
+    fillForm(fields);
+    previewMode = 'single';
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
+    renderPreview();
+  }
+
+  els.scanUpcLookupBtn.addEventListener('click', async () => {
+    const isBeer = currentCategory === 'beer';
+    const upc = els.scanUpcInput.value.trim();
+    if (!upc) {
+      els.scanUpcStatus.textContent = 'Scan or type a UPC first.';
+      return;
+    }
+    els.scanUpcLookupBtn.disabled = true;
+    els.scanUpcStatus.textContent = 'Looking up UPC...';
+
+    try {
+      const resp = await fetch('/api/upc-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upc }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        const err = new Error(data.error || 'UPC lookup failed.');
+        err.code = data.code;
+        throw err;
+      }
+
+      applyUpcScanProduct(data, isBeer);
+      els.scanUpcStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
+      // A missing/unconfigured export file is the one failure staff can fix
+      // right here - open Settings (and refresh its status) automatically
+      // instead of leaving them to hunt for the link themselves. A plain
+      // "not found" (the file loaded fine, this UPC just isn't in it) isn't
+      // a settings problem, so it doesn't force the section open.
+      const isSettingsProblem = err.code === 'NO_EXPORT_PATH' || err.code === 'EXPORT_NOT_FOUND' || err.code === 'EXPORT_UNREADABLE';
+      if (isSettingsProblem && els.scanUpcSettingsSection.hidden) {
+        els.scanUpcSettingsSection.hidden = false;
+        els.scanUpcSettingsToggle.setAttribute('aria-expanded', 'true');
+        upcSettingsLoaded = true;
+        refreshUpcSettings();
+      }
+    } finally {
+      els.scanUpcLookupBtn.disabled = false;
+    }
+  });
+
+  // Same pattern as els.skuSaveBtn above - reuses the Manual Entry form's
+  // real submit handler via requestSubmit() rather than duplicating
+  // validate/save.
+  els.scanUpcSaveBtn.addEventListener('click', () => {
+    els.form.requestSubmit();
+    if (!els.formError.hidden) {
+      els.scanUpcStatus.textContent = els.formError.textContent;
+      return;
+    }
+    els.scanUpcInput.value = '';
+    els.scanUpcStatus.textContent = 'Added to queue! Scan the next one.';
+    els.scanUpcInput.focus();
+  });
+
   // ---------- Find tasting notes (Wine/Spirits) ----------
 
   // Unlike the website importer below, this has no URL to paste - it
@@ -1446,7 +1629,22 @@
     }
   });
 
+  // A USB/Bluetooth barcode scanner types its code like a fast keyboard and
+  // finishes with an Enter keystroke - wiring that Enter to the lookup
+  // button is what makes a scan land a completed lookup with no click in
+  // between. Used for both the SKU field below and the Scan UPC field
+  // further down, since a scanner is just as likely to be used for either.
+  function wireEnterTriggersClick(input, button) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      button.click();
+    });
+  }
+
   // ---------- SKU lookup ----------
+
+  wireEnterTriggersClick(els.skuInput, els.skuLookupBtn);
 
   // Fills the same fields the Import tab's applyImportedProduct fills, plus
   // price/size for a beer entry - unlike Untappd (a rating/check-in site

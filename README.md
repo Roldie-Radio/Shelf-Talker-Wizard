@@ -5,6 +5,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **SKU lookup** &mdash; type in the store's own SKU number and the app searches liquoroutletwinecellars.com for it, pulling the title, size, and price from the matching product page. For Beer, it also searches Untappd using that title for the description, brewery, style, ABV, IBU, and rating.
+- **Scan UPC** &mdash; scan a bottle's manufacturer UPC (a USB/Bluetooth barcode scanner just types it, like a keyboard) and the app looks it up in a product file exported locally from WinePOS, filling in title, size, price, and description &mdash; no internet connection needed, and no network request is made. This is a different number from the store's own SKU that SKU Lookup above searches the website for.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
 - **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
@@ -131,6 +132,33 @@ For **Beer**, the lookup runs a second step automatically: it searches Untappd u
 
 If the store site blocks the lookup, click **Site blocking the lookup? Paste the product page's HTML instead**: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; same fallback as the website importer above, with no network request of its own (beyond the Untappd search for a beer entry).
 
+### Scanning a UPC
+
+The **Scan UPC** tab looks products up by the manufacturer UPC printed on the bottle itself &mdash; a different number from the store's own SKU that SKU Lookup above searches the website for. Unlike every other import method in this app, it never makes a network request: it reads a product file that WinePOS exports locally on the same PC, which means it works even with no internet connection.
+
+A USB or Bluetooth barcode scanner needs no special setup here &mdash; it types the scanned digits like a very fast keyboard, and pressing Enter (which every scanner does automatically at the end of a scan) triggers the lookup, the same as clicking **Look Up UPC**. Switching to the tab puts the cursor in the field automatically so staff can walk up and start scanning right away.
+
+**One-time setup:** click **Settings &mdash; export file location** and point it at the product file WinePOS writes to disk (ask WinePOS support how to set up a scheduled export if one isn't already running &mdash; this is the same kind of feed their electronic shelf tag integrations use). The path is saved on this PC and the file is re-read automatically whenever it changes, so there's nothing to redo after WinePOS updates it. The Settings box also shows how many items were loaded and when the file was last updated, which doubles as a quick way to confirm the export is actually running.
+
+The file can be comma- or tab-delimited (CSV or TSV), and its columns don't need to match an exact template &mdash; common header names are recognized automatically:
+
+| Field | Recognized column headers |
+| --- | --- |
+| UPC *(required)* | UPC, UPC Code, Barcode, Bar Code, Scancode, EAN, EAN13 |
+| Title | Title, Description, Item Description, Product, Product Name, Item Name, Name |
+| Brand | Brand, Vendor, Supplier, Winery, Brewery, Manufacturer |
+| Store SKU | SKU, Store SKU, Item Number, Item #, PLU |
+| Size | Size, Unit Size, Bottle Size, Container Size |
+| Vintage | Vintage, Year |
+| Regular Price | Price, Regular Price, Retail Price, Reg Price, Unit Price, List Price |
+| Sale Price | Sale Price, Promo Price, Special Price, Promotion Price |
+| Description | Tasting Notes, Notes, Long Description, Web Description |
+| Category | Category, Department, Class, Dept |
+
+If the file has no column matching one of the UPC aliases, the lookup fails with an error listing whatever columns *were* found, so the export's UPC column can be renamed (or the alias list in `server/upcCatalog.js` extended) to match. A UPC not present in the file at all just means "not in this export" &mdash; enter that item manually instead. Both the 12-digit UPC-A and 13-digit EAN-13 forms of the same code are matched automatically, since scanners and exports don't always agree on which one to use.
+
+In the desktop app, **Browse&hellip;** opens a native file picker; in a plain browser (`npm start`), type or paste the path directly. The saved path lives in a small `config.json` outside the project folder (`%APPDATA%\Shelf Talker Wizard` on Windows), so it survives an app update.
+
 ## Printing
 
 1. Add shelf talkers via any of the three methods.
@@ -150,16 +178,19 @@ server/
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
                       plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
                       the Find Tasting Notes button and SKU Lookup tab
+  upcCatalog.js       Reads a local WinePOS product export file and looks products up by UPC (Scan UPC tab) -
+                      no network request, unlike everything else in server/
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
   js/layout.js         Print-sheet geometry + sheet/auto-arrange packing (no DOM)
   js/card.js           Card rendering + auto text-fit
-  js/app.js            Form, queue, import, SKU lookup, and print wiring
+  js/app.js            Form, queue, import, SKU lookup, Scan UPC, and print wiring
   assets/logo.png      Brand logo (extracted from the provided template)
 test/
   layout.test.js          Packing invariants: every layout fits a sheet, no item lost
   print-css-sync.test.js  Guards the JS geometry against the print CSS
+  upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence
 ```
 
 ## Tests

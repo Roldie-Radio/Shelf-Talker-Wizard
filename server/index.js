@@ -4,6 +4,7 @@ const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml,
 } = require('./productImport');
+const { getUpcSettings, setUpcSettings, lookupUpc } = require('./upcCatalog');
 
 function createApp() {
   const app = express();
@@ -131,6 +132,44 @@ function createApp() {
       res.json(product);
     } catch (err) {
       res.status(400).json({ error: err.message || 'Could not read product data from that HTML.' });
+    }
+  });
+
+  // Backs the "Scan UPC" tab's Settings box: reads/writes the local path to
+  // a WinePOS product export file (see upcCatalog.js) - unlike SKU Lookup
+  // above, this never makes a network request, since a scanned barcode is
+  // the bottle's manufacturer UPC, a different number from the store's own
+  // SKU that liquoroutletwinecellars.com's search actually indexes.
+  app.get('/api/upc-settings', (req, res) => {
+    res.json(getUpcSettings());
+  });
+
+  app.post('/api/upc-settings', (req, res) => {
+    const { exportPath } = req.body || {};
+    if (typeof exportPath !== 'string') {
+      return res.status(400).json({ error: 'exportPath must be a string.' });
+    }
+    res.json(setUpcSettings(exportPath.trim()));
+  });
+
+  // Backs the "Scan UPC" tab itself: staff scan a bottle's UPC (a USB/
+  // Bluetooth scanner just types it, like a keyboard) into the tab's input,
+  // and this looks it up in the export file configured above rather than
+  // fetching anything. See upcCatalog.js's lookupUpc for the specific error
+  // codes (no file configured yet, file missing, unreadable, or UPC not
+  // found in it) surfaced through `code` below.
+  app.post('/api/upc-lookup', (req, res) => {
+    const { upc } = req.body || {};
+    if (!upc || typeof upc !== 'string' || !upc.trim()) {
+      return res.status(400).json({ error: 'A UPC is required.' });
+    }
+
+    try {
+      const product = lookupUpc(upc.trim());
+      res.json(product);
+    } catch (err) {
+      const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
+      res.status(status).json({ error: err.message || 'Could not look up that UPC.', code: err.code });
     }
   });
 
