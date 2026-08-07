@@ -1271,19 +1271,35 @@ async function searchUntappd(query) {
   return fillBeerLocation(parseBeerHtml(beerHtml, match.url), beerHtml, match.url);
 }
 
-const SIZE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:ml|mL|l|L|oz|OZ)\b|\b\d+\s?-?\s?pack\b/gi;
+// Pack count alternation covers both the spelled-out form ("4-pack",
+// "4 pack") and the abbreviation a real product title sometimes uses
+// instead ("4pk", "4-pk", "4 pk.") - both confirmed leaking into a scraped
+// title verbatim (see stripSize below).
+const SIZE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:ml|mL|l|L|oz|OZ)\b|\b\d+\s?-?\s?(?:pack|pk\.?)\b/gi;
 
-// Strips a container size out of a scraped title - e.g. "Daylily 16OZ"
-// becomes "Daylily", since size already has its own form field and staff
-// don't want it duplicated in the product title. Also used to clean up the
-// title before it's sent to Untappd as a search query below - the store's
-// own title sometimes trails off with the container size (see the real
-// SKU-lookup fixture that inspired this), which is dead weight a beer
-// search doesn't have and can hurt the match.
+// The store's own spec-table placeholder for an unset field ("Not
+// Specified" - see the Year/Pack Size handling in parseStoreProductHtml
+// above) sometimes ends up baked into the product's own title/h1 text on
+// the page, not just the spec row it belongs to - stripped here the same
+// way a container size is, so it never lands in the Beer Name/Product
+// Title field a shopper would see.
+const NOT_SPECIFIED_PATTERN = /\bnot specified\b/gi;
+
+// Strips a container size (and the junk above) out of a scraped title -
+// e.g. "Daylily 16OZ" becomes "Daylily", since size already has its own
+// form field and staff don't want it duplicated in the product title. Also
+// used to clean up the title before it's sent to Untappd as a search query
+// below - the store's own title sometimes trails off with the container
+// size (see the real SKU-lookup fixture that inspired this), which is dead
+// weight a beer search doesn't have and can hurt the match.
 function stripSize(title, size) {
   let name = title || '';
   if (size) name = name.split(size).join(' ');
-  return name.replace(SIZE_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+  return name
+    .replace(SIZE_PATTERN, ' ')
+    .replace(NOT_SPECIFIED_PATTERN, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Composes "Producer Product Name" (size left out) from a scraped product -
