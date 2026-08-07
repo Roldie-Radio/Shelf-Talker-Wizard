@@ -776,6 +776,10 @@ h1, h2, h3 { margin: 0; }
 .card[data-size="half"] .card__band--footer { flex-basis: calc(var(--w) * 0.03835); }
 .card[data-size="half"] .card__logo { height: calc(var(--w) * 0.0526); }
 .card[data-size="half"] .card__footer-text { font-size: calc(var(--w) * 0.017); }
+/* Matches .card__footer-text's own half-size shrink right above - same
+   band, same reasoning (see the comment on .card[data-size="half"] .card__band
+   further up). */
+.card[data-size="half"] .card__sku { font-size: calc(var(--w) * 0.017); }
 
 .card__band {
   /* Height as a fraction of --w (not a % of the card's own height) - percentage
@@ -798,6 +802,10 @@ h1, h2, h3 { margin: 0; }
   flex: 0 0 calc(var(--w) * 0.0767);
   justify-content: center;
 }
+/* Store SKU (Beer only - see buildCardElement's showSku in card.js): sits
+   in this same band instead of centered alone, so the URL keeps its usual
+   spot on Wine/Spirits and on any beer talker with no SKU set. */
+.card__band--footer--split { justify-content: space-between; }
 .card[data-theme="purple"] .card__band { background-color: var(--purple-band); }
 
 .card__logo { height: calc(var(--w) * 0.1052); }
@@ -808,6 +816,19 @@ h1, h2, h3 { margin: 0; }
   font-size: calc(var(--w) * 0.034);
   letter-spacing: 0.03em;
   text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+}
+
+/* Same treatment as .card__footer-text right above (same band, same
+   weight of information) but dimmed slightly via opacity - staff-facing
+   restock detail, not the shopper-facing footer text it shares the band
+   with. */
+.card__sku {
+  color: #fff;
+  font-weight: 700;
+  font-size: calc(var(--w) * 0.034);
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+  opacity: 0.85;
 }
 
 .card__body {
