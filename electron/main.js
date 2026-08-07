@@ -209,6 +209,24 @@ function handleSaveQueueRequest() {
   mainWindow.webContents.send('queue:save-requested');
 }
 
+// Native "Browse..." for the Scan UPC tab's Settings box (see preload.js /
+// public/js/app.js) - only the main process can show OS file dialogs, so
+// the renderer asks for a path this way rather than the plain browser dev
+// copy, which has no equivalent and just falls back to typing the path in.
+ipcMain.handle('upc-export:pick-file', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select WinePOS Export File',
+    filters: [
+      { name: 'Product Export', extensions: ['csv', 'tsv', 'txt'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  return result.filePaths[0];
+});
+
 ipcMain.handle('queue:save', async (_event, payload) => {
   if (!mainWindow) return { success: false };
   const result = await dialog.showSaveDialog(mainWindow, {
