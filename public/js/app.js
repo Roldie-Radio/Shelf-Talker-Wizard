@@ -32,9 +32,18 @@
   // for Super Sale talkers/Small Display Signs - Large Display Signs fold
   // this text into the regular sale-price line instead, see
   // buildSignPriceRowHtml in card.js).
+  // closeoutBadge matches the "CLOSEOUT!!" badge's current effective size
+  // the same way (see fCloseoutFontSize/closeoutFontSizeField, shown for
+  // any Closeout talker, unlike Super Sale above - the badge itself renders
+  // on the Shelf Talker card and both Display Sign sizes, see
+  // buildPricingHtml/buildSignMetaRowHtml/buildSmallSignBodyHtml in
+  // card.js): card__closeout-badge's 0.115 * 72 * 2.8in ≈ 23pt,
+  // sign__closeout-badge's (shared by both sign sizes; using Large's own
+  // --sign-text, same as the Title/Description sign defaults above) 0.026 *
+  // 1.4 * 72 * 8.5in ≈ 22.5pt.
   const DEFAULT_FONT_SIZE_PT = {
-    talker: { title: 12, description: 10.5, superSalePrice: 22 },
-    sign: { title: 20, description: 10, superSalePrice: 17 },
+    talker: { title: 12, description: 10.5, superSalePrice: 22, closeoutBadge: 23 },
+    sign: { title: 20, description: 10, superSalePrice: 17, closeoutBadge: 22.5 },
   };
 
   // Human-readable names for the queue list's meta line (see renderQueue).
@@ -184,6 +193,8 @@
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
     talkerTypeSupersaleOption: document.getElementById('talkerTypeSupersaleOption'),
+    closeoutFontSizeField: document.getElementById('closeoutFontSizeField'),
+    closeoutFontSize: document.getElementById('fCloseoutFontSize'),
     superSaleFontSizeField: document.getElementById('superSaleFontSizeField'),
     superSaleFontSize: document.getElementById('fSuperSaleFontSize'),
     ratingReviewer: document.getElementById('fRatingReviewer'),
@@ -421,6 +432,12 @@
     const isLargeSign = isSign && !isSmallSign;
     els.superSaleFontSizeField.hidden = els.talkerType.value !== 'supersale' || isLargeSign;
 
+    // The "CLOSEOUT!!" badge renders on the Shelf Talker card and on both
+    // Display Sign sizes (see buildPricingHtml/buildSignMetaRowHtml/
+    // buildSmallSignBodyHtml in card.js), so unlike Super Sale above there's
+    // no sign-size exclusion here.
+    els.closeoutFontSizeField.hidden = els.talkerType.value !== 'closeout';
+
     applyImportMode();
     applySkuMode();
   }
@@ -464,6 +481,7 @@
     els.titleFontSize.value = defaults.title;
     els.descriptionFontSize.value = defaults.description;
     els.superSaleFontSize.value = defaults.superSalePrice;
+    els.closeoutFontSize.value = defaults.closeoutBadge;
   }
 
   function setSignType(signType) {
@@ -529,8 +547,9 @@
   });
 
   // Only field visibility depends on Talker Style (see applyFormMode's
-  // superSaleFontSizeField toggle above) - the preview itself already
-  // re-renders off els.form's own 'input' listener below.
+  // superSaleFontSizeField/closeoutFontSizeField toggles above) - the
+  // preview itself already re-renders off els.form's own 'input' listener
+  // below.
   els.talkerType.addEventListener('change', applyFormMode);
 
   // ---------- Form <-> talker object ----------
@@ -554,6 +573,7 @@
       salePrice: els.salePrice.value.trim(),
       talkerType: els.talkerType.value,
       superSaleFontSize: els.superSaleFontSize.value.trim(),
+      closeoutFontSize: els.closeoutFontSize.value.trim(),
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
@@ -591,9 +611,11 @@
     // saved beer item that predates this rule doesn't restore Super Sale.
     if (currentCategory === 'beer' && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
     els.superSaleFontSize.value = talker.superSaleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].superSalePrice;
-    // Talker Style is now known, so the box's own visibility (hidden for
-    // non-Super Sale/Large Display Sign) needs a second pass - applyFormMode
-    // ran above before els.talkerType.value was set to this talker's value.
+    els.closeoutFontSize.value = talker.closeoutFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].closeoutBadge;
+    // Talker Style is now known, so the boxes' own visibility (hidden for
+    // non-Super Sale/Large Display Sign, or non-Closeout) needs a second
+    // pass - applyFormMode ran above before els.talkerType.value was set to
+    // this talker's value.
     applyFormMode();
     currentRatings = Array.isArray(talker.ratings) ? talker.ratings.slice() : [];
     renderRatingsList();
