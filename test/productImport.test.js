@@ -1211,12 +1211,52 @@ test('parseStoreProductHtml reads title/brand/sku/size/price/description from a 
     brand: 'Anheuser-Busch',
     sku: '09144',
     size: '12pk-12oz Cans',
+    packSize: '',
     vintage: '',
     price: '8.99',
     salePrice: '7.99',
     description: 'A superior light beer. Untappd Rating: 2.49',
     sourceUrl: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/',
   });
+});
+
+// This product's Size row is the container only ("16oz") with a separate
+// Pack Size row ("4-Pack") - unlike the Michelob ULTRA fixture above, whose
+// Size row already reads the pack count combined in ("12pk-12oz Cans").
+// Both shapes are real (see the module comment above parseStoreProductHtml)
+// - parseStoreProductHtml itself keeps them separate either way; only
+// combineBeerSize (beer-only, via enrichBeerFromUntappd - see the
+// lookupSku test further down) folds Size and Pack Size into one value.
+test('parseStoreProductHtml reads a separate Pack Size row from the spec table without combining it into size', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">New Anthem Hazy IPA</h1>
+      <table>
+        <tr><th>Size</th><td>16oz</td></tr>
+        <tr><th>Pack Size</th><td>4-Pack</td></tr>
+      </table>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/New-Anthem-Hazy-IPA-12345-1012345/');
+  assert.equal(result.size, '16oz');
+  assert.equal(result.packSize, '4-Pack');
+});
+
+// Mirrors the Year row's "Not Specified" placeholder handling right above -
+// a single-item product's Pack Size row reads that literal text instead of
+// being blank or absent.
+test('parseStoreProductHtml leaves packSize blank when the store\'s Pack Size row reads "Not Specified"', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>
+      <table>
+        <tr><th>Size</th><td>750mL</td></tr>
+        <tr><th>Pack Size</th><td>Not Specified</td></tr>
+      </table>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Josh-Cellars-55555-1055555/');
+  assert.equal(result.packSize, '');
 });
 
 test('parseStoreProductHtml reads a vintage year from the spec table\'s Year row', () => {
@@ -1548,6 +1588,45 @@ test('lookupSku enriches a beer entry with Untappd data on top of the store look
       assert.equal(result.abv, '4.2%');
       // Untappd's own page is preferred over the store's generic blurb once a match is found.
       assert.equal(result.description, 'Fallback SEO description.');
+    }
+  );
+});
+
+test('lookupSku combines a beer\'s separate Size and Pack Size rows into one Size/Unit value', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="12345" />
+        <a class="product-link" href="/New-Anthem-Hazy-IPA-12345-1012345/">
+          <span class="productnameTitle">Hazy IPA</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Hazy IPA</h1>
+      <h6><a href="/brand/new-anthem">New Anthem Beer Project</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$13.99</span></div>
+      <table>
+        <tr><th>Size</th><td>16oz</td></tr>
+        <tr><th>Pack Size</th><td>4-Pack</td></tr>
+      </table>
+    `,
+  });
+  const algoliaBody = algoliaHitsResponse([]);
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/New-Anthem')) return mockResponse({ status: 200, body: storeProductHtml });
+      // Untappd search comes back empty here - irrelevant to this test, which
+      // only cares about the store-sourced Size/Pack Size combination, not
+      // the Untappd enrichment step.
+      return mockResponse({ status: 200, body: algoliaBody });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '12345', category: 'beer' });
+      assert.equal(result.size, '16oz 4-Pack');
     }
   );
 });

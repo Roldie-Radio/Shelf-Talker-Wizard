@@ -1076,6 +1076,14 @@ function parseStoreProductHtml(html, url) {
     storeSpecValue($, 'SKU')
   );
   const size = firstNonEmpty(storeSpecValue($, 'Size'), guessSize(title));
+  // Beer's own spec row, separate from Size (e.g. Size "16oz", Pack Size
+  // "4-Pack") - see combineBeerSize below, which folds the two together
+  // into one Size/Unit value ("16oz 4-Pack") for beer only. Same "Not
+  // Specified" placeholder handling as Year right below: a single-item
+  // product's Pack Size row reads that literal text rather than being
+  // blank, so only accept it when it isn't that placeholder.
+  const packSizeRaw = storeSpecValue($, 'Pack Size');
+  const packSize = /^not specified$/i.test((packSizeRaw || '').trim()) ? undefined : packSizeRaw;
   // The store's own Year row reads "Not Specified" (not a blank row) for a
   // non-vintage product, since storeSpecValue just captures whatever text
   // follows the label - only accept it here when it actually looks like a
@@ -1103,6 +1111,11 @@ function parseStoreProductHtml(html, url) {
     brand: brand || '',
     sku: sku || '',
     size: size || '',
+    // Kept separate from `size` here rather than combined already - only
+    // combineBeerSize (beer-only, see enrichBeerFromUntappd) folds it in,
+    // so a wine/spirits lookup's Size/Unit field is completely unaffected
+    // by this even if that page happened to have its own Pack Size row.
+    packSize: packSize || '',
     vintage: vintage || '',
     price: price || '',
     salePrice: salePrice && salePrice !== price ? salePrice : '',
@@ -1288,6 +1301,21 @@ function composeProducerTitle({ title, brand, size }) {
   return `${trimmedBrand} ${name}`.trim();
 }
 
+// Folds the store page's separate Size ("16oz") and Pack Size ("4-Pack")
+// spec rows into one Size/Unit value ("16oz 4-Pack") - beer-only (see
+// enrichBeerFromUntappd below), matching how staff already write a
+// multi-pack's size by hand elsewhere in the app. Applied after
+// composeProducerTitle already ran on the un-combined `size` above, not
+// before - stripSize there only needs to match what's actually still
+// sitting in the scraped title (just the container size, confirmed from a
+// real product page), not a phrase that includes the pack count too.
+function combineBeerSize(size, packSize) {
+  const base = (size || '').trim();
+  const pack = (packSize || '').trim();
+  if (!pack) return base;
+  return base ? `${base} ${pack}` : pack;
+}
+
 // Layers Untappd's own description/brewery/style/ABV/IBU/rating on top of
 // what the store page already gave lookupSku/lookupSkuFromHtml below - the
 // store's generic manufacturer blurb (see parseStoreProductHtml) is kept as
@@ -1329,6 +1357,7 @@ function mergeUntappdBeer(current, beer) {
 
 async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
+  const size = combineBeerSize(product.size, product.packSize);
   try {
     const beer = await searchUntappd(title);
     // mergeUntappdBeer's own description fallback (see its comment) is meant
@@ -1338,9 +1367,9 @@ async function enrichBeerFromUntappd(product) {
     // manufacturer blurb - once Untappd is found, its own (possibly blank)
     // description is what staff want to see, not that blurb, so this
     // overrides mergeUntappdBeer's fallback rather than reusing it.
-    return { ...product, title, ...mergeUntappdBeer(product, beer), description: beer.description || '' };
+    return { ...product, title, size, ...mergeUntappdBeer(product, beer), description: beer.description || '' };
   } catch (err) {
-    return { ...product, title, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
+    return { ...product, title, size, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
   }
 }
 

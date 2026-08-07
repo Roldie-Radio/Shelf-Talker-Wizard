@@ -915,12 +915,24 @@ function buildCardElement(talker) {
       ${buildPricingHtml(talker)}
   `;
 
+  // Store SKU: Beer only, and not on Quarter (which only ever shows Title/
+  // Size/Regular Price/Sale Price - see the isQuarter branch above). Set
+  // into the footer band next to the store URL rather than anywhere in
+  // .card__body - it's inventory/restock information for staff, not part
+  // of the shopper-facing pitch, so it belongs with the other "back of
+  // house" line already down there instead of competing with the price or
+  // description for room.
+  const showSku = isBeer && !isQuarter && talker.sku;
+  const footerClasses = ['card__band', 'card__band--footer'];
+  if (showSku) footerClasses.push('card__band--footer--split');
+
   card.innerHTML = `
     <div class="card__band">
       <img class="card__logo" src="assets/logo.png" alt="" />
     </div>
     <div class="card__body">${bodyHtml}</div>
-    <div class="card__band card__band--footer">
+    <div class="${footerClasses.join(' ')}">
+      ${showSku ? `<span class="card__sku">SKU ${escapeHtml(talker.sku)}</span>` : ''}
       <span class="card__footer-text">www.liquoroutletwinecellars.com</span>
     </div>
   `;

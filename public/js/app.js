@@ -159,6 +159,7 @@
     awards: document.getElementById('fAwards'),
     awardsColor: document.getElementById('fAwardsColor'),
     beerFields: document.getElementById('beerFields'),
+    sku: document.getElementById('fSku'),
     brewery: document.getElementById('fBrewery'),
     location: document.getElementById('fLocation'),
     style: document.getElementById('fStyle'),
@@ -538,6 +539,7 @@
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
+      sku: els.sku.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
       style: els.style.value.trim(),
@@ -579,6 +581,7 @@
     renderRatingsList();
     els.awards.value = talker.awards || '';
     els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
+    els.sku.value = talker.sku || '';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
     els.style.value = talker.style || '';
@@ -1462,6 +1465,12 @@
     };
     if (isBeer) {
       Object.assign(fields, {
+        // Not part of `data` (the API response) - this is the number
+        // staff themselves typed into the Store SKU box above to run the
+        // lookup, carried over onto the talker now that there's somewhere
+        // to keep it (see #fSku/beerFields in index.html). Beer only, per
+        // request - a wine/spirits lookup leaves the shared field alone.
+        sku: els.skuInput.value.trim(),
         brewery: data.brewery,
         location: data.location,
         style: data.style,

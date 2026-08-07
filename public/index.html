@@ -157,6 +157,17 @@
           </div>
 
           <div class="field-group" id="beerFields" hidden>
+            <!-- Beer only, per request - printed in the footer band next to
+                 the store URL (see .card__band--footer--split in styles.css
+                 and buildCardElement in card.js), not shown on Wine/Spirits
+                 or on Quarter Size (which only ever shows Title/Size/Price -
+                 see isQuarter there). Auto-filled from the SKU Lookup tab's
+                 own Store SKU box (see applySkuLookupProduct), but editable/
+                 fillable by hand too for a beer talker built from scratch. -->
+            <label class="field">
+              <span>Store SKU (optional)</span>
+              <input type="text" id="fSku" inputmode="numeric" maxlength="20" placeholder="09144" />
+            </label>
             <div class="field-row">
               <label class="field">
                 <span>Brewery</span>
