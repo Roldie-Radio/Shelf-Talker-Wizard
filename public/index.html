@@ -360,7 +360,7 @@
           <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
           <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
         </div>
-        <p class="help-text"><strong>Beta</strong> &mdash; scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? See Settings below.</p>
+        <p class="help-text"><strong>Beta</strong> &mdash; scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
         <label class="field">
           <span>UPC</span>
           <input type="text" id="scanUpcInput" inputmode="numeric" autocomplete="off" placeholder="Scan or type a UPC..." />
@@ -373,20 +373,6 @@
              handler via requestSubmit() rather than a second copy of
              validate/save. -->
         <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
-
-        <button type="button" class="link-btn" id="scanUpcSettingsToggle" aria-expanded="false" aria-controls="scanUpcSettingsSection">Settings &mdash; export file location</button>
-        <div class="reviewer-manager" id="scanUpcSettingsSection" hidden>
-          <p class="help-text" id="scanUpcSettingsHelp">Point this at the product file WinePOS exports on this PC (CSV or tab-delimited, with a UPC/Barcode column and a price and description/title column). It's re-read automatically whenever the file changes &mdash; no need to restart the app after WinePOS updates it.</p>
-          <label class="field">
-            <span>Export File Path</span>
-            <input type="text" id="scanUpcPathInput" placeholder="C:\WinePOS\Exports\items.csv" />
-          </label>
-          <div class="reviewer-manager__add">
-            <button type="button" class="btn btn--small" id="scanUpcBrowseBtn" hidden>Browse&hellip;</button>
-            <button type="button" class="btn btn--small btn--primary" id="scanUpcSavePathBtn">Save Location</button>
-          </div>
-          <p class="help-text" id="scanUpcSettingsStatus" role="status" aria-live="polite"></p>
-        </div>
       </div>
     </section>
 
@@ -525,7 +511,7 @@
         <p>On the <strong>SKU Lookup</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match the product, type in the store's SKU number, and click <strong>Look Up SKU</strong>. It searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing straight from it. For <strong>Beer</strong>, it also searches Untappd using the title it just found and fills in the description, brewery, style, ABV, IBU, and rating from there &mdash; the store page's own description is only used if that Untappd search doesn't turn up a match. Review the fields before adding to the queue, same as any other import. If the store site blocks the lookup, use <strong>Site blocking the lookup? Paste the product page's HTML instead</strong>: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; this works even when the site blocks the app's own request, since your browser already got past it.</p>
 
         <h3>Scanning a UPC</h3>
-        <p>The <strong>Scan UPC</strong> tab looks products up by the manufacturer UPC printed on the bottle &mdash; a different number from the store's own SKU that SKU Lookup searches the website for. It never goes out to the internet: it reads a product file that WinePOS exports locally on this PC. A USB/Bluetooth scanner needs no setup &mdash; it types the code and an Enter keystroke automatically, which triggers the lookup by itself, same as clicking <strong>Look Up UPC</strong>. The first time, click <strong>Settings &mdash; export file location</strong> and point it at the file WinePOS writes (ask WinePOS support how to set up that export if it isn't running yet); after that it's saved on this PC and re-read automatically whenever the file changes. If a scanned UPC isn't in the file, add that item manually instead.</p>
+        <p>The <strong>Scan UPC</strong> tab looks products up by the manufacturer UPC printed on the bottle &mdash; a different number from the store's own SKU that SKU Lookup searches the website for. It never goes out to the internet: it reads a product file that WinePOS exports locally on this PC. A USB/Bluetooth scanner needs no setup &mdash; it types the code and an Enter keystroke automatically, which triggers the lookup by itself, same as clicking <strong>Look Up UPC</strong>. The first time, use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu and point it at the file WinePOS writes (ask WinePOS support how to set up that export if it isn't running yet); after that it's saved on this PC and re-read automatically whenever the file changes. If a scanned UPC isn't in the file, add that item manually instead.</p>
 
         <h3>The queue</h3>
         <p>Everything you've added sits in the <strong>Queue</strong> panel on the right, and is saved automatically in the browser so it survives closing the app. Click the &#8942; menu on any item to <strong>Edit</strong>, <strong>Copy</strong>, <strong>Delete</strong>, or <strong>Move Up</strong>/<strong>Move Down</strong> it &mdash; queue order is print order, so moving an item changes where it lands on the printed sheet.</p>
@@ -583,12 +569,43 @@
     </div>
   </div>
 
+  <!-- Advanced menu only (Electron) - configures the WinePOS export file
+       path the Scan UPC tab reads from. Previously an inline "Settings" box
+       on the Scan UPC tab itself; moved here so that tab stays focused on
+       scanning, with setup as a one-time admin task in the app menu instead.
+       Still reachable from a plain browser dev copy too (see app.js) via the
+       Scan UPC tab's own "nothing set up yet" fallback - only the Advanced
+       menu entry point itself is Electron-only. -->
+  <div id="exportSettingsOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="exportSettingsTitle">
+      <div class="modal__header">
+        <h2 id="exportSettingsTitle">Export File Settings</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="exportSettingsCloseBtn">&times; Close</button>
+      </div>
+      <div class="server-pc-body">
+        <p class="help-text">Point this at the product file WinePOS exports on this PC (CSV or tab-delimited, with a UPC/Barcode column and a price and description/title column). It's re-read automatically whenever the file changes &mdash; no need to restart the app after WinePOS updates it.</p>
+        <label class="field">
+          <span>Export File Path</span>
+          <input type="text" id="exportSettingsPathInput" placeholder="C:\WinePOS\Exports\items.csv" />
+        </label>
+        <div class="reviewer-manager__add">
+          <button type="button" class="btn btn--small" id="exportSettingsBrowseBtn" hidden>Browse&hellip;</button>
+          <button type="button" class="btn btn--small btn--primary" id="exportSettingsSaveBtn">Save Location</button>
+        </div>
+        <p class="help-text" id="exportSettingsStatus" role="status" aria-live="polite"></p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="exportSettingsCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Advanced menu only (Electron) - a read-only look at the raw WinePOS
-       export file configured in Scan UPC -> Settings, so staff/support can
-       confirm it's actually hooked up right without going to find and open
-       the file themselves. Shown exactly as WinePOS wrote it (headers as
-       named, not run through Scan UPC's column-alias matching) - see the
-       note above previewExport() in server/upcCatalog.js. -->
+       export file configured above, so staff/support can confirm it's
+       actually hooked up right without going to find and open the file
+       themselves. Shown exactly as WinePOS wrote it (headers as named, not
+       run through Scan UPC's column-alias matching) - see the note above
+       previewExport() in server/upcCatalog.js. -->
   <div id="exportPreviewOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="exportPreviewTitle">
       <div class="modal__header">
@@ -600,7 +617,7 @@
         <div class="preview-table-wrap" id="exportPreviewTableWrap"></div>
       </div>
       <div class="modal__footer">
-        <button type="button" class="btn" id="exportPreviewSettingsBtn">Go to Scan UPC Settings</button>
+        <button type="button" class="btn" id="exportPreviewSettingsBtn">Open Export File Settings</button>
         <button type="button" class="btn btn--primary" id="exportPreviewCloseFooterBtn">Close</button>
       </div>
     </div>

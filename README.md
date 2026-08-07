@@ -151,7 +151,7 @@ The **Scan UPC** tab looks products up by the manufacturer UPC printed on the bo
 
 A USB or Bluetooth barcode scanner needs no special setup here &mdash; it types the scanned digits like a very fast keyboard, and pressing Enter (which every scanner does automatically at the end of a scan) triggers the lookup, the same as clicking **Look Up UPC**. Switching to the tab puts the cursor in the field automatically so staff can walk up and start scanning right away.
 
-**One-time setup:** click **Settings &mdash; export file location** and point it at the product file WinePOS writes to disk (ask WinePOS support how to set up a scheduled export if one isn't already running &mdash; this is the same kind of feed their electronic shelf tag integrations use). The path is saved on this PC and the file is re-read automatically whenever it changes, so there's nothing to redo after WinePOS updates it. The Settings box also shows how many items were loaded and when the file was last updated, which doubles as a quick way to confirm the export is actually running.
+**One-time setup:** in the desktop app, use **Advanced &rarr; Export File Settings&hellip;** and point it at the product file WinePOS writes to disk (ask WinePOS support how to set up a scheduled export if one isn't already running &mdash; this is the same kind of feed their electronic shelf tag integrations use). The path is saved on this PC and the file is re-read automatically whenever it changes, so there's nothing to redo after WinePOS updates it. The dialog also shows how many items were loaded and when the file was last updated, which doubles as a quick way to confirm the export is actually running. If a scan fails because nothing's configured yet, this same dialog opens automatically.
 
 The file can be comma- or tab-delimited (CSV or TSV), and its columns don't need to match an exact template &mdash; common header names are recognized automatically:
 
@@ -214,15 +214,19 @@ marked as possibly stale &mdash; a review-before-you-trust-it value beats nothin
 
 ## Advanced menu (desktop app)
 
-The desktop app's **Advanced** menu has three troubleshooting/admin dialogs, below
+The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, below
 **Toggle Developer Tools**:
 
+- **Export File Settings&hellip;** &mdash; where the Scan UPC tab's export file path
+  is configured (see "Scanning a UPC" above) &mdash; the Scan UPC tab itself no
+  longer has an inline Settings box; this menu item is the only normal way to it.
+  It still opens itself automatically if a scan fails because nothing's
+  configured yet, so staff aren't required to already know it's in this menu.
 - **View Export File&hellip;** &mdash; a read-only preview of the WinePOS export file
-  configured in Scan UPC &rarr; Settings, shown exactly as WinePOS wrote it (real
-  column headers, not run through Scan UPC's alias matching) so you can confirm
-  it's actually hooked up right without leaving the app to go find and open the
-  file yourself. If nothing's configured yet, **Go to Scan UPC Settings** jumps
-  straight there.
+  configured above, shown exactly as WinePOS wrote it (real column headers, not
+  run through Scan UPC's alias matching) so you can confirm it's actually hooked
+  up right without leaving the app to go find and open the file yourself. If
+  nothing's configured yet, **Open Export File Settings** jumps straight there.
 - **View Database&hellip;** &mdash; counts for Print History and the product cache,
   plus a table of the most recently printed talkers, confirming this PC has real
   accumulated data.

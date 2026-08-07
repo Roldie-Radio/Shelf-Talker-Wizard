@@ -228,11 +228,16 @@ ipcMain.handle('upc-export:pick-file', async () => {
   return result.filePaths[0];
 });
 
-// Advanced menu's "View Export File...", "View Database...", and "Server
-// PC..." (see buildMenu below) - the renderer owns fetching the actual data
-// (from the same-origin API the rest of the app already uses) and rendering
-// it, same split as handleShowHelp above: the main process only knows how
-// to ask the renderer to open a panel, not what goes in it.
+// Advanced menu's "Export File Settings...", "View Export File...", "View
+// Database...", and "Server PC..." (see buildMenu below) - the renderer
+// owns fetching the actual data (from the same-origin API the rest of the
+// app already uses) and rendering it, same split as handleShowHelp above:
+// the main process only knows how to ask the renderer to open a panel, not
+// what goes in it.
+function handleExportSettings() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('export-settings-requested');
+}
 function handleViewExportFile() {
   if (!mainWindow) return;
   mainWindow.webContents.send('view-export-requested');
@@ -298,6 +303,7 @@ function buildMenu() {
           click: () => { if (mainWindow) mainWindow.webContents.toggleDevTools(); },
         },
         { type: 'separator' },
+        { label: 'Export File Settings…', click: handleExportSettings },
         { label: 'View Export File…', click: handleViewExportFile },
         { label: 'View Database…', click: handleViewDatabase },
         { type: 'separator' },
