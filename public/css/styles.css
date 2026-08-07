@@ -1344,18 +1344,23 @@ h1, h2, h3 { margin: 0; }
   background: #e5ddd0;
 }
 
-/* "CLOSEOUT!!" burst - a bold, slightly-tilted comic-style badge with a
-   heavy outline, matching the store's existing closeout shelf talkers. */
+/* "CLOSEOUT!!" burst - a bold, slightly-tilted badge with a heavy outline,
+   matching the store's existing closeout shelf talkers.
+   Font swapped from Comic Sans MS to Arial Black, weight bumped to 900 and
+   the outline/shadow both thickened - picked from a design-review mockup
+   comparing bolder treatments (Comic Sans's own bold face read too thin at
+   shelf distance; Arial Black has a real 900 weight to lean on instead of
+   relying on the browser's synthetic emboldening). */
 .card__closeout-badge {
   flex: 0 0 auto;
   text-align: center;
-  font-family: "Comic Sans MS", "Segoe Print", cursive;
-  font-weight: 700;
+  font-family: "Arial Black", "Arial Bold", Impact, sans-serif;
+  font-weight: 900;
   font-style: italic;
   font-size: calc(var(--w) * 0.115 * var(--price-fit, 1));
   color: #ffd400;
-  -webkit-text-stroke: calc(var(--w) * 0.0035) #000;
-  text-shadow: calc(var(--w) * 0.006) calc(var(--w) * 0.006) 0 rgba(0,0,0,0.5);
+  -webkit-text-stroke: calc(var(--w) * 0.0075) #000;
+  text-shadow: calc(var(--w) * 0.011) calc(var(--w) * 0.011) 0 rgba(0,0,0,0.6);
   margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0;
 }
 
@@ -1781,14 +1786,20 @@ h1, h2, h3 { margin: 0; }
   font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1));
 }
 
+/* Same Arial Black/900/thicker-outline treatment as .card__closeout-badge
+   above (see its comment) - stroke/shadow fractions scaled by the same
+   factor as the card's own bump (roughly 2.1x/1.8x) to keep the two
+   badges' relative weight matched even though their font-size fractions
+   of --w aren't themselves comparable (card and sign use very different
+   reference widths - see SIGN_LAYOUTS). */
 .sign__closeout-badge {
-  font-family: "Comic Sans MS", "Segoe Print", cursive;
-  font-weight: 800;
+  font-family: "Arial Black", "Arial Bold", Impact, sans-serif;
+  font-weight: 900;
   font-style: italic;
   font-size: calc(var(--w) * var(--sign-text) * 0.026 * var(--price-fit, 1));
   color: #ffd400;
-  -webkit-text-stroke: calc(var(--w) * 0.0015) #000;
-  text-shadow: calc(var(--w) * 0.003) calc(var(--w) * 0.003) 0 rgba(0,0,0,0.5);
+  -webkit-text-stroke: calc(var(--w) * 0.0032) #000;
+  text-shadow: calc(var(--w) * 0.0055) calc(var(--w) * 0.0055) 0 rgba(0,0,0,0.6);
 }
 
 .sign__chilled-badge {
