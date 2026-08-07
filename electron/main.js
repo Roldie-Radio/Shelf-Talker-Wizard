@@ -3,6 +3,7 @@ const fs = require('fs/promises');
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { start } = require('../server/index.js');
+const { closeDb } = require('../server/db.js');
 
 // Fixed local port: this app only ever talks to itself on the same PC.
 const PORT = 17321;
@@ -387,6 +388,12 @@ app.on('window-all-closed', () => {
     httpServer.close();
     httpServer = null;
   }
+  // Flushes the SQLite WAL file back into data.db and releases the file
+  // handle cleanly - better-sqlite3's own docs recommend this rather than
+  // just letting the process exit and hoping the OS does it, and this is
+  // the one place both server/index.js's require chain and the app's own
+  // lifecycle agree the app is actually shutting down.
+  closeDb();
   if (process.platform !== 'darwin') app.quit();
 });
 

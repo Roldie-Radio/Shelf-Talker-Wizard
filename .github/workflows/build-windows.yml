@@ -21,10 +21,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # This is the *build machine's* Node version, unrelated to the app's own
+      # supported range (package.json's engines field, exercised by test.yml's
+      # 18/22 matrix) - the packaged app bundles Electron's own Node at
+      # runtime regardless. Pinned to a recent version because better-sqlite3
+      # (no prebuilt binary for win32, see server/db.js) compiles from source
+      # via node-gyp here, and node-gyp bundled with older Node/npm can't
+      # locate newer Visual Studio installs on the windows-latest runner
+      # image (fails with "could not find a version of Visual Studio 2017 or
+      # newer to use" even though one is present) - a node-gyp/npm version
+      # problem, not anything about better-sqlite3 or this app.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci

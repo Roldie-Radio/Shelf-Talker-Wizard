@@ -5,6 +5,10 @@ const {
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml,
 } = require('./productImport');
 const { getUpcSettings, setUpcSettings, lookupUpc } = require('./upcCatalog');
+const {
+  recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
+  upsertCachedProduct, getCachedProduct, isFresh,
+} = require('./db');
 
 function createApp() {
   const app = express();
@@ -101,17 +105,37 @@ function createApp() {
   // lookupSku also runs a best-effort Untappd search on the title it just
   // found (see enrichBeerFromUntappd in productImport.js) to fill in the
   // description/brewery/style/ABV/IBU/rating a retail page wouldn't have.
+  //
+  // Layered with a local cache (db.js) keyed by SKU: a lookup less than a
+  // day old skips the network entirely (fromCache: true) rather than
+  // re-scraping the same product every time it's re-entered; a *failed*
+  // network lookup falls back to whatever's cached regardless of age
+  // (fromCache + stale: true) rather than a hard error, since a stale price
+  // beats no data at all when the site is temporarily blocking requests.
+  // Cache key is the SKU as typed, not the category, so switching Wine/Beer
+  // on the same SKU (a user mistake, but not this app's to prevent) just
+  // overwrites the cached entry rather than tracking two.
   app.post('/api/sku-lookup', async (req, res) => {
     const { sku, category } = req.body || {};
 
     if (!sku || typeof sku !== 'string' || !sku.trim()) {
       return res.status(400).json({ error: 'A SKU is required.' });
     }
+    const trimmedSku = sku.trim();
+    const cached = getCachedProduct({ keyType: 'sku', key: trimmedSku });
+
+    if (isFresh(cached)) {
+      return res.json({ ...cached.data, fromCache: true });
+    }
 
     try {
-      const product = await lookupSku({ sku: sku.trim(), category });
+      const product = await lookupSku({ sku: trimmedSku, category });
+      upsertCachedProduct({ keyType: 'sku', key: trimmedSku, source: 'sku-lookup', data: product });
       res.json(product);
     } catch (err) {
+      if (cached) {
+        return res.json({ ...cached.data, fromCache: true, stale: true });
+      }
       res.status(502).json({ error: err.message || 'Could not look up that SKU.' });
     }
   });
@@ -158,19 +182,73 @@ function createApp() {
   // fetching anything. See upcCatalog.js's lookupUpc for the specific error
   // codes (no file configured yet, file missing, unreadable, or UPC not
   // found in it) surfaced through `code` below.
+  //
+  // Also layered with the same product cache /api/sku-lookup uses (see its
+  // note above), keyed by UPC instead of SKU. The payoff here is different
+  // from SKU Lookup, since this path was never going over the network to
+  // begin with: it's resilience for when the export file itself is
+  // unreachable/misconfigured, or this exact UPC has since dropped out of a
+  // refreshed export - a cached hit (however old, clearly marked stale)
+  // still beats sending staff to Manual Entry.
   app.post('/api/upc-lookup', (req, res) => {
     const { upc } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {
       return res.status(400).json({ error: 'A UPC is required.' });
     }
+    const trimmedUpc = upc.trim();
 
     try {
-      const product = lookupUpc(upc.trim());
+      const product = lookupUpc(trimmedUpc);
+      upsertCachedProduct({ keyType: 'upc', key: trimmedUpc, source: 'scan-upc', data: product });
       res.json(product);
     } catch (err) {
+      const cached = getCachedProduct({ keyType: 'upc', key: trimmedUpc });
+      if (cached) {
+        return res.json({ ...cached.data, fromCache: true, stale: true });
+      }
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not look up that UPC.', code: err.code });
     }
+  });
+
+  // Backs the History panel: called once, at the moment "Print Now" is
+  // clicked, with the entire current queue (that's what actually goes to
+  // the printer - see printNow() in app.js), so every talker in it gets
+  // logged as printed. Nothing about the live queue in localStorage is
+  // touched by this - History is a separate, permanent record layered on
+  // top, not a replacement for it (see db.js's own note on this).
+  app.post('/api/history', (req, res) => {
+    const { talkers } = req.body || {};
+    if (!Array.isArray(talkers) || !talkers.length) {
+      return res.status(400).json({ error: 'At least one talker is required.' });
+    }
+    res.json(recordPrintedTalkers(talkers));
+  });
+
+  // Backs the History panel's search box - title/SKU substring match, most
+  // recently printed first. `total` (of the matching set, not just this
+  // page) drives the panel's "Showing X of Y" footer.
+  app.get('/api/history', (req, res) => {
+    const { q, limit, offset } = req.query || {};
+    res.json(searchHistory({ q, limit, offset }));
+  });
+
+  // A single history row's full stored talker, for the History panel's
+  // "Reprint" action - everything fillForm() needs to restore the talker
+  // exactly as it was printed, not just the few columns the search list
+  // above shows.
+  app.get('/api/history/:id', (req, res) => {
+    const entry = getHistoryEntry(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'No history entry with that id.' });
+    res.json(entry);
+  });
+
+  // Lets staff prune a mistaken entry (e.g. a typo caught right after
+  // printing) out of the History panel.
+  app.delete('/api/history/:id', (req, res) => {
+    const deleted = deleteHistoryEntry(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'No history entry with that id.' });
+    res.json({ success: true });
   });
 
   // Manual fallback for a beer SKU lookup whose automatic Untappd search

@@ -285,6 +285,18 @@
     helpOverlay: document.getElementById('helpOverlay'),
     helpCloseBtn: document.getElementById('helpCloseBtn'),
     helpCloseFooterBtn: document.getElementById('helpCloseFooterBtn'),
+
+    historyBtn: document.getElementById('historyBtn'),
+    historyOverlay: document.getElementById('historyOverlay'),
+    historyCloseBtn: document.getElementById('historyCloseBtn'),
+    historyCloseFooterBtn: document.getElementById('historyCloseFooterBtn'),
+    historySearchInput: document.getElementById('historySearchInput'),
+    historyStatus: document.getElementById('historyStatus'),
+    historyList: document.getElementById('historyList'),
+    historyPagination: document.getElementById('historyPagination'),
+    historyPrevBtn: document.getElementById('historyPrevBtn'),
+    historyNextBtn: document.getElementById('historyNextBtn'),
+    historyPageIndicator: document.getElementById('historyPageIndicator'),
   };
 
   // ---------- Theme ----------
@@ -1369,7 +1381,7 @@
       }
 
       applyUpcScanProduct(data, isBeer);
-      els.scanUpcStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+      els.scanUpcStatus.textContent = `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
     } catch (err) {
       els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
       // A missing/unconfigured export file is the one failure staff can fix
@@ -1737,6 +1749,16 @@
     renderPreview();
   }
 
+  // Small aside appended to a lookup's status message when the server
+  // served a cached copy (see the product cache note above /api/sku-lookup
+  // and /api/upc-lookup in server/index.js) instead of a fresh network/file
+  // lookup - `stale` only ever comes back set when that cached copy was
+  // served *after* the real lookup itself failed.
+  function cacheNote(data) {
+    if (!data.fromCache) return '';
+    return ` (cached${data.stale ? ', may be stale' : ''})`;
+  }
+
   // data.untappdError is only ever set for a beer lookup whose Untappd step
   // failed (blocked, no match, etc) - see enrichBeerFromUntappd in
   // productImport.js. The store lookup itself still succeeded, so the form
@@ -1746,7 +1768,7 @@
     if (data.untappdError) {
       return `Loaded from ${loadedFrom}. Untappd: ${data.untappdError}`;
     }
-    return `Loaded from ${loadedFrom}! Review the fields, then click "Add to Queue".`;
+    return `Loaded from ${loadedFrom}${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
   }
 
   els.skuLookupBtn.addEventListener('click', async () => {
@@ -1926,6 +1948,7 @@
   }
 
   function printNow() {
+    recordHistoryForPrint();
     buildPrintDom();
     // Cards/signs need to be laid out at print size before we can
     // measure/shrink text - and #printRoot is `display: none` outside
@@ -2348,6 +2371,178 @@
   // panel rather than a separate window - one help doc, reachable two ways.
   if (window.shelfTalker && window.shelfTalker.onShowHelpRequested) {
     window.shelfTalker.onShowHelpRequested(() => helpModal.open());
+  }
+
+  // ---------- History ----------
+
+  // A permanent, searchable record of every talker actually printed (see
+  // server/db.js) - separate from, and never written to by, the live Queue
+  // in localStorage above. Paging state lives here rather than in the DOM,
+  // same reasoning as previewMode/currentCategory elsewhere in this file.
+  const HISTORY_PAGE_SIZE = 20;
+  let historyQuery = '';
+  let historyPage = 0;
+  let historyTotal = 0;
+  let historySearchTimer = null;
+
+  function formatHistoryTimestamp(iso) {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+  }
+
+  function renderHistoryList(rows) {
+    if (!rows.length) {
+      els.historyList.innerHTML = historyQuery
+        ? '<p class="empty-hint">No printed talkers match that search.</p>'
+        : '<p class="empty-hint">Nothing printed yet - printed talkers show up here automatically.</p>';
+      return;
+    }
+
+    els.historyList.innerHTML = '';
+    rows.forEach((row) => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const priceLabel = row.salePrice && Number(row.salePrice) > 0
+        ? `${formatMoney(row.salePrice)} (was ${formatMoney(row.price)})`
+        : formatMoney(row.price);
+      const metaParts = [formatHistoryTimestamp(row.printedAt)];
+      if (row.category === 'beer') metaParts.push('Beer');
+      if (row.size) metaParts.push(escapeHtml(row.size));
+      metaParts.push(priceLabel);
+
+      item.innerHTML = `
+        <div class="history-item__body">
+          <div class="history-item__title">${escapeHtml(row.title || 'Untitled')}</div>
+          <div class="history-item__meta">${metaParts.filter(Boolean).join(' &middot; ')}</div>
+        </div>
+        <div class="history-item__actions">
+          <button type="button" class="btn btn--small" data-action="reprint">Reprint</button>
+          <button type="button" class="btn btn--small btn--ghost" data-action="delete" title="Remove from History">Delete</button>
+        </div>
+      `;
+
+      item.querySelector('[data-action="reprint"]').addEventListener('click', () => reprintHistoryEntry(row.id));
+      item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteHistoryEntryById(row.id));
+      els.historyList.appendChild(item);
+    });
+  }
+
+  async function runHistorySearch() {
+    els.historyStatus.textContent = 'Loading...';
+    try {
+      const params = new URLSearchParams({
+        limit: String(HISTORY_PAGE_SIZE),
+        offset: String(historyPage * HISTORY_PAGE_SIZE),
+      });
+      if (historyQuery) params.set('q', historyQuery);
+      const resp = await fetch(`/api/history?${params}`);
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not load print history.');
+
+      historyTotal = data.total;
+      renderHistoryList(data.rows);
+
+      const totalPages = Math.max(Math.ceil(historyTotal / HISTORY_PAGE_SIZE), 1);
+      els.historyStatus.textContent = historyTotal
+        ? `${historyTotal} printed talker${historyTotal === 1 ? '' : 's'}${historyQuery ? ' match' : ''}.`
+        : '';
+      els.historyPagination.hidden = totalPages <= 1;
+      els.historyPageIndicator.textContent = `Page ${historyPage + 1} of ${totalPages}`;
+      els.historyPrevBtn.disabled = historyPage <= 0;
+      els.historyNextBtn.disabled = historyPage + 1 >= totalPages;
+    } catch (err) {
+      els.historyStatus.textContent = err.message || 'Could not load print history.';
+      els.historyList.innerHTML = '';
+      els.historyPagination.hidden = true;
+    }
+  }
+
+  // Adds a fresh copy of a past printed talker back into the live Queue for
+  // review - deliberately doesn't print it immediately or touch History
+  // itself, same "review before it hits the printer" rule as every other
+  // way of adding a talker in this app.
+  async function reprintHistoryEntry(id) {
+    els.historyStatus.textContent = 'Loading...';
+    try {
+      const resp = await fetch(`/api/history/${id}`);
+      const entry = await resp.json();
+      if (!resp.ok) throw new Error(entry.error || 'Could not load that talker.');
+
+      // historyId/printedAt are this lookup's own bookkeeping, not talker
+      // fields - stripped so they don't end up carried onto the new queue
+      // item (which gets its own fresh id from makeId() below).
+      const { historyId, printedAt, id: _oldId, ...talkerFields } = entry;
+      queue.push({ ...talkerFields, id: makeId() });
+      saveQueue();
+      renderQueue();
+      els.historyStatus.textContent = `Added "${entry.title || 'that talker'}" to the queue.`;
+    } catch (err) {
+      els.historyStatus.textContent = err.message || 'Could not reprint that talker.';
+    }
+  }
+
+  async function deleteHistoryEntryById(id) {
+    try {
+      const resp = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
+      // Deleting the last row on a page beyond the first would otherwise
+      // leave that page showing nothing - step back a page rather than
+      // leaving staff looking at an empty page with results still above it.
+      if (els.historyList.children.length === 1 && historyPage > 0) historyPage -= 1;
+      runHistorySearch();
+    } catch (err) {
+      els.historyStatus.textContent = err.message || 'Could not delete that entry.';
+    }
+  }
+
+  const historyModal = createModal({
+    overlay: els.historyOverlay,
+    closeBtns: [els.historyCloseBtn, els.historyCloseFooterBtn],
+    onOpen: () => {
+      historyPage = 0;
+      els.historySearchInput.value = historyQuery;
+      runHistorySearch();
+    },
+  });
+  els.historyBtn.addEventListener('click', historyModal.open);
+
+  // Live search rather than a separate button - a read-only query against a
+  // local SQLite index is cheap enough to run on every keystroke, debounced
+  // just enough to not fire mid-word.
+  els.historySearchInput.addEventListener('input', () => {
+    clearTimeout(historySearchTimer);
+    historySearchTimer = setTimeout(() => {
+      historyQuery = els.historySearchInput.value.trim();
+      historyPage = 0;
+      runHistorySearch();
+    }, 250);
+  });
+
+  els.historyPrevBtn.addEventListener('click', () => {
+    if (historyPage <= 0) return;
+    historyPage -= 1;
+    runHistorySearch();
+  });
+  els.historyNextBtn.addEventListener('click', () => {
+    historyPage += 1;
+    runHistorySearch();
+  });
+
+  // Fired once, right as printing is confirmed (see printNow() below) with
+  // whatever's in the Queue at that moment - that's exactly what's about to
+  // be laid out on the sheet(s). Best-effort: a failure here (e.g. History's
+  // database is somehow unavailable) shouldn't block or interrupt the print
+  // itself, which has its own success/failure handling in triggerPrint().
+  function recordHistoryForPrint() {
+    if (!queue.length) return;
+    fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ talkers: queue }),
+    }).catch(() => {});
   }
 
   function triggerPrint() {

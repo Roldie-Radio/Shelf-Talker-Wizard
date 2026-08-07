@@ -695,6 +695,50 @@ h1, h2, h3 { margin: 0; }
 .queue-item-menu button[data-action="delete"] { color: var(--ui-danger); }
 .queue-item-menu button[data-action="delete"]:hover { background: var(--ui-danger-tint); }
 
+/* ---------- History ---------- */
+
+.history-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.history-body .field { margin-bottom: 0; }
+.history-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+.history-item__body { flex: 1; min-width: 0; }
+.history-item__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-item__meta { font-size: 0.78rem; color: var(--ui-muted); }
+.history-item__actions { flex: 0 0 auto; display: flex; gap: 0.3rem; }
+.history-item__actions button[data-action="delete"] { color: var(--ui-danger); }
+.history-item__actions button[data-action="delete"]:hover { background: var(--ui-danger-tint); }
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--ui-ink-soft);
+}
+
 /* ================================================================
    Shelf talker card — proportions taken from the print template
    (830 x 1136 px card within a 3300 x 2550 px, 6-up letter sheet)
