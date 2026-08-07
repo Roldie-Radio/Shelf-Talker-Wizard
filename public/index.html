@@ -310,15 +310,16 @@
           <span>Store SKU</span>
           <input type="text" id="skuInput" inputmode="numeric" placeholder="09144" />
         </label>
-        <button type="button" class="btn btn--primary" id="skuLookupBtn">Look Up SKU</button>
+        <div class="form-actions">
+          <button type="button" class="btn btn--primary" id="skuLookupBtn">Look Up SKU</button>
+          <!-- Adds the fields the lookup above (or the fallbacks below) just
+               filled straight to the queue without switching to Manual Entry
+               first - see els.skuSaveBtn's click handler in app.js, which
+               reuses the Manual Entry form's own validate/save logic via
+               requestSubmit() rather than duplicating it. -->
+          <button type="button" class="btn" id="skuSaveBtn">Add to Queue</button>
+        </div>
         <p class="help-text" id="skuStatus" role="status" aria-live="polite"></p>
-
-        <!-- Adds the fields the lookup above (or the fallbacks below) just
-             filled straight to the queue without switching to Manual Entry
-             first - see els.skuSaveBtn's click handler in app.js, which
-             reuses the Manual Entry form's own validate/save logic via
-             requestSubmit() rather than duplicating it. -->
-        <button type="button" class="btn" id="skuSaveBtn">Add to Queue</button>
 
         <button type="button" class="link-btn" id="skuHtmlToggle" aria-expanded="false" aria-controls="skuHtmlSection">Site blocking the lookup? Paste the product page's HTML instead</button>
         <div class="reviewer-manager" id="skuHtmlSection" hidden>
@@ -372,14 +373,15 @@
           <span>UPC</span>
           <input type="text" id="scanUpcInput" inputmode="numeric" autocomplete="off" placeholder="Scan or type a UPC..." />
         </label>
-        <button type="button" class="btn btn--primary" id="scanUpcLookupBtn">Look Up UPC</button>
+        <div class="form-actions">
+          <button type="button" class="btn btn--primary" id="scanUpcLookupBtn">Look Up UPC</button>
+          <!-- Same "Add to Queue" pattern as SKU Lookup's own skuSaveBtn - see
+               its note above; reuses the Manual Entry form's real submit
+               handler via requestSubmit() rather than a second copy of
+               validate/save. -->
+          <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
+        </div>
         <p class="help-text" id="scanUpcStatus" role="status" aria-live="polite"></p>
-
-        <!-- Same "Add to Queue" pattern as SKU Lookup's own skuSaveBtn - see
-             its note above; reuses the Manual Entry form's real submit
-             handler via requestSubmit() rather than a second copy of
-             validate/save. -->
-        <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
       </div>
     </section>
 
