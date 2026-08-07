@@ -297,6 +297,29 @@
     historyPrevBtn: document.getElementById('historyPrevBtn'),
     historyNextBtn: document.getElementById('historyNextBtn'),
     historyPageIndicator: document.getElementById('historyPageIndicator'),
+
+    exportPreviewOverlay: document.getElementById('exportPreviewOverlay'),
+    exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
+    exportPreviewCloseFooterBtn: document.getElementById('exportPreviewCloseFooterBtn'),
+    exportPreviewSettingsBtn: document.getElementById('exportPreviewSettingsBtn'),
+    exportPreviewStatus: document.getElementById('exportPreviewStatus'),
+    exportPreviewTableWrap: document.getElementById('exportPreviewTableWrap'),
+
+    databasePreviewOverlay: document.getElementById('databasePreviewOverlay'),
+    databasePreviewCloseBtn: document.getElementById('databasePreviewCloseBtn'),
+    databasePreviewCloseFooterBtn: document.getElementById('databasePreviewCloseFooterBtn'),
+    databasePreviewStatus: document.getElementById('databasePreviewStatus'),
+    databasePreviewTableWrap: document.getElementById('databasePreviewTableWrap'),
+
+    serverPcOverlay: document.getElementById('serverPcOverlay'),
+    serverPcCloseBtn: document.getElementById('serverPcCloseBtn'),
+    serverPcCloseFooterBtn: document.getElementById('serverPcCloseFooterBtn'),
+    serverPcAddresses: document.getElementById('serverPcAddresses'),
+    serverPcHistoryCount: document.getElementById('serverPcHistoryCount'),
+    serverPcCacheCount: document.getElementById('serverPcCacheCount'),
+    serverPcCheckbox: document.getElementById('serverPcCheckbox'),
+    serverPcStatus: document.getElementById('serverPcStatus'),
+    serverPcSaveBtn: document.getElementById('serverPcSaveBtn'),
   };
 
   // ---------- Theme ----------
@@ -2543,6 +2566,154 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ talkers: queue }),
     }).catch(() => {});
+  }
+
+  // ---------- Advanced menu dialogs (Electron only) ----------
+
+  // Shared by the Export File and Database preview dialogs below - builds a
+  // plain HTML table from a header row + array-of-arrays data rows. Used
+  // instead of a fancier grid component since a read-only troubleshooting
+  // preview doesn't need sorting/filtering/etc., just to show what's there.
+  function renderPreviewTable(container, headers, rows) {
+    if (!headers.length) {
+      container.innerHTML = '<p class="empty-hint">Nothing to show.</p>';
+      return;
+    }
+    const headHtml = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
+    const bodyHtml = rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('');
+    container.innerHTML = `
+      <table class="preview-table">
+        <thead><tr>${headHtml}</tr></thead>
+        <tbody>${bodyHtml || `<tr><td colspan="${headers.length}">No rows yet.</td></tr>`}</tbody>
+      </table>
+    `;
+  }
+
+  const exportPreviewModal = createModal({
+    overlay: els.exportPreviewOverlay,
+    closeBtns: [els.exportPreviewCloseBtn, els.exportPreviewCloseFooterBtn],
+    onOpen: loadExportPreview,
+  });
+
+  async function loadExportPreview() {
+    els.exportPreviewStatus.textContent = 'Loading...';
+    els.exportPreviewTableWrap.innerHTML = '';
+    try {
+      const resp = await fetch('/api/export-preview?limit=200');
+      const data = await resp.json();
+      if (!resp.ok) {
+        const err = new Error(data.error || 'Could not read the export file.');
+        err.code = data.code;
+        throw err;
+      }
+      els.exportPreviewStatus.textContent = `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${data.exportPath}`;
+      renderPreviewTable(els.exportPreviewTableWrap, data.headers, data.rows);
+    } catch (err) {
+      els.exportPreviewStatus.textContent = err.message || 'Could not read the export file.';
+    }
+  }
+
+  // Closes this dialog, switches to the Scan UPC tab, and opens its
+  // Settings box - lets someone go straight from "the export file isn't set
+  // up" to fixing it, instead of hunting for the tab themselves.
+  els.exportPreviewSettingsBtn.addEventListener('click', () => {
+    exportPreviewModal.close();
+    const scanTab = document.getElementById('tabScan');
+    if (scanTab) activateTab(scanTab);
+    if (els.scanUpcSettingsSection.hidden) els.scanUpcSettingsToggle.click();
+  });
+
+  const databasePreviewModal = createModal({
+    overlay: els.databasePreviewOverlay,
+    closeBtns: [els.databasePreviewCloseBtn, els.databasePreviewCloseFooterBtn],
+    onOpen: loadDatabasePreview,
+  });
+
+  async function loadDatabasePreview() {
+    els.databasePreviewStatus.textContent = 'Loading...';
+    els.databasePreviewTableWrap.innerHTML = '';
+    try {
+      const resp = await fetch('/api/db-preview?limit=100');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read the database.');
+
+      const { stats } = data;
+      els.databasePreviewStatus.textContent = `${stats.printedTalkers.toLocaleString('en-US')} printed talker${stats.printedTalkers === 1 ? '' : 's'}, `
+        + `${stats.cachedProducts.toLocaleString('en-US')} cached product${stats.cachedProducts === 1 ? '' : 's'}. `
+        + `Showing the ${data.history.length} most recently printed.`;
+
+      const headers = ['Title', 'Category', 'Size', 'Price', 'Printed'];
+      const rows = data.history.map((row) => [
+        row.title || '',
+        row.category === 'beer' ? 'Beer' : 'Wine / Spirits',
+        row.size || '',
+        formatMoney(row.price),
+        formatHistoryTimestamp(row.printedAt),
+      ]);
+      renderPreviewTable(els.databasePreviewTableWrap, headers, rows);
+    } catch (err) {
+      els.databasePreviewStatus.textContent = err.message || 'Could not read the database.';
+    }
+  }
+
+  const serverPcModal = createModal({
+    overlay: els.serverPcOverlay,
+    closeBtns: [els.serverPcCloseBtn, els.serverPcCloseFooterBtn],
+    onOpen: loadServerPcStatus,
+  });
+
+  async function loadServerPcStatus() {
+    els.serverPcStatus.textContent = 'Loading...';
+    try {
+      const resp = await fetch('/api/server-status');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check this PC\'s status.');
+
+      els.serverPcAddresses.textContent = data.addresses.length ? data.addresses.join(', ') : 'Not connected to a network';
+      els.serverPcHistoryCount.textContent = data.stats.printedTalkers.toLocaleString('en-US');
+      els.serverPcCacheCount.textContent = data.stats.cachedProducts.toLocaleString('en-US');
+      els.serverPcCheckbox.checked = data.isServer;
+      els.serverPcStatus.textContent = data.isServer && data.confirmedAt
+        ? `Marked as the main store PC on ${formatHistoryTimestamp(data.confirmedAt)}.`
+        : '';
+    } catch (err) {
+      els.serverPcStatus.textContent = err.message || 'Could not check this PC\'s status.';
+    }
+  }
+
+  els.serverPcSaveBtn.addEventListener('click', async () => {
+    els.serverPcSaveBtn.disabled = true;
+    els.serverPcStatus.textContent = 'Saving...';
+    try {
+      const resp = await fetch('/api/server-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isServer: els.serverPcCheckbox.checked }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save.');
+      els.serverPcStatus.textContent = data.isServer
+        ? `Marked as the main store PC on ${formatHistoryTimestamp(data.confirmedAt)}.`
+        : 'This PC is no longer marked as the main store PC.';
+    } catch (err) {
+      els.serverPcStatus.textContent = err.message || 'Could not save.';
+    } finally {
+      els.serverPcSaveBtn.disabled = false;
+    }
+  });
+
+  // Electron-only: the Advanced menu items that open these three dialogs
+  // (see main.js) have no equivalent in the plain browser dev copy, so
+  // these listeners simply never fire there - same pattern as
+  // onShowHelpRequested above.
+  if (window.shelfTalker && window.shelfTalker.onViewExportRequested) {
+    window.shelfTalker.onViewExportRequested(() => exportPreviewModal.open());
+  }
+  if (window.shelfTalker && window.shelfTalker.onViewDatabaseRequested) {
+    window.shelfTalker.onViewDatabaseRequested(() => databasePreviewModal.open());
+  }
+  if (window.shelfTalker && window.shelfTalker.onServerPcRequested) {
+    window.shelfTalker.onServerPcRequested(() => serverPcModal.open());
   }
 
   function triggerPrint() {

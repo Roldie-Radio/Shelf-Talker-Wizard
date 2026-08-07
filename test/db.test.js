@@ -211,3 +211,32 @@ test('isFresh is false for an entry older than the freshness window', () => {
     assert.equal(cached.data.price, '13.99');
   });
 });
+
+// ---------- getStats ----------
+
+test('getStats reports zero counts on a fresh database', () => {
+  withTempDb(() => {
+    assert.deepEqual(db.getStats(), { printedTalkers: 0, cachedProducts: 0 });
+  });
+});
+
+test('getStats counts printed talkers and cached products independently', () => {
+  withTempDb(() => {
+    db.recordPrintedTalkers([sampleTalker({ id: 'a' }), sampleTalker({ id: 'b' })]);
+    db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { title: 'Josh Cellars' } });
+    assert.deepEqual(db.getStats(), { printedTalkers: 2, cachedProducts: 1 });
+  });
+});
+
+test('getStats counts each product-cache row once even with multiple UPC-variant keys', () => {
+  withTempDb(() => {
+    // Distinct from upcCatalog.js's own UPC-A/EAN-13 variant indexing (which
+    // stores the same product under two Map keys in memory) - here each
+    // upsert is a single row keyed by (key_type, key), so two different
+    // *keys* for the same conceptual product genuinely are two rows; this
+    // just confirms getStats reflects row count, not some deduped notion.
+    db.upsertCachedProduct({ keyType: 'upc', key: '085000010652', source: 'scan-upc', data: {} });
+    db.upsertCachedProduct({ keyType: 'upc', key: '0085000010652', source: 'scan-upc', data: {} });
+    assert.equal(db.getStats().cachedProducts, 2);
+  });
+});

@@ -1,14 +1,16 @@
+const os = require('os');
 const path = require('path');
 const express = require('express');
 const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml,
 } = require('./productImport');
-const { getUpcSettings, setUpcSettings, lookupUpc } = require('./upcCatalog');
+const { getUpcSettings, setUpcSettings, lookupUpc, previewExport } = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
-  upsertCachedProduct, getCachedProduct, isFresh,
+  upsertCachedProduct, getCachedProduct, isFresh, getStats,
 } = require('./db');
+const { getServerConfig, setServerConfig } = require('./serverConfig');
 
 function createApp() {
   const app = express();
@@ -211,6 +213,19 @@ function createApp() {
     }
   });
 
+  // Backs the desktop app's "View Export File" dialog (Advanced menu) - a
+  // read-only look at the raw WinePOS export configured in Scan UPC ->
+  // Settings, for confirming it's actually hooked up right without staff
+  // needing to go find and open the file themselves.
+  app.get('/api/export-preview', (req, res) => {
+    try {
+      res.json(previewExport({ limit: req.query.limit }));
+    } catch (err) {
+      const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
+      res.status(status).json({ error: err.message || 'Could not read the export file.', code: err.code });
+    }
+  });
+
   // Backs the History panel: called once, at the moment "Print Now" is
   // clicked, with the entire current queue (that's what actually goes to
   // the printer - see printNow() in app.js), so every talker in it gets
@@ -249,6 +264,36 @@ function createApp() {
     const deleted = deleteHistoryEntry(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'No history entry with that id.' });
     res.json({ success: true });
+  });
+
+  // Backs the desktop app's "View Database" dialog (Advanced menu) - counts
+  // plus a page of the most recent Print History rows, reusing searchHistory
+  // with no query rather than a separate query, so this list is guaranteed
+  // to stay in sync with whatever the History panel itself would show.
+  app.get('/api/db-preview', (req, res) => {
+    const { rows, total } = searchHistory({ limit: req.query.limit });
+    res.json({ history: rows, historyTotal: total, stats: getStats() });
+  });
+
+  // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
+  // LAN-visible IPv4 addresses (informational only today - the server still
+  // only binds to 127.0.0.1, see start() below - and the current isServer
+  // flag/db stats, so staff can tell whether this looks like the PC with
+  // real accumulated data before marking it.
+  app.get('/api/server-status', (req, res) => {
+    const nets = os.networkInterfaces();
+    const addresses = [];
+    for (const entries of Object.values(nets)) {
+      for (const net of entries || []) {
+        if (net.family === 'IPv4' && !net.internal) addresses.push(net.address);
+      }
+    }
+    res.json({ ...getServerConfig(), addresses, stats: getStats() });
+  });
+
+  app.post('/api/server-status', (req, res) => {
+    const { isServer } = req.body || {};
+    res.json(setServerConfig({ isServer: !!isServer }));
   });
 
   // Manual fallback for a beer SKU lookup whose automatic Untappd search

@@ -212,6 +212,27 @@ happened. If a *fresh* lookup fails outright (site blocked, export file missing,
 etc.), the cached copy is used as a fallback instead of a hard error, clearly
 marked as possibly stale &mdash; a review-before-you-trust-it value beats nothing.
 
+## Advanced menu (desktop app)
+
+The desktop app's **Advanced** menu has three troubleshooting/admin dialogs, below
+**Toggle Developer Tools**:
+
+- **View Export File&hellip;** &mdash; a read-only preview of the WinePOS export file
+  configured in Scan UPC &rarr; Settings, shown exactly as WinePOS wrote it (real
+  column headers, not run through Scan UPC's alias matching) so you can confirm
+  it's actually hooked up right without leaving the app to go find and open the
+  file yourself. If nothing's configured yet, **Go to Scan UPC Settings** jumps
+  straight there.
+- **View Database&hellip;** &mdash; counts for Print History and the product cache,
+  plus a table of the most recently printed talkers, confirming this PC has real
+  accumulated data.
+- **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. This is
+  purely a saved flag today (shown alongside this PC's LAN IP address and the
+  same database counts as above) &mdash; it doesn't change how the app runs or
+  share anything between PCs yet; each PC still keeps its own separate Print
+  History and product cache. It's a first step toward eventually sharing that
+  data across registers, not that feature itself.
+
 ## Project layout
 
 ```
@@ -222,9 +243,11 @@ server/
                       the Find Tasting Notes button and SKU Lookup tab
   upcCatalog.js       Reads a local WinePOS product export file and looks products up by UPC (Scan UPC tab) -
                       no network request, unlike everything else in server/
-  db.js               Local SQLite (better-sqlite3): the Print History log and the SKU/UPC product cache
-  appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by both
-                      upcCatalog.js's config.json and db.js's data.db, so they always agree on where it lives
+  db.js               Local SQLite (better-sqlite3): the Print History log, the SKU/UPC product cache, and stats
+  appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by
+                      upcCatalog.js's config.json, db.js's data.db, and serverConfig.js's server-config.json,
+                      so they all agree on where it lives
+  serverConfig.js     Persisted "is this the main store PC" flag behind the Advanced menu's Server PC dialog
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
@@ -235,8 +258,9 @@ public/
 test/
   layout.test.js          Packing invariants: every layout fits a sheet, no item lost
   print-css-sync.test.js  Guards the JS geometry against the print CSS
-  upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence
-  db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness
+  upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence, export preview
+  db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness, stats
+  serverConfig.test.js    Server PC flag persistence
 ```
 
 ## Tests
