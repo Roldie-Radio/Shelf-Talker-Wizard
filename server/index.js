@@ -214,11 +214,14 @@ function createApp({ beacon } = {}) {
   // store lookup just leaves the export's own description in place.
   //
   // Beer runs its own two-step enrichment instead (see
-  // enrichBeerScanFromStore in productImport.js): current pricing from that
-  // same store site, then brewery/location/style/ABV/IBU/rating/description
-  // from Untappd - the same two sources the SKU Lookup tab's beer path
-  // already draws from (see lookupSku), just reached by the WinePOS export's
-  // own store-SKU column instead of a typed-in one. Both steps are
+  // enrichBeerScanFromStore in productImport.js): the whole product page
+  // (title/size/price/description) from that same store site - not just
+  // pricing, since a WinePOS export's own Title/Brand columns are often too
+  // abbreviated to search Untappd with well - then
+  // brewery/location/style/ABV/IBU/rating from Untappd off of that store
+  // title. The same two sources the SKU Lookup tab's beer path already
+  // draws from (see lookupSku), just reached by the WinePOS export's own
+  // store-SKU column instead of a typed-in one. Both steps are
   // independently best-effort, same as the Wine/Spirits description above.
   //
   // Also layered with the same product cache /api/sku-lookup uses (see its
@@ -226,15 +229,16 @@ function createApp({ beacon } = {}) {
   // make a real network request as part of resolving this, the same
   // category-aware freshness check /api/sku-lookup uses: the cached copy
   // records which category it was resolved under (`lookupCategory`, kept
-  // separate from `category`, which is the WinePOS export's own department/
-  // class column - a different thing this route never overwrites), and a
-  // fresh cache hit is only served when that matches what's being asked for
-  // now. Without this, a UPC scanned as Beer first and then rescanned as
-  // Wine/Spirits within the freshness window would silently serve back the
-  // Beer-only cached copy and skip the Wine/Spirits enrichment entirely. A
-  // *failed* lookup still falls back to whatever's cached regardless of
-  // category, same as before - stale data (clearly marked) beats sending
-  // staff to Manual Entry.
+  // separate from `category`, the WinePOS export's own department/class
+  // column - Wine/Spirits' own enrichment never overwrites it, though a
+  // successful Beer store lookup does, the same as it replaces every other
+  // export-only field with the store's own), and a fresh cache hit is only
+  // served when that matches what's being asked for now. Without this, a
+  // UPC scanned as Beer first and then rescanned as Wine/Spirits within the
+  // freshness window would silently serve back the Beer-only cached copy
+  // and skip the Wine/Spirits enrichment entirely. A *failed* lookup still
+  // falls back to whatever's cached regardless of category, same as before -
+  // stale data (clearly marked) beats sending staff to Manual Entry.
   app.post('/api/upc-lookup', async (req, res) => {
     const { upc, category } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {

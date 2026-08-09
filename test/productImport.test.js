@@ -20,7 +20,7 @@ const {
   parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
-  lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore, enrichBeerPriceFromStore,
+  lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore,
   algoliaSearchBeerCandidates, searchUntappd, composeProducerTitle, enrichBeerScanFromStore,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
@@ -1985,77 +1985,70 @@ test('enrichWineDescriptionFromStore falls back to the local description when th
 });
 
 // ================================================================
-// enrichBeerPriceFromStore / enrichBeerScanFromStore - the Scan UPC tab's
-// beer counterpart to enrichWineDescriptionFromStore above. Same matched-by-
-// store-SKU shape for the pricing half; the Untappd half is already covered
-// by enrichBeerFromUntappd's own coverage via the lookupSku tests further
-// up, so these focus on the new price step and the two steps working
-// together/independently.
+// enrichBeerScanFromStore - the Scan UPC tab's beer counterpart to
+// enrichWineDescriptionFromStore above. Same matched-by-store-SKU shape,
+// but pulls the whole store product (title/brand/size/price/description),
+// not just price - then runs the exact same Untappd step lookupSku's beer
+// path does, off of that store-sourced product rather than the raw local
+// export. That's the whole point: a WinePOS export's Title/Brand columns
+// are often too abbreviated for Untappd's own search to match, where the
+// store's page usually isn't (see the first test below, which reproduces a
+// real reported miss).
 // ================================================================
 
-test('enrichBeerPriceFromStore replaces a local export price with the store page\'s own price', async () => {
+test('enrichBeerScanFromStore searches Untappd with the store\'s title, not the export\'s abbreviated one - fixes a real miss', async () => {
+  // A real WinePOS export's title/brand for this item, abbreviated store
+  // shorthand that Untappd's own search can't match at all.
+  const rawExportProduct = {
+    title: 'MSB MANSKIRT THE GREAT PORTER CAN', brand: 'MSB', sku: '77777', size: '16OZ', price: '11.99', salePrice: '', description: 'reorder',
+  };
   const storeSearchHtml = page({
     body: `
       <div class="product-list-item">
-        <input class="product-code" type="hidden" value="09144" />
-        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
-          <span class="productnameTitle">Michelob ULTRA</span>
+        <input class="product-code" type="hidden" value="77777" />
+        <a class="product-link" href="/Manskirt-77777-1077777/">
+          <span class="productnameTitle">The Great Porter</span>
         </a>
       </div>
     `,
   });
   const storeProductHtml = page({
-    body: '<h1 itemprop="name">Michelob ULTRA</h1>'
-      + '<div class="pricingDetails"><span class="priceFull">$9.99</span><span class="priceCurrent">$7.99</span></div>',
+    body: '<h1 itemprop="name">The Great Porter</h1>'
+      + '<h6><a href="/brand/manskirt">Manskirt Brewing</a></h6>'
+      + '<div class="pricingDetails"><span class="priceFull">$12.99</span></div>',
   });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'manskirt-the-great-porter', bid: 555, beer_name: 'The Great Porter', brewery_name: 'Manskirt Brewing' },
+  ]);
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="The Great Porter by Manskirt Brewing | Untappd" />',
+    body: '<p class="brewery"><a href="#">Manskirt Brewing</a></p><p class="style">Porter</p>',
+  });
+  let algoliaRequestBody;
   await withMockFetch(
-    async (url) => mockResponse({ status: 200, body: url.includes('/store/search.asp') ? storeSearchHtml : storeProductHtml }),
+    async (url, opts) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Manskirt')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('algolia.net')) {
+        algoliaRequestBody = JSON.parse(opts.body);
+        return mockResponse({ status: 200, body: algoliaBody });
+      }
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
     async () => {
-      const result = await enrichBeerPriceFromStore({ title: 'Michelob ULTRA', sku: '09144', price: '8.49', salePrice: '' });
-      assert.equal(result.price, '9.99');
-      assert.equal(result.salePrice, '7.99');
-      assert.equal(result.priceSourceError, undefined);
+      const result = await enrichBeerScanFromStore(rawExportProduct);
+      assert.equal(result.title, 'Manskirt Brewing The Great Porter');
+      assert.equal(result.brewery, 'Manskirt Brewing');
+      assert.equal(result.style, 'Porter');
+      assert.equal(result.untappdError, undefined);
     }
   );
+  // The query actually sent to Untappd came from the store's title/brand,
+  // not the export's "MSB MANSKIRT..." text.
+  assert.match(algoliaRequestBody.requests[0].params, /query=Manskirt%20Brewing%20The%20Great%20Porter/);
 });
 
-test('enrichBeerPriceFromStore is a no-op when the product has no store SKU to look up', async () => {
-  let called = false;
-  await withMockFetch(
-    async () => { called = true; return mockResponse({ status: 200 }); },
-    async () => {
-      const result = await enrichBeerPriceFromStore({ title: 'Some Beer', sku: '', price: '8.49', salePrice: '' });
-      assert.equal(result.price, '8.49');
-      assert.equal(result.priceSourceError, undefined);
-    }
-  );
-  assert.equal(called, false, 'no SKU means no request should be made at all');
-});
-
-test('enrichBeerPriceFromStore keeps the local price and reports why when the store has no match for that SKU', async () => {
-  const storeSearchHtml = page({ body: '' }); // No matching .product-list-item card.
-  await withMockFetch(
-    async () => mockResponse({ status: 200, body: storeSearchHtml }),
-    async () => {
-      const result = await enrichBeerPriceFromStore({ title: 'Some Beer', sku: '99999', price: '8.49', salePrice: '' });
-      assert.equal(result.price, '8.49');
-      assert.match(result.priceSourceError, /No product found for SKU "99999"/);
-    }
-  );
-});
-
-test('enrichBeerPriceFromStore keeps the local price when the store site blocks the request', async () => {
-  await withMockFetch(
-    async () => mockResponse({ status: 403 }),
-    async () => {
-      const result = await enrichBeerPriceFromStore({ title: 'Some Beer', sku: '09144', price: '8.49', salePrice: '' });
-      assert.equal(result.price, '8.49');
-      assert.match(result.priceSourceError, /blocked this automated request/);
-    }
-  );
-});
-
-test('enrichBeerScanFromStore pulls price from the store and the remaining fields from Untappd', async () => {
+test('enrichBeerScanFromStore pulls title/size/price/description from the store when the SKU matches', async () => {
   const storeSearchHtml = page({
     body: `
       <div class="product-list-item">
@@ -2069,6 +2062,7 @@ test('enrichBeerScanFromStore pulls price from the store and the remaining field
   const storeProductHtml = page({
     body: '<h1 itemprop="name">Michelob ULTRA</h1>'
       + '<div class="pricingDetails"><span class="priceFull">$9.99</span></div>'
+      + '<table><tr><th>Size</th><td>12pk-12oz Cans</td></tr></table>'
       + '<div id="description"><div class="text-product-desc">Store\'s own generic description.</div></div>',
   });
   const algoliaBody = algoliaHitsResponse([
@@ -2087,13 +2081,14 @@ test('enrichBeerScanFromStore pulls price from the store and the remaining field
       return mockResponse({ status: 200, body: untappdBeerHtml });
     },
     async () => {
-      // As read straight from a local WinePOS export - stale price, a short
-      // internal note for a description, no brewery/style/ABV of its own.
+      // As read straight from a local WinePOS export - stale price/size, a
+      // short internal note for a description.
       const result = await enrichBeerScanFromStore({
-        title: 'Michelob ULTRA', brand: 'Anheuser-Busch', sku: '09144', size: '12pk-12oz Cans',
+        title: 'MICHELOB ULTRA CAN', brand: 'AB', sku: '09144', size: '12PK',
         price: '7.49', salePrice: '', description: 'internal note: reorder soon',
       });
       assert.equal(result.price, '9.99', 'price should come from the store site');
+      assert.equal(result.size, '12pk-12oz Cans', 'size should come from the store site, not the export');
       assert.equal(result.brewery, 'Anheuser-Busch', 'brewery should come from Untappd');
       assert.equal(result.style, 'Light Lager');
       assert.equal(result.abv, '4.2%');
@@ -2103,15 +2098,75 @@ test('enrichBeerScanFromStore pulls price from the store and the remaining field
       // above.
       assert.equal(result.description, '');
       assert.equal(result.untappdError, undefined);
-      assert.equal(result.priceSourceError, undefined);
+      assert.equal(result.storeSourceError, undefined);
     }
   );
 });
 
-test('enrichBeerScanFromStore keeps price and Untappd failures independent - one failing does not skip the other', async () => {
-  // Store search finds nothing (price step fails); Untappd finds a match
-  // (remaining-fields step succeeds) - confirms the two steps are genuinely
-  // separate requests, not one gating the other.
+test('enrichBeerScanFromStore still tries Untappd with the local title when there is no store SKU to look up', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
+  ]);
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />',
+    body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p><p class="style">Light Lager</p>',
+  });
+  const requestedUrls = [];
+  await withMockFetch(
+    async (url) => {
+      requestedUrls.push(url);
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      const result = await enrichBeerScanFromStore({ title: 'Michelob ULTRA', sku: '', price: '8.49', salePrice: '' });
+      assert.equal(result.price, '8.49', 'price should stay whatever the export had - no SKU means no store lookup at all');
+      assert.equal(result.brewery, 'Anheuser-Busch');
+      assert.equal(result.storeSourceError, undefined);
+    }
+  );
+  assert.ok(requestedUrls.every((u) => !u.includes('/store/search.asp')), 'no SKU means no store request should be made at all');
+});
+
+test('enrichBeerScanFromStore keeps the export\'s own description when the store page and Untappd both have none of their own', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+      </div>
+    `,
+  });
+  // No #description div at all on this store page - a real, common case
+  // (not every product page has one), distinct from a SKU the store
+  // doesn't recognize at all (see the "no match" test below).
+  const storeProductHtml = page({
+    body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$9.99</span></div>',
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaHitsResponse([]) }); // Untappd: no match either
+      return mockResponse({ status: 200, body: storeProductHtml });
+    },
+    async () => {
+      const result = await enrichBeerScanFromStore({
+        title: 'Michelob ULTRA', sku: '09144', price: '7.49', salePrice: '', description: 'internal note: reorder soon',
+      });
+      assert.equal(result.price, '9.99', 'price should still come from the store');
+      // Neither the store page nor Untappd had a description of their own -
+      // the export's internal note survives instead of being blanked out by
+      // the store's empty one.
+      assert.equal(result.description, 'internal note: reorder soon');
+      assert.equal(result.storeSourceError, undefined);
+      assert.match(result.untappdError, /Could not find/);
+    }
+  );
+});
+
+test('enrichBeerScanFromStore falls back to the local product and still tries Untappd when the store has no match for that SKU', async () => {
   const algoliaBody = algoliaHitsResponse([
     { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
   ]);
@@ -2121,7 +2176,7 @@ test('enrichBeerScanFromStore keeps price and Untappd failures independent - one
   });
   await withMockFetch(
     async (url) => {
-      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: page({ body: '' }) });
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: page({ body: '' }) }); // no match
       if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
       return mockResponse({ status: 200, body: untappdBeerHtml });
     },
@@ -2129,10 +2184,28 @@ test('enrichBeerScanFromStore keeps price and Untappd failures independent - one
       const result = await enrichBeerScanFromStore({
         title: 'Michelob ULTRA', sku: '99999', price: '7.49', salePrice: '', description: '',
       });
-      assert.equal(result.price, '7.49', 'a failed price lookup should keep the local export\'s own price');
-      assert.match(result.priceSourceError, /No product found for SKU "99999"/);
-      assert.equal(result.brewery, 'Anheuser-Busch', 'Untappd should still run and succeed independently of the price step');
+      assert.equal(result.price, '7.49', 'a failed store lookup should keep the local export\'s own price');
+      assert.match(result.storeSourceError, /No product found for SKU "99999"/);
+      // Untappd still ran, off the local export's own title (the only one
+      // available once the store lookup failed) - a store-lookup failure
+      // doesn't also skip the Untappd step.
+      assert.equal(result.brewery, 'Anheuser-Busch');
       assert.equal(result.untappdError, undefined);
+    }
+  );
+});
+
+test('enrichBeerScanFromStore keeps the local product when the store site blocks the request, and still tries Untappd', async () => {
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 403 });
+      return mockResponse({ status: 200, body: algoliaHitsResponse([]) }); // Untappd: no match either, best-effort
+    },
+    async () => {
+      const result = await enrichBeerScanFromStore({ title: 'Some Beer', sku: '09144', price: '8.49', salePrice: '' });
+      assert.equal(result.price, '8.49');
+      assert.match(result.storeSourceError, /blocked this automated request/);
+      assert.match(result.untappdError, /Could not find/);
     }
   );
 });

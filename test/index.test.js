@@ -296,7 +296,7 @@ test('a Beer UPC scan pulls current pricing from the store site and the remainin
         assert.equal(result.body.style, 'Pale Lager');
         assert.equal(result.body.abv, '4.6%');
         assert.equal(result.body.description, '');
-        assert.equal(result.body.priceSourceError, undefined);
+        assert.equal(result.body.storeSourceError, undefined);
         assert.equal(result.body.untappdError, undefined);
       }
     );
@@ -320,15 +320,15 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
         return mockResponse({ body: storeProductHtml });
       },
       async () => {
-        // Beer now also hits the network (store price + Untappd), unlike
-        // before - the point of this test is the category-aware cache
-        // below, not "Beer never touches the network" (that assumption no
-        // longer holds - see the test above). Untappd has no match here
-        // (empty Algolia response), so the export's own description is left
-        // in place - only the store-sourced price actually changes.
+        // Beer now also hits the network (store product page + Untappd),
+        // unlike before - the point of this test is the category-aware
+        // cache below, not "Beer never touches the network" (that
+        // assumption no longer holds - see the test above). The store page
+        // here has its own real description, so it wins over the export's
+        // internal note even though Untappd itself has no match.
         const beerResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'beer' });
         assert.equal(beerResult.body.price, '13.99');
-        assert.equal(beerResult.body.description, 'internal note: reorder soon');
+        assert.equal(beerResult.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
         assert.match(beerResult.body.untappdError, /Could not find/);
         const callsAfterBeer = calls.length;
         assert.ok(callsAfterBeer > 0, 'a Beer scan should hit the network for price + Untappd');
@@ -344,6 +344,35 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
         const secondWineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
         assert.equal(secondWineResult.body.fromCache, true);
         assert.equal(calls.length, callsAfterWine);
+      }
+    );
+  }));
+});
+
+test('a Beer UPC scan surfaces storeSourceError when the store has no match for the export\'s SKU, but still tries Untappd off the local title', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['019214600037,Corona Extra 12pk Cans,99999,internal note: reorder soon']));
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'grupo-modelo-corona-extra', bid: 4321, beer_name: 'Corona Extra', brewery_name: 'Grupo Modelo' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Corona Extra by Grupo Modelo | Untappd" />',
+      body: '<p class="brewery"><a href="#">Grupo Modelo</a></p><p class="style">Pale Lager</p>',
+    });
+    await withMockFetch(
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: page({ body: '' }) }); // no card matches 99999
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaBody });
+        return mockResponse({ body: untappdBeerHtml });
+      },
+      async () => {
+        const result = await postJson(port, '/api/upc-lookup', { upc: '019214600037', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.match(result.body.storeSourceError, /No product found for SKU "99999"/);
+        // The store lookup failing doesn't also skip Untappd - it still ran
+        // off the local export's own title, and found a match.
+        assert.equal(result.body.brewery, 'Grupo Modelo');
+        assert.equal(result.body.untappdError, undefined);
       }
     );
   }));
