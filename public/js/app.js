@@ -229,6 +229,13 @@
     importHtmlInput: document.getElementById('importHtmlInput'),
     importHtmlBtn: document.getElementById('importHtmlBtn'),
 
+    nameSearchInput: document.getElementById('nameSearchInput'),
+    nameSearchSpinner: document.getElementById('nameSearchSpinner'),
+    nameSearchResults: document.getElementById('nameSearchResults'),
+    nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
+    nameSearchSaveBtn: document.getElementById('nameSearchSaveBtn'),
+    nameSearchStatus: document.getElementById('nameSearchStatus'),
+
     skuHelpText: document.getElementById('skuHelpText'),
     skuInput: document.getElementById('skuInput'),
     skuLookupBtn: document.getElementById('skuLookupBtn'),
@@ -1891,6 +1898,260 @@
     } finally {
       els.skuUntappdHtmlBtn.disabled = false;
     }
+  });
+
+  // ---------- Search by Name ----------
+
+  // Looks products up by (partial) title instead of a SKU/UPC - useful when
+  // staff know roughly what they're after but not its number. Same local
+  // WinePOS export file Scan UPC reads above (see searchByName in
+  // server/upcCatalog.js), so this never touches the network either - just
+  // a debounced request per keystroke against the local file, ranked
+  // server-side, with a short list of candidates rendered as a dropdown
+  // under the field for staff to pick from (mouse, or Up/Down + Enter).
+
+  let nameSearchResults = [];
+  let nameSearchFocusIndex = -1;
+  let nameSearchSelectedProduct = null;
+  // Cancels a still-in-flight search when a newer keystroke starts another
+  // one, so a slow response to an old (now-stale) query can't land after a
+  // faster response to what's actually in the box and clobber it - a real
+  // risk here since, unlike the click-triggered lookups elsewhere on this
+  // tab bar, every keystroke fires its own request.
+  let nameSearchAbortController = null;
+  let nameSearchDebounce;
+
+  // Below this many characters, a search isn't run at all - a 1-character
+  // query against a store's full inventory would return a huge, mostly
+  // meaningless result set. searchByName's own 25-result cap on the server
+  // is a backstop for a broad-but-not-tiny query, not a substitute for this.
+  const NAME_SEARCH_MIN_CHARS = 2;
+
+  function closeNameSearchResults() {
+    els.nameSearchResults.hidden = true;
+    els.nameSearchResults.innerHTML = '';
+    els.nameSearchInput.setAttribute('aria-expanded', 'false');
+    els.nameSearchInput.removeAttribute('aria-activedescendant');
+    nameSearchFocusIndex = -1;
+  }
+
+  function renderNameSearchResults() {
+    if (!nameSearchResults.length) {
+      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.nameSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Manual Entry.</div>`;
+      els.nameSearchResults.hidden = false;
+      els.nameSearchInput.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    els.nameSearchResults.innerHTML = nameSearchResults.map((p, i) => {
+      const metaParts = [];
+      if (p.size) metaParts.push(escapeHtml(p.size));
+      if (p.vintage) metaParts.push(escapeHtml(p.vintage));
+      if (p.sku) metaParts.push(`SKU ${escapeHtml(p.sku)}`);
+      return `
+        <div class="search-result${i === nameSearchFocusIndex ? ' is-focused' : ''}" id="nameSearchResult-${i}" data-index="${i}" role="option" aria-selected="${i === nameSearchFocusIndex}">
+          <div class="search-result__main">
+            <div class="search-result__title">${escapeHtml(p.title || 'Untitled')}</div>
+            <div class="search-result__meta">${metaParts.join(' &middot; ')}</div>
+          </div>
+          <div class="search-result__price">${escapeHtml(formatMoney(p.price))}</div>
+        </div>
+      `;
+    }).join('');
+    els.nameSearchResults.hidden = false;
+    els.nameSearchInput.setAttribute('aria-expanded', 'true');
+    if (nameSearchFocusIndex >= 0) {
+      els.nameSearchInput.setAttribute('aria-activedescendant', `nameSearchResult-${nameSearchFocusIndex}`);
+    } else {
+      els.nameSearchInput.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  async function runNameSearch(rawQuery) {
+    const q = rawQuery.trim();
+    if (nameSearchAbortController) nameSearchAbortController.abort();
+
+    if (q.length < NAME_SEARCH_MIN_CHARS) {
+      nameSearchResults = [];
+      els.nameSearchSpinner.hidden = true;
+      closeNameSearchResults();
+      return;
+    }
+
+    const controller = new AbortController();
+    nameSearchAbortController = controller;
+    els.nameSearchSpinner.hidden = false;
+
+    try {
+      const resp = await fetch(`/api/name-search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+      const data = await resp.json();
+      if (!resp.ok) {
+        nameSearchResults = [];
+        els.nameSearchResults.innerHTML = `<div class="search-results__error">${escapeHtml(data.error || 'Could not search the export file.')}</div>`;
+        els.nameSearchResults.hidden = false;
+        // Same "open Settings for them" behavior as Scan UPC's own
+        // NO_EXPORT_PATH/EXPORT_NOT_FOUND/EXPORT_UNREADABLE handling below -
+        // a missing/broken export is the one failure staff can fix right
+        // here instead of hunting for the Advanced menu themselves.
+        const isSettingsProblem = data.code === 'NO_EXPORT_PATH' || data.code === 'EXPORT_NOT_FOUND' || data.code === 'EXPORT_UNREADABLE';
+        if (isSettingsProblem && els.exportSettingsOverlay.hidden) exportSettingsModal.open();
+        return;
+      }
+      nameSearchResults = data.results || [];
+      nameSearchFocusIndex = nameSearchResults.length ? 0 : -1;
+      renderNameSearchResults();
+    } catch (err) {
+      if (err.name === 'AbortError') return; // superseded by a newer keystroke - not a real failure
+      nameSearchResults = [];
+      els.nameSearchResults.innerHTML = '<div class="search-results__error">Something went wrong searching the export file.</div>';
+      els.nameSearchResults.hidden = false;
+    } finally {
+      if (nameSearchAbortController === controller) {
+        nameSearchAbortController = null;
+        els.nameSearchSpinner.hidden = true;
+      }
+    }
+  }
+
+  // Fills the same fields applySkuLookupProduct/applyUpcScanProduct do -
+  // picking a search result is just a third way to load a product onto the
+  // shared form (see the note on applyUpcScanProduct in the Scan UPC
+  // section above for why beer/wine split the same way here).
+  function applyNameSearchProduct(product, isBeer) {
+    const fields = {
+      category: isBeer ? 'beer' : 'wine',
+      title: product.title,
+      description: product.description,
+      size: product.size,
+      price: product.price,
+      salePrice: product.salePrice,
+      theme: els.theme.value,
+    };
+    if (isBeer) {
+      Object.assign(fields, {
+        sku: product.sku,
+        brewery: product.brand,
+      });
+    } else {
+      fields.vintage = product.vintage;
+    }
+    fillForm(fields);
+    previewMode = 'single';
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
+    renderPreview();
+  }
+
+  // The form's own fields aren't visible from this tab (same reasoning as
+  // SKU Lookup/Scan UPC staying put instead of switching to Manual Entry -
+  // see applySkuLookupProduct's note above), so this small summary is what
+  // confirms which product got picked before staff click Add to Queue.
+  function renderNameSearchSelected() {
+    const p = nameSearchSelectedProduct;
+    if (!p) {
+      els.nameSearchSelectedWrap.innerHTML = '';
+      return;
+    }
+    const metaParts = [];
+    if (p.size) metaParts.push(escapeHtml(p.size));
+    if (p.vintage) metaParts.push(`Vintage ${escapeHtml(p.vintage)}`);
+    if (p.sku) metaParts.push(`SKU ${escapeHtml(p.sku)}`);
+    metaParts.push(currentCategory === 'beer' ? 'Beer' : 'Wine / Spirits');
+    els.nameSearchSelectedWrap.innerHTML = `
+      <div class="selected-card">
+        <div>
+          <div class="selected-card__title">${escapeHtml(p.title || 'Untitled')}</div>
+          <div class="selected-card__meta">${metaParts.join(' &middot; ')}</div>
+        </div>
+        <div class="selected-card__price-row">
+          <div class="selected-card__price">${escapeHtml(formatMoney(p.price))}</div>
+          <button type="button" class="selected-card__clear" id="nameSearchClearBtn" title="Clear selection">&times;</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('nameSearchClearBtn').addEventListener('click', clearNameSearchSelection);
+  }
+
+  function clearNameSearchSelection() {
+    nameSearchSelectedProduct = null;
+    els.nameSearchSaveBtn.disabled = true;
+    renderNameSearchSelected();
+  }
+
+  function selectNameSearchProduct(product) {
+    nameSearchSelectedProduct = product;
+    els.nameSearchInput.value = product.title;
+    closeNameSearchResults();
+    els.nameSearchSaveBtn.disabled = false;
+    els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+    applyNameSearchProduct(product, currentCategory === 'beer');
+    renderNameSearchSelected();
+  }
+
+  els.nameSearchInput.addEventListener('input', () => {
+    // Picking a result sets the input's value to that product's title too
+    // (see selectNameSearchProduct) - without clearing the prior selection
+    // here, editing that text afterward would leave a stale "selected"
+    // product (and an enabled Add to Queue button) that no longer matches
+    // what's actually typed.
+    if (nameSearchSelectedProduct) clearNameSearchSelection();
+    clearTimeout(nameSearchDebounce);
+    nameSearchDebounce = setTimeout(() => runNameSearch(els.nameSearchInput.value), 200);
+  });
+
+  els.nameSearchInput.addEventListener('focus', () => {
+    if (nameSearchResults.length && els.nameSearchInput.value.trim().length >= NAME_SEARCH_MIN_CHARS) {
+      renderNameSearchResults();
+    }
+  });
+
+  els.nameSearchInput.addEventListener('keydown', (e) => {
+    if (els.nameSearchResults.hidden || !nameSearchResults.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      nameSearchFocusIndex = Math.min(nameSearchFocusIndex + 1, nameSearchResults.length - 1);
+      renderNameSearchResults();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      nameSearchFocusIndex = Math.max(nameSearchFocusIndex - 1, 0);
+      renderNameSearchResults();
+    } else if (e.key === 'Enter' && nameSearchResults[nameSearchFocusIndex]) {
+      e.preventDefault();
+      selectNameSearchProduct(nameSearchResults[nameSearchFocusIndex]);
+    } else if (e.key === 'Escape') {
+      closeNameSearchResults();
+    }
+  });
+
+  els.nameSearchResults.addEventListener('click', (e) => {
+    const row = e.target.closest('.search-result');
+    if (!row) return;
+    const product = nameSearchResults[Number(row.dataset.index)];
+    if (product) selectNameSearchProduct(product);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#nameSearchFieldWrap')) closeNameSearchResults();
+  });
+
+  // Same "Add to Queue" pattern as SKU Lookup/Scan UPC's own save buttons -
+  // see els.skuSaveBtn's note above. Reuses the form's real submit handler
+  // via requestSubmit() (same validate/save/resetForm path as Manual
+  // Entry), rather than a third copy of that logic.
+  els.nameSearchSaveBtn.addEventListener('click', () => {
+    els.form.requestSubmit();
+    if (!els.formError.hidden) {
+      els.nameSearchStatus.textContent = els.formError.textContent;
+      return;
+    }
+    // Saved successfully - resetForm() already cleared the shared fields;
+    // the search-specific bits above live outside <form> and need their
+    // own reset so the tab is ready for the next search.
+    nameSearchSelectedProduct = null;
+    nameSearchResults = [];
+    els.nameSearchInput.value = '';
+    els.nameSearchSaveBtn.disabled = true;
+    els.nameSearchStatus.textContent = 'Added to queue! Search for the next product.';
+    renderNameSearchSelected();
+    els.nameSearchInput.focus();
   });
 
   // ---------- Print ----------

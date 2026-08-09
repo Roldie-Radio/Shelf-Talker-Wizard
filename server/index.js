@@ -5,7 +5,9 @@ const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
 } = require('./productImport');
-const { getUpcSettings, setUpcSettings, lookupUpc, previewExport } = require('./upcCatalog');
+const {
+  getUpcSettings, setUpcSettings, lookupUpc, searchByName, previewExport,
+} = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
   upsertCachedProduct, getCachedProduct, isFresh, getStats,
@@ -251,6 +253,32 @@ function createApp({ beacon } = {}) {
       }
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not look up that UPC.', code: err.code });
+    }
+  });
+
+  // Backs the "Search by Name" tab: staff type part of a product's title and
+  // this ranks matches out of the same local WinePOS export file Scan UPC
+  // reads above (see searchByName in upcCatalog.js) - no network request,
+  // same as UPC lookup's own local-file path, and the same NO_EXPORT_PATH/
+  // EXPORT_NOT_FOUND/EXPORT_UNREADABLE error codes. Unlike SKU/UPC lookup
+  // there's no single canonical match to cache here - this hands back a
+  // short list of candidates for staff to choose from, and nothing gets
+  // written to the product cache (db.js) until a specific one is picked, at
+  // which point picking it just fills the form the same way the other
+  // lookup tabs' results do.
+  //
+  // A blank/missing query returns an empty result list rather than a 400 -
+  // the client only calls this once someone's actually typed something, but
+  // treating "nothing typed" as a client error would be one more thing a
+  // debounced keystroke could race against a fast Backspace to nothing.
+  app.get('/api/name-search', (req, res) => {
+    const { q, limit } = req.query || {};
+    if (!q || !String(q).trim()) return res.json({ results: [] });
+    try {
+      res.json({ results: searchByName(String(q), { limit }) });
+    } catch (err) {
+      const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
+      res.status(status).json({ error: err.message || 'Could not search the export file.', code: err.code });
     }
   });
 

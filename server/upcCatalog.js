@@ -199,7 +199,7 @@ function upcVariants(raw) {
 }
 
 function buildIndex(rows) {
-  if (!rows.length) return { byUpc: new Map(), headers: [] };
+  if (!rows.length) return { byUpc: new Map(), headers: [], products: [] };
   const headerRow = rows[0];
   const colFor = matchColumns(headerRow);
   if (colFor.upc === undefined) {
@@ -210,6 +210,12 @@ function buildIndex(rows) {
   }
 
   const byUpc = new Map();
+  // One entry per data row with a UPC, in file order - the Search by Name
+  // tab (see searchByName below) scores against this list directly rather
+  // than deriving it from byUpc's values on every search, since a product
+  // sits at multiple keys there (its 12- and 13-digit UPC variants both
+  // point at the same object - see upcVariants).
+  const products = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || !row.length) continue;
@@ -227,11 +233,12 @@ function buildIndex(rows) {
       description: cell(row, colFor, 'description'),
       category: cell(row, colFor, 'category'),
     };
+    products.push(product);
     for (const variant of upcVariants(rawUpc)) {
       byUpc.set(variant, product);
     }
   }
-  return { byUpc, headers: headerRow };
+  return { byUpc, headers: headerRow, products };
 }
 
 // ================================================================
@@ -240,7 +247,7 @@ function buildIndex(rows) {
 // has actually changed since the last lookup, not on every single scan.
 // ================================================================
 
-let cache = { filePath: null, mtimeMs: null, byUpc: null, headers: null };
+let cache = { filePath: null, mtimeMs: null, byUpc: null, headers: null, products: null };
 
 function loadCatalog(filePath) {
   const stat = fs.statSync(filePath); // throws ENOENT if missing
@@ -248,13 +255,13 @@ function loadCatalog(filePath) {
     return cache;
   }
   const text = fs.readFileSync(filePath, 'utf-8');
-  const { byUpc, headers } = buildIndex(parseDelimited(text));
-  cache = { filePath, mtimeMs: stat.mtimeMs, byUpc, headers };
+  const { byUpc, headers, products } = buildIndex(parseDelimited(text));
+  cache = { filePath, mtimeMs: stat.mtimeMs, byUpc, headers, products };
   return cache;
 }
 
 function invalidateCache() {
-  cache = { filePath: null, mtimeMs: null, byUpc: null, headers: null };
+  cache = { filePath: null, mtimeMs: null, byUpc: null, headers: null, products: null };
 }
 
 // ================================================================
@@ -272,10 +279,11 @@ function getUpcSettings() {
     const stat = fs.statSync(exportPath);
     settings.fileExists = true;
     settings.lastModified = stat.mtime.toISOString();
-    const { byUpc } = loadCatalog(exportPath);
-    // Multiple UPC-variant keys (12/13-digit) can point at the same product
-    // object, so count distinct products, not map entries.
-    settings.itemCount = new Set(byUpc.values()).size;
+    // products is already one entry per row (see buildIndex) - byUpc has
+    // multiple keys (12/13-digit variants) per product, so counting that
+    // map's own size would overcount.
+    const { products } = loadCatalog(exportPath);
+    settings.itemCount = products.length;
   } catch (err) {
     settings.error = err.code === 'ENOENT' ? `No file found at ${exportPath}.` : err.message;
   }
@@ -288,11 +296,12 @@ function setUpcSettings(exportPath) {
   return getUpcSettings();
 }
 
-// Looks up a scanned UPC against the configured export file. Throws an
-// Error with a `code` staff-facing callers (see /api/upc-lookup) can use to
-// pick a status code: NO_EXPORT_PATH, EXPORT_NOT_FOUND, EXPORT_UNREADABLE,
-// or UPC_NOT_FOUND.
-function lookupUpc(scannedUpc) {
+// Shared by lookupUpc and searchByName below - both need the same "is an
+// export even configured, does it exist, can it be parsed" checks before
+// they can do anything with it, and the same three error codes callers (see
+// /api/upc-lookup and /api/name-search) map to HTTP statuses: NO_EXPORT_PATH,
+// EXPORT_NOT_FOUND, EXPORT_UNREADABLE.
+function requireCatalog() {
   const { exportPath } = readConfig();
   if (!exportPath) {
     const err = new Error('No export file location is set yet. Open Scan UPC → Settings and point it at the WinePOS export file.');
@@ -300,9 +309,8 @@ function lookupUpc(scannedUpc) {
     throw err;
   }
 
-  let byUpc;
   try {
-    ({ byUpc } = loadCatalog(exportPath));
+    return loadCatalog(exportPath);
   } catch (e) {
     if (e.code === 'ENOENT') {
       const err = new Error(`No file found at ${exportPath}. Check the export path in Scan UPC → Settings.`);
@@ -313,13 +321,83 @@ function lookupUpc(scannedUpc) {
     err.code = 'EXPORT_UNREADABLE';
     throw err;
   }
+}
 
+// Looks up a scanned UPC against the configured export file. Throws an
+// Error with a `code` staff-facing callers (see /api/upc-lookup) can use to
+// pick a status code: NO_EXPORT_PATH, EXPORT_NOT_FOUND, EXPORT_UNREADABLE,
+// or UPC_NOT_FOUND.
+function lookupUpc(scannedUpc) {
+  const { byUpc } = requireCatalog();
   for (const variant of upcVariants(scannedUpc)) {
     if (byUpc.has(variant)) return byUpc.get(variant);
   }
   const err = new Error(`UPC ${scannedUpc} was not found in the export file. Enter this item manually.`);
   err.code = 'UPC_NOT_FOUND';
   throw err;
+}
+
+// ================================================================
+// Search by Name - backs the "Search by Name" tab: staff type part of a
+// product's title and get back a short, ranked list of candidates to pick
+// from, rather than the single exact match lookupUpc above requires. Same
+// local export file, no network request either way.
+// ================================================================
+
+// Ranks `text` against `query` (both matched case-insensitively) for a
+// single field. Higher is a closer match; -1 means "doesn't match at all"
+// so callers can filter it out. Word-start matches beat a match buried
+// mid-word, which beats nothing - a search for "cab" should put "Cabernet
+// Sauvignon" and "14 Hands Cabernet" ahead of a product whose name merely
+// contains "cab" somewhere that isn't the start of a word.
+function scoreNameMatch(text, query) {
+  const t = String(text || '').toLowerCase();
+  const q = String(query || '').trim().toLowerCase();
+  if (!q || !t) return -1;
+  if (t === q) return 100;
+  if (t.startsWith(q)) return 90;
+  const words = t.split(/\s+/);
+  for (let i = 0; i < words.length; i++) {
+    if (words[i].startsWith(q)) {
+      // Earlier words win ties (a match on the 1st word outranks the 5th),
+      // but never so much that it drops below the plain "contains" tier
+      // just below - a word-start match anywhere in the title should still
+      // outrank a mid-word substring match.
+      return Math.max(89 - i, 61);
+    }
+  }
+  if (t.includes(q)) return 40;
+  return -1;
+}
+
+// A product's own best score across the fields worth searching: mainly its
+// title, but falling back to its brand/vendor (capped below any title match)
+// so "kendall" still finds a Kendall-Jackson bottle whose title doesn't
+// happen to repeat the winery name.
+function scoreProduct(product, query) {
+  const titleScore = scoreNameMatch(product.title, query);
+  if (titleScore > -1) return titleScore;
+  const brandScore = scoreNameMatch(product.brand, query);
+  return brandScore > -1 ? Math.min(brandScore, 25) : -1;
+}
+
+// Returns up to `limit` products ranked by how closely their name matches
+// `query`, best match first (ties broken alphabetically). An empty/
+// whitespace-only query returns no results rather than the whole catalog -
+// there's no ranking to speak of and staff wouldn't be shown thousands of
+// unrelated rows. Unlike lookupUpc, finding nothing isn't exceptional - it's
+// just an empty list for the tab to show its own "no matches" state for.
+function searchByName(query, { limit = 8 } = {}) {
+  const q = String(query || '').trim();
+  if (!q) return [];
+  const { products } = requireCatalog();
+  const lim = Math.min(Math.max(Number(limit) || 8, 1), 25);
+  return products
+    .map((product) => ({ product, score: scoreProduct(product, q) }))
+    .filter((r) => r.score > -1)
+    .sort((a, b) => b.score - a.score || a.product.title.localeCompare(b.product.title))
+    .slice(0, lim)
+    .map((r) => r.product);
 }
 
 // Backs the desktop app's "View Export File" dialog (Advanced menu): the
@@ -370,11 +448,13 @@ module.exports = {
   getUpcSettings,
   setUpcSettings,
   lookupUpc,
+  searchByName,
   previewExport,
   // Exported for tests only.
   parseDelimited,
   matchColumns,
   upcVariants,
   buildIndex,
+  scoreNameMatch,
   configFilePath,
 };

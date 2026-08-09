@@ -314,6 +314,43 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
 });
 
 // ================================================================
+// /api/name-search - see the comment above the route in server/index.js.
+// The ranking/error-code behavior itself is covered in
+// test/upcCatalog.test.js against searchByName directly; these confirm the
+// HTTP layer wraps it correctly (query param parsing, status codes, the
+// blank-query short circuit).
+// ================================================================
+
+test('GET /api/name-search returns ranked matches from the configured export file', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, [
+      '1,Josh Cellars Cabernet Sauvignon,10432,',
+      '2,Josh Cellars Chardonnay,10433,',
+      '3,14 Hands Cabernet Sauvignon,9415,',
+    ]));
+    const { status, body } = await getJson(port, '/api/name-search?q=josh');
+    assert.equal(status, 200);
+    assert.deepEqual(body.results.map((p) => p.title), ['Josh Cellars Cabernet Sauvignon', 'Josh Cellars Chardonnay']);
+  }));
+});
+
+test('GET /api/name-search returns an empty result list for a blank query instead of an error', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/name-search');
+    assert.equal(status, 200);
+    assert.deepEqual(body.results, []);
+  }));
+});
+
+test('GET /api/name-search reports a 404 with NO_EXPORT_PATH when nothing has been configured yet', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/name-search?q=josh');
+    assert.equal(status, 404);
+    assert.equal(body.code, 'NO_EXPORT_PATH');
+  }));
+});
+
+// ================================================================
 // /api/server-status - see the comment above the routes in server/index.js.
 // withServer() builds its app with createApp() alone (no beacon, see
 // server/discovery.js), the same as every other test in this file - these
