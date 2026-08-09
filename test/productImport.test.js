@@ -1260,6 +1260,42 @@ test('parseStoreProductHtml leaves packSize blank when the store\'s Pack Size ro
   assert.equal(result.packSize, '');
 });
 
+// The store's own Brand link reads "Not Specified" (not a blank row, and
+// not just absent) for a product with no manufacturer on file - same
+// placeholder, same handling, as Pack Size/Year above. Left unguarded, this
+// used to get prepended straight onto the title by composeProducerTitle
+// ("Not Specified Hazy IPA") and sent to Untappd as part of the search
+// query along with it.
+test('parseStoreProductHtml leaves brand blank when the store\'s Brand link reads "Not Specified"', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Hazy IPA</h1>
+      <h6><a href="/brand/not-specified">Not Specified</a></h6>
+      <table>
+        <tr><th>Size</th><td>16oz</td></tr>
+      </table>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Hazy-IPA-12345-1012345/');
+  assert.equal(result.brand, '');
+});
+
+// Same placeholder, but on the og:brand meta fallback instead of the h6
+// link - and with a real brand sitting in the *other* source, confirming
+// the placeholder is dropped from each source individually rather than
+// blanking the brand outright just because one of the two reads it.
+test('parseStoreProductHtml falls back to a real og:brand when the store\'s Brand link reads "Not Specified"', () => {
+  const html = page({
+    head: '<meta property="og:brand" content="New Anthem Beer Project" />',
+    body: `
+      <h1 itemprop="name">Hazy IPA</h1>
+      <h6><a href="/brand/not-specified">Not Specified</a></h6>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Hazy-IPA-12345-1012345/');
+  assert.equal(result.brand, 'New Anthem Beer Project');
+});
+
 test('parseStoreProductHtml reads a vintage year from the spec table\'s Year row', () => {
   const html = page({
     body: `
