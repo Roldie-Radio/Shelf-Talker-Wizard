@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
-  getUpcSettings, setUpcSettings, lookupUpc, previewExport,
+  getUpcSettings, setUpcSettings, lookupUpc, searchByName, scoreNameMatch, previewExport,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -232,6 +232,121 @@ test('lookupUpc picks up changes to the export file after it is re-saved', () =>
     fs.utimesSync(filePath, bumped, bumped);
 
     assert.equal(lookupUpc('085000010652').price, '11.99');
+  });
+});
+
+// ---------- scoreNameMatch ----------
+
+test('scoreNameMatch ranks an exact match highest, then start-of-title, then start-of-word, then a mid-word substring', () => {
+  const exact = scoreNameMatch('Josh Cellars', 'josh cellars');
+  const startOfTitle = scoreNameMatch('Josh Cellars Cabernet', 'josh');
+  const startOfWord = scoreNameMatch('14 Hands Cabernet', 'cab');
+  const midWord = scoreNameMatch('Meiomi Pinot Noir', 'omi');
+  assert.ok(exact > startOfTitle);
+  assert.ok(startOfTitle > startOfWord);
+  assert.ok(startOfWord > midWord);
+  assert.ok(midWord > -1);
+});
+
+test('scoreNameMatch is case-insensitive', () => {
+  assert.equal(scoreNameMatch('Josh Cellars', 'JOSH'), scoreNameMatch('Josh Cellars', 'josh'));
+});
+
+test('scoreNameMatch returns -1 for no match and for an empty query', () => {
+  assert.equal(scoreNameMatch('Josh Cellars', 'zzz'), -1);
+  assert.equal(scoreNameMatch('Josh Cellars', ''), -1);
+  assert.equal(scoreNameMatch('Josh Cellars', '   '), -1);
+});
+
+test('scoreNameMatch never lets a later word-start match drop below the mid-word "contains" tier', () => {
+  // "contains" tier is a flat 40 (see the SAMPLE_CSV-based midWord case
+  // above) - a word-start match, however many words deep, must still beat
+  // it, or a long title's later words would rank worse than an unrelated
+  // mid-word hit elsewhere.
+  const longTitle = 'A B C D E F G H I J Cabernet';
+  const wordStartDeep = scoreNameMatch(longTitle, 'cab');
+  assert.ok(wordStartDeep > 40, `expected a deep word-start match (${wordStartDeep}) to still beat the mid-word tier (40)`);
+});
+
+// ---------- searchByName ----------
+
+const NAME_SEARCH_CSV = [
+  'UPC,Title,Brand,Size,Vintage,Regular Price,SKU',
+  '1,Josh Cellars Cabernet Sauvignon,Josh Cellars,750ml,2023,13.99,10432',
+  '2,Josh Cellars Chardonnay,Josh Cellars,750ml,2023,13.99,10433',
+  '3,14 Hands Cabernet Sauvignon,14 Hands,750ml,2022,17.99,9415',
+  '4,Meiomi Pinot Noir,Meiomi,750ml,2022,19.99,7742',
+  "5,Vintner's Reserve Chardonnay,Kendall-Jackson,750ml,2023,12.99,8821",
+].join('\n');
+
+test('searchByName ranks the closest title matches first', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', NAME_SEARCH_CSV));
+    const results = searchByName('josh');
+    assert.deepEqual(results.map((p) => p.title), ['Josh Cellars Cabernet Sauvignon', 'Josh Cellars Chardonnay']);
+  });
+});
+
+test('searchByName matches a word anywhere in the title, not just the start', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', NAME_SEARCH_CSV));
+    const results = searchByName('cab');
+    assert.deepEqual(results.map((p) => p.title).sort(), ['14 Hands Cabernet Sauvignon', 'Josh Cellars Cabernet Sauvignon'].sort());
+  });
+});
+
+test('searchByName falls back to a brand match when the title itself does not contain the query', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', NAME_SEARCH_CSV));
+    const results = searchByName('kendall');
+    assert.equal(results.length, 1);
+    assert.equal(results[0].title, "Vintner's Reserve Chardonnay");
+  });
+});
+
+test('searchByName respects the limit option', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', NAME_SEARCH_CSV));
+    const results = searchByName('e', { limit: 2 }); // matches several titles
+    assert.equal(results.length, 2);
+  });
+});
+
+test('searchByName returns an empty list (not an error) for an empty or whitespace-only query', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', NAME_SEARCH_CSV));
+    assert.deepEqual(searchByName(''), []);
+    assert.deepEqual(searchByName('   '), []);
+  });
+});
+
+test('searchByName returns an empty list for a query that matches nothing', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', NAME_SEARCH_CSV));
+    assert.deepEqual(searchByName('zzz-not-a-product'), []);
+  });
+});
+
+test('searchByName throws NO_EXPORT_PATH when nothing has been configured yet', () => {
+  withTempConfigDir(() => {
+    assert.throws(() => searchByName('josh'), (err) => err.code === 'NO_EXPORT_PATH');
+  });
+});
+
+test('searchByName throws EXPORT_NOT_FOUND when the configured file is missing', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(path.join(dir, 'nope.csv'));
+    assert.throws(() => searchByName('josh'), (err) => err.code === 'EXPORT_NOT_FOUND');
+  });
+});
+
+test('searchByName finds a real export row by (partial) name', () => {
+  withTempConfigDir(() => {
+    setUpcSettings(REAL_EXPORT_PATH);
+    const results = searchByName('hands');
+    assert.equal(results.length, 1);
+    assert.equal(results[0].title, '14 HANDS CABERNET');
+    assert.equal(results[0].sku, '9415');
   });
 });
 

@@ -4,8 +4,11 @@ const express = require('express');
 const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
+  enrichBeerScanFromStore,
 } = require('./productImport');
-const { getUpcSettings, setUpcSettings, lookupUpc, previewExport } = require('./upcCatalog');
+const {
+  getUpcSettings, setUpcSettings, lookupUpc, searchByName, previewExport,
+} = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
   upsertCachedProduct, getCachedProduct, isFresh, getStats,
@@ -208,24 +211,30 @@ function createApp({ beacon } = {}) {
   // productImport.js) - the same site the SKU Lookup tab already reads a
   // description from, so both lookup paths end up sourcing Wine/Spirits
   // descriptions the same way. Best-effort: a missing store SKU or a failed
-  // store lookup just leaves the export's own description in place. Beer
-  // skips this step entirely and keeps whatever the export file had, same
-  // as before.
+  // store lookup just leaves the export's own description in place.
+  //
+  // Beer runs its own two-step enrichment instead (see
+  // enrichBeerScanFromStore in productImport.js): current pricing from that
+  // same store site, then brewery/location/style/ABV/IBU/rating/description
+  // from Untappd - the same two sources the SKU Lookup tab's beer path
+  // already draws from (see lookupSku), just reached by the WinePOS export's
+  // own store-SKU column instead of a typed-in one. Both steps are
+  // independently best-effort, same as the Wine/Spirits description above.
   //
   // Also layered with the same product cache /api/sku-lookup uses (see its
-  // note above), keyed by UPC instead of SKU - and, now that Wine/Spirits
-  // scans make a real network request as part of resolving this, the same
+  // note above), keyed by UPC instead of SKU - and, now that both categories
+  // make a real network request as part of resolving this, the same
   // category-aware freshness check /api/sku-lookup uses: the cached copy
   // records which category it was resolved under (`lookupCategory`, kept
   // separate from `category`, which is the WinePOS export's own department/
   // class column - a different thing this route never overwrites), and a
   // fresh cache hit is only served when that matches what's being asked for
-  // now. Without this, a UPC scanned as Beer first (no store lookup) and
-  // then rescanned as Wine/Spirits within the freshness window would
-  // silently serve back the Beer-only cached copy and skip the store
-  // description lookup entirely. A *failed* lookup still falls back to
-  // whatever's cached regardless of category, same as before - stale data
-  // (clearly marked) beats sending staff to Manual Entry.
+  // now. Without this, a UPC scanned as Beer first and then rescanned as
+  // Wine/Spirits within the freshness window would silently serve back the
+  // Beer-only cached copy and skip the Wine/Spirits enrichment entirely. A
+  // *failed* lookup still falls back to whatever's cached regardless of
+  // category, same as before - stale data (clearly marked) beats sending
+  // staff to Manual Entry.
   app.post('/api/upc-lookup', async (req, res) => {
     const { upc, category } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {
@@ -241,7 +250,9 @@ function createApp({ beacon } = {}) {
 
     try {
       const rawProduct = lookupUpc(trimmedUpc);
-      const product = normalizedCategory === 'beer' ? rawProduct : await enrichWineDescriptionFromStore(rawProduct);
+      const product = normalizedCategory === 'beer'
+        ? await enrichBeerScanFromStore(rawProduct)
+        : await enrichWineDescriptionFromStore(rawProduct);
       const data = { ...product, lookupCategory: normalizedCategory };
       upsertCachedProduct({ keyType: 'upc', key: trimmedUpc, source: 'scan-upc', data });
       res.json(data);
@@ -251,6 +262,32 @@ function createApp({ beacon } = {}) {
       }
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not look up that UPC.', code: err.code });
+    }
+  });
+
+  // Backs the "Search by Name" tab: staff type part of a product's title and
+  // this ranks matches out of the same local WinePOS export file Scan UPC
+  // reads above (see searchByName in upcCatalog.js) - no network request,
+  // same as UPC lookup's own local-file path, and the same NO_EXPORT_PATH/
+  // EXPORT_NOT_FOUND/EXPORT_UNREADABLE error codes. Unlike SKU/UPC lookup
+  // there's no single canonical match to cache here - this hands back a
+  // short list of candidates for staff to choose from, and nothing gets
+  // written to the product cache (db.js) until a specific one is picked, at
+  // which point picking it just fills the form the same way the other
+  // lookup tabs' results do.
+  //
+  // A blank/missing query returns an empty result list rather than a 400 -
+  // the client only calls this once someone's actually typed something, but
+  // treating "nothing typed" as a client error would be one more thing a
+  // debounced keystroke could race against a fast Backspace to nothing.
+  app.get('/api/name-search', (req, res) => {
+    const { q, limit } = req.query || {};
+    if (!q || !String(q).trim()) return res.json({ results: [] });
+    try {
+      res.json({ results: searchByName(String(q), { limit }) });
+    } catch (err) {
+      const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
+      res.status(status).json({ error: err.message || 'Could not search the export file.', code: err.code });
     }
   });
 

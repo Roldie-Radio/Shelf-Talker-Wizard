@@ -263,19 +263,43 @@ test('a Wine/Spirits UPC scan replaces the export file\'s own description with t
   }));
 });
 
-test('a Beer UPC scan keeps the export file\'s own description and never contacts the store site', async () => {
+test('a Beer UPC scan pulls current pricing from the store site and the remaining fields from Untappd', async () => {
   await withTempDb((dir) => withServer(async (port) => {
     setUpcSettings(writeUpcExport(dir, ['019214600037,Corona Extra 12pk Cans,55555,internal note: reorder soon']));
-    const calls = [];
+    const storeProductHtml = page({
+      body: '<h1 itemprop="name">Corona Extra 12pk Cans</h1>'
+        + '<div class="pricingDetails"><span class="priceFull">$14.99</span></div>',
+    });
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'grupo-modelo-corona-extra', bid: 4321, beer_name: 'Corona Extra', brewery_name: 'Grupo Modelo' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Corona Extra by Grupo Modelo | Untappd" />',
+      body: '<p class="brewery"><a href="#">Grupo Modelo</a></p><p class="style">Pale Lager</p>'
+        + '<div class="details"><p class="abv">4.60% ABV</p></div>',
+    });
     await withMockFetch(
-      async (url) => { calls.push(url); return mockResponse({ body: storeProductHtml }); },
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('55555') });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaBody });
+        if (url.includes('liquoroutletwinecellars.com')) return mockResponse({ body: storeProductHtml });
+        return mockResponse({ body: untappdBeerHtml });
+      },
       async () => {
         const result = await postJson(port, '/api/upc-lookup', { upc: '019214600037', category: 'beer' });
         assert.equal(result.status, 200);
-        assert.equal(result.body.description, 'internal note: reorder soon');
+        // Pricing comes from the store site, not the (stale) export value.
+        assert.equal(result.body.price, '14.99');
+        // Brewery/style/ABV/description come from Untappd, replacing the
+        // export's own internal note - same as SKU Lookup's beer path.
+        assert.equal(result.body.brewery, 'Grupo Modelo');
+        assert.equal(result.body.style, 'Pale Lager');
+        assert.equal(result.body.abv, '4.6%');
+        assert.equal(result.body.description, '');
+        assert.equal(result.body.priceSourceError, undefined);
+        assert.equal(result.body.untappdError, undefined);
       }
     );
-    assert.equal(calls.length, 0, 'a Beer UPC scan should never hit the network');
   }));
 });
 
@@ -284,23 +308,35 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
     setUpcSettings(writeUpcExport(dir, ['085000010652,Josh Cellars Cabernet Sauvignon,55555,internal note: reorder soon']));
     const storeProductHtml = page({
       body: '<h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>'
+        + '<div class="pricingDetails"><span class="priceFull">$13.99</span></div>'
         + '<div id="description"><div class="text-product-desc">Rich, full-bodied with notes of dark fruit and oak.</div></div>',
     });
     const calls = [];
     await withMockFetch(
       async (url) => {
         calls.push(url);
-        return mockResponse({ body: url.includes('/store/search.asp') ? storeSearchHtml('55555') : storeProductHtml });
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('55555') });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaHitsResponse([]) }); // Untappd: no match, best-effort
+        return mockResponse({ body: storeProductHtml });
       },
       async () => {
+        // Beer now also hits the network (store price + Untappd), unlike
+        // before - the point of this test is the category-aware cache
+        // below, not "Beer never touches the network" (that assumption no
+        // longer holds - see the test above). Untappd has no match here
+        // (empty Algolia response), so the export's own description is left
+        // in place - only the store-sourced price actually changes.
         const beerResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'beer' });
+        assert.equal(beerResult.body.price, '13.99');
         assert.equal(beerResult.body.description, 'internal note: reorder soon');
-        assert.equal(calls.length, 0, 'a Beer scan should not hit the network');
+        assert.match(beerResult.body.untappdError, /Could not find/);
+        const callsAfterBeer = calls.length;
+        assert.ok(callsAfterBeer > 0, 'a Beer scan should hit the network for price + Untappd');
 
         const wineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
         assert.equal(wineResult.body.fromCache, undefined, 'switching to Wine/Spirits should not serve the Beer-only cache hit');
         assert.equal(wineResult.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
-        assert.ok(calls.length > 0, 'switching to Wine/Spirits should run the store description lookup');
+        assert.ok(calls.length > callsAfterBeer, 'switching to Wine/Spirits should run its own store description lookup');
 
         // A second Wine/Spirits scan right after should now be served from
         // the (freshly Wine/Spirits-tagged) cache.
@@ -310,6 +346,43 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
         assert.equal(calls.length, callsAfterWine);
       }
     );
+  }));
+});
+
+// ================================================================
+// /api/name-search - see the comment above the route in server/index.js.
+// The ranking/error-code behavior itself is covered in
+// test/upcCatalog.test.js against searchByName directly; these confirm the
+// HTTP layer wraps it correctly (query param parsing, status codes, the
+// blank-query short circuit).
+// ================================================================
+
+test('GET /api/name-search returns ranked matches from the configured export file', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, [
+      '1,Josh Cellars Cabernet Sauvignon,10432,',
+      '2,Josh Cellars Chardonnay,10433,',
+      '3,14 Hands Cabernet Sauvignon,9415,',
+    ]));
+    const { status, body } = await getJson(port, '/api/name-search?q=josh');
+    assert.equal(status, 200);
+    assert.deepEqual(body.results.map((p) => p.title), ['Josh Cellars Cabernet Sauvignon', 'Josh Cellars Chardonnay']);
+  }));
+});
+
+test('GET /api/name-search returns an empty result list for a blank query instead of an error', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/name-search');
+    assert.equal(status, 200);
+    assert.deepEqual(body.results, []);
+  }));
+});
+
+test('GET /api/name-search reports a 404 with NO_EXPORT_PATH when nothing has been configured yet', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/name-search?q=josh');
+    assert.equal(status, 404);
+    assert.equal(body.code, 'NO_EXPORT_PATH');
   }));
 });
 
