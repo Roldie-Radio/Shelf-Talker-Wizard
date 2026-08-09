@@ -1168,29 +1168,26 @@ function parsePastedStoreProduct({ html, url }) {
 }
 
 // ================================================================
-// Scan UPC description enrichment - the Scan UPC tab (see upcCatalog.js)
-// looks a scanned bottle up entirely offline, in a WinePOS export file, so
-// whatever that file happens to have in its own Description/Tasting Notes
-// column (see FIELD_ALIASES.description in upcCatalog.js) is what staff got
-// before this existed - often blank, or a short internal note, not the
-// shopper-facing tasting notes on the store's own product page. For Wine/
-// Spirits, that's the same liquoroutletwinecellars.com product page the SKU
-// Lookup tab already reads a description from (see lookupSku/lookupStoreSku
-// above) - matched here by the store SKU the WinePOS export carries for the
-// item (FIELD_ALIASES.sku), a different number from the manufacturer UPC
-// that was actually scanned.
+// Scan UPC store enrichment - the Scan UPC tab (see upcCatalog.js) looks a
+// scanned bottle up entirely offline, in a WinePOS export file, so whatever
+// that file happens to have in its own columns is what staff got before this
+// existed - a Description/Tasting Notes column that's often blank or a short
+// internal note (not the shopper-facing tasting notes on the store's own
+// product page), and a price that's only as fresh as the last time that
+// export was written. Both functions below fill in the fresher version from
+// liquoroutletwinecellars.com - the same product page the SKU Lookup tab
+// already reads from (see lookupSku/lookupStoreSku above) - matched by the
+// store SKU the WinePOS export carries for the item (FIELD_ALIASES.sku), a
+// different number from the manufacturer UPC that was actually scanned.
 //
-// Best-effort, same shape as enrichBeerFromUntappd above: a row with no SKU
-// column filled in, a SKU the store site doesn't recognize, or a blocked/
-// failed request just leaves the export's own description in place (however
-// blank) rather than failing a scan that already succeeded once, against the
-// local file, over a field that was never guaranteed - `descriptionSourceError`
-// carries the reason so the Scan UPC tab can tell staff a store lookup was
-// attempted and didn't pan out, instead of leaving them to guess why the
-// description looks unchanged. Beer isn't run through this: it already gets
-// its own dedicated Untappd enrichment step (by title, not SKU) via the SKU
-// Lookup tab, and mixing that in here too is a separate feature nobody asked
-// for.
+// Both are best-effort, same shape as enrichBeerFromUntappd below: a row
+// with no SKU column filled in, a SKU the store site doesn't recognize, or a
+// blocked/failed request just leaves the export's own value in place
+// (however blank) rather than failing a scan that already succeeded once,
+// against the local file, over a field that was never guaranteed - the
+// `...SourceError` field each one sets carries the reason so the Scan UPC
+// tab can tell staff a store lookup was attempted and didn't pan out,
+// instead of leaving them to guess why the field looks unchanged.
 async function enrichWineDescriptionFromStore(product) {
   const sku = (product.sku || '').trim();
   if (!sku) return product;
@@ -1199,6 +1196,29 @@ async function enrichWineDescriptionFromStore(product) {
     return { ...product, description: firstNonEmpty(storeProduct.description, product.description) || '' };
   } catch (err) {
     return { ...product, descriptionSourceError: err.message || 'Could not fetch a description from liquoroutletwinecellars.com.' };
+  }
+}
+
+// Beer's counterpart to enrichWineDescriptionFromStore above - pulls current
+// pricing rather than a description (a scanned beer's remaining fields come
+// from Untappd instead, see enrichBeerFromUntappd/enrichBeerScanFromStore
+// below), since the store site is the same live source SKU Lookup already
+// prices a beer from, and is more likely to be current than a WinePOS export
+// that's only re-written on whatever schedule the store runs it. Only
+// price/salePrice are touched here - title/size/brand stay exactly what the
+// local export had, same as description does for wine.
+async function enrichBeerPriceFromStore(product) {
+  const sku = (product.sku || '').trim();
+  if (!sku) return product;
+  try {
+    const storeProduct = await lookupStoreSku(sku);
+    return {
+      ...product,
+      price: firstNonEmpty(storeProduct.price, product.price) || '',
+      salePrice: firstNonEmpty(storeProduct.salePrice, product.salePrice) || '',
+    };
+  } catch (err) {
+    return { ...product, priceSourceError: err.message || 'Could not fetch pricing from liquoroutletwinecellars.com.' };
   }
 }
 
@@ -1424,6 +1444,20 @@ async function enrichBeerFromUntappd(product) {
   }
 }
 
+// The Scan UPC tab's full beer pipeline: current pricing from the store site
+// (enrichBeerPriceFromStore above), then everything else - brewery,
+// location, style, ABV, IBU, rating, and description - from Untappd
+// (enrichBeerFromUntappd above), the same two sources SKU Lookup's beer path
+// already draws from, just reached by UPC/local-export SKU instead of a
+// typed-in store SKU. Each step is independently best-effort (see their own
+// comments) - a failed price fetch doesn't skip the Untappd step or vice
+// versa, so a scan still comes back as filled-in as either source could
+// manage rather than an all-or-nothing failure.
+async function enrichBeerScanFromStore(product) {
+  const withPrice = await enrichBeerPriceFromStore(product);
+  return enrichBeerFromUntappd(withPrice);
+}
+
 // Manual fallback for when enrichBeerFromUntappd's own search comes back
 // empty - confirmed (via a real SKU lookup, see composeProducerTitle above)
 // to be because Untappd's search-results page renders its results with a
@@ -1533,9 +1567,12 @@ module.exports = {
   lookupStoreSku,
   parsePastedStoreProduct,
   enrichWineDescriptionFromStore,
+  enrichBeerPriceFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
   composeProducerTitle,
+  enrichBeerFromUntappd,
+  enrichBeerScanFromStore,
   untappdBeerFromUrl,
   untappdBeerFromHtml,
   lookupSku,

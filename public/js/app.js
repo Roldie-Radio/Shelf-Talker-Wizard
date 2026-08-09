@@ -1306,11 +1306,15 @@
 
   wireEnterTriggersClick(els.scanUpcInput, els.scanUpcLookupBtn);
 
-  // Fills the same fields applySkuLookupProduct does, from whatever columns
-  // the export file happened to have (see upcCatalog.js's FIELD_ALIASES) -
-  // a local export is far less likely to carry Untappd-style beer detail
-  // (style/ABV/IBU/rating) than a real POS item record, so those are simply
-  // left for staff to fill in or fetch via Untappd on Manual Entry.
+  // Fills the same fields applySkuLookupProduct does. Wine/Spirits gets
+  // whatever columns the export file happened to have (see upcCatalog.js's
+  // FIELD_ALIASES) plus a store-sourced description (see
+  // enrichWineDescriptionFromStore in productImport.js). Beer now goes
+  // through the same two-source pipeline SKU Lookup's own beer path uses -
+  // see enrichBeerScanFromStore in productImport.js - so `data` already
+  // carries current store pricing and Untappd's brewery/location/style/
+  // ABV/IBU/rating by the time it gets here, the same shape
+  // applySkuLookupProduct's own beer branch fills in from.
   function applyUpcScanProduct(data, isBeer) {
     const fields = {
       category: isBeer ? 'beer' : 'wine',
@@ -1324,7 +1328,13 @@
     if (isBeer) {
       Object.assign(fields, {
         sku: data.sku || els.scanUpcInput.value.trim(),
-        brewery: data.brand,
+        brewery: data.brewery,
+        location: data.location,
+        style: data.style,
+        abv: data.abv,
+        ibu: data.ibu,
+        untappdRating: data.untappdRating,
+        untappdRatingCount: data.untappdRatingCount,
       });
     } else {
       fields.vintage = data.vintage;
@@ -1335,18 +1345,23 @@
     renderPreview();
   }
 
-  // data.descriptionSourceError is only ever set for a Wine/Spirits scan
-  // whose store-description lookup failed (no store SKU on file, an
-  // unmatched SKU, or a blocked/failed request) - see
-  // enrichWineDescriptionFromStore in productImport.js. The local export's
-  // own data still filled the form either way, so this just tells staff why
-  // the description came from the WinePOS export instead of the store site,
-  // rather than leaving them to guess. Same shape as skuLookupLoadedMessage's
-  // untappdError handling above.
+  // Surfaces whichever best-effort enrichment step didn't pan out, so staff
+  // know why a field looks unchanged instead of guessing:
+  // data.priceSourceError/data.untappdError (Beer - see
+  // enrichBeerScanFromStore in productImport.js) or
+  // data.descriptionSourceError (Wine/Spirits - see
+  // enrichWineDescriptionFromStore). The local export's own data still
+  // filled the form regardless, so none of these block adding to the queue -
+  // same shape as skuLookupLoadedMessage's untappdError handling above.
+  // Price and Untappd fail independently of each other (see
+  // enrichBeerScanFromStore's own note), so both are reported together
+  // rather than one hiding the other.
   function scanUpcLoadedMessage(data) {
-    if (data.descriptionSourceError) {
-      return `Found it${cacheNote(data)}. Description: ${data.descriptionSourceError}`;
-    }
+    const problems = [];
+    if (data.priceSourceError) problems.push(`Price: ${data.priceSourceError}`);
+    if (data.untappdError) problems.push(`Untappd: ${data.untappdError}`);
+    if (data.descriptionSourceError) problems.push(`Description: ${data.descriptionSourceError}`);
+    if (problems.length) return `Found it${cacheNote(data)}. ${problems.join(' ')}`;
     return `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
   }
 

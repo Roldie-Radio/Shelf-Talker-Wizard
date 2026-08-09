@@ -4,6 +4,7 @@ const express = require('express');
 const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
+  enrichBeerScanFromStore,
 } = require('./productImport');
 const {
   getUpcSettings, setUpcSettings, lookupUpc, searchByName, previewExport,
@@ -210,24 +211,30 @@ function createApp({ beacon } = {}) {
   // productImport.js) - the same site the SKU Lookup tab already reads a
   // description from, so both lookup paths end up sourcing Wine/Spirits
   // descriptions the same way. Best-effort: a missing store SKU or a failed
-  // store lookup just leaves the export's own description in place. Beer
-  // skips this step entirely and keeps whatever the export file had, same
-  // as before.
+  // store lookup just leaves the export's own description in place.
+  //
+  // Beer runs its own two-step enrichment instead (see
+  // enrichBeerScanFromStore in productImport.js): current pricing from that
+  // same store site, then brewery/location/style/ABV/IBU/rating/description
+  // from Untappd - the same two sources the SKU Lookup tab's beer path
+  // already draws from (see lookupSku), just reached by the WinePOS export's
+  // own store-SKU column instead of a typed-in one. Both steps are
+  // independently best-effort, same as the Wine/Spirits description above.
   //
   // Also layered with the same product cache /api/sku-lookup uses (see its
-  // note above), keyed by UPC instead of SKU - and, now that Wine/Spirits
-  // scans make a real network request as part of resolving this, the same
+  // note above), keyed by UPC instead of SKU - and, now that both categories
+  // make a real network request as part of resolving this, the same
   // category-aware freshness check /api/sku-lookup uses: the cached copy
   // records which category it was resolved under (`lookupCategory`, kept
   // separate from `category`, which is the WinePOS export's own department/
   // class column - a different thing this route never overwrites), and a
   // fresh cache hit is only served when that matches what's being asked for
-  // now. Without this, a UPC scanned as Beer first (no store lookup) and
-  // then rescanned as Wine/Spirits within the freshness window would
-  // silently serve back the Beer-only cached copy and skip the store
-  // description lookup entirely. A *failed* lookup still falls back to
-  // whatever's cached regardless of category, same as before - stale data
-  // (clearly marked) beats sending staff to Manual Entry.
+  // now. Without this, a UPC scanned as Beer first and then rescanned as
+  // Wine/Spirits within the freshness window would silently serve back the
+  // Beer-only cached copy and skip the Wine/Spirits enrichment entirely. A
+  // *failed* lookup still falls back to whatever's cached regardless of
+  // category, same as before - stale data (clearly marked) beats sending
+  // staff to Manual Entry.
   app.post('/api/upc-lookup', async (req, res) => {
     const { upc, category } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {
@@ -243,7 +250,9 @@ function createApp({ beacon } = {}) {
 
     try {
       const rawProduct = lookupUpc(trimmedUpc);
-      const product = normalizedCategory === 'beer' ? rawProduct : await enrichWineDescriptionFromStore(rawProduct);
+      const product = normalizedCategory === 'beer'
+        ? await enrichBeerScanFromStore(rawProduct)
+        : await enrichWineDescriptionFromStore(rawProduct);
       const data = { ...product, lookupCategory: normalizedCategory };
       upsertCachedProduct({ keyType: 'upc', key: trimmedUpc, source: 'scan-upc', data });
       res.json(data);
