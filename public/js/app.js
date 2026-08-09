@@ -1345,24 +1345,60 @@
     renderPreview();
   }
 
-  // Surfaces whichever best-effort enrichment step didn't pan out, so staff
-  // know why a field looks unchanged instead of guessing:
+  // Collects whichever best-effort enrichment step didn't pan out, so staff
+  // still learn why a field looks unchanged instead of guessing:
   // data.priceSourceError/data.untappdError (Beer - see
   // enrichBeerScanFromStore in productImport.js) or
   // data.descriptionSourceError (Wine/Spirits - see
-  // enrichWineDescriptionFromStore). The local export's own data still
-  // filled the form regardless, so none of these block adding to the queue -
-  // same shape as skuLookupLoadedMessage's untappdError handling above.
-  // Price and Untappd fail independently of each other (see
+  // enrichWineDescriptionFromStore). None of these block adding to the
+  // queue below - the local export's own data still filled the form either
+  // way. Price and Untappd fail independently of each other (see
   // enrichBeerScanFromStore's own note), so both are reported together
   // rather than one hiding the other.
-  function scanUpcLoadedMessage(data) {
+  function scanUpcProblems(data) {
     const problems = [];
     if (data.priceSourceError) problems.push(`Price: ${data.priceSourceError}`);
     if (data.untappdError) problems.push(`Untappd: ${data.untappdError}`);
     if (data.descriptionSourceError) problems.push(`Description: ${data.descriptionSourceError}`);
-    if (problems.length) return `Found it${cacheNote(data)}. ${problems.join(' ')}`;
-    return `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+    return problems.join(' ');
+  }
+
+  // The message a successful, auto-queued scan leaves in the status line -
+  // cacheNote's own "(cached...)" aside (same wording the old "Found it"
+  // message used) plus whatever scanUpcProblems has to report, if anything.
+  function scanUpcQueuedMessage(data) {
+    const problems = scanUpcProblems(data);
+    return `Added to queue${cacheNote(data)}!${problems ? ` ${problems}` : ''} Scan the next one.`;
+  }
+
+  // Same "Add to Queue" pattern as SKU Lookup/Search by Name's own save
+  // buttons (see els.skuSaveBtn's note above), reusing the form's real
+  // submit handler via requestSubmit() rather than a fourth copy of
+  // validate/save. Pulled into its own function, rather than living only in
+  // scanUpcSaveBtn's click handler below, so a successful scan can trigger
+  // it automatically (see els.scanUpcLookupBtn's own handler) without
+  // staff clicking Add to Queue by hand after every single item - the
+  // whole point of a barcode scanner is walking the aisle and scanning one
+  // after another, hands-free. `message` (optional) is the auto-add path's
+  // own scanUpcQueuedMessage; the manual button below has no scan of its
+  // own to describe, so it falls back to the plain default. Returns
+  // whether the add actually went through - validation can still fail here
+  // (e.g. a price neither the export nor the store could supply), and a
+  // caller needs to tell that apart from success rather than assume a scan
+  // always ends up queued.
+  function addScannedUpcToQueue(message) {
+    els.form.requestSubmit();
+    if (!els.formError.hidden) {
+      // The fields stay exactly as filled in, ready for a manual fix (on
+      // Manual Entry) and a manual click here to retry - same fallback the
+      // pre-automatic version of this always had.
+      els.scanUpcStatus.textContent = els.formError.textContent;
+      return false;
+    }
+    els.scanUpcInput.value = '';
+    els.scanUpcStatus.textContent = message || 'Added to queue! Scan the next one.';
+    els.scanUpcInput.focus();
+    return true;
   }
 
   els.scanUpcLookupBtn.addEventListener('click', async () => {
@@ -1389,7 +1425,11 @@
       }
 
       applyUpcScanProduct(data, isBeer);
-      els.scanUpcStatus.textContent = scanUpcLoadedMessage(data);
+      // Every field the lookup could fill is filled by this point (both of
+      // Beer's enrichment steps, or Wine/Spirits' own, already ran
+      // server-side before this response came back) - add it straight to
+      // the queue instead of waiting for a manual click.
+      addScannedUpcToQueue(scanUpcQueuedMessage(data));
     } catch (err) {
       els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
       // A missing/unconfigured export file is the one failure staff can fix
@@ -1409,19 +1449,11 @@
     }
   });
 
-  // Same pattern as els.skuSaveBtn above - reuses the Manual Entry form's
-  // real submit handler via requestSubmit() rather than duplicating
-  // validate/save.
-  els.scanUpcSaveBtn.addEventListener('click', () => {
-    els.form.requestSubmit();
-    if (!els.formError.hidden) {
-      els.scanUpcStatus.textContent = els.formError.textContent;
-      return;
-    }
-    els.scanUpcInput.value = '';
-    els.scanUpcStatus.textContent = 'Added to queue! Scan the next one.';
-    els.scanUpcInput.focus();
-  });
+  // Manual fallback for whenever the automatic add above didn't happen (a
+  // validation error the lookup itself couldn't have known about, or the
+  // fields were hand-edited after a scan) - same addScannedUpcToQueue,
+  // just with no per-scan enrichment note to fold in.
+  els.scanUpcSaveBtn.addEventListener('click', () => addScannedUpcToQueue());
 
   // ---------- Find tasting notes (Wine/Spirits) ----------
 
