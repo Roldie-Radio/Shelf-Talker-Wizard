@@ -274,37 +274,23 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .tab.is-active { color: var(--ui-accent-ink); border-bottom-color: var(--ui-accent); }
 .tab .beta-badge { margin-left: 0.35rem; }
 
-/* Sub-navigation inside the new Search tab - a segmented pill group, not
-   another underline strip, so it reads as one level down from the primary
-   tabs rather than a sibling of them. */
-.tabs--sub {
-  border-bottom: none;
-  background: var(--ui-panel-alt);
-  border: 1px solid var(--ui-border);
-  padding: 0.25rem;
-  border-radius: 10px;
-  gap: 0.15rem;
-  margin-bottom: 1rem;
-}
-.tabs--sub .tab {
-  border-bottom: none;
-  border-radius: 7px;
-  padding: 0.42rem 0.7rem;
-  font-size: 0.79rem;
-  color: var(--ui-ink-soft);
-}
-.tabs--sub .tab.is-active {
-  background: var(--ui-panel);
-  color: var(--ui-accent-ink);
-  box-shadow: 0 1px 3px var(--ui-shadow);
-}
-
 .tab-panel { display: none; }
 .tab-panel.is-active { display: block; }
 
 /* ---------- Shared form bits ---------- */
 
 .category-toggle, .signtype-toggle { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
+/* The Search tab's own method chooser (Search by Name / SKU Lookup / Scan
+   UPC) - deliberately built from the same toggle-btn radiogroup the rest of
+   the form already uses for Wine/Spirits vs. Beer and Shelf Talkers vs.
+   Display Signs, rather than a second, unfamiliar tab-strip nested inside a
+   tab-panel. It sits first (see markup below) since which method to use is
+   the primary choice here; a size step up from the ordinary toggle-btn
+   below it is the only thing marking it as the more important of the two. */
+.method-toggle { margin-bottom: 0.6rem; }
+.method-toggle .toggle-btn { font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; }
+.method-toggle .beta-badge { margin-left: 0.35rem; }
+.search-scope-note { margin: -0.35rem 0 1rem; }
 .toggle-btn {
   border: 1px solid var(--ui-border);
   background: var(--ui-btn);
@@ -450,13 +436,6 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .annotation__icon { flex: none; font-size: 1rem; line-height: 1.4; }
 .annotation strong { color: var(--ui-ink); }
 
-/* ---------- Shared category note (After mode only) ---------- */
-.shared-note {
-  font-size: 0.78rem;
-  color: var(--ui-muted);
-  margin: -0.55rem 0 0.9rem;
-}
-
 /* ---------- Preview + queue placeholders ---------- */
 
 .preview-toggle { display: flex; gap: 0.3rem; }
@@ -500,9 +479,11 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     <p>
       <strong>Search by Name</strong>, <strong>SKU Lookup</strong>, and <strong>Scan UPC</strong> currently sit as three
       separate top-level tabs alongside Manual Entry and Import from Website. This groups all three under a single
-      <strong>Search</strong> tab as sub-tabs &mdash; every form stays available, just organized one level deeper, and
-      the top bar goes from five tabs to three. The Wine / Spirits &middot; Beer toggle, previously repeated on each of
-      the three, is hoisted up to apply to whichever search method is active.
+      <strong>Search</strong> tab as a method chooser &mdash; every form stays available, just organized one level
+      deeper, and the top bar goes from five tabs to three. Inside the tab, picking <strong>Search by Name</strong>,
+      <strong>SKU Lookup</strong>, or <strong>Scan UPC</strong> comes first, styled the same as the form's other
+      toggle-btn groups rather than a second row of tabs; the <strong>Wine / Spirits</strong> &middot; <strong>Beer</strong>
+      toggle sits right below it &mdash; set once for whichever method is picked, instead of repeated on each of the three.
     </p>
     <div class="controls-row">
       <div class="compare-switch" role="radiogroup" aria-label="Comparison view">
@@ -607,19 +588,24 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
           <div class="tab-panel" data-panel="skuFlat" id="panel_skuFlat"></div>
           <div class="tab-panel" data-panel="scanFlat" id="panel_scanFlat"></div>
 
-          <!-- AFTER-only: the new Search tab, holding all three as sub-tabs -->
+          <!-- AFTER-only: the new Search tab, holding all three as sub-tabs.
+               Method chooser first (the primary choice), category second
+               (a shared setting that applies to whichever method is picked)
+               - both built from the same toggle-btn radiogroup pattern
+               Manual Entry already uses, just stacked, so this reads as one
+               more panel in the same family rather than a new widget. -->
           <div class="tab-panel" data-panel="search" id="panel_search">
-            <div class="category-toggle" role="radiogroup" aria-label="Product category">
-              <button type="button" class="toggle-btn is-active">Wine / Spirits</button>
-              <button type="button" class="toggle-btn">Beer</button>
+            <div class="category-toggle method-toggle" id="searchSubNav" role="radiogroup" aria-label="Search method">
+              <button type="button" class="toggle-btn is-active" data-sub="searchName" role="radio" aria-checked="true">Search by Name</button>
+              <button type="button" class="toggle-btn" data-sub="sku" role="radio" aria-checked="false">SKU Lookup</button>
+              <button type="button" class="toggle-btn" data-sub="scan" role="radio" aria-checked="false">Scan UPC <span class="beta-badge">Beta</span></button>
             </div>
-            <p class="shared-note">Applies to whichever search method is selected below &mdash; set once instead of three times.</p>
 
-            <div class="tabs tabs--sub" id="searchSubNav" role="tablist" aria-label="Search method">
-              <button class="tab" data-sub="searchName" role="tab">Search by Name</button>
-              <button class="tab" data-sub="sku" role="tab">SKU Lookup</button>
-              <button class="tab" data-sub="scan" role="tab">Scan UPC <span class="beta-badge">Beta</span></button>
+            <div class="category-toggle" role="radiogroup" aria-label="Product category">
+              <button type="button" class="toggle-btn is-active" role="radio" aria-checked="true">Wine / Spirits</button>
+              <button type="button" class="toggle-btn" role="radio" aria-checked="false">Beer</button>
             </div>
+            <p class="help-text search-scope-note">Wine / Spirits &middot; Beer applies to whichever method is picked above &mdash; set once instead of three times.</p>
 
             <div id="searchSubMount"></div>
           </div>
@@ -872,7 +858,15 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     activeSub = name;
     searchSubMount.innerHTML = '';
     searchSubMount.appendChild(methodPanels[name]);
-    setActiveTabButton(searchSubNav, name, 'sub');
+    // The generic toggle-btn delegation above already flips is-active on a
+    // real click; this also covers the programmatic call from applyMode()
+    // below (switching Current UI -> Proposed UI), which never fires a
+    // click at all.
+    searchSubNav.querySelectorAll('.toggle-btn').forEach(function (btn) {
+      var match = btn.dataset.sub === name;
+      btn.classList.toggle('is-active', match);
+      btn.setAttribute('aria-checked', String(match));
+    });
   }
 
   function applyMode(next) {
@@ -919,7 +913,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   });
 
   searchSubNav.addEventListener('click', function (e) {
-    var btn = e.target.closest('.tab');
+    var btn = e.target.closest('.toggle-btn');
     if (!btn) return;
     selectSub(btn.dataset.sub);
   });
