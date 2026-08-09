@@ -1173,21 +1173,22 @@ function parsePastedStoreProduct({ html, url }) {
 // that file happens to have in its own columns is what staff got before this
 // existed - a Description/Tasting Notes column that's often blank or a short
 // internal note (not the shopper-facing tasting notes on the store's own
-// product page), and a price that's only as fresh as the last time that
-// export was written. Both functions below fill in the fresher version from
-// liquoroutletwinecellars.com - the same product page the SKU Lookup tab
-// already reads from (see lookupSku/lookupStoreSku above) - matched by the
-// store SKU the WinePOS export carries for the item (FIELD_ALIASES.sku), a
-// different number from the manufacturer UPC that was actually scanned.
+// product page), and title/size/price only as fresh (and as well-formatted)
+// as the last time that export was written. Both functions below pull the
+// fresher version from liquoroutletwinecellars.com - the same product page
+// the SKU Lookup tab already reads from (see lookupSku/lookupStoreSku
+// above) - matched by the store SKU the WinePOS export carries for the item
+// (FIELD_ALIASES.sku), a different number from the manufacturer UPC that
+// was actually scanned.
 //
 // Both are best-effort, same shape as enrichBeerFromUntappd below: a row
 // with no SKU column filled in, a SKU the store site doesn't recognize, or a
 // blocked/failed request just leaves the export's own value in place
 // (however blank) rather than failing a scan that already succeeded once,
-// against the local file, over a field that was never guaranteed - the
+// against the local file, over data that was never guaranteed - the
 // `...SourceError` field each one sets carries the reason so the Scan UPC
 // tab can tell staff a store lookup was attempted and didn't pan out,
-// instead of leaving them to guess why the field looks unchanged.
+// instead of leaving them to guess why nothing changed.
 async function enrichWineDescriptionFromStore(product) {
   const sku = (product.sku || '').trim();
   if (!sku) return product;
@@ -1196,29 +1197,6 @@ async function enrichWineDescriptionFromStore(product) {
     return { ...product, description: firstNonEmpty(storeProduct.description, product.description) || '' };
   } catch (err) {
     return { ...product, descriptionSourceError: err.message || 'Could not fetch a description from liquoroutletwinecellars.com.' };
-  }
-}
-
-// Beer's counterpart to enrichWineDescriptionFromStore above - pulls current
-// pricing rather than a description (a scanned beer's remaining fields come
-// from Untappd instead, see enrichBeerFromUntappd/enrichBeerScanFromStore
-// below), since the store site is the same live source SKU Lookup already
-// prices a beer from, and is more likely to be current than a WinePOS export
-// that's only re-written on whatever schedule the store runs it. Only
-// price/salePrice are touched here - title/size/brand stay exactly what the
-// local export had, same as description does for wine.
-async function enrichBeerPriceFromStore(product) {
-  const sku = (product.sku || '').trim();
-  if (!sku) return product;
-  try {
-    const storeProduct = await lookupStoreSku(sku);
-    return {
-      ...product,
-      price: firstNonEmpty(storeProduct.price, product.price) || '',
-      salePrice: firstNonEmpty(storeProduct.salePrice, product.salePrice) || '',
-    };
-  } catch (err) {
-    return { ...product, priceSourceError: err.message || 'Could not fetch pricing from liquoroutletwinecellars.com.' };
   }
 }
 
@@ -1444,18 +1422,48 @@ async function enrichBeerFromUntappd(product) {
   }
 }
 
-// The Scan UPC tab's full beer pipeline: current pricing from the store site
-// (enrichBeerPriceFromStore above), then everything else - brewery,
-// location, style, ABV, IBU, rating, and description - from Untappd
-// (enrichBeerFromUntappd above), the same two sources SKU Lookup's beer path
-// already draws from, just reached by UPC/local-export SKU instead of a
-// typed-in store SKU. Each step is independently best-effort (see their own
-// comments) - a failed price fetch doesn't skip the Untappd step or vice
-// versa, so a scan still comes back as filled-in as either source could
-// manage rather than an all-or-nothing failure.
+// The Scan UPC tab's full beer pipeline - matches lookupSku's own beer path
+// (below) exactly once a store SKU is available: the whole product page
+// (title, brand, size, pack size, price, description) from
+// liquoroutletwinecellars.com, then Untappd off of *that*, not the raw
+// WinePOS export's own Title/Brand columns.
+//
+// That's a deliberate change from an earlier, more surgical version of this
+// that only pulled price and left title/size alone - confirmed against a
+// real miss: a WinePOS export's title/brand are often abbreviated/all-caps
+// store shorthand ("MSB MANSKIRT THE GREAT PORTER CAN"), which
+// composeProducerTitle can only do so much with and makes for a much
+// weaker Untappd search query than the store's own cleaned-up product page
+// title - the exact same query SKU Lookup already builds from that same
+// store page for a typed-in SKU. Using the store's fuller data here, not
+// just its price, is what actually closes that gap.
+//
+// Still best-effort: no store SKU to look up, or a lookup that fails
+// outright (no match, blocked), falls back to running Untappd off of
+// whatever the local export had instead of failing the whole scan -
+// `storeSourceError` carries why, same shape enrichWineDescriptionFromStore
+// uses for `descriptionSourceError`. Description gets its own three-way
+// fallback (Untappd's own > the store page's > the export's) rather than
+// flatly taking the store's: a store product page with no description of
+// its own (common - not every page has one) would otherwise blank out a
+// genuinely useful local note the export did have, the one field here that
+// isn't strictly "fresher from the store" the way title/size/price are.
 async function enrichBeerScanFromStore(product) {
-  const withPrice = await enrichBeerPriceFromStore(product);
-  return enrichBeerFromUntappd(withPrice);
+  const sku = (product.sku || '').trim();
+  if (!sku) return enrichBeerFromUntappd(product);
+  try {
+    const storeProduct = await lookupStoreSku(sku);
+    return enrichBeerFromUntappd({
+      ...storeProduct,
+      sku,
+      description: firstNonEmpty(storeProduct.description, product.description) || '',
+    });
+  } catch (err) {
+    return enrichBeerFromUntappd({
+      ...product,
+      storeSourceError: err.message || 'Could not fetch product details from liquoroutletwinecellars.com.',
+    });
+  }
 }
 
 // Manual fallback for when enrichBeerFromUntappd's own search comes back
@@ -1567,7 +1575,6 @@ module.exports = {
   lookupStoreSku,
   parsePastedStoreProduct,
   enrichWineDescriptionFromStore,
-  enrichBeerPriceFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
   composeProducerTitle,
