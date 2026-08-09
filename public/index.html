@@ -653,10 +653,11 @@
   </div>
 
   <!-- Advanced menu only (Electron) - lets staff mark this PC as the main
-       store PC. Purely a persisted flag today (see server/serverConfig.js) -
-       it doesn't change how the app runs; a first step toward sharing Print
+       store PC. Marking one broadcasts a small UDP announcement on the LAN
+       (see server/discovery.js) so *other* PCs can see which one it is -
+       that's purely visibility, still a first step toward sharing Print
        History/the product cache across registers later, not that feature
-       itself. -->
+       itself; each PC still keeps its own separate data. -->
   <div id="serverPcOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="serverPcTitle">
       <div class="modal__header">
@@ -664,11 +665,12 @@
         <button type="button" class="btn btn--ghost btn--small" id="serverPcCloseBtn">&times; Close</button>
       </div>
       <div class="server-pc-body">
-        <p class="help-text">Marking a PC as the main store PC is a first step toward sharing Print History and the product cache across registers later &mdash; it doesn't change anything about how this app runs today. Each PC still keeps its own separate data.</p>
+        <p class="help-text">Marking a PC as the main store PC lets other PCs on the same network see which one it is &mdash; a first step toward sharing Print History and the product cache across registers later. It doesn't share any of that data yet; each PC still keeps its own.</p>
         <dl class="server-pc-facts">
           <div><dt>This PC's network address</dt><dd id="serverPcAddresses">&ndash;</dd></div>
           <div><dt>Print History</dt><dd id="serverPcHistoryCount">&ndash;</dd></div>
           <div><dt>Product cache</dt><dd id="serverPcCacheCount">&ndash;</dd></div>
+          <div><dt>Main store PC on this network</dt><dd id="serverPcDiscovered">&ndash;</dd></div>
         </dl>
         <label class="server-pc-checkbox">
           <input type="checkbox" id="serverPcCheckbox" />
