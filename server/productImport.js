@@ -1168,6 +1168,41 @@ function parsePastedStoreProduct({ html, url }) {
 }
 
 // ================================================================
+// Scan UPC description enrichment - the Scan UPC tab (see upcCatalog.js)
+// looks a scanned bottle up entirely offline, in a WinePOS export file, so
+// whatever that file happens to have in its own Description/Tasting Notes
+// column (see FIELD_ALIASES.description in upcCatalog.js) is what staff got
+// before this existed - often blank, or a short internal note, not the
+// shopper-facing tasting notes on the store's own product page. For Wine/
+// Spirits, that's the same liquoroutletwinecellars.com product page the SKU
+// Lookup tab already reads a description from (see lookupSku/lookupStoreSku
+// above) - matched here by the store SKU the WinePOS export carries for the
+// item (FIELD_ALIASES.sku), a different number from the manufacturer UPC
+// that was actually scanned.
+//
+// Best-effort, same shape as enrichBeerFromUntappd above: a row with no SKU
+// column filled in, a SKU the store site doesn't recognize, or a blocked/
+// failed request just leaves the export's own description in place (however
+// blank) rather than failing a scan that already succeeded once, against the
+// local file, over a field that was never guaranteed - `descriptionSourceError`
+// carries the reason so the Scan UPC tab can tell staff a store lookup was
+// attempted and didn't pan out, instead of leaving them to guess why the
+// description looks unchanged. Beer isn't run through this: it already gets
+// its own dedicated Untappd enrichment step (by title, not SKU) via the SKU
+// Lookup tab, and mixing that in here too is a separate feature nobody asked
+// for.
+async function enrichWineDescriptionFromStore(product) {
+  const sku = (product.sku || '').trim();
+  if (!sku) return product;
+  try {
+    const storeProduct = await lookupStoreSku(sku);
+    return { ...product, description: firstNonEmpty(storeProduct.description, product.description) || '' };
+  } catch (err) {
+    return { ...product, descriptionSourceError: err.message || 'Could not fetch a description from liquoroutletwinecellars.com.' };
+  }
+}
+
+// ================================================================
 // Untappd search-by-name - the SKU lookup's beer-specific second step. The
 // store site above has no idea what Untappd calls a beer, so this takes
 // whatever title the SKU lookup just filled in and searches Untappd for
@@ -1497,6 +1532,7 @@ module.exports = {
   parseStoreProductHtml,
   lookupStoreSku,
   parsePastedStoreProduct,
+  enrichWineDescriptionFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
   composeProducerTitle,

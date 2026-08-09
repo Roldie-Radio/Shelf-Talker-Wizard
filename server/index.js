@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
-  lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml,
+  lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
 } = require('./productImport');
 const { getUpcSettings, setUpcSettings, lookupUpc, previewExport } = require('./upcCatalog');
 const {
@@ -189,30 +189,56 @@ function createApp() {
   // Backs the "Scan UPC" tab itself: staff scan a bottle's UPC (a USB/
   // Bluetooth scanner just types it, like a keyboard) into the tab's input,
   // and this looks it up in the export file configured above rather than
-  // fetching anything. See upcCatalog.js's lookupUpc for the specific error
-  // codes (no file configured yet, file missing, unreadable, or UPC not
-  // found in it) surfaced through `code` below.
+  // fetching anything over the network for the UPC match itself. See
+  // upcCatalog.js's lookupUpc for the specific error codes (no file
+  // configured yet, file missing, unreadable, or UPC not found in it)
+  // surfaced through `code` below.
+  //
+  // For Wine/Spirits (the tab's own category toggle, sent as `category`),
+  // the local export's own Description column is then layered under
+  // whatever liquoroutletwinecellars.com's own product page has for that
+  // item's store SKU (see enrichWineDescriptionFromStore in
+  // productImport.js) - the same site the SKU Lookup tab already reads a
+  // description from, so both lookup paths end up sourcing Wine/Spirits
+  // descriptions the same way. Best-effort: a missing store SKU or a failed
+  // store lookup just leaves the export's own description in place. Beer
+  // skips this step entirely and keeps whatever the export file had, same
+  // as before.
   //
   // Also layered with the same product cache /api/sku-lookup uses (see its
-  // note above), keyed by UPC instead of SKU. The payoff here is different
-  // from SKU Lookup, since this path was never going over the network to
-  // begin with: it's resilience for when the export file itself is
-  // unreachable/misconfigured, or this exact UPC has since dropped out of a
-  // refreshed export - a cached hit (however old, clearly marked stale)
-  // still beats sending staff to Manual Entry.
-  app.post('/api/upc-lookup', (req, res) => {
-    const { upc } = req.body || {};
+  // note above), keyed by UPC instead of SKU - and, now that Wine/Spirits
+  // scans make a real network request as part of resolving this, the same
+  // category-aware freshness check /api/sku-lookup uses: the cached copy
+  // records which category it was resolved under (`lookupCategory`, kept
+  // separate from `category`, which is the WinePOS export's own department/
+  // class column - a different thing this route never overwrites), and a
+  // fresh cache hit is only served when that matches what's being asked for
+  // now. Without this, a UPC scanned as Beer first (no store lookup) and
+  // then rescanned as Wine/Spirits within the freshness window would
+  // silently serve back the Beer-only cached copy and skip the store
+  // description lookup entirely. A *failed* lookup still falls back to
+  // whatever's cached regardless of category, same as before - stale data
+  // (clearly marked) beats sending staff to Manual Entry.
+  app.post('/api/upc-lookup', async (req, res) => {
+    const { upc, category } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {
       return res.status(400).json({ error: 'A UPC is required.' });
     }
     const trimmedUpc = upc.trim();
+    const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
+    const cached = getCachedProduct({ keyType: 'upc', key: trimmedUpc });
+
+    if (isFresh(cached) && cached.data.lookupCategory === normalizedCategory) {
+      return res.json({ ...cached.data, fromCache: true });
+    }
 
     try {
-      const product = lookupUpc(trimmedUpc);
-      upsertCachedProduct({ keyType: 'upc', key: trimmedUpc, source: 'scan-upc', data: product });
-      res.json(product);
+      const rawProduct = lookupUpc(trimmedUpc);
+      const product = normalizedCategory === 'beer' ? rawProduct : await enrichWineDescriptionFromStore(rawProduct);
+      const data = { ...product, lookupCategory: normalizedCategory };
+      upsertCachedProduct({ keyType: 'upc', key: trimmedUpc, source: 'scan-upc', data });
+      res.json(data);
     } catch (err) {
-      const cached = getCachedProduct({ keyType: 'upc', key: trimmedUpc });
       if (cached) {
         return res.json({ ...cached.data, fromCache: true, stale: true });
       }
