@@ -11,8 +11,15 @@ const {
   upsertCachedProduct, getCachedProduct, isFresh, getStats,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
+const { createBeacon } = require('./discovery');
 
-function createApp() {
+// The LAN discovery beacon (see discovery.js) is only ever passed in by
+// start() below - createApp() itself never touches the network, so tests
+// that build an app with createApp() alone (see test/index.test.js) never
+// bind a UDP socket as a side effect. Without a beacon, /api/server-status
+// simply reports no discovered server and its POST is a no-op for
+// announcing, rather than crashing.
+function createApp({ beacon } = {}) {
   const app = express();
 
   app.use(express.json());
@@ -310,10 +317,13 @@ function createApp() {
   });
 
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
-  // LAN-visible IPv4 addresses (informational only today - the server still
-  // only binds to 127.0.0.1, see start() below - and the current isServer
-  // flag/db stats, so staff can tell whether this looks like the PC with
-  // real accumulated data before marking it.
+  // LAN-visible IPv4 addresses, the current isServer flag/db stats (so
+  // staff can tell whether this looks like the PC with real accumulated
+  // data before marking it), and discoveredServer - the most recent LAN
+  // announcement this PC has heard from whichever PC *is* currently marked
+  // (see discovery.js), or null if none has been heard recently. The HTTP
+  // API itself is still 127.0.0.1-only (see start() below); only the small
+  // UDP beacon actually reaches the network.
   app.get('/api/server-status', (req, res) => {
     const nets = os.networkInterfaces();
     const addresses = [];
@@ -322,12 +332,22 @@ function createApp() {
         if (net.family === 'IPv4' && !net.internal) addresses.push(net.address);
       }
     }
-    res.json({ ...getServerConfig(), addresses, stats: getStats() });
+    res.json({
+      ...getServerConfig(),
+      addresses,
+      stats: getStats(),
+      discoveredServer: beacon ? beacon.getDiscoveredServer() : null,
+    });
   });
 
   app.post('/api/server-status', (req, res) => {
     const { isServer } = req.body || {};
-    res.json(setServerConfig({ isServer: !!isServer }));
+    const config = setServerConfig({ isServer: !!isServer });
+    if (beacon) {
+      if (config.isServer) beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
+      else beacon.stopAnnouncing();
+    }
+    res.json(config);
   });
 
   // Manual fallback for a beer SKU lookup whose automatic Untappd search
@@ -378,16 +398,27 @@ function createApp() {
  * meant to be reachable from the network). Returns the underlying
  * http.Server instance once listening, so callers (e.g. the Electron main
  * process) can close it on shutdown.
+ *
+ * Also starts the LAN discovery beacon (see discovery.js): every PC listens
+ * for announcements from whichever PC is marked the main store PC, and this
+ * one starts sending its own if it's already marked when it boots. The
+ * beacon is a separate UDP socket, not the HTTP server above - it's the
+ * only thing about this that reaches the network.
  */
 function start(port) {
   const resolvedPort = port || process.env.PORT || 3000;
-  const app = createApp();
+  const beacon = createBeacon();
+  const app = createApp({ beacon });
   return new Promise((resolve, reject) => {
     const server = app.listen(resolvedPort, '127.0.0.1', () => {
+      beacon.startListening();
+      const config = getServerConfig();
+      if (config.isServer) beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
       console.log(`Shelf Talker Wizard running at http://localhost:${resolvedPort}`);
       resolve(server);
     });
     server.on('error', reject);
+    server.on('close', () => beacon.stop());
   });
 }
 

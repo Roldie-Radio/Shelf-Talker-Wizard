@@ -13,15 +13,17 @@ const { setUpcSettings } = require('../server/upcCatalog');
 // getDb() re-derives its connection whenever SHELF_TALKER_CONFIG_DIR
 // changes, so each test gets its own isolated SQLite file/cache.
 //
-// `fn` here is always `() => withServer(async (port) => {...})` - its real
-// work happens inside app.listen's callback, which only fires on a later
-// event-loop turn, well after a plain (non-async) `try { return fn(dir); }`
-// would already have fallen through to `finally` and deleted `dir` out from
-// under it. Every caller passes an async fn precisely so this can `await`
-// it - without that, cleanup runs (and SHELF_TALKER_CONFIG_DIR gets reset)
-// before the server ever actually handles a request, silently pointing every
-// db.js call in the test body at the real default app-data directory
-// instead of the isolated temp one.
+// `fn` is always async here (every caller passes withServer(...), whose
+// request/response round trip needs real event-loop ticks) - this has to
+// be `async`/`await fn(dir)`, not `return fn(dir)`, or the `finally` below
+// runs synchronously right after `fn` merely *starts* (returns its
+// pending promise) rather than after it actually finishes. That would
+// restore SHELF_TALKER_CONFIG_DIR and delete `dir` while the server is
+// still mid-request, silently sending everything for the rest of that
+// test to this machine's real app data directory instead of a throwaway
+// one - the isolation this helper exists for, gone without any visible
+// error (a real, previously-latent bug this comment is here to keep from
+// coming back).
 async function withTempDb(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelf-talker-index-test-'));
   const prev = process.env.SHELF_TALKER_CONFIG_DIR;
@@ -110,6 +112,22 @@ function withServer(run) {
       }
     });
     server.on('error', reject);
+  });
+}
+
+function getJson(port, urlPath) {
+  return new Promise((resolve, reject) => {
+    http.get({ host: '127.0.0.1', port, path: urlPath }, (res) => {
+      let raw = '';
+      res.on('data', (chunk) => { raw += chunk; });
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode, body: JSON.parse(raw) });
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }).on('error', reject);
   });
 }
 
@@ -292,5 +310,38 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
         assert.equal(calls.length, callsAfterWine);
       }
     );
+  }));
+});
+
+// ================================================================
+// /api/server-status - see the comment above the routes in server/index.js.
+// withServer() builds its app with createApp() alone (no beacon, see
+// server/discovery.js), the same as every other test in this file - these
+// confirm that's a fully safe, working configuration (no crash, and a
+// well-formed "nothing discovered" response) rather than something that
+// only works once start() supplies a real beacon. discovery.js's own tests
+// cover the beacon/wire-format behavior itself.
+// ================================================================
+
+test('GET /api/server-status reports discoveredServer: null when no beacon is wired in (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/server-status');
+    assert.equal(status, 200);
+    assert.equal(body.isServer, false);
+    assert.equal(body.discoveredServer, null);
+    assert.ok(Array.isArray(body.addresses));
+  }));
+});
+
+test('POST /api/server-status still persists the flag with no beacon wired in', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const posted = await postJson(port, '/api/server-status', { isServer: true });
+    assert.equal(posted.status, 200);
+    assert.equal(posted.body.isServer, true);
+    assert.ok(posted.body.confirmedAt);
+
+    const { body } = await getJson(port, '/api/server-status');
+    assert.equal(body.isServer, true);
+    assert.equal(body.discoveredServer, null);
   }));
 });

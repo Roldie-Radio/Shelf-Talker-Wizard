@@ -1,8 +1,9 @@
 // Backs the desktop app's "Server PC" dialog (Advanced menu): a small,
-// persisted flag marking this PC as the designated main store PC. Today
-// that flag has no functional effect on its own - the server still only
-// binds to 127.0.0.1 (see server/index.js), so nothing about how the app
-// runs actually changes when it's set. It exists so a store with multiple
+// persisted flag marking this PC as the designated main store PC. Setting
+// it makes this PC announce itself on the LAN (see discovery.js) so other
+// PCs can see which one it is, but that's the only functional effect so
+// far - the HTTP server still only binds to 127.0.0.1 (see server/index.js),
+// so no data actually crosses PCs yet. It exists so a store with multiple
 // registers can start agreeing *now* on which PC would eventually host a
 // shared Print History/product cache database, ahead of that networking
 // actually being built - a deliberately small, honest first step rather

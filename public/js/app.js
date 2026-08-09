@@ -327,6 +327,7 @@
     serverPcAddresses: document.getElementById('serverPcAddresses'),
     serverPcHistoryCount: document.getElementById('serverPcHistoryCount'),
     serverPcCacheCount: document.getElementById('serverPcCacheCount'),
+    serverPcDiscovered: document.getElementById('serverPcDiscovered'),
     serverPcCheckbox: document.getElementById('serverPcCheckbox'),
     serverPcStatus: document.getElementById('serverPcStatus'),
     serverPcSaveBtn: document.getElementById('serverPcSaveBtn'),
@@ -2686,11 +2687,38 @@
     }
   }
 
+  let serverPcPollTimer = null;
+
   const serverPcModal = createModal({
     overlay: els.serverPcOverlay,
     closeBtns: [els.serverPcCloseBtn, els.serverPcCloseFooterBtn],
-    onOpen: loadServerPcStatus,
+    onOpen: () => {
+      loadServerPcStatus();
+      // Keeps "Main store PC on this network" live while the dialog is open,
+      // e.g. if staff open it on a second PC right after marking the first
+      // one - without this they'd have to close and reopen to see it appear.
+      // Only refreshes that one line (see refreshDiscoveredServer), so it
+      // can't clobber an in-progress checkbox edit or Save.
+      serverPcPollTimer = setInterval(refreshDiscoveredServer, 5000);
+    },
+    onClose: () => {
+      clearInterval(serverPcPollTimer);
+      serverPcPollTimer = null;
+    },
   });
+
+  // Renders data.discoveredServer (see server/discovery.js) into the
+  // dialog's "Main store PC on this network" line.
+  function describeDiscoveredServer(data) {
+    if (data.discoveredServer) {
+      const { hostname, addresses, confirmedAt } = data.discoveredServer;
+      const where = addresses && addresses.length ? addresses.join(', ') : 'address unknown';
+      const confirmed = confirmedAt ? `, confirmed ${formatHistoryTimestamp(confirmedAt)}` : '';
+      return `${hostname} (${where})${confirmed}`;
+    }
+    if (data.isServer) return 'This PC — no other PC on this network is currently announcing one.';
+    return 'None seen yet on this network.';
+  }
 
   async function loadServerPcStatus() {
     els.serverPcStatus.textContent = 'Loading...';
@@ -2702,12 +2730,28 @@
       els.serverPcAddresses.textContent = data.addresses.length ? data.addresses.join(', ') : 'Not connected to a network';
       els.serverPcHistoryCount.textContent = data.stats.printedTalkers.toLocaleString('en-US');
       els.serverPcCacheCount.textContent = data.stats.cachedProducts.toLocaleString('en-US');
+      els.serverPcDiscovered.textContent = describeDiscoveredServer(data);
       els.serverPcCheckbox.checked = data.isServer;
       els.serverPcStatus.textContent = data.isServer && data.confirmedAt
         ? `Marked as the main store PC on ${formatHistoryTimestamp(data.confirmedAt)}.`
         : '';
     } catch (err) {
       els.serverPcStatus.textContent = err.message || 'Could not check this PC\'s status.';
+    }
+  }
+
+  // Background refresh while the dialog stays open (see onOpen above) -
+  // deliberately touches only the discovered-server line, not the checkbox,
+  // counts, or save status, so it can't stomp on something the user is in
+  // the middle of doing. Errors are swallowed: loadServerPcStatus() already
+  // surfaces a real failure message when the dialog is opened or saved.
+  async function refreshDiscoveredServer() {
+    try {
+      const resp = await fetch('/api/server-status');
+      const data = await resp.json();
+      if (resp.ok) els.serverPcDiscovered.textContent = describeDiscoveredServer(data);
+    } catch {
+      // ignore - see comment above
     }
   }
 
