@@ -5,7 +5,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **SKU lookup** &mdash; type in the store's own SKU number and the app searches liquoroutletwinecellars.com for it, pulling the title, size, and price from the matching product page. For Beer, it also searches Untappd using that title for the description, brewery, style, ABV, IBU, and rating.
-- **Scan UPC** (**Beta**) &mdash; scan a bottle's manufacturer UPC (a USB/Bluetooth barcode scanner just types it, like a keyboard) and the app looks it up in a product file exported locally from WinePOS, filling in title, size, price, and description &mdash; no internet connection needed, and no network request is made. This is a different number from the store's own SKU that SKU Lookup above searches the website for.
+- **Scan UPC** (**Beta**) &mdash; scan a bottle's manufacturer UPC (a USB/Bluetooth barcode scanner just types it, like a keyboard) and the app looks it up in a product file exported locally from WinePOS, filling in title, size, and price &mdash; no internet connection needed for the UPC match itself. This is a different number from the store's own SKU that SKU Lookup above searches the website for. For Wine / Spirits, the Description field is then filled from liquoroutletwinecellars.com (matched by the item's store SKU, if the export has one) rather than the export file's own Description column, which is often blank or just an internal note; Beer keeps whatever the export file has.
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
 - **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
@@ -147,7 +147,9 @@ If the store site blocks the lookup, click **Site blocking the lookup? Paste the
 
 ### Scanning a UPC (Beta)
 
-The **Scan UPC** tab looks products up by the manufacturer UPC printed on the bottle itself &mdash; a different number from the store's own SKU that SKU Lookup above searches the website for. Unlike every other import method in this app, it never makes a network request: it reads a product file that WinePOS exports locally on the same PC, which means it works even with no internet connection.
+The **Scan UPC** tab looks products up by the manufacturer UPC printed on the bottle itself &mdash; a different number from the store's own SKU that SKU Lookup above searches the website for. The UPC match itself never makes a network request: it reads a product file that WinePOS exports locally on the same PC, which means it works even with no internet connection.
+
+For **Wine / Spirits**, once the local match is found, the app makes one more request: it takes the item's store SKU (if the export file has that column) and searches liquoroutletwinecellars.com for it &mdash; the same lookup the SKU Lookup tab runs &mdash; and fills the Description field from that product page instead of the export file's own Description/Tasting Notes column, which tends to be blank or a short internal note rather than shopper-facing tasting notes. If the export has no store SKU for that item, or the store lookup fails or finds nothing, the export file's own description (if any) is left in place and the status line says why. **Beer** skips this step entirely and always uses whatever the export file has; use SKU Lookup instead for a beer description sourced from Untappd.
 
 A USB or Bluetooth barcode scanner needs no special setup here &mdash; it types the scanned digits like a very fast keyboard, and pressing Enter (which every scanner does automatically at the end of a scan) triggers the lookup, the same as clicking **Look Up UPC**. Switching to the tab puts the cursor in the field automatically so staff can walk up and start scanning right away.
 
@@ -211,11 +213,14 @@ re-reading the export file (Scan UPC) again; a status line notes when this
 happened. If a *fresh* lookup fails outright (site blocked, export file missing,
 etc.), the cached copy is used as a fallback instead of a hard error, clearly
 marked as possibly stale &mdash; a review-before-you-trust-it value beats nothing.
-For SKU Lookup specifically, a cached copy is only reused when it was cached
+For both SKU Lookup and Scan UPC, a cached copy is only reused when it was cached
 under the same Wine/Spirits-vs-Beer category being looked up now &mdash; switching
 a SKU to Beer always re-runs the lookup (store site + Untappd) even if that same
 SKU was cached under Wine/Spirits moments ago, so the beer-only Untappd
-enrichment step always actually runs instead of being silently skipped.
+enrichment step always actually runs instead of being silently skipped. The same
+goes for switching a UPC to Wine/Spirits after it was first scanned as Beer, so
+the store-description lookup above always actually runs instead of serving back
+a Beer-only cached copy that skipped it.
 
 ## Advanced menu (desktop app)
 

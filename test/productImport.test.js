@@ -20,7 +20,7 @@ const {
   parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
-  lookupStoreSku, parsePastedStoreProduct, algoliaSearchBeerCandidates,
+  lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore, algoliaSearchBeerCandidates,
   searchUntappd, composeProducerTitle, untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
@@ -1882,6 +1882,103 @@ test('lookupSku does not duplicate the producer name when the store title alread
     async () => {
       const result = await lookupSku({ sku: '55555', category: 'wine' });
       assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
+    }
+  );
+});
+
+// ================================================================
+// enrichWineDescriptionFromStore - the Scan UPC tab's Wine/Spirits
+// description enrichment (see the module comment above it). Unlike
+// lookupSku's Untappd enrichment, this is matched by store SKU rather than
+// a title search, so a single store-search + product-page fetch pair is
+// all it ever needs.
+// ================================================================
+
+test('enrichWineDescriptionFromStore replaces a local export description with the store page\'s own description', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="55555" />
+        <a class="product-link" href="/Josh-Cellars-Cabernet-55555-1055555/">
+          <span class="productnameTitle">Josh Cellars Cabernet Sauvignon</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>
+      <div id="description"><div class="text-product-desc">Rich, full-bodied with notes of dark fruit and oak.</div></div>
+    `,
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/store/search.asp') ? storeSearchHtml : storeProductHtml }),
+    async () => {
+      const result = await enrichWineDescriptionFromStore({
+        title: 'Josh Cellars Cabernet Sauvignon', sku: '55555', description: 'internal note: reorder soon',
+      });
+      assert.equal(result.description, 'Rich, full-bodied with notes of dark fruit and oak.');
+      assert.equal(result.descriptionSourceError, undefined);
+    }
+  );
+});
+
+test('enrichWineDescriptionFromStore is a no-op when the product has no store SKU to look up', async () => {
+  let called = false;
+  await withMockFetch(
+    async () => { called = true; return mockResponse({ status: 200 }); },
+    async () => {
+      const result = await enrichWineDescriptionFromStore({ title: 'Some Wine', sku: '', description: 'kept as-is' });
+      assert.equal(result.description, 'kept as-is');
+      assert.equal(result.descriptionSourceError, undefined);
+    }
+  );
+  assert.equal(called, false, 'no SKU means no request should be made at all');
+});
+
+test('enrichWineDescriptionFromStore keeps the local description and reports why when the store has no match for that SKU', async () => {
+  const storeSearchHtml = page({ body: '' }); // No matching .product-list-item card.
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: storeSearchHtml }),
+    async () => {
+      const result = await enrichWineDescriptionFromStore({ title: 'Some Wine', sku: '99999', description: 'kept as-is' });
+      assert.equal(result.description, 'kept as-is');
+      assert.match(result.descriptionSourceError, /No product found for SKU "99999"/);
+    }
+  );
+});
+
+test('enrichWineDescriptionFromStore keeps the local description when the store site blocks the request', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      const result = await enrichWineDescriptionFromStore({ title: 'Some Wine', sku: '55555', description: 'kept as-is' });
+      assert.equal(result.description, 'kept as-is');
+      assert.match(result.descriptionSourceError, /blocked this automated request/);
+    }
+  );
+});
+
+test('enrichWineDescriptionFromStore falls back to the local description when the store page has none of its own', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="55555" />
+        <a class="product-link" href="/Josh-Cellars-Cabernet-55555-1055555/">
+          <span class="productnameTitle">Josh Cellars Cabernet Sauvignon</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({ body: '<h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>' });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/store/search.asp') ? storeSearchHtml : storeProductHtml }),
+    async () => {
+      const result = await enrichWineDescriptionFromStore({
+        title: 'Josh Cellars Cabernet Sauvignon', sku: '55555', description: 'from the export file',
+      });
+      assert.equal(result.description, 'from the export file');
+      assert.equal(result.descriptionSourceError, undefined);
     }
   );
 });

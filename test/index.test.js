@@ -7,10 +7,12 @@ const path = require('node:path');
 
 const db = require('../server/db');
 const { createApp } = require('../server/index');
+const { setUpcSettings } = require('../server/upcCatalog');
 
 // Same per-test throwaway directory pattern as test/db.test.js - db.js's
 // getDb() re-derives its connection whenever SHELF_TALKER_CONFIG_DIR
 // changes, so each test gets its own isolated SQLite file/cache.
+//
 // `fn` is always async here (every caller passes withServer(...), whose
 // request/response round trip needs real event-loop ticks) - this has to
 // be `async`/`await fn(dir)`, not `return fn(dir)`, or the `finally` below
@@ -225,6 +227,87 @@ test('switching a cached SKU to Beer re-runs the lookup (and Untappd search) ins
         const secondBeerResult = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
         assert.equal(secondBeerResult.body.fromCache, true);
         assert.equal(calls.length, callsAfterBeer);
+      }
+    );
+  }));
+});
+
+// ================================================================
+// /api/upc-lookup's Wine/Spirits store-description enrichment (see the
+// comment above the route in server/index.js) and its own category-aware
+// cache, mirroring the /api/sku-lookup tests above.
+// ================================================================
+
+function writeUpcExport(dir, rows) {
+  const filePath = path.join(dir, 'export.csv');
+  fs.writeFileSync(filePath, ['UPC,Title,SKU,Notes', ...rows].join('\n'), 'utf-8');
+  return filePath;
+}
+
+test('a Wine/Spirits UPC scan replaces the export file\'s own description with the store site\'s', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['085000010652,Josh Cellars Cabernet Sauvignon,55555,internal note: reorder soon']));
+    const storeProductHtml = page({
+      body: '<h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>'
+        + '<div id="description"><div class="text-product-desc">Rich, full-bodied with notes of dark fruit and oak.</div></div>',
+    });
+    await withMockFetch(
+      async (url) => mockResponse({ body: url.includes('/store/search.asp') ? storeSearchHtml('55555') : storeProductHtml }),
+      async () => {
+        const result = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Josh Cellars Cabernet Sauvignon');
+        assert.equal(result.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
+      }
+    );
+  }));
+});
+
+test('a Beer UPC scan keeps the export file\'s own description and never contacts the store site', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['019214600037,Corona Extra 12pk Cans,55555,internal note: reorder soon']));
+    const calls = [];
+    await withMockFetch(
+      async (url) => { calls.push(url); return mockResponse({ body: storeProductHtml }); },
+      async () => {
+        const result = await postJson(port, '/api/upc-lookup', { upc: '019214600037', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.description, 'internal note: reorder soon');
+      }
+    );
+    assert.equal(calls.length, 0, 'a Beer UPC scan should never hit the network');
+  }));
+});
+
+test('switching a cached UPC from Beer to Wine/Spirits re-runs the store description lookup instead of reusing the Beer-only cache', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['085000010652,Josh Cellars Cabernet Sauvignon,55555,internal note: reorder soon']));
+    const storeProductHtml = page({
+      body: '<h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>'
+        + '<div id="description"><div class="text-product-desc">Rich, full-bodied with notes of dark fruit and oak.</div></div>',
+    });
+    const calls = [];
+    await withMockFetch(
+      async (url) => {
+        calls.push(url);
+        return mockResponse({ body: url.includes('/store/search.asp') ? storeSearchHtml('55555') : storeProductHtml });
+      },
+      async () => {
+        const beerResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'beer' });
+        assert.equal(beerResult.body.description, 'internal note: reorder soon');
+        assert.equal(calls.length, 0, 'a Beer scan should not hit the network');
+
+        const wineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
+        assert.equal(wineResult.body.fromCache, undefined, 'switching to Wine/Spirits should not serve the Beer-only cache hit');
+        assert.equal(wineResult.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
+        assert.ok(calls.length > 0, 'switching to Wine/Spirits should run the store description lookup');
+
+        // A second Wine/Spirits scan right after should now be served from
+        // the (freshly Wine/Spirits-tagged) cache.
+        const callsAfterWine = calls.length;
+        const secondWineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
+        assert.equal(secondWineResult.body.fromCache, true);
+        assert.equal(calls.length, callsAfterWine);
       }
     );
   }));

@@ -1328,6 +1328,21 @@
     renderPreview();
   }
 
+  // data.descriptionSourceError is only ever set for a Wine/Spirits scan
+  // whose store-description lookup failed (no store SKU on file, an
+  // unmatched SKU, or a blocked/failed request) - see
+  // enrichWineDescriptionFromStore in productImport.js. The local export's
+  // own data still filled the form either way, so this just tells staff why
+  // the description came from the WinePOS export instead of the store site,
+  // rather than leaving them to guess. Same shape as skuLookupLoadedMessage's
+  // untappdError handling above.
+  function scanUpcLoadedMessage(data) {
+    if (data.descriptionSourceError) {
+      return `Found it${cacheNote(data)}. Description: ${data.descriptionSourceError}`;
+    }
+    return `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+  }
+
   els.scanUpcLookupBtn.addEventListener('click', async () => {
     const isBeer = currentCategory === 'beer';
     const upc = els.scanUpcInput.value.trim();
@@ -1336,13 +1351,13 @@
       return;
     }
     els.scanUpcLookupBtn.disabled = true;
-    els.scanUpcStatus.textContent = 'Looking up UPC...';
+    els.scanUpcStatus.textContent = isBeer ? 'Looking up UPC...' : 'Looking up UPC and checking the store site for a description...';
 
     try {
       const resp = await fetch('/api/upc-lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upc }),
+        body: JSON.stringify({ upc, category: isBeer ? 'beer' : 'wine' }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -1352,7 +1367,7 @@
       }
 
       applyUpcScanProduct(data, isBeer);
-      els.scanUpcStatus.textContent = `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+      els.scanUpcStatus.textContent = scanUpcLoadedMessage(data);
     } catch (err) {
       els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
       // A missing/unconfigured export file is the one failure staff can fix
