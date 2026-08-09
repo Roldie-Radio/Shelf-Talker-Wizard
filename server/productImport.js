@@ -110,6 +110,16 @@ function firstNonEmpty(...vals) {
   return undefined;
 }
 
+// liquoroutletwinecellars.com's own product-page spec rows (Brand, Pack
+// Size, Year) read the literal text "Not Specified" - not a blank row -
+// when the store has nothing on file for that field. Used to keep that
+// placeholder out of any field it's read into (parseStoreProductHtml
+// below), rather than passing it straight through into a Product title or
+// an Untappd search query as if it were real data.
+function dropNotSpecified(value) {
+  return /^not specified$/i.test((value || '').trim()) ? undefined : value;
+}
+
 // Pull every JSON-LD block, flattening @graph arrays, and return the first node
 // whose @type is (or includes) "Product".
 function findJsonLdProduct($) {
@@ -1067,9 +1077,20 @@ function parseStoreProductHtml(html, url) {
     $('meta[property="og:title"]').attr('content'),
     $('h1').first().text()
   );
+  // Same "Not Specified" placeholder handling as Pack Size/Year below - the
+  // store's own Brand link (or its og:brand fallback) reads that literal
+  // text, rather than being blank, for a product with no manufacturer on
+  // file. Dropped from each source individually, before firstNonEmpty picks
+  // between them, so a real og:brand still wins if only the h6 link reads
+  // the placeholder. Unlike the title (see stripSize's NOT_SPECIFIED_PATTERN),
+  // nothing downstream ever strips it back out of the brand itself -
+  // composeProducerTitle only skips prepending the brand when the title
+  // already starts with it - so left unguarded here it would get prepended
+  // straight onto the title ("Not Specified Hazy IPA") and sent to Untappd
+  // as part of the search query too.
   const brand = firstNonEmpty(
-    $('h6 a').first().text(),
-    $('meta[property="og:brand"]').attr('content')
+    dropNotSpecified($('h6 a').first().text()),
+    dropNotSpecified($('meta[property="og:brand"]').attr('content'))
   );
   const sku = firstNonEmpty(
     $('meta[property="og:upc"]').attr('content'),
@@ -1082,14 +1103,13 @@ function parseStoreProductHtml(html, url) {
   // Specified" placeholder handling as Year right below: a single-item
   // product's Pack Size row reads that literal text rather than being
   // blank, so only accept it when it isn't that placeholder.
-  const packSizeRaw = storeSpecValue($, 'Pack Size');
-  const packSize = /^not specified$/i.test((packSizeRaw || '').trim()) ? undefined : packSizeRaw;
+  const packSize = dropNotSpecified(storeSpecValue($, 'Pack Size'));
   // The store's own Year row reads "Not Specified" (not a blank row) for a
   // non-vintage product, since storeSpecValue just captures whatever text
   // follows the label - only accept it here when it actually looks like a
   // 4-digit year, so that placeholder text doesn't end up in the Vintage
   // field verbatim; guessVintage still gets a shot at the title either way.
-  const yearRaw = storeSpecValue($, 'Year');
+  const yearRaw = dropNotSpecified(storeSpecValue($, 'Year'));
   const vintage = firstNonEmpty(/^(?:19|20)\d{2}$/.test((yearRaw || '').trim()) ? yearRaw : undefined, guessVintage(title));
   const price = firstNonEmpty(
     money($('.pricingDetails .priceFull').first().text()),

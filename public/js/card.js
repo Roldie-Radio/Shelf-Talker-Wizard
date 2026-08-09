@@ -533,29 +533,40 @@ function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
   const ratingNum = Number(talker.untappdRating);
   const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
   const style = includeStyle && talker.style ? String(talker.style).trim() : '';
-  if (!hasRating && !style) return '';
+  // Untappd's own beer page always renders this widget, showing empty dots
+  // and "(N/A)" in place of a score for a beer with no ratings yet rather
+  // than leaving the widget out (confirmed via a real screenshot of
+  // Untappd's own display - the reference for the N/A styling below). So
+  // the rating detail is shown whenever there's a real beer on file, not
+  // only when it happens to have a numeric rating - `hasBeerData` reuses
+  // the same brewery/style/ABV/IBU signal buildBeerTableHtml already checks
+  // for "is there anything here at all", so an untouched blank Beer entry
+  // (nothing looked up yet) still renders nothing, same as before.
+  const hasBeerData = hasRating || !!style || ['brewery', 'style', 'abv', 'ibu']
+    .some((key) => talker[key] && String(talker[key]).trim() !== '');
+  if (!hasBeerData) return '';
 
-  let detailHtml = '';
-  if (hasRating) {
-    const clamped = Math.max(0, Math.min(5, ratingNum));
-    const dots = Array.from({ length: 5 }, (_, i) => {
-      const fill = clamped - i;
-      const cls = fill >= 1 ? 'is-full' : fill > 0 ? 'is-half' : 'is-empty';
-      return `<span class="card__beer-dot ${cls}"></span>`;
-    }).join('');
-    const countNum = Number(talker.untappdRatingCount);
-    const hasCount = talker.untappdRatingCount != null && String(talker.untappdRatingCount).trim() !== '' && Number.isFinite(countNum);
-    const countHtml = hasCount
-      ? `<div class="card__beer-rating-count">${countNum.toLocaleString('en-US')} Rating${countNum === 1 ? '' : 's'}</div>`
-      : '';
-    detailHtml = `
-      <div class="card__beer-rating-detail">
-        <div class="card__beer-rating-label">Untappd Rating</div>
-        <div class="card__beer-dots-row">${dots}<span class="card__beer-rating-num">${clamped.toFixed(2)}</span></div>
-        ${countHtml}
-      </div>
-    `;
-  }
+  const clamped = hasRating ? Math.max(0, Math.min(5, ratingNum)) : 0;
+  const dots = Array.from({ length: 5 }, (_, i) => {
+    const fill = clamped - i;
+    const cls = fill >= 1 ? 'is-full' : fill > 0 ? 'is-half' : 'is-empty';
+    return `<span class="card__beer-dot ${cls}"></span>`;
+  }).join('');
+  const countNum = Number(talker.untappdRatingCount);
+  const hasCount = talker.untappdRatingCount != null && String(talker.untappdRatingCount).trim() !== '' && Number.isFinite(countNum);
+  const countHtml = hasCount
+    ? `<div class="card__beer-rating-count">${countNum.toLocaleString('en-US')} Rating${countNum === 1 ? '' : 's'}</div>`
+    : '';
+  const scoreHtml = hasRating
+    ? `<span class="card__beer-rating-num">${clamped.toFixed(2)}</span>`
+    : '<span class="card__beer-rating-num card__beer-rating-num--na">(N/A)</span>';
+  const detailHtml = `
+    <div class="card__beer-rating-detail">
+      <div class="card__beer-rating-label">Untappd Rating</div>
+      <div class="card__beer-dots-row">${dots}${scoreHtml}</div>
+      ${countHtml}
+    </div>
+  `;
 
   let styleHtml = '';
   if (style) {
