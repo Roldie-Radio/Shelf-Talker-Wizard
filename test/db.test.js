@@ -12,6 +12,14 @@ const db = require('../server/db');
 // finally block matters more here than it does for upcCatalog's plain JSON
 // file: better-sqlite3 holds a real open file handle (plus WAL/SHM files)
 // that needs releasing before the temp directory is deleted out from under it.
+// NOTE: every caller below passes a synchronous fn - that matters. Making
+// this `async`/`await fn(dir)` to future-proof it (as test/index.test.js's
+// withTempDb needed, see the comment there) would turn a synchronous
+// assertion failure inside fn into a rejected promise that none of these
+// call sites `await`, which is worse (an unhandled rejection instead of a
+// clean test failure) rather than better. If an async caller is ever
+// needed here, fix every call site to `await withTempDb(...)` in the same
+// change, not just this function.
 function withTempDb(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelf-talker-db-test-'));
   const prev = process.env.SHELF_TALKER_CONFIG_DIR;

@@ -235,12 +235,17 @@ The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, belo
 - **View Database&hellip;** &mdash; counts for Print History and the product cache,
   plus a table of the most recently printed talkers, confirming this PC has real
   accumulated data.
-- **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. This is
-  purely a saved flag today (shown alongside this PC's LAN IP address and the
-  same database counts as above) &mdash; it doesn't change how the app runs or
-  share anything between PCs yet; each PC still keeps its own separate Print
-  History and product cache. It's a first step toward eventually sharing that
-  data across registers, not that feature itself.
+- **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. Marking
+  one makes it broadcast a small announcement on the local network every few
+  seconds, so *other* PCs running the app can see which one it is: the dialog
+  shows "Main store PC on this network" (its hostname and address) alongside
+  this PC's own LAN IP address and database counts. That's visibility
+  only &mdash; it doesn't share Print History or the product cache between PCs
+  yet, and neither PC becomes reachable over HTTP from the network (only the
+  small discovery broadcast leaves the PC). It's a first step toward
+  eventually sharing that data across registers, not that feature itself.
+  Unmarking a PC (or closing the app) stops its announcement; other PCs stop
+  showing it within about 15 seconds.
 
 ## Project layout
 
@@ -257,6 +262,8 @@ server/
                       upcCatalog.js's config.json, db.js's data.db, and serverConfig.js's server-config.json,
                       so they all agree on where it lives
   serverConfig.js     Persisted "is this the main store PC" flag behind the Advanced menu's Server PC dialog
+  discovery.js        LAN announcement so other PCs can see which one is currently marked as the main store PC
+                      (see Server PC above) - a UDP broadcast, separate from and much smaller than the HTTP API
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
@@ -271,6 +278,7 @@ test/
                           including a real WinePOS export (see fixtures/) with a BOM, CRLF, and a dropped-leading-zero UPC
   db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness, stats
   serverConfig.test.js    Server PC flag persistence
+  discovery.test.js       LAN announcement wire format, staleness, self-filtering, and a real send/receive round trip
   fixtures/
     wine-pos-inventory-demo.csv  A real inventory export a store sent us, kept byte-for-byte - see upcCatalog.test.js
 ```
