@@ -211,6 +211,11 @@ re-reading the export file (Scan UPC) again; a status line notes when this
 happened. If a *fresh* lookup fails outright (site blocked, export file missing,
 etc.), the cached copy is used as a fallback instead of a hard error, clearly
 marked as possibly stale &mdash; a review-before-you-trust-it value beats nothing.
+For SKU Lookup specifically, a cached copy is only reused when it was cached
+under the same Wine/Spirits-vs-Beer category being looked up now &mdash; switching
+a SKU to Beer always re-runs the lookup (store site + Untappd) even if that same
+SKU was cached under Wine/Spirits moments ago, so the beer-only Untappd
+enrichment step always actually runs instead of being silently skipped.
 
 ## Advanced menu (desktop app)
 
