@@ -172,7 +172,17 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- Tabs ---------- */
 
-.tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-border); }
+/* flex-wrap here is what keeps a tab's own label intact - without it, the
+   five tabs (previously four - Search by Name is the newest) no longer fit
+   this panel's fixed 380px width (see .layout below) in one row, and the
+   flex item shrinking that's the default without flex-wrap doesn't drop a
+   whole tab to a second row: it squeezes each button narrower than its
+   label, wrapping the label's own words onto 2-3 ragged lines instead
+   (confirmed - every tab, not just the long ones, fragmented like that
+   before this). white-space: nowrap on .tab is the other half - it's what
+   makes a tab that doesn't fit the current row move to the next one whole,
+   rather than getting squeezed and wrapped in place the same broken way. */
+.tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-border); }
 .tab {
   border: none;
   background: none;
@@ -182,6 +192,7 @@ h1, h2, h3 { margin: 0; }
   font-weight: 600;
   color: var(--ui-muted);
   border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 .tab.is-active { color: var(--ui-accent); border-bottom-color: var(--ui-accent); }
 .tab-panel { display: none; }
