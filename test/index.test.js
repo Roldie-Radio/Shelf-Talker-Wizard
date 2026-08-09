@@ -115,6 +115,31 @@ function withServer(run) {
   });
 }
 
+// Same as withServer above, but lets a test inject plain fake beacon/
+// exportServeServer/exportPuller objects (just the methods createApp()
+// actually calls on them - see server/index.js) instead of createApp()'s
+// own no-args default. Used only for confirming createApp() calls the
+// right methods at the right time (see the /api/server-status and
+// /api/upc-settings tests below) - the real beacon/export-sync objects'
+// own behavior is covered by discovery.test.js and exportSync.test.js.
+function withServerAndFakes({ beacon, exportServeServer, exportPuller } = {}, run) {
+  const app = createApp({ beacon, exportServeServer, exportPuller });
+  return new Promise((resolve, reject) => {
+    const server = app.listen(0, '127.0.0.1', async () => {
+      try {
+        const { port } = server.address();
+        await run(port);
+        resolve();
+      } catch (err) {
+        reject(err);
+      } finally {
+        server.close();
+      }
+    });
+    server.on('error', reject);
+  });
+}
+
 function getJson(port, urlPath) {
   return new Promise((resolve, reject) => {
     http.get({ host: '127.0.0.1', port, path: urlPath }, (res) => {
@@ -445,5 +470,74 @@ test('POST /api/server-status still persists the flag with no beacon wired in', 
     const { body } = await getJson(port, '/api/server-status');
     assert.equal(body.isServer, true);
     assert.equal(body.discoveredServer, null);
+  }));
+});
+
+test('POST /api/server-status starts/stops the injected exportServeServer alongside marking/unmarking isServer', async () => {
+  const calls = [];
+  const fakeExportServeServer = {
+    start: () => { calls.push('start'); },
+    stop: () => { calls.push('stop'); },
+  };
+  await withTempDb(() => withServerAndFakes({ exportServeServer: fakeExportServeServer }, async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    assert.deepEqual(calls, ['start']);
+
+    await postJson(port, '/api/server-status', { isServer: false });
+    assert.deepEqual(calls, ['start', 'stop']);
+  }));
+});
+
+test('POST /api/server-status with no exportServeServer wired in is still a no-op success (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const posted = await postJson(port, '/api/server-status', { isServer: true });
+    assert.equal(posted.status, 200);
+    assert.equal(posted.body.isServer, true);
+  }));
+});
+
+// ================================================================
+// /api/upc-settings + /api/upc-settings/auto-sync - the register-side half
+// of exportSync.js (see the comment above the routes in server/index.js).
+// upcCatalog.test.js already covers the underlying auto-sync/effective-path
+// logic (setAutoSync, effectiveExportPath, ...) in full; these just confirm
+// the HTTP layer wires it up, including the injected exportPuller's own
+// status surfacing as `sync` - same "null means nothing wired in, not that
+// the feature itself is off" shape as discoveredServer above.
+// ================================================================
+
+test('GET /api/upc-settings reports sync: null when no exportPuller is wired in (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/upc-settings');
+    assert.equal(status, 200);
+    assert.equal(body.autoSync, false);
+    assert.equal(body.sync, null);
+  }));
+});
+
+test('GET /api/upc-settings reports the injected exportPuller\'s own status', async () => {
+  const fakePuller = {
+    getStatus: () => ({ lastSyncedAt: '2026-08-09T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' }),
+  };
+  await withTempDb(() => withServerAndFakes({ exportPuller: fakePuller }, async (port) => {
+    const { body } = await getJson(port, '/api/upc-settings');
+    assert.deepEqual(body.sync, { lastSyncedAt: '2026-08-09T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' });
+  }));
+});
+
+test('POST /api/upc-settings/auto-sync turns auto-sync on/off without touching the manually configured path', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/upc-settings', { exportPath: '/tmp/whatever.csv' });
+
+    const on = await postJson(port, '/api/upc-settings/auto-sync', { autoSync: true });
+    assert.equal(on.status, 200);
+    assert.equal(on.body.autoSync, true);
+    assert.equal(on.body.configuredPath, '/tmp/whatever.csv');
+    assert.notEqual(on.body.exportPath, '/tmp/whatever.csv'); // now the synced-copy path instead
+
+    const off = await postJson(port, '/api/upc-settings/auto-sync', { autoSync: false });
+    assert.equal(off.body.autoSync, false);
+    assert.equal(off.body.configuredPath, '/tmp/whatever.csv');
+    assert.equal(off.body.exportPath, '/tmp/whatever.csv');
   }));
 });

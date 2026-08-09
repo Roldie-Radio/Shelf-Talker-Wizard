@@ -5,7 +5,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **SKU lookup** &mdash; type in the store's own SKU number and the app searches liquoroutletwinecellars.com for it, pulling the title, size, and price from the matching product page. For Beer, it also searches Untappd using that title for the description, brewery, style, ABV, IBU, and rating.
-- **Scan UPC** (**Beta**) &mdash; scan a bottle's manufacturer UPC (a USB/Bluetooth barcode scanner just types it, like a keyboard) and the app looks it up in a product file exported locally from WinePOS, filling in title, size, and price &mdash; no internet connection needed for the UPC match itself. This is a different number from the store's own SKU that SKU Lookup above searches the website for. For Wine / Spirits, the Description field is then filled from liquoroutletwinecellars.com (matched by the item's store SKU, if the export has one) rather than the export file's own Description column, which is often blank or just an internal note; Beer keeps whatever the export file has.
+- **Scan UPC** (**Beta**) &mdash; scan a bottle's manufacturer UPC (a USB/Bluetooth barcode scanner just types it, like a keyboard) and the app looks it up in a product file exported locally from WinePOS, filling in title, size, and price &mdash; no internet connection needed for the UPC match itself. This is a different number from the store's own SKU that SKU Lookup above searches the website for. For Wine / Spirits, the Description field is then filled from liquoroutletwinecellars.com (matched by the item's store SKU, if the export has one) rather than the export file's own Description column, which is often blank or just an internal note; Beer keeps whatever the export file has. Only one PC needs WinePOS's own export &mdash; every other register can pull that file automatically over the network instead of it being copied around by hand (see "Sharing the export file across registers" below).
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
 - **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
@@ -174,6 +174,17 @@ If the file has no column matching one of the UPC aliases, the lookup fails with
 
 In the desktop app, **Browse&hellip;** opens a native file picker; in a plain browser (`npm start`), type or paste the path directly. The saved path lives in a small `config.json` outside the project folder (`%APPDATA%\Shelf Talker Wizard` on Windows), so it survives an app update.
 
+### Sharing the export file across registers
+
+WinePOS only writes its export file on the one PC it's installed on, but every register running this app can use it for Scan UPC and Search by Name. Rather than copying that file to every other PC by hand and keeping the copies up to date, a register can pull it automatically over the store's local network instead:
+
+1. On the PC WinePOS actually writes the export to, mark it the **Server PC** (**Advanced &rarr; Server PC**, see below) and confirm **Export File Settings&hellip;** points at the real file.
+2. On every *other* register, open **Advanced &rarr; Export File Settings&hellip;** and turn on **Automatically pull this file from the Server PC**.
+
+From then on, each of those other registers fetches the Server PC's export file over the network about every 30 seconds and reads from that synced copy instead of a manually-configured local path &mdash; the manual path field is left alone (just not used) so switching auto-sync back off restores it exactly as it was. A register with auto-sync on finds the Server PC the same way the Server PC dialog does (see "Advanced menu" below): if none is currently marked, or this PC hasn't heard from it in a while, the dialog says so and Scan UPC/Search by Name keep working off whatever was last successfully synced rather than failing outright.
+
+This only ever moves the export file itself &mdash; Print History and the product cache still aren't shared between PCs, and nothing on the Server PC's main app (its own web UI) becomes reachable from the network; only the export file itself is served, over its own small, read-only, single-purpose network port (41235 by default), the same spirit as the Server PC discovery beacon (41234/UDP) that's been there since the Server PC flag was introduced. Both may need a one-time "Allow" click in Windows Firewall the first time the app runs on a network profile that prompts for it.
+
 ## Printing
 
 1. Add shelf talkers via any of the four methods.
@@ -232,25 +243,32 @@ The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, belo
   longer has an inline Settings box; this menu item is the only normal way to it.
   It still opens itself automatically if a scan fails because nothing's
   configured yet, so staff aren't required to already know it's in this menu.
-- **View Export File&hellip;** &mdash; a read-only preview of the WinePOS export file
-  configured above, shown exactly as WinePOS wrote it (real column headers, not
-  run through Scan UPC's alias matching) so you can confirm it's actually hooked
-  up right without leaving the app to go find and open the file yourself. If
-  nothing's configured yet, **Open Export File Settings** jumps straight there.
+  Also has the **auto-sync** checkbox described in "Sharing the export file
+  across registers" above, for every register except the one WinePOS itself
+  writes to.
+- **View Export File&hellip;** &mdash; a read-only preview of the export file in
+  effect on this PC &mdash; the manually configured one, or, while auto-sync is
+  on, the copy last pulled from the Server PC &mdash; shown exactly as written
+  (real column headers, not run through Scan UPC's alias matching) so you can
+  confirm it's actually hooked up right without leaving the app to go find and
+  open the file yourself. If nothing's configured yet, **Open Export File
+  Settings** jumps straight there.
 - **View Database&hellip;** &mdash; counts for Print History and the product cache,
   plus a table of the most recently printed talkers, confirming this PC has real
   accumulated data.
 - **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. Marking
   one makes it broadcast a small announcement on the local network every few
-  seconds, so *other* PCs running the app can see which one it is: the dialog
-  shows "Main store PC on this network" (its hostname and address) alongside
-  this PC's own LAN IP address and database counts. That's visibility
-  only &mdash; it doesn't share Print History or the product cache between PCs
-  yet, and neither PC becomes reachable over HTTP from the network (only the
-  small discovery broadcast leaves the PC). It's a first step toward
-  eventually sharing that data across registers, not that feature itself.
-  Unmarking a PC (or closing the app) stops its announcement; other PCs stop
-  showing it within about 15 seconds.
+  seconds, so *other* PCs running the app can see which one it is (the dialog
+  shows "Main store PC on this network" &mdash; its hostname and address &mdash;
+  alongside this PC's own LAN IP address and database counts), and starts
+  serving its own configured export file to other PCs' auto-sync (see "Sharing
+  the export file across registers" above). Print History and the product
+  cache still aren't shared between PCs &mdash; each keeps its own, and the
+  main app itself still isn't reachable from the network; only the small
+  discovery broadcast and the export file's own small, read-only network port
+  leave the PC. Unmarking a PC (or closing the app) stops both; other PCs stop
+  showing it within about 15 seconds, and their next auto-sync attempt just
+  reports it can't find a Server PC right now.
 
 ## Project layout
 
@@ -260,8 +278,9 @@ server/
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
                       plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
                       the Find Tasting Notes button and SKU Lookup tab
-  upcCatalog.js       Reads a local WinePOS product export file and looks products up by UPC (Scan UPC tab) -
-                      no network request, unlike everything else in server/
+  upcCatalog.js       Reads a local WinePOS product export file (or, with auto-sync on, the local copy
+                      exportSync.js's puller last wrote) and looks products up by UPC (Scan UPC tab)/name
+                      (Search by Name tab) - no network request itself, unlike everything else in server/
   db.js               Local SQLite (better-sqlite3): the Print History log, the SKU/UPC product cache, and stats
   appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by
                       upcCatalog.js's config.json, db.js's data.db, and serverConfig.js's server-config.json,
@@ -269,6 +288,10 @@ server/
   serverConfig.js     Persisted "is this the main store PC" flag behind the Advanced menu's Server PC dialog
   discovery.js        LAN announcement so other PCs can see which one is currently marked as the main store PC
                       (see Server PC above) - a UDP broadcast, separate from and much smaller than the HTTP API
+  exportSync.js       Lets other PCs automatically pull the export file from whichever PC is marked the
+                      Server PC: a tiny read-only HTTP server on the Server PC's side, a polling fetch on
+                      every other PC's side - both separate from, and much smaller than, the main HTTP API,
+                      same spirit as discovery.js's own UDP beacon
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
@@ -284,6 +307,8 @@ test/
   db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness, stats
   serverConfig.test.js    Server PC flag persistence
   discovery.test.js       LAN announcement wire format, staleness, self-filtering, and a real send/receive round trip
+  exportSync.test.js      Export-serve HTTP server (real request/response round trip) and the auto-sync puller
+                          (mocked fetch/discovered-server, since exportSync.js is the network boundary itself)
   fixtures/
     wine-pos-inventory-demo.csv  A real inventory export a store sent us, kept byte-for-byte - see upcCatalog.test.js
 ```
