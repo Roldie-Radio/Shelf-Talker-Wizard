@@ -7,7 +7,7 @@ const {
   enrichBeerScanFromStore,
 } = require('./productImport');
 const {
-  getUpcSettings, setUpcSettings, lookupUpc, searchByName, previewExport,
+  getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, searchByName, previewExport,
 } = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
@@ -15,14 +15,16 @@ const {
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
+const { createExportServeServer, createExportPuller } = require('./exportSync');
 
-// The LAN discovery beacon (see discovery.js) is only ever passed in by
-// start() below - createApp() itself never touches the network, so tests
-// that build an app with createApp() alone (see test/index.test.js) never
-// bind a UDP socket as a side effect. Without a beacon, /api/server-status
-// simply reports no discovered server and its POST is a no-op for
-// announcing, rather than crashing.
-function createApp({ beacon } = {}) {
+// The LAN discovery beacon and the export-sync serve/pull halves (see
+// discovery.js and exportSync.js) are only ever passed in by start() below -
+// createApp() itself never touches the network, so tests that build an app
+// with createApp() alone (see test/index.test.js) never bind a socket as a
+// side effect. Without them, /api/server-status simply reports no
+// discovered server and its POST is a no-op for announcing/serving, and
+// /api/upc-settings reports no sync status, rather than crashing.
+function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   const app = express();
 
   app.use(express.json());
@@ -181,11 +183,16 @@ function createApp({ beacon } = {}) {
 
   // Backs the "Scan UPC" tab's Settings box: reads/writes the local path to
   // a WinePOS product export file (see upcCatalog.js) - unlike SKU Lookup
-  // above, this never makes a network request, since a scanned barcode is
-  // the bottle's manufacturer UPC, a different number from the store's own
-  // SKU that liquoroutletwinecellars.com's search actually indexes.
+  // above, this never makes a network request itself for the UPC match, since
+  // a scanned barcode is the bottle's manufacturer UPC, a different number
+  // from the store's own SKU that liquoroutletwinecellars.com's search
+  // actually indexes. `sync` reports the auto-sync puller's own status (see
+  // exportSync.js) - null when this PC never had one wired in (createApp()
+  // alone, see the note above) rather than when auto-sync itself is off, so
+  // the dialog can always tell "auto-sync is off" (getUpcSettings().autoSync)
+  // apart from "there's no puller running to report on at all".
   app.get('/api/upc-settings', (req, res) => {
-    res.json(getUpcSettings());
+    res.json({ ...getUpcSettings(), sync: exportPuller ? exportPuller.getStatus() : null });
   });
 
   app.post('/api/upc-settings', (req, res) => {
@@ -193,7 +200,21 @@ function createApp({ beacon } = {}) {
     if (typeof exportPath !== 'string') {
       return res.status(400).json({ error: 'exportPath must be a string.' });
     }
-    res.json(setUpcSettings(exportPath.trim()));
+    res.json({ ...setUpcSettings(exportPath.trim()), sync: exportPuller ? exportPuller.getStatus() : null });
+  });
+
+  // Backs the Export File Settings dialog's "Automatically pull from the
+  // Server PC" checkbox - turns exportSync.js's pull loop on/off (see
+  // upcCatalog.js's setAutoSync/isAutoSyncEnabled) without touching the
+  // manually-typed export path underneath it, so switching this back off
+  // restores exactly what was there before. The puller itself (see
+  // exportSync.js) always polls once started; this only ever flips whether
+  // a given poll actually does anything, which is why there's no
+  // corresponding start/stop call here the way marking a PC as the Server
+  // PC starts/stops the discovery beacon's announcing below.
+  app.post('/api/upc-settings/auto-sync', (req, res) => {
+    const { autoSync } = req.body || {};
+    res.json({ ...setAutoSync(!!autoSync), sync: exportPuller ? exportPuller.getStatus() : null });
   });
 
   // Backs the "Scan UPC" tab itself: staff scan a bottle's UPC (a USB/
@@ -362,9 +383,11 @@ function createApp({ beacon } = {}) {
   // staff can tell whether this looks like the PC with real accumulated
   // data before marking it), and discoveredServer - the most recent LAN
   // announcement this PC has heard from whichever PC *is* currently marked
-  // (see discovery.js), or null if none has been heard recently. The HTTP
-  // API itself is still 127.0.0.1-only (see start() below); only the small
-  // UDP beacon actually reaches the network.
+  // (see discovery.js), or null if none has been heard recently. The main
+  // HTTP API itself is still 127.0.0.1-only (see start() below); only the
+  // small UDP discovery beacon and the export-sync serve port (see
+  // exportSync.js, started/stopped alongside the beacon's own announcing
+  // just below) actually reach the network.
   app.get('/api/server-status', (req, res) => {
     const nets = os.networkInterfaces();
     const addresses = [];
@@ -387,6 +410,13 @@ function createApp({ beacon } = {}) {
     if (beacon) {
       if (config.isServer) beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
       else beacon.stopAnnouncing();
+    }
+    // The export-sync serve port (see exportSync.js) only ever runs on the
+    // PC currently marked isServer, same as the beacon's own announcing -
+    // other PCs' auto-sync pulls have nothing to fetch from an unmarked PC.
+    if (exportServeServer) {
+      if (config.isServer) exportServeServer.start();
+      else exportServeServer.stop();
     }
     res.json(config);
   });
@@ -435,31 +465,48 @@ function createApp({ beacon } = {}) {
 }
 
 /**
- * Starts the server, bound to localhost only (this is a single-PC tool, not
- * meant to be reachable from the network). Returns the underlying
+ * Starts the server, bound to localhost only (the main app is a single-PC
+ * tool, not meant to be reachable from the network). Returns the underlying
  * http.Server instance once listening, so callers (e.g. the Electron main
  * process) can close it on shutdown.
  *
- * Also starts the LAN discovery beacon (see discovery.js): every PC listens
- * for announcements from whichever PC is marked the main store PC, and this
- * one starts sending its own if it's already marked when it boots. The
- * beacon is a separate UDP socket, not the HTTP server above - it's the
- * only thing about this that reaches the network.
+ * Also starts two small, separate network surfaces the main app itself
+ * doesn't use:
+ *  - the LAN discovery beacon (see discovery.js): every PC listens for
+ *    announcements from whichever PC is marked the main store PC, and this
+ *    one starts sending its own if it's already marked when it boots.
+ *  - the export-sync puller (see exportSync.js): every PC polls on an
+ *    interval for a synced export file, but only actually fetches anything
+ *    once auto-sync is turned on (see upcCatalog.js's isAutoSyncEnabled).
+ *    If this PC is already marked isServer when it boots, its own
+ *    export-serve port starts too, so other PCs' pulls have something to
+ *    fetch from immediately rather than waiting for the Server PC dialog to
+ *    be opened and re-saved.
  */
 function start(port) {
   const resolvedPort = port || process.env.PORT || 3000;
   const beacon = createBeacon();
-  const app = createApp({ beacon });
+  const exportServeServer = createExportServeServer();
+  const exportPuller = createExportPuller({ beacon });
+  const app = createApp({ beacon, exportServeServer, exportPuller });
   return new Promise((resolve, reject) => {
     const server = app.listen(resolvedPort, '127.0.0.1', () => {
       beacon.startListening();
+      exportPuller.start();
       const config = getServerConfig();
-      if (config.isServer) beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
+      if (config.isServer) {
+        beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
+        exportServeServer.start();
+      }
       console.log(`Shelf Talker Wizard running at http://localhost:${resolvedPort}`);
       resolve(server);
     });
     server.on('error', reject);
-    server.on('close', () => beacon.stop());
+    server.on('close', () => {
+      beacon.stop();
+      exportPuller.stop();
+      exportServeServer.stop();
+    });
   });
 }
 

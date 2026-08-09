@@ -6,7 +6,9 @@
 // /api/sku-lookup already searches liquoroutletwinecellars.com for (see the
 // og:upc-is-actually-SKU note in productImport.js). Nothing here makes a
 // network request; it only ever reads a local file path staff configure
-// once in the Scan UPC tab's Settings box.
+// once in the Scan UPC tab's Settings box (or, for a PC with auto-sync
+// turned on, a local copy this app itself keeps up to date - see
+// "auto-sync" below and exportSync.js).
 //
 // The exact column layout of that export isn't something this project
 // controls (it depends on how the store's WinePOS export is set up), so
@@ -25,6 +27,14 @@ const { getAppDataDir } = require('./appData');
 // Scan UPC tab's Settings box), so it's persisted to a small JSON file
 // rather than asked for on every lookup, in the same per-PC directory
 // db.js's SQLite file lives in (see appData.js).
+//
+// `autoSync` is the register-side half of exportSync.js: when on, this PC
+// ignores its own manually-configured `exportPath` for actual lookups and
+// instead reads whatever exportSync.js's puller most recently fetched from
+// the Server PC (see effectiveExportPath/syncedExportFilePath below) - the
+// manual `exportPath` is left alone in storage rather than overwritten, so
+// switching auto-sync back off restores it instead of leaving the field
+// blank.
 // ================================================================
 
 function configFilePath() {
@@ -35,17 +45,51 @@ function readConfig() {
   try {
     const raw = fs.readFileSync(configFilePath(), 'utf-8');
     const parsed = JSON.parse(raw);
-    return { exportPath: typeof parsed.exportPath === 'string' ? parsed.exportPath : '' };
+    return {
+      exportPath: typeof parsed.exportPath === 'string' ? parsed.exportPath : '',
+      autoSync: !!parsed.autoSync,
+    };
   } catch {
     // No config file yet, or it's unreadable/corrupt - either way, treat it
     // the same as "nothing configured" rather than failing settings lookups.
-    return { exportPath: '' };
+    return { exportPath: '', autoSync: false };
   }
 }
 
 function writeConfig(config) {
   fs.mkdirSync(getAppDataDir(), { recursive: true });
-  fs.writeFileSync(configFilePath(), JSON.stringify({ exportPath: config.exportPath || '' }, null, 2), 'utf-8');
+  fs.writeFileSync(configFilePath(), JSON.stringify({
+    exportPath: config.exportPath || '',
+    autoSync: !!config.autoSync,
+  }, null, 2), 'utf-8');
+}
+
+// The local file exportSync.js's puller (register side) writes each
+// successful sync to, and that effectiveExportPath() below points lookups
+// at whenever auto-sync is on. Lives in the same per-PC app data directory
+// as config.json/data.db (see appData.js) rather than somewhere a staff
+// member might stumble into and mistake for the real WinePOS export.
+function syncedExportFilePath() {
+  return path.join(getAppDataDir(), 'synced-export.csv');
+}
+
+// What lookups (and the export preview) actually read: the manually
+// configured path, unless auto-sync is on, in which case it's always the
+// locally-synced copy regardless of what the manual path field still says.
+function effectiveExportPath() {
+  const { exportPath, autoSync } = readConfig();
+  return autoSync ? syncedExportFilePath() : exportPath;
+}
+
+function isAutoSyncEnabled() {
+  return readConfig().autoSync;
+}
+
+function setAutoSync(autoSync) {
+  const { exportPath } = readConfig();
+  writeConfig({ exportPath, autoSync: !!autoSync });
+  invalidateCache();
+  return getUpcSettings();
 }
 
 // ================================================================
@@ -268,10 +312,30 @@ function invalidateCache() {
 // Public API
 // ================================================================
 
+// exportPath/fileExists/lastModified/itemCount/error all describe the
+// *effective* path (see effectiveExportPath) - the manually configured one,
+// unless auto-sync is on, in which case it's always the locally-synced
+// copy. `exportPath` is kept as the name (rather than e.g. `effectivePath`)
+// since this is what every existing caller (the Export File Settings
+// dialog, the export preview) already reads; `autoSync` is new, and lets
+// callers tell "this is the real configured path" apart from "this is a
+// synced copy, edit auto-sync instead of this field to change it".
 function getUpcSettings() {
-  const { exportPath } = readConfig();
+  const { exportPath: configuredPath, autoSync } = readConfig();
+  const exportPath = effectiveExportPath();
   const settings = {
-    exportPath, fileExists: false, lastModified: null, itemCount: null, error: null,
+    exportPath,
+    autoSync,
+    // Surfaced only for the Settings dialog, which still shows/edits the
+    // manually-typed path even while auto-sync (and thus the synced copy
+    // `exportPath` above points at) is what's actually in effect - so
+    // turning auto-sync back off restores it instead of leaving the field
+    // blank.
+    configuredPath,
+    fileExists: false,
+    lastModified: null,
+    itemCount: null,
+    error: null,
   };
   if (!exportPath) return settings;
 
@@ -285,13 +349,23 @@ function getUpcSettings() {
     const { products } = loadCatalog(exportPath);
     settings.itemCount = products.length;
   } catch (err) {
-    settings.error = err.code === 'ENOENT' ? `No file found at ${exportPath}.` : err.message;
+    if (err.code === 'ENOENT') {
+      settings.error = autoSync
+        ? 'Waiting for the first sync from the Server PC. Open the Server PC dialog (Advanced menu) to check its status.'
+        : `No file found at ${exportPath}.`;
+    } else {
+      settings.error = err.message;
+    }
   }
   return settings;
 }
 
+// Only ever changes the manually-configured path - auto-sync is left as-is
+// (see setAutoSync for that), so saving a path in the Settings dialog can't
+// silently flip a PC's auto-sync setting off as a side effect.
 function setUpcSettings(exportPath) {
-  writeConfig({ exportPath });
+  const { autoSync } = readConfig();
+  writeConfig({ exportPath, autoSync });
   invalidateCache();
   return getUpcSettings();
 }
@@ -302,7 +376,8 @@ function setUpcSettings(exportPath) {
 // /api/upc-lookup and /api/name-search) map to HTTP statuses: NO_EXPORT_PATH,
 // EXPORT_NOT_FOUND, EXPORT_UNREADABLE.
 function requireCatalog() {
-  const { exportPath } = readConfig();
+  const { autoSync } = readConfig();
+  const exportPath = effectiveExportPath();
   if (!exportPath) {
     const err = new Error('No export file location is set yet. Open Scan UPC → Settings and point it at the WinePOS export file.');
     err.code = 'NO_EXPORT_PATH';
@@ -313,7 +388,11 @@ function requireCatalog() {
     return loadCatalog(exportPath);
   } catch (e) {
     if (e.code === 'ENOENT') {
-      const err = new Error(`No file found at ${exportPath}. Check the export path in Scan UPC → Settings.`);
+      const err = new Error(
+        autoSync
+          ? 'Waiting for the first sync from the Server PC. Open the Server PC dialog (Advanced menu) to check its status.'
+          : `No file found at ${exportPath}. Check the export path in Scan UPC → Settings.`
+      );
       err.code = 'EXPORT_NOT_FOUND';
       throw err;
     }
@@ -408,9 +487,14 @@ function searchByName(query, { limit = 8 } = {}) {
 // column that looks like a UPC, what's it literally called) - matching it
 // against FIELD_ALIASES would hide exactly the thing staff most need to
 // see when the export isn't working. Same error codes as lookupUpc for the
-// "nothing configured yet"/"file missing" cases.
+// "nothing configured yet"/"file missing" cases. Reads the *effective* path
+// (see effectiveExportPath) same as a real lookup would, so on a PC with
+// auto-sync on this previews the synced copy - what Scan UPC/Search by Name
+// are actually reading - not the (possibly blank, possibly stale) manually
+// configured path.
 function previewExport({ limit = 50 } = {}) {
-  const { exportPath } = readConfig();
+  const { autoSync } = readConfig();
+  const exportPath = effectiveExportPath();
   if (!exportPath) {
     const err = new Error('No export file location is set yet. Open Scan UPC → Settings and point it at the WinePOS export file.');
     err.code = 'NO_EXPORT_PATH';
@@ -422,7 +506,11 @@ function previewExport({ limit = 50 } = {}) {
     text = fs.readFileSync(exportPath, 'utf-8');
   } catch (e) {
     if (e.code === 'ENOENT') {
-      const err = new Error(`No file found at ${exportPath}. Check the export path in Scan UPC → Settings.`);
+      const err = new Error(
+        autoSync
+          ? 'Waiting for the first sync from the Server PC. Open the Server PC dialog (Advanced menu) to check its status.'
+          : `No file found at ${exportPath}. Check the export path in Scan UPC → Settings.`
+      );
       err.code = 'EXPORT_NOT_FOUND';
       throw err;
     }
@@ -438,15 +526,53 @@ function previewExport({ limit = 50 } = {}) {
 
   return {
     exportPath,
+    autoSync,
     headers,
     rows: dataRows.slice(0, lim),
     totalRows: dataRows.length,
   };
 }
 
+// Reads the manually-configured export file's raw bytes, ignoring auto-sync
+// entirely - used only by exportSync.js's serve side (a PC marked as the
+// Server PC hands this back to other PCs over the LAN, see
+// createExportServeServer). Always the manual path, never effectiveExportPath,
+// so a PC that's both marked Server PC *and* has auto-sync on (a
+// misconfiguration - see the Server PC dialog's copy) serves the real
+// WinePOS file it's configured with rather than re-serving its own synced
+// copy back out. Same NO_EXPORT_PATH/EXPORT_NOT_FOUND/EXPORT_UNREADABLE
+// error codes as lookupUpc/requireCatalog above.
+function readExportFileRaw() {
+  const { exportPath } = readConfig();
+  if (!exportPath) {
+    const err = new Error('No export file location is set yet.');
+    err.code = 'NO_EXPORT_PATH';
+    throw err;
+  }
+
+  try {
+    const stat = fs.statSync(exportPath);
+    const content = fs.readFileSync(exportPath, 'utf-8');
+    return { exportPath, content, mtimeMs: stat.mtimeMs };
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      const err = new Error(`No file found at ${exportPath}.`);
+      err.code = 'EXPORT_NOT_FOUND';
+      throw err;
+    }
+    const err = new Error(e.message);
+    err.code = 'EXPORT_UNREADABLE';
+    throw err;
+  }
+}
+
 module.exports = {
   getUpcSettings,
   setUpcSettings,
+  setAutoSync,
+  isAutoSyncEnabled,
+  syncedExportFilePath,
+  readExportFileRaw,
   lookupUpc,
   searchByName,
   previewExport,

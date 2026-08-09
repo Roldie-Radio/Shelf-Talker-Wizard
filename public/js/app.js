@@ -267,6 +267,8 @@
     exportSettingsBrowseBtn: document.getElementById('exportSettingsBrowseBtn'),
     exportSettingsSaveBtn: document.getElementById('exportSettingsSaveBtn'),
     exportSettingsStatus: document.getElementById('exportSettingsStatus'),
+    exportSettingsAutoSyncCheckbox: document.getElementById('exportSettingsAutoSyncCheckbox'),
+    exportSettingsSyncStatus: document.getElementById('exportSettingsSyncStatus'),
 
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
@@ -2865,31 +2867,103 @@
   // is a one-time admin task instead. Reuses the same /api/upc-settings
   // routes the old inline box used - only where this lives in the UI
   // changed, not the underlying config.
+  //
+  // Also hosts the auto-sync checkbox (see server/exportSync.js): a register
+  // that doesn't have WinePOS itself can pull the export file over the
+  // network from whichever PC is currently marked Server PC instead of a
+  // manually-typed local path. `settings.exportPath` describes whichever of
+  // the two is actually in effect (see getUpcSettings in upcCatalog.js);
+  // `settings.configuredPath` is always the manually-typed one, which is
+  // what the path input itself shows/edits, so switching auto-sync back off
+  // restores it instead of leaving the field blank or full of the internal
+  // synced-copy path.
   function describeExportSettings(settings) {
+    if (settings.autoSync) {
+      if (settings.error) return `⚠ ${settings.error}`;
+      const count = settings.itemCount === null ? 'an unknown number of' : settings.itemCount.toLocaleString('en-US');
+      const updated = settings.lastModified ? new Date(settings.lastModified).toLocaleString() : 'an unknown time';
+      return `Loaded ${count} item${settings.itemCount === 1 ? '' : 's'} synced from the Server PC (last updated ${updated}).`;
+    }
     if (settings.error) return `⚠ ${settings.error}`;
-    if (!settings.exportPath) return 'No export file location is set yet - enter one below and click "Save Location".';
-    if (!settings.fileExists) return `No file found yet at ${settings.exportPath}.`;
+    if (!settings.configuredPath) return 'No export file location is set yet - enter one below and click "Save Location".';
+    if (!settings.fileExists) return `No file found yet at ${settings.configuredPath}.`;
     const count = settings.itemCount === null ? 'an unknown number of' : settings.itemCount.toLocaleString('en-US');
     const updated = settings.lastModified ? new Date(settings.lastModified).toLocaleString() : 'an unknown time';
-    return `Loaded ${count} item${settings.itemCount === 1 ? '' : 's'} from ${settings.exportPath} (last updated ${updated}).`;
+    return `Loaded ${count} item${settings.itemCount === 1 ? '' : 's'} from ${settings.configuredPath} (last updated ${updated}).`;
   }
+
+  // Describes the auto-sync puller's own status (see exportSync.js's
+  // getStatus) - separate from describeExportSettings above, which is about
+  // the resulting catalog (how many items, when the file itself last
+  // changed); this is about the network fetch that produced it (when it
+  // last succeeded, who it synced from, why it might be failing).
+  function describeSyncStatus(data) {
+    if (!data.autoSync) return '';
+    if (!data.sync) return '';
+    const { lastSyncedAt, lastError, syncedFrom } = data.sync;
+    const parts = [];
+    parts.push(lastSyncedAt
+      ? `Last synced from ${syncedFrom || 'the Server PC'} at ${formatHistoryTimestamp(lastSyncedAt)}.`
+      : 'Waiting for the first sync from the Server PC...');
+    if (lastError) parts.push(`⚠ ${lastError}`);
+    return parts.join(' ');
+  }
+
+  // Manual path entry only makes sense while auto-sync is off - disabling
+  // it (rather than hiding it) keeps the field visible so staff can still
+  // see/copy whatever it was last set to.
+  function updateExportSettingsManualControlsDisabled(autoSync) {
+    els.exportSettingsPathInput.disabled = autoSync;
+    els.exportSettingsSaveBtn.disabled = autoSync;
+    els.exportSettingsBrowseBtn.disabled = autoSync;
+  }
+
+  let exportSettingsSyncPollTimer = null;
 
   async function loadExportSettings() {
     els.exportSettingsStatus.textContent = 'Checking...';
+    els.exportSettingsSyncStatus.textContent = '';
     try {
       const resp = await fetch('/api/upc-settings');
       const settings = await resp.json();
-      els.exportSettingsPathInput.value = settings.exportPath || '';
+      els.exportSettingsPathInput.value = settings.configuredPath || '';
+      els.exportSettingsAutoSyncCheckbox.checked = !!settings.autoSync;
+      updateExportSettingsManualControlsDisabled(!!settings.autoSync);
       els.exportSettingsStatus.textContent = describeExportSettings(settings);
+      els.exportSettingsSyncStatus.textContent = describeSyncStatus(settings);
     } catch {
       els.exportSettingsStatus.textContent = 'Could not check the export file settings.';
+    }
+  }
+
+  // Keeps the sync status line live while the dialog stays open, since a
+  // successful/failed sync can happen in the background on its own 30s
+  // timer (see exportSync.js) at any point while staff are looking at this
+  // dialog - same "poll one line, don't touch the rest" pattern the Server
+  // PC dialog uses for its own "Main store PC on this network" line.
+  async function refreshExportSyncStatus() {
+    try {
+      const resp = await fetch('/api/upc-settings');
+      const settings = await resp.json();
+      if (!resp.ok) return;
+      els.exportSettingsSyncStatus.textContent = describeSyncStatus(settings);
+      if (settings.autoSync) els.exportSettingsStatus.textContent = describeExportSettings(settings);
+    } catch {
+      // ignore - loadExportSettings already surfaces a real failure on open/save
     }
   }
 
   const exportSettingsModal = createModal({
     overlay: els.exportSettingsOverlay,
     closeBtns: [els.exportSettingsCloseBtn, els.exportSettingsCloseFooterBtn],
-    onOpen: loadExportSettings,
+    onOpen: () => {
+      loadExportSettings();
+      exportSettingsSyncPollTimer = setInterval(refreshExportSyncStatus, 5000);
+    },
+    onClose: () => {
+      clearInterval(exportSettingsSyncPollTimer);
+      exportSettingsSyncPollTimer = null;
+    },
   });
 
   els.exportSettingsSaveBtn.addEventListener('click', async () => {
@@ -2908,6 +2982,29 @@
       els.exportSettingsStatus.textContent = err.message || 'Could not save that location.';
     } finally {
       els.exportSettingsSaveBtn.disabled = false;
+    }
+  });
+
+  els.exportSettingsAutoSyncCheckbox.addEventListener('change', async () => {
+    const autoSync = els.exportSettingsAutoSyncCheckbox.checked;
+    els.exportSettingsAutoSyncCheckbox.disabled = true;
+    els.exportSettingsSyncStatus.textContent = 'Saving...';
+    try {
+      const resp = await fetch('/api/upc-settings/auto-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoSync }),
+      });
+      const settings = await resp.json();
+      if (!resp.ok) throw new Error(settings.error || 'Could not save that setting.');
+      updateExportSettingsManualControlsDisabled(!!settings.autoSync);
+      els.exportSettingsStatus.textContent = describeExportSettings(settings);
+      els.exportSettingsSyncStatus.textContent = describeSyncStatus(settings);
+    } catch (err) {
+      els.exportSettingsAutoSyncCheckbox.checked = !autoSync;
+      els.exportSettingsSyncStatus.textContent = err.message || 'Could not save that setting.';
+    } finally {
+      els.exportSettingsAutoSyncCheckbox.disabled = false;
     }
   });
 
@@ -2946,7 +3043,12 @@
         err.code = data.code;
         throw err;
       }
-      els.exportPreviewStatus.textContent = `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${data.exportPath}`;
+      // While auto-sync is on, data.exportPath is this PC's own internal
+      // synced-copy file (see upcCatalog.js's syncedExportFilePath) - not
+      // something staff would recognize, so name the source they'd actually
+      // expect instead.
+      const source = data.autoSync ? 'the file synced from the Server PC' : data.exportPath;
+      els.exportPreviewStatus.textContent = `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${source}`;
       renderPreviewTable(els.exportPreviewTableWrap, data.headers, data.rows);
     } catch (err) {
       els.exportPreviewStatus.textContent = err.message || 'Could not read the export file.';

@@ -6,7 +6,8 @@ const path = require('node:path');
 
 const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
-  getUpcSettings, setUpcSettings, lookupUpc, searchByName, scoreNameMatch, previewExport,
+  getUpcSettings, setUpcSettings, setAutoSync, syncedExportFilePath, readExportFileRaw,
+  lookupUpc, searchByName, scoreNameMatch, previewExport,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -173,6 +174,108 @@ test('getUpcSettings reports a missing file without throwing', () => {
     const settings = getUpcSettings();
     assert.equal(settings.fileExists, false);
     assert.match(settings.error, /No file found/);
+  });
+});
+
+// ---------- auto-sync / effective export path ----------
+// Register-side half of exportSync.js: whether a PC reads its own manually
+// configured export file, or the local copy exportSync.js's puller last
+// wrote (see syncedExportFilePath). getUpcSettings/setUpcSettings/
+// lookupUpc/searchByName/previewExport all resolve against whichever is
+// currently in effect - the puller itself is exercised in exportSync.test.js
+// (mocked fetch, no real config dir involved), not here.
+
+test('getUpcSettings defaults to auto-sync off, exportPath equal to configuredPath', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    const settings = getUpcSettings();
+    assert.equal(settings.autoSync, false);
+    assert.equal(settings.exportPath, filePath);
+    assert.equal(settings.configuredPath, filePath);
+  });
+});
+
+test('setAutoSync switches getUpcSettings/lookupUpc onto the synced file, not the manually configured one', () => {
+  withTempConfigDir((dir) => {
+    const manualPath = writeExport(dir, 'manual.csv', SAMPLE_CSV);
+    setUpcSettings(manualPath);
+
+    // Nothing synced yet - the manually configured file is a real, valid
+    // export, but auto-sync being on means it's ignored entirely.
+    const onNoSync = setAutoSync(true);
+    assert.equal(onNoSync.autoSync, true);
+    assert.equal(onNoSync.exportPath, syncedExportFilePath());
+    assert.equal(onNoSync.configuredPath, manualPath);
+    assert.equal(onNoSync.fileExists, false);
+    assert.match(onNoSync.error, /Waiting for the first sync/);
+    assert.throws(() => lookupUpc('085000010652'), (err) => err.code === 'EXPORT_NOT_FOUND');
+
+    // Once something's actually been synced (writing directly to the same
+    // path exportSync.js's puller would), lookups pick it up like any other
+    // export file - a different product than the manually configured one,
+    // to prove it's really reading the synced copy and not falling back.
+    fs.writeFileSync(syncedExportFilePath(), 'UPC,Title,Price\n999999999999,Synced Product,5.00\n', 'utf-8');
+    const product = lookupUpc('999999999999');
+    assert.equal(product.title, 'Synced Product');
+    assert.throws(() => lookupUpc('085000010652'), (err) => err.code === 'UPC_NOT_FOUND');
+
+    // Switching back off restores the manually configured file exactly as
+    // it was - setAutoSync/setUpcSettings never overwrite each other.
+    const off = setAutoSync(false);
+    assert.equal(off.autoSync, false);
+    assert.equal(off.exportPath, manualPath);
+    assert.equal(off.configuredPath, manualPath);
+    assert.equal(lookupUpc('085000010652').title, 'Josh Cellars, Cabernet Sauvignon');
+  });
+});
+
+test('setUpcSettings (the manual path) never changes the auto-sync flag', () => {
+  withTempConfigDir((dir) => {
+    setAutoSync(true);
+    setUpcSettings(writeExport(dir, 'manual.csv', SAMPLE_CSV));
+    assert.equal(getUpcSettings().autoSync, true);
+  });
+});
+
+test('previewExport reads the synced file while auto-sync is on', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'manual.csv', SAMPLE_CSV));
+    setAutoSync(true);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(syncedExportFilePath(), 'UPC,Title,Price\n999999999999,Synced Product,5.00\n', 'utf-8');
+
+    const preview = previewExport({ limit: 10 });
+    assert.equal(preview.autoSync, true);
+    assert.equal(preview.exportPath, syncedExportFilePath());
+    assert.deepEqual(preview.rows, [['999999999999', 'Synced Product', '5.00']]);
+  });
+});
+
+test('readExportFileRaw always reads the manually configured path, ignoring auto-sync', () => {
+  withTempConfigDir((dir) => {
+    const manualPath = writeExport(dir, 'manual.csv', SAMPLE_CSV);
+    setUpcSettings(manualPath);
+    setAutoSync(true); // even with this on...
+    fs.writeFileSync(syncedExportFilePath(), 'UPC,Title\n1,Should not be served\n', 'utf-8');
+
+    const raw = readExportFileRaw();
+    assert.equal(raw.exportPath, manualPath);
+    assert.match(raw.content, /Josh Cellars/);
+  });
+});
+
+test('readExportFileRaw throws NO_EXPORT_PATH when nothing is manually configured, even with auto-sync on', () => {
+  withTempConfigDir(() => {
+    setAutoSync(true);
+    assert.throws(() => readExportFileRaw(), (err) => err.code === 'NO_EXPORT_PATH');
+  });
+});
+
+test('readExportFileRaw throws EXPORT_NOT_FOUND when the manually configured file is missing', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(path.join(dir, 'nope.csv'));
+    assert.throws(() => readExportFileRaw(), (err) => err.code === 'EXPORT_NOT_FOUND');
   });
 });
 
