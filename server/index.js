@@ -114,9 +114,15 @@ function createApp() {
   // network lookup falls back to whatever's cached regardless of age
   // (fromCache + stale: true) rather than a hard error, since a stale price
   // beats no data at all when the site is temporarily blocking requests.
-  // Cache key is the SKU as typed, not the category, so switching Wine/Beer
-  // on the same SKU (a user mistake, but not this app's to prevent) just
-  // overwrites the cached entry rather than tracking two.
+  // Cache key is the SKU as typed, not the category (a user can switch
+  // Wine/Beer on the same SKU, a mistake but not this app's to prevent), so
+  // the cached entry itself carries the category it was last resolved under
+  // (see `category` folded into `data` below) - a fresh hit only skips the
+  // network when that matches what's being asked for *now*. Without this, a
+  // SKU looked up as Wine/Spirits first, then re-looked-up as Beer within
+  // the freshness window, would silently serve back the Wine-only cached
+  // copy and skip the beer-only Untappd enrichment step entirely, even
+  // though Beer was explicitly requested this time.
   app.post('/api/sku-lookup', async (req, res) => {
     const { sku, category } = req.body || {};
 
@@ -124,16 +130,18 @@ function createApp() {
       return res.status(400).json({ error: 'A SKU is required.' });
     }
     const trimmedSku = sku.trim();
+    const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
     const cached = getCachedProduct({ keyType: 'sku', key: trimmedSku });
 
-    if (isFresh(cached)) {
+    if (isFresh(cached) && cached.data.category === normalizedCategory) {
       return res.json({ ...cached.data, fromCache: true });
     }
 
     try {
       const product = await lookupSku({ sku: trimmedSku, category });
-      upsertCachedProduct({ keyType: 'sku', key: trimmedSku, source: 'sku-lookup', data: product });
-      res.json(product);
+      const data = { ...product, category: normalizedCategory };
+      upsertCachedProduct({ keyType: 'sku', key: trimmedSku, source: 'sku-lookup', data });
+      res.json(data);
     } catch (err) {
       if (cached) {
         return res.json({ ...cached.data, fromCache: true, stale: true });
