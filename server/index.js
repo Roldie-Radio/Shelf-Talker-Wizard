@@ -16,6 +16,7 @@ const {
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
 const { createExportServeServer, createExportPuller } = require('./exportSync');
+const { version: APP_VERSION } = require('../package.json');
 
 // The LAN discovery beacon and the export-sync serve/pull halves (see
 // discovery.js and exportSync.js) are only ever passed in by start() below -
@@ -29,6 +30,17 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
 
   app.use(express.json());
   app.use(express.static(path.join(__dirname, '..', 'public')));
+
+  // Backs the "What's New" popup (app.js): the renderer compares this
+  // against the version it last showed a popup for (stored in localStorage)
+  // to decide whether there's anything new to announce. Reading it from the
+  // server rather than baking it into app.js keeps a single source of truth
+  // with package.json - the same one electron-builder/electron_updater use -
+  // and works the same whether the page is loaded via the plain browser dev
+  // copy or Electron's own local server (see electron/main.js).
+  app.get('/api/app-version', (req, res) => {
+    res.json({ version: APP_VERSION });
+  });
 
   app.post('/api/import-url', async (req, res) => {
     const { url, category } = req.body || {};
