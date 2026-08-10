@@ -3,9 +3,9 @@
 A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talkers without opening Photoshop. It reproduces the look of the existing amber/purple templates (same logo, layout, and card size) and adds:
 
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
-- **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch the Import tab to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
-- **SKU lookup** &mdash; type in the store's own SKU number and the app searches liquoroutletwinecellars.com for it, pulling the title, size, and price from the matching product page. For Beer, it also searches Untappd using that title for the description, brewery, style, ABV, IBU, and rating.
-- **Scan UPC** (**Beta**) &mdash; scan a bottle's manufacturer UPC (a USB/Bluetooth barcode scanner just types it, like a keyboard) and the app looks it up in a product file exported locally from WinePOS, filling in title, size, and price &mdash; no internet connection needed for the UPC match itself. This is a different number from the store's own SKU that SKU Lookup above searches the website for. For Wine / Spirits, the Description field is then filled from liquoroutletwinecellars.com (matched by the item's store SKU, if the export has one) rather than the export file's own Description column, which is often blank or just an internal note; Beer keeps whatever the export file has. Only one PC needs WinePOS's own export &mdash; every other register can pull that file automatically over the network instead of it being copied around by hand (see "Sharing the export file across registers" below).
+- **Type and Product Type dropdowns on every tab** &mdash; **Type** (Shelf Talker / Small Display / Large Display) and **Product Type** (Wine / Spirits / Beer) sit at the top of Manual Entry, Import from Website, and Search alike, and stay in sync with each other: change either one on any tab and it's still set that way when you switch tabs.
+- **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch Product Type to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
+- **Search** &mdash; one tab, three lookup methods so you don't have to type everything by hand: **Search by Name** matches by product title against a local product file, no internet needed; **SKU Lookup** searches liquoroutletwinecellars.com by the store's own SKU number for the title, size, and price (plus, for Beer, an Untappd-sourced description, brewery, style, ABV, IBU, and rating); **Scan UPC** looks a bottle's manufacturer UPC up in a product file exported locally from WinePOS (a USB/Bluetooth barcode scanner just types it, like a keyboard) &mdash; a different number from the store's own SKU that SKU Lookup searches for. For Wine / Spirits, a UPC scan's Description is then filled from liquoroutletwinecellars.com (matched by the item's store SKU, if the export has one) rather than the export file's own Description column, which is often blank or just an internal note; Beer keeps whatever the export file has. Only one PC needs WinePOS's own export &mdash; every other register can pull that file automatically over the network instead of it being copied around by hand (see "Sharing the export file across registers" below).
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
 - **Two brand themes** (Amber / Purple) matching the provided templates, mixable on the same print run.
 - **Three talker styles**: Standard (regular/sale price), Closeout (yellow "CLOSEOUT!!" badge + a single sale price), and Super Sale (a stylized "Super Sale Price!!!" callout in place of a numeric price) &mdash; matching the store's existing Closeout/Super Sale templates.
@@ -139,17 +139,17 @@ Location isn't on the beer page itself &mdash; the importer follows the brewery 
 
 ### Looking up a product by SKU
 
-Click **SKU Lookup**, switch between **Wine / Spirits** and **Beer** to match the product, type in the store's SKU number, and click **Look Up SKU**. This searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing from it &mdash; the SKU itself is matched exactly against each search result's own SKU, not by fuzzy title matching, so there's no "closest guess" to double-check.
+On the **Search** tab, pick **SKU Lookup**, set **Product Type** above to match the product, type in the store's SKU number, and click **Look Up SKU**. This searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing from it &mdash; the SKU itself is matched exactly against each search result's own SKU, not by fuzzy title matching, so there's no "closest guess" to double-check.
 
 For **Beer**, the lookup runs a second step automatically: it searches Untappd using the title just found and, if it finds a match, fills in the description, brewery, style, ABV, IBU, and rating from there instead of the store page's own generic description &mdash; matching what Untappd import already does for a pasted beer URL. If Untappd has nothing for that title, the store page's own description is used instead, and the rest of those fields are left blank for manual entry.
 
 If the store site blocks the lookup, click **Site blocking the lookup? Paste the product page's HTML instead**: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; same fallback as the website importer above, with no network request of its own (beyond the Untappd search for a beer entry).
 
-### Scanning a UPC (Beta)
+### Scanning a UPC
 
-The **Scan UPC** tab looks products up by the manufacturer UPC printed on the bottle itself &mdash; a different number from the store's own SKU that SKU Lookup above searches the website for. The UPC match itself never makes a network request: it reads a product file that WinePOS exports locally on the same PC, which means it works even with no internet connection.
+The **Scan UPC** method (also on the **Search** tab) looks products up by the manufacturer UPC printed on the bottle itself &mdash; a different number from the store's own SKU that SKU Lookup above searches the website for. The UPC match itself never makes a network request: it reads a product file that WinePOS exports locally on the same PC, which means it works even with no internet connection.
 
-For **Wine / Spirits**, once the local match is found, the app makes one more request: it takes the item's store SKU (if the export file has that column) and searches liquoroutletwinecellars.com for it &mdash; the same lookup the SKU Lookup tab runs &mdash; and fills the Description field from that product page instead of the export file's own Description/Tasting Notes column, which tends to be blank or a short internal note rather than shopper-facing tasting notes. If the export has no store SKU for that item, or the store lookup fails or finds nothing, the export file's own description (if any) is left in place and the status line says why. **Beer** skips this step entirely and always uses whatever the export file has; use SKU Lookup instead for a beer description sourced from Untappd.
+For **Wine / Spirits**, once the local match is found, the app makes one more request: it takes the item's store SKU (if the export file has that column) and searches liquoroutletwinecellars.com for it &mdash; the same lookup the SKU Lookup method runs &mdash; and fills the Description field from that product page instead of the export file's own Description/Tasting Notes column, which tends to be blank or a short internal note rather than shopper-facing tasting notes. If the export has no store SKU for that item, or the store lookup fails or finds nothing, the export file's own description (if any) is left in place and the status line says why. **Beer** skips this step entirely and always uses whatever the export file has; use SKU Lookup instead for a beer description sourced from Untappd.
 
 A USB or Bluetooth barcode scanner needs no special setup here &mdash; it types the scanned digits like a very fast keyboard, and pressing Enter (which every scanner does automatically at the end of a scan) triggers the lookup, the same as clicking **Look Up UPC**. Switching to the tab puts the cursor in the field automatically so staff can walk up and start scanning right away.
 
@@ -187,7 +187,7 @@ This only ever moves the export file itself &mdash; Print History and the produc
 
 ## Printing
 
-1. Add shelf talkers via any of the four methods.
+1. Add shelf talkers via Manual Entry, Import from Website, or any of Search's three lookup methods.
 2. Review them in the **Queue** panel. Each row's &vellip; menu can move it up or
    down (queue order is print order), edit it, copy it, or delete it.
 3. Click **Print Sheet(s)**. A preview shows every sheet exactly as it will print
@@ -238,8 +238,8 @@ a Beer-only cached copy that skipped it.
 The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, below
 **Toggle Developer Tools**:
 
-- **Export File Settings&hellip;** &mdash; where the Scan UPC tab's export file path
-  is configured (see "Scanning a UPC" above) &mdash; the Scan UPC tab itself no
+- **Export File Settings&hellip;** &mdash; where the Scan UPC method's export file path
+  is configured (see "Scanning a UPC" above) &mdash; Scan UPC itself no
   longer has an inline Settings box; this menu item is the only normal way to it.
   It still opens itself automatically if a scan fails because nothing's
   configured yet, so staff aren't required to already know it's in this menu.
@@ -277,10 +277,10 @@ server/
   index.js            Express app: serves the frontend and the URL-import/History/product-cache APIs
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
                       plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
-                      the Find Tasting Notes button and SKU Lookup tab
+                      the Find Tasting Notes button and SKU Lookup method
   upcCatalog.js       Reads a local WinePOS product export file (or, with auto-sync on, the local copy
-                      exportSync.js's puller last wrote) and looks products up by UPC (Scan UPC tab)/name
-                      (Search by Name tab) - no network request itself, unlike everything else in server/
+                      exportSync.js's puller last wrote) and looks products up by UPC (Scan UPC method)/name
+                      (Search by Name method) - no network request itself, unlike everything else in server/
   db.js               Local SQLite (better-sqlite3): the Print History log, the SKU/UPC product cache, and stats
   appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by
                       upcCatalog.js's config.json, db.js's data.db, and serverConfig.js's server-config.json,

@@ -51,25 +51,34 @@
       <div class="tabs" role="tablist" aria-label="How to add a product">
         <button class="tab is-active" data-tab="manual" role="tab" id="tabManual" aria-controls="panelManual" aria-selected="true">Manual Entry</button>
         <button class="tab" data-tab="import" role="tab" id="tabImport" aria-controls="panelImport" aria-selected="false" tabindex="-1">Import from Website</button>
-        <button class="tab" data-tab="search" role="tab" id="tabSearch" aria-controls="panelSearch" aria-selected="false" tabindex="-1">Search by Name</button>
-        <button class="tab" data-tab="sku" role="tab" id="tabSku" aria-controls="panelSku" aria-selected="false" tabindex="-1">SKU Lookup</button>
-        <button class="tab" data-tab="scan" role="tab" id="tabScan" aria-controls="panelScan" aria-selected="false" tabindex="-1">Scan UPC <span class="beta-badge">Beta</span></button>
+        <button class="tab" data-tab="search" role="tab" id="tabSearch" aria-controls="panelSearch" aria-selected="false" tabindex="-1">Search</button>
       </div>
 
       <div class="tab-panel is-active" data-panel="manual" id="panelManual" role="tabpanel" aria-labelledby="tabManual" tabindex="0">
-        <!-- These are mutually exclusive settings, not tabs - a radio group
-             is what actually describes them to a screen reader. -->
-        <div class="signtype-toggle" role="radiogroup" aria-label="Sign type">
-          <button type="button" class="toggle-btn is-active" data-signtype="talker" role="radio" aria-checked="true">Shelf Talkers</button>
-          <button type="button" class="toggle-btn" data-signtype="sign" role="radio" aria-checked="false">Display Signs</button>
-        </div>
-        <div class="signsize-toggle" role="radiogroup" aria-label="Display sign size" id="signSizeToggle" hidden>
-          <button type="button" class="toggle-btn is-active" data-signsize="large" role="radio" aria-checked="true">Large</button>
-          <button type="button" class="toggle-btn" data-signsize="small" role="radio" aria-checked="false">Small</button>
-        </div>
-        <div class="category-toggle" role="radiogroup" aria-label="Product category">
-          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
-          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
+        <!-- Type and Product Type: the same pair of dropdowns repeated at
+             the top of every tab (see Import and Search below), driving one
+             shared currentSignType/currentSignSize/currentCategory in
+             app.js regardless of which tab set them - so switching tabs
+             never loses the choice. A real select element rather than the
+             tap/toggle-btn rows this used to be (three settings - sign
+             type, sign size, category - collapsed into two dropdowns, Type
+             folding sign type and size into one flat list of three). -->
+        <div class="field-row type-product-row">
+          <label class="field">
+            <span>Type</span>
+            <select class="type-select" aria-label="Sign type">
+              <option value="talker">Shelf Talker</option>
+              <option value="small">Small Display</option>
+              <option value="large">Large Display</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Product Type</span>
+            <select class="product-type-select" aria-label="Product category">
+              <option value="wine">Wine / Spirits</option>
+              <option value="beer">Beer</option>
+            </select>
+          </label>
         </div>
         <form id="talkerForm" novalidate>
           <input type="hidden" id="editId" value="" />
@@ -175,8 +184,8 @@
                  the store URL (see .card__band--footer--split in styles.css
                  and buildCardElement in card.js), not shown on Wine/Spirits
                  or on Quarter Size (which only ever shows Title/Size/Price -
-                 see isQuarter there). Auto-filled from the SKU Lookup tab's
-                 own Store SKU box (see applySkuLookupProduct), but editable/
+                 see isQuarter there). Auto-filled from the SKU Lookup
+                 method's own Store SKU box (see applySkuLookupProduct), but editable/
                  fillable by hand too for a beer talker built from scratch. -->
             <label class="field">
               <span>Store SKU (optional)</span>
@@ -272,14 +281,28 @@
       </div>
 
       <div class="tab-panel" data-panel="import" id="panelImport" role="tabpanel" aria-labelledby="tabImport" tabindex="0">
-        <!-- Shares .category-toggle with Manual Entry's own group (see
-             below) so the existing category-toggle wiring in app.js - click
-             handling, active-state sync, aria-checked - covers both groups
-             automatically; the two are two views onto the same
-             currentCategory, not independent settings. -->
-        <div class="category-toggle" role="radiogroup" aria-label="Product category">
-          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
-          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
+        <!-- Shares .type-select/.product-type-select with Manual Entry's own
+             pair (see the note there) so the existing wiring in app.js -
+             change handling, keeping every instance in sync, aria - covers
+             every tab automatically; these are views onto the same
+             currentSignType/currentSignSize/currentCategory, not
+             independent settings. -->
+        <div class="field-row type-product-row">
+          <label class="field">
+            <span>Type</span>
+            <select class="type-select" aria-label="Sign type">
+              <option value="talker">Shelf Talker</option>
+              <option value="small">Small Display</option>
+              <option value="large">Large Display</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Product Type</span>
+            <select class="product-type-select" aria-label="Product category">
+              <option value="wine">Wine / Spirits</option>
+              <option value="beer">Beer</option>
+            </select>
+          </label>
         </div>
         <p class="help-text" id="importHelpText">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
         <label class="field">
@@ -297,137 +320,145 @@
         </div>
       </div>
 
+      <!-- Search by Name, SKU Lookup, and Scan UPC used to be three separate
+           top-level tabs; they're now one Search tab with a method chooser
+           (below Type/Product Type, same as every other tab) picking which
+           of the three .method-panels beneath it is visible - see
+           activateMethod in app.js. Each keeps its own fields/status/
+           fallbacks exactly as before, just nested one level deeper; none
+           of the three has its own Type/Product Type control anymore, since
+           the pair above now covers all three. -->
       <div class="tab-panel" data-panel="search" id="panelSearch" role="tabpanel" aria-labelledby="tabSearch" tabindex="0">
-        <!-- Shares .category-toggle with Manual Entry's own group (see the
-             note on the Import tab's copy above) - purely for how a picked
-             result gets applied to the form (see applyNameSearchProduct in
-             app.js), same as Scan UPC just below: the search itself isn't
-             filtered by this toggle, since a real WinePOS export's
-             category/department column (if it even has one) isn't reliable
-             enough to trust as a hard filter - see the note above
-             scoreProduct in server/upcCatalog.js. -->
-        <div class="category-toggle" role="radiogroup" aria-label="Product category">
-          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
-          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
-        </div>
-        <p class="help-text">Search your store's inventory by product name. This reads the same WinePOS export file Scan UPC uses below &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
-        <!-- Deliberately a plain div, not a <label> wrapping everything the
-             way other .field elements are (compare Store SKU above) - a
-             <label> forwards a click anywhere inside it, including on a
-             result row below, to its associated control as an implicit
-             focus+click (see the labeled-control activation behavior in the
-             HTML spec). That would refocus #nameSearchInput on every result
-             click and immediately re-open the dropdown via the focus
-             handler below, right after selecting a result closed it. The
-             <label for="nameSearchInput"> just below keeps the same
-             click-the-text-to-focus convenience without that side effect,
-             since it's now a sibling of the results dropdown, not an
-             ancestor of it. -->
-        <div class="field" id="nameSearchFieldWrap">
-          <label for="nameSearchInput"><span>Product Name</span></label>
-          <div class="search-input-row">
-            <input type="text" id="nameSearchInput" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nameSearchResults" aria-autocomplete="list" placeholder="Start typing a product name&hellip;" />
-            <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
-          </div>
-          <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
-        </div>
-        <div id="nameSearchSelectedWrap"></div>
-        <div class="form-actions">
-          <!-- Same "Add to Queue" pattern as SKU Lookup/Scan UPC's own save
-               buttons - see els.skuSaveBtn's note in app.js. Starts disabled;
-               there's nothing to add until a result has actually been
-               picked. -->
-          <button type="button" class="btn btn--primary" id="nameSearchSaveBtn" disabled>Add to Queue</button>
-        </div>
-        <p class="help-text" id="nameSearchStatus" role="status" aria-live="polite"></p>
-      </div>
-
-      <div class="tab-panel" data-panel="sku" id="panelSku" role="tabpanel" aria-labelledby="tabSku" tabindex="0">
-        <!-- Shares .category-toggle with Manual Entry's own group (see the
-             note on the Import tab's copy above) - the SKU lookup itself
-             works the same way for both, but Beer gets an extra Untappd
-             enrichment step after the store lookup (see applySkuMode). -->
-        <div class="category-toggle" role="radiogroup" aria-label="Product category">
-          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
-          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
-        </div>
-        <p class="help-text" id="skuHelpText">Enter the store SKU number. We'll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically &mdash; review the fields before adding it to your queue.</p>
-        <label class="field">
-          <span>Store SKU</span>
-          <input type="text" id="skuInput" inputmode="numeric" placeholder="09144" />
-        </label>
-        <div class="form-actions">
-          <button type="button" class="btn btn--primary" id="skuLookupBtn">Look Up SKU</button>
-          <!-- Adds the fields the lookup above (or the fallbacks below) just
-               filled straight to the queue without switching to Manual Entry
-               first - see els.skuSaveBtn's click handler in app.js, which
-               reuses the Manual Entry form's own validate/save logic via
-               requestSubmit() rather than duplicating it. -->
-          <button type="button" class="btn" id="skuSaveBtn">Add to Queue</button>
-        </div>
-        <p class="help-text" id="skuStatus" role="status" aria-live="polite"></p>
-
-        <button type="button" class="link-btn" id="skuHtmlToggle" aria-expanded="false" aria-controls="skuHtmlSection">Site blocking the lookup? Paste the product page's HTML instead</button>
-        <div class="reviewer-manager" id="skuHtmlSection" hidden>
-          <p class="help-text">Search the SKU on the store site yourself, open the matching product page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
+        <div class="field-row type-product-row">
           <label class="field">
-            <span>Product Page URL (optional)</span>
-            <input type="url" id="skuHtmlUrl" placeholder="https://www.liquoroutletwinecellars.com/..." />
+            <span>Type</span>
+            <select class="type-select" aria-label="Sign type">
+              <option value="talker">Shelf Talker</option>
+              <option value="small">Small Display</option>
+              <option value="large">Large Display</option>
+            </select>
           </label>
-          <textarea id="skuHtmlInput" rows="6" aria-label="Pasted product page HTML" placeholder="Paste the page's HTML source here..."></textarea>
-          <button type="button" class="btn btn--primary" id="skuHtmlBtn">Parse Pasted HTML</button>
+          <label class="field">
+            <span>Product Type</span>
+            <select class="product-type-select" aria-label="Product category">
+              <option value="wine">Wine / Spirits</option>
+              <option value="beer">Beer</option>
+            </select>
+          </label>
         </div>
 
-        <!-- Shown only after a beer lookup whose automatic Untappd search
-             came back empty (untappdError in the response) - Untappd's own
-             search results only render client-side, so this app can never
-             scrape them directly. Staff search Untappd themselves in a real
-             browser instead and hand this the beer's own page. -->
-        <div class="reviewer-manager" id="skuUntappdSection" hidden>
-          <p class="help-text">Untappd's automatic search came up empty here - its search results only load in a real browser, so this app can't read them directly. Search for the beer yourself on <a href="https://untappd.com" target="_blank" rel="noopener">untappd.com</a>, open its own page, and paste that page's URL below to fill in the brewery, style, ABV, IBU, and rating.</p>
-          <label class="field">
-            <span>Beer's Untappd URL</span>
-            <input type="url" id="skuUntappdUrl" placeholder="https://untappd.com/b/..." />
-          </label>
-          <button type="button" class="btn btn--primary" id="skuUntappdBtn">Fill from Untappd</button>
-          <p class="help-text" id="skuUntappdStatus" role="status" aria-live="polite"></p>
+        <div class="method-toggle" role="radiogroup" aria-label="Search method" id="searchMethodToggle">
+          <button type="button" class="toggle-btn is-active" data-method="searchName" role="radio" aria-checked="true" id="methodSearchNameBtn" aria-controls="methodPanelSearchName">Search by Name</button>
+          <button type="button" class="toggle-btn" data-method="sku" role="radio" aria-checked="false" id="methodSkuBtn" aria-controls="methodPanelSku">SKU Lookup</button>
+          <button type="button" class="toggle-btn" data-method="scan" role="radio" aria-checked="false" id="methodScanBtn" aria-controls="methodPanelScan">Scan UPC</button>
+        </div>
 
-          <button type="button" class="link-btn" id="skuUntappdHtmlToggle" aria-expanded="false" aria-controls="skuUntappdHtmlSection">Untappd blocking that too? Paste the beer page's HTML instead</button>
-          <div id="skuUntappdHtmlSection" hidden>
-            <p class="help-text">Open the beer's Untappd page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
-            <textarea id="skuUntappdHtmlInput" rows="6" aria-label="Pasted Untappd beer page HTML" placeholder="Paste the Untappd beer page's HTML source here..."></textarea>
-            <button type="button" class="btn btn--primary" id="skuUntappdHtmlBtn">Parse Pasted HTML</button>
+        <div class="method-panel is-active" data-method-panel="searchName" id="methodPanelSearchName">
+          <p class="help-text">Search your store's inventory by product name. This reads the same WinePOS export file Scan UPC uses &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
+          <!-- Deliberately a plain div, not a <label> wrapping everything the
+               way other .field elements are (compare Store SKU below) - a
+               <label> forwards a click anywhere inside it, including on a
+               result row below, to its associated control as an implicit
+               focus+click (see the labeled-control activation behavior in the
+               HTML spec). That would refocus #nameSearchInput on every result
+               click and immediately re-open the dropdown via the focus
+               handler below, right after selecting a result closed it. The
+               <label for="nameSearchInput"> just below keeps the same
+               click-the-text-to-focus convenience without that side effect,
+               since it's now a sibling of the results dropdown, not an
+               ancestor of it. -->
+          <div class="field" id="nameSearchFieldWrap">
+            <label for="nameSearchInput"><span>Product Name</span></label>
+            <div class="search-input-row">
+              <input type="text" id="nameSearchInput" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nameSearchResults" aria-autocomplete="list" placeholder="Start typing a product name&hellip;" />
+              <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
+            </div>
+            <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
+          </div>
+          <div id="nameSearchSelectedWrap"></div>
+          <div class="form-actions">
+            <!-- Same "Add to Queue" pattern as SKU Lookup/Scan UPC's own save
+                 buttons - see els.skuSaveBtn's note in app.js. Starts disabled;
+                 there's nothing to add until a result has actually been
+                 picked. -->
+            <button type="button" class="btn btn--primary" id="nameSearchSaveBtn" disabled>Add to Queue</button>
+          </div>
+          <p class="help-text" id="nameSearchStatus" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="method-panel" data-method-panel="sku" id="methodPanelSku">
+          <p class="help-text" id="skuHelpText">Enter the store SKU number. We'll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically &mdash; review the fields before adding it to your queue.</p>
+          <label class="field">
+            <span>Store SKU</span>
+            <input type="text" id="skuInput" inputmode="numeric" placeholder="09144" />
+          </label>
+          <div class="form-actions">
+            <button type="button" class="btn btn--primary" id="skuLookupBtn">Look Up SKU</button>
+            <!-- Adds the fields the lookup above (or the fallbacks below) just
+                 filled straight to the queue without switching to Manual Entry
+                 first - see els.skuSaveBtn's click handler in app.js, which
+                 reuses the Manual Entry form's own validate/save logic via
+                 requestSubmit() rather than duplicating it. -->
+            <button type="button" class="btn" id="skuSaveBtn">Add to Queue</button>
+          </div>
+          <p class="help-text" id="skuStatus" role="status" aria-live="polite"></p>
+
+          <button type="button" class="link-btn" id="skuHtmlToggle" aria-expanded="false" aria-controls="skuHtmlSection">Site blocking the lookup? Paste the product page's HTML instead</button>
+          <div class="reviewer-manager" id="skuHtmlSection" hidden>
+            <p class="help-text">Search the SKU on the store site yourself, open the matching product page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
+            <label class="field">
+              <span>Product Page URL (optional)</span>
+              <input type="url" id="skuHtmlUrl" placeholder="https://www.liquoroutletwinecellars.com/..." />
+            </label>
+            <textarea id="skuHtmlInput" rows="6" aria-label="Pasted product page HTML" placeholder="Paste the page's HTML source here..."></textarea>
+            <button type="button" class="btn btn--primary" id="skuHtmlBtn">Parse Pasted HTML</button>
+          </div>
+
+          <!-- Shown only after a beer lookup whose automatic Untappd search
+               came back empty (untappdError in the response) - Untappd's own
+               search results only render client-side, so this app can never
+               scrape them directly. Staff search Untappd themselves in a real
+               browser instead and hand this the beer's own page. -->
+          <div class="reviewer-manager" id="skuUntappdSection" hidden>
+            <p class="help-text">Untappd's automatic search came up empty here - its search results only load in a real browser, so this app can't read them directly. Search for the beer yourself on <a href="https://untappd.com" target="_blank" rel="noopener">untappd.com</a>, open its own page, and paste that page's URL below to fill in the brewery, style, ABV, IBU, and rating.</p>
+            <label class="field">
+              <span>Beer's Untappd URL</span>
+              <input type="url" id="skuUntappdUrl" placeholder="https://untappd.com/b/..." />
+            </label>
+            <button type="button" class="btn btn--primary" id="skuUntappdBtn">Fill from Untappd</button>
+            <p class="help-text" id="skuUntappdStatus" role="status" aria-live="polite"></p>
+
+            <button type="button" class="link-btn" id="skuUntappdHtmlToggle" aria-expanded="false" aria-controls="skuUntappdHtmlSection">Untappd blocking that too? Paste the beer page's HTML instead</button>
+            <div id="skuUntappdHtmlSection" hidden>
+              <p class="help-text">Open the beer's Untappd page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
+              <textarea id="skuUntappdHtmlInput" rows="6" aria-label="Pasted Untappd beer page HTML" placeholder="Paste the Untappd beer page's HTML source here..."></textarea>
+              <button type="button" class="btn btn--primary" id="skuUntappdHtmlBtn">Parse Pasted HTML</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Looks products up by the manufacturer UPC printed on the bottle,
-           a different number from the store's own SKU that SKU Lookup above
-           searches liquoroutletwinecellars.com for. This never makes a
-           network request: it reads a product file exported locally by
-           WinePOS on this PC (see server/upcCatalog.js), so it works
-           offline once Settings below points at that file. -->
-      <div class="tab-panel" data-panel="scan" id="panelScan" role="tabpanel" aria-labelledby="tabScan" tabindex="0">
-        <!-- Shares .category-toggle with Manual Entry's own group (see the
-             note on the Import tab's copy above). -->
-        <div class="category-toggle" role="radiogroup" aria-label="Product category">
-          <button type="button" class="toggle-btn is-active" data-category="wine" role="radio" aria-checked="true">Wine / Spirits</button>
-          <button type="button" class="toggle-btn" data-category="beer" role="radio" aria-checked="false">Beer</button>
+        <!-- Looks products up by the manufacturer UPC printed on the bottle,
+             a different number from the store's own SKU that SKU Lookup
+             above searches liquoroutletwinecellars.com for. This never
+             makes a network request: it reads a product file exported
+             locally by WinePOS on this PC (see server/upcCatalog.js), so it
+             works offline once Settings below points at that file. -->
+        <div class="method-panel" data-method-panel="scan" id="methodPanelScan">
+          <p class="help-text">Scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
+          <label class="field">
+            <span>UPC</span>
+            <input type="text" id="scanUpcInput" inputmode="numeric" autocomplete="off" placeholder="Scan or type a UPC..." />
+          </label>
+          <div class="form-actions">
+            <button type="button" class="btn btn--primary" id="scanUpcLookupBtn">Look Up UPC</button>
+            <!-- Same "Add to Queue" pattern as SKU Lookup's own skuSaveBtn - see
+                 its note above; reuses the Manual Entry form's real submit
+                 handler via requestSubmit() rather than a second copy of
+                 validate/save. -->
+            <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
+          </div>
+          <p class="help-text" id="scanUpcStatus" role="status" aria-live="polite"></p>
         </div>
-        <p class="help-text"><strong>Beta</strong> &mdash; scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
-        <label class="field">
-          <span>UPC</span>
-          <input type="text" id="scanUpcInput" inputmode="numeric" autocomplete="off" placeholder="Scan or type a UPC..." />
-        </label>
-        <div class="form-actions">
-          <button type="button" class="btn btn--primary" id="scanUpcLookupBtn">Look Up UPC</button>
-          <!-- Same "Add to Queue" pattern as SKU Lookup's own skuSaveBtn - see
-               its note above; reuses the Manual Entry form's real submit
-               handler via requestSubmit() rather than a second copy of
-               validate/save. -->
-          <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
-        </div>
-        <p class="help-text" id="scanUpcStatus" role="status" aria-live="polite"></p>
       </div>
     </section>
 
@@ -540,37 +571,38 @@
       <div class="help-content">
 
         <h3>Adding a shelf talker</h3>
-        <p>There are five ways to add a product, as tabs on the left:</p>
+        <p>There are three tabs on the left for adding a product. Every one of them opens with the same two dropdowns: <strong>Type</strong> (<strong>Shelf Talker</strong>, <strong>Small Display</strong>, or <strong>Large Display</strong>) and <strong>Product Type</strong> (<strong>Wine / Spirits</strong> or <strong>Beer</strong>) &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). Both are shared across all three tabs: change either one on any tab and it stays set that way when you switch tabs.</p>
         <ul>
-          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. Toggle <strong>Shelf Talkers</strong> vs <strong>Display Signs</strong>, and <strong>Wine / Spirits</strong> vs <strong>Beer</strong>, at the top &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
+          <li><strong>Manual Entry</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
           <li><strong>Import from Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
-          <li><strong>Search by Name</strong> &mdash; type part of a product's name and pick it from a list of matches pulled from the same product file Scan UPC reads &mdash; no internet needed. See "Searching by product name" below.</li>
-          <li><strong>SKU Lookup</strong> &mdash; type in the store's SKU number and let the app find it on the store's website. See "Looking up a product by SKU" below.</li>
-          <li><strong>Scan UPC</strong> (marked <strong>Beta</strong> &mdash; it's new, and needs a WinePOS export file set up before it can find anything) &mdash; scan (or type) a bottle's UPC and the app looks it up in a product file WinePOS exports on this PC, then adds it straight to the queue &mdash; no internet needed for the core lookup, and no extra click per item. See "Scanning a UPC" below.</li>
+          <li><strong>Search</strong> &mdash; pick a method (<strong>Search by Name</strong>, <strong>SKU Lookup</strong>, or <strong>Scan UPC</strong>) and look the product up instead of typing everything by hand. See "Searching, by name, SKU, or UPC" below.</li>
         </ul>
 
         <h3>Talker sizes and styles</h3>
-        <p><strong>Talker Size</strong> (Full/Half/Quarter) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> (Wine / Spirits only &mdash; the store doesn't run Super Sales on beer) to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
+        <p><strong>Talker Size</strong> (Full/Half/Quarter, Manual Entry only, Shelf Talker Type) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> (Wine / Spirits only &mdash; the store doesn't run Super Sales on beer) to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
 
         <h3>Finding tasting notes automatically</h3>
         <p>On the Manual Entry form, Wine / Spirits entries have a <strong>Find Tasting Notes</strong> button (marked <strong>Beta</strong> &mdash; it's new, so double-check what it finds) under the Description field. Click it (with a <strong>Product Title</strong> already filled in) to open a dialog that searches using the title and <strong>Vintage</strong>, if set &mdash; no URL to paste. The <strong>Source</strong> dropdown picks which site to search &mdash; currently Wine.com and Vivino: <strong>Any source</strong> (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one. Whatever it finds shows in an editable preview box &mdash; tweak it if you'd like, then click <strong>Use This Description</strong> to drop it into the form (it'll ask before overwriting anything already typed), or <strong>Cancel</strong> to close without changing anything. If a site blocks the request outright, it automatically retries once with different request headers before giving up (same as the Untappd import below); if it's still blocked, or the site has nothing for that product, the dialog shows why and you can try a different source or type the description in by hand.</p>
 
         <h3>Importing from a website</h3>
-        <p>On the <strong>Import from Website</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match what you're importing:</p>
+        <p>On the <strong>Import from Website</strong> tab, set <strong>Product Type</strong> above to match what you're importing:</p>
         <ul>
           <li><strong>Wine / Spirits</strong> &mdash; paste a product page URL from the store's website. Pulls the title, description, and price.</li>
           <li><strong>Beer</strong> &mdash; paste a beer's Untappd page URL (<code>untappd.com/b/...</code>). Pulls the brewery, location, style, ABV, IBU, rating, and description &mdash; not price or size, since Untappd doesn't sell anything, so add those two yourself.</li>
         </ul>
         <p>Either way, review the fields before adding to the queue &mdash; a field the importer can't find just comes back blank. If a beer import reports Untappd blocked the request, wait a bit and try again, or enter the details by hand.</p>
 
+        <h3>Searching, by name, SKU, or UPC</h3>
+        <p>The <strong>Search</strong> tab covers three lookup methods, picked with the row of buttons under Type/Product Type: <strong>Search by Name</strong>, <strong>SKU Lookup</strong>, and <strong>Scan UPC</strong>. All three share the Type and Product Type dropdowns above them instead of asking again per method.</p>
+
         <h3>Searching by product name</h3>
-        <p>The <strong>Search by Name</strong> tab looks products up by title instead of a SKU or UPC &mdash; useful when you know roughly what you're looking for but not its number. Like <strong>Scan UPC</strong> below, it reads the same product file WinePOS exports on this PC and never goes out to the internet, so it needs that export set up first (the same <strong>Advanced &rarr; Export File Settings&hellip;</strong> one-time setup). Start typing a product name and a list of the closest matches appears underneath the box, ranked so the best match is first &mdash; use the mouse, or &uarr;/&darr; and Enter, to pick one. Picking a result fills in the title, size, vintage, and price, same as the other lookup tabs; review the fields, then click <strong>Add to Queue</strong>. If nothing close enough turns up, the list says so &mdash; add the item manually instead.</p>
+        <p>The <strong>Search by Name</strong> method looks products up by title instead of a SKU or UPC &mdash; useful when you know roughly what you're looking for but not its number. Like <strong>Scan UPC</strong> below, it reads the same product file WinePOS exports on this PC and never goes out to the internet, so it needs that export set up first (the same <strong>Advanced &rarr; Export File Settings&hellip;</strong> one-time setup). Start typing a product name and a list of the closest matches appears underneath the box, ranked so the best match is first &mdash; use the mouse, or &uarr;/&darr; and Enter, to pick one. Picking a result fills in the title, size, vintage, and price, same as the other lookup methods; review the fields, then click <strong>Add to Queue</strong>. If nothing close enough turns up, the list says so &mdash; add the item manually instead.</p>
 
         <h3>Looking up a product by SKU</h3>
-        <p>On the <strong>SKU Lookup</strong> tab, switch between <strong>Wine / Spirits</strong> and <strong>Beer</strong> to match the product, type in the store's SKU number, and click <strong>Look Up SKU</strong>. It searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing straight from it. For <strong>Beer</strong>, it also searches Untappd using the title it just found and fills in the description, brewery, style, ABV, IBU, and rating from there &mdash; the store page's own description is only used if that Untappd search doesn't turn up a match. Review the fields before adding to the queue, same as any other import. If the store site blocks the lookup, use <strong>Site blocking the lookup? Paste the product page's HTML instead</strong>: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; this works even when the site blocks the app's own request, since your browser already got past it.</p>
+        <p>On the <strong>SKU Lookup</strong> method, set <strong>Product Type</strong> above to match the product, type in the store's SKU number, and click <strong>Look Up SKU</strong>. It searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing straight from it. For <strong>Beer</strong>, it also searches Untappd using the title it just found and fills in the description, brewery, style, ABV, IBU, and rating from there &mdash; the store page's own description is only used if that Untappd search doesn't turn up a match. Review the fields before adding to the queue, same as any other import. If the store site blocks the lookup, use <strong>Site blocking the lookup? Paste the product page's HTML instead</strong>: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; this works even when the site blocks the app's own request, since your browser already got past it.</p>
 
         <h3>Scanning a UPC</h3>
-        <p>The <strong>Scan UPC</strong> tab looks products up by the manufacturer UPC printed on the bottle &mdash; a different number from the store's own SKU that SKU Lookup searches the website for. The core lookup itself never goes out to the internet: it reads a product file that WinePOS exports locally on this PC. A USB/Bluetooth scanner needs no setup &mdash; it types the code and an Enter keystroke automatically, which triggers the lookup by itself, same as clicking <strong>Look Up UPC</strong>. The first time, use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu and point it at the file WinePOS writes (ask WinePOS support how to set up that export if it isn't running yet); after that it's saved on this PC and re-read automatically whenever the file changes. If a scanned UPC isn't in the file, add that item manually instead.</p>
+        <p>The <strong>Scan UPC</strong> method looks products up by the manufacturer UPC printed on the bottle &mdash; a different number from the store's own SKU that SKU Lookup searches the website for. The core lookup itself never goes out to the internet: it reads a product file that WinePOS exports locally on this PC. A USB/Bluetooth scanner needs no setup &mdash; it types the code and an Enter keystroke automatically, which triggers the lookup by itself, same as clicking <strong>Look Up UPC</strong>. The first time, use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu and point it at the file WinePOS writes (ask WinePOS support how to set up that export if it isn't running yet); after that it's saved on this PC and re-read automatically whenever the file changes. If a scanned UPC isn't in the file, add that item manually instead.</p>
         <p>Once an item is found in the file, <strong>Wine / Spirits</strong> pulls a fresher description from liquoroutletwinecellars.com using the export's own store SKU &mdash; the same site SKU Lookup already reads one from. <strong>Beer</strong> instead looks itself up on that same site (title, size, and pricing), then fills in the brewery, location, style, ABV, IBU, and rating from Untappd using that store-listed name &mdash; the exact same two-step lookup SKU Lookup's own Beer path runs, which finds far more on Untappd than searching with the export file's own (often abbreviated) title would. Either of those steps failing just leaves the export file's own value in place for that field, with a note explaining why.</p>
         <p>A scan that comes back completely clean is added to the queue automatically &mdash; there's no "Add to Queue" click needed, so you can walk the aisle and keep scanning one bottle after another, with the UPC box clearing and staying focused for the next scan. If anything above couldn't be filled in (a store SKU the site didn't recognize, a beer Untappd has no match for, and so on), the scan stops short of the queue instead: the fields stay filled in with whatever did resolve, the status line explains what didn't, and you decide whether to click <strong>Add to Queue</strong> as-is or fix it on Manual Entry first. The same holds if a scan is missing something the queue always requires, like a price.</p>
 
@@ -631,12 +663,12 @@
   </div>
 
   <!-- Advanced menu only (Electron) - configures the WinePOS export file
-       path the Scan UPC tab reads from. Previously an inline "Settings" box
-       on the Scan UPC tab itself; moved here so that tab stays focused on
-       scanning, with setup as a one-time admin task in the app menu instead.
-       Still reachable from a plain browser dev copy too (see app.js) via the
-       Scan UPC tab's own "nothing set up yet" fallback - only the Advanced
-       menu entry point itself is Electron-only. -->
+       path the Scan UPC method (Search tab) reads from. Previously an
+       inline "Settings" box on that method itself; moved here so it stays
+       focused on scanning, with setup as a one-time admin task in the app
+       menu instead. Still reachable from a plain browser dev copy too (see
+       app.js) via Scan UPC's own "nothing set up yet" fallback - only the
+       Advanced menu entry point itself is Electron-only. -->
   <div id="exportSettingsOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="exportSettingsTitle">
       <div class="modal__header">

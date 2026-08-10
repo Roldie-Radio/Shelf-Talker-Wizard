@@ -150,10 +150,20 @@
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
-    signTypeToggleBtns: document.querySelectorAll('.signtype-toggle .toggle-btn'),
-    signSizeToggleWrap: document.getElementById('signSizeToggle'),
-    signSizeToggleBtns: document.querySelectorAll('.signsize-toggle .toggle-btn'),
-    categoryToggleBtns: document.querySelectorAll('.category-toggle .toggle-btn'),
+    // Search's own method chooser (Search by Name / SKU Lookup / Scan UPC) -
+    // one level down from the three tabs above, switching which
+    // .method-panel is visible inside the Search tab-panel. See
+    // activateMethod below.
+    methodToggleBtns: document.querySelectorAll('.method-toggle .toggle-btn'),
+    methodPanels: document.querySelectorAll('.method-panel'),
+
+    // Type and Product Type - repeated once per top-level tab (see the
+    // shared .type-select/.product-type-select note in index.html) rather
+    // than one instance each, so every querySelectorAll here returns one
+    // <select> per tab, all kept in sync with currentSignType/
+    // currentSignSize/currentCategory by applyFormMode below.
+    typeSelects: document.querySelectorAll('.type-select'),
+    productTypeSelects: document.querySelectorAll('.product-type-select'),
     titleLabel: document.getElementById('fTitleLabel'),
     descriptionField: document.getElementById('descriptionField'),
     tastingNotesRow: document.getElementById('tastingNotesRow'),
@@ -404,13 +414,10 @@
       t.tabIndex = isActive ? 0 : -1;
     });
     els.panels.forEach((p) => p.classList.toggle('is-active', p.dataset.panel === tab.dataset.tab));
-    // Scan UPC is meant for walking up and scanning immediately - put the
-    // cursor in the UPC field the moment the tab is switched to (whether by
-    // click or arrow key, both funnel through here) so the very first scan
-    // lands in the field with no extra click. No other tab needs this: a
-    // scanner is the only "device" that starts typing without clicking
-    // anything first.
-    if (tab.dataset.tab === 'scan') els.scanUpcInput.focus();
+    // If Search is the tab being switched to and Scan UPC happens to be its
+    // currently-picked method, focus the UPC field the same way switching
+    // straight to Scan UPC below does - see focusScanIfActive.
+    if (tab.dataset.tab === 'search') focusScanIfActive();
   }
 
   els.tabs.forEach((tab) => {
@@ -424,6 +431,42 @@
       activateTab(next);
       next.focus();
     });
+  });
+
+  // ---------- Search's own method chooser ----------
+
+  // Search by Name, SKU Lookup, and Scan UPC used to be three separate
+  // top-level tabs (each its own .tab/.tab-panel, handled by activateTab
+  // above); they're now one level down, as a radiogroup of .toggle-btns
+  // inside the Search tab-panel switching which .method-panel is visible.
+  // Mirrors activateTab's own is-active/hidden-state bookkeeping, just with
+  // the role="radio" attributes (aria-checked) that pattern uses instead of
+  // role="tab"'s aria-selected.
+  function activateMethod(btn) {
+    els.methodToggleBtns.forEach((b) => {
+      const isActive = b === btn;
+      b.classList.toggle('is-active', isActive);
+      b.setAttribute('aria-checked', String(isActive));
+    });
+    els.methodPanels.forEach((p) => p.classList.toggle('is-active', p.dataset.methodPanel === btn.dataset.method));
+    focusScanIfActive();
+  }
+
+  // Scan UPC is meant for walking up and scanning immediately - put the
+  // cursor in the UPC field whenever it's the active method and Search is
+  // the visible tab (switching methods, and switching to the Search tab
+  // while Scan UPC is already picked, both funnel through here) so the very
+  // first scan lands in the field with no extra click. No other method
+  // needs this: a scanner is the only "device" that starts typing without
+  // clicking anything first.
+  function focusScanIfActive() {
+    const activeMethod = [...els.methodToggleBtns].find((b) => b.classList.contains('is-active'));
+    const searchTabActive = document.querySelector('.tab[data-tab="search"]').classList.contains('is-active');
+    if (searchTabActive && activeMethod && activeMethod.dataset.method === 'scan') els.scanUpcInput.focus();
+  }
+
+  els.methodToggleBtns.forEach((btn) => {
+    btn.addEventListener('click', () => activateMethod(btn));
   });
 
   // ---------- Form mode (Shelf Talker/Display Sign x Small/Large x Wine/Beer) ----------
@@ -443,15 +486,32 @@
     });
   }
 
+  // Keeps every repeated Type/Product Type <select> (one per top-level tab -
+  // see the shared .type-select/.product-type-select note in index.html)
+  // showing the same value, since they're all views onto the same
+  // currentSignType/currentSignSize/currentCategory rather than independent
+  // per-tab settings.
+  function syncSelects(selects, value) {
+    selects.forEach((s) => { s.value = value; });
+  }
+
+  // The Type dropdown's three options fold two separate pieces of state
+  // (currentSignType, and currentSignSize when currentSignType is 'sign')
+  // into one flat value; this is that combination's other direction, used
+  // by applyFormMode below to keep the dropdowns themselves in sync, and by
+  // the dropdowns' own change handler further down to unpack a picked value
+  // back into the two.
+  function typeSelectValue() {
+    return currentSignType === 'talker' ? 'talker' : currentSignSize;
+  }
+
   function applyFormMode() {
     const isBeer = currentCategory === 'beer';
     const isSign = currentSignType === 'sign';
     const isSmallSign = isSign && currentSignSize === 'small';
 
-    setToggleState(els.signTypeToggleBtns, (b) => b.dataset.signtype === currentSignType);
-    els.signSizeToggleWrap.hidden = !isSign;
-    setToggleState(els.signSizeToggleBtns, (b) => b.dataset.signsize === currentSignSize);
-    setToggleState(els.categoryToggleBtns, (b) => b.dataset.category === currentCategory);
+    syncSelects(els.typeSelects, typeSelectValue());
+    syncSelects(els.productTypeSelects, currentCategory);
 
     els.titleLabel.textContent = isBeer ? 'Beer Name *' : (isSign ? 'Product Name *' : 'Product Title *');
     els.size.placeholder = isBeer ? '16oz Can / 4-pack' : '750ml / Each / 6-pack';
@@ -497,10 +557,10 @@
     applySkuMode();
   }
 
-  // The SKU Lookup tab's copy - follows the same Wine/Spirits-vs-Beer
-  // toggle as Manual Entry and Import from Website (see the shared
-  // .category-toggle note in index.html), since a beer SKU lookup adds a
-  // second, Untappd-driven step the wine/spirits path doesn't have.
+  // The SKU Lookup method's copy - follows the same Product Type dropdown
+  // as every other tab (see the shared .product-type-select note in
+  // index.html), since a beer SKU lookup adds a second, Untappd-driven step
+  // the wine/spirits path doesn't have.
   function applySkuMode() {
     const isBeer = currentCategory === 'beer';
     els.skuHelpText.textContent = isBeer
@@ -509,10 +569,10 @@
   }
 
   // The Import tab's copy - what it asks for and what it promises to fill
-  // in - follows the same Wine/Spirits-vs-Beer toggle as Manual Entry
-  // (see the shared .category-toggle note in index.html), since beer
-  // import is aimed at Untappd rather than a retail product page and pulls
-  // a different set of fields (no price - Untappd doesn't sell anything).
+  // in - follows the same Product Type dropdown as every other tab (see the
+  // shared .product-type-select note in index.html), since beer import is
+  // aimed at Untappd rather than a retail product page and pulls a
+  // different set of fields (no price - Untappd doesn't sell anything).
   function applyImportMode() {
     const isBeer = currentCategory === 'beer';
     els.importUrlLabel.textContent = isBeer ? 'Untappd Beer Page URL' : 'Product Page URL';
@@ -540,20 +600,24 @@
     els.ratingsFontSize.value = defaults.ratings;
   }
 
-  function setSignType(signType) {
-    currentSignType = signType === 'sign' ? 'sign' : 'talker';
+  // Unpacks the Type dropdown's picked value back into
+  // currentSignType/currentSignSize (see typeSelectValue's own note above
+  // for the other direction). Font-size defaults only get re-stamped when
+  // sign type itself actually changes (Shelf Talker <-> a Display Sign) -
+  // DEFAULT_FONT_SIZE_PT has no separate small-vs-large entry, so toggling
+  // between the two Display Sign sizes alone has nothing new to apply.
+  function setType(value) {
+    const nextSignType = value === 'talker' ? 'talker' : 'sign';
+    const nextSignSize = value === 'small' ? 'small' : 'large';
+    const signTypeChanged = nextSignType !== currentSignType;
+    currentSignType = nextSignType;
+    currentSignSize = nextSignSize;
     // The Full Page preview is scoped to this selection (see
     // renderSheetPreview), so switching it should land back on its first
     // page rather than keeping whatever page number the previous
     // selection's sheets happened to be on.
     sheetPage = 0;
-    if (!els.editId.value) applyFontSizeDefaults();
-    applyFormMode();
-  }
-
-  function setSignSize(signSize) {
-    currentSignSize = signSize === 'small' ? 'small' : 'large';
-    sheetPage = 0;
+    if (signTypeChanged && !els.editId.value) applyFontSizeDefaults();
     applyFormMode();
   }
 
@@ -573,18 +637,10 @@
     applyFormMode();
   }
 
-  els.signTypeToggleBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.signtype === currentSignType) return;
-      setSignType(btn.dataset.signtype);
-      refreshPreview();
-    });
-  });
-
-  els.signSizeToggleBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.signsize === currentSignSize) return;
-      setSignSize(btn.dataset.signsize);
+  els.typeSelects.forEach((select) => {
+    select.addEventListener('change', () => {
+      if (select.value === typeSelectValue()) return;
+      setType(select.value);
       refreshPreview();
     });
   });
@@ -594,10 +650,10 @@
     refreshPreview();
   });
 
-  els.categoryToggleBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.category === currentCategory) return;
-      setCategory(btn.dataset.category);
+  els.productTypeSelects.forEach((select) => {
+    select.addEventListener('change', () => {
+      if (select.value === currentCategory) return;
+      setCategory(select.value);
       refreshPreview();
     });
   });
