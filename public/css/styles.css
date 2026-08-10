@@ -36,9 +36,9 @@
   --ui-field: #fffdfa;
   --ui-btn: #ffffff;
   --ui-btn-hover: #f7f3ec;
-  --ui-accent: #8a5f27;
-  --ui-accent-hover: #71491d;
-  --ui-accent-ink: #8a5f27;   /* accent used as text/border, on a panel */
+  --ui-accent: #7d3a52;       /* == --purple-band, reused as the UI accent */
+  --ui-accent-hover: #6a2e5c;
+  --ui-accent-ink: #7d3a52;   /* accent used as text/border, on a panel */
   --ui-on-accent: #ffffff;    /* text on an accent-filled surface */
   --ui-overlay: rgba(27, 27, 27, 0.55);
   --ui-hover: rgba(27, 27, 27, 0.06);
@@ -51,9 +51,9 @@
 }
 
 /* Dark mode re-points the UI palette only. Contrast was chosen against the
-   surface each token actually sits on: --ui-accent-ink reads 8.7:1 on
-   --ui-panel, and --ui-on-accent 7.6:1 on --ui-accent, so accent text and
-   filled buttons both stay well clear of the 4.5:1 AA threshold that the
+   surface each token actually sits on: --ui-accent-ink reads 6.5:1 on
+   --ui-panel, and --ui-on-accent 5.7:1 on --ui-accent, so accent text and
+   filled buttons both stay clear of the 4.5:1 AA threshold that the
    light theme's greys were failing before. */
 :root[data-theme="dark"] {
   --ui-bg: #171614;
@@ -67,10 +67,10 @@
   --ui-field: #1c1a18;
   --ui-btn: #2b2825;
   --ui-btn-hover: #35312c;
-  --ui-accent: #d9a441;
-  --ui-accent-hover: #e8b563;
-  --ui-accent-ink: #e8b563;
-  --ui-on-accent: #241a08;
+  --ui-accent: #c77aa8;
+  --ui-accent-hover: #d68fc0;
+  --ui-accent-ink: #d68fc0;
+  --ui-on-accent: #2a1024;
   --ui-overlay: rgba(0, 0, 0, 0.72);
   --ui-hover: rgba(255, 255, 255, 0.08);
   --ui-danger-tint: rgba(255, 107, 107, 0.14);
