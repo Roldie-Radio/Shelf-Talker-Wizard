@@ -87,6 +87,31 @@ function buildAwardsHtml(talker) {
   return `<div class="card__awards" style="color: ${color}">${lines.map(escapeHtml).join('<br>')}</div>`;
 }
 
+// Nose/Palate/Finish - spirits tasting notes, filled by hand or via "Find
+// Tasting Notes" (Distiller.com is the source that actually returns these
+// three pre-split; see findTastingNotes in productImport.js). Sits directly
+// under the description, above Ratings - a row is skipped entirely rather
+// than printed with an empty value, so a talker with only Nose filled in
+// (say) shows one row, not three with two blank.
+const FLAVOR_ROWS = [
+  ['Nose', 'nose'],
+  ['Palate', 'palate'],
+  ['Finish', 'finish'],
+];
+function buildFlavorHtml(talker) {
+  const rows = FLAVOR_ROWS
+    .map(([label, field]) => [label, talker[field] ? String(talker[field]).trim() : ''])
+    .filter(([, value]) => value);
+  if (!rows.length) return '';
+  const rowsHtml = rows.map(([label, value]) => `
+    <div class="card__flavor-row">
+      <div class="card__flavor-label">${escapeHtml(label)}</div>
+      <div class="card__flavor-value">${escapeHtml(value)}</div>
+    </div>
+  `).join('');
+  return `<div class="card__flavor">${rowsHtml}</div>`;
+}
+
 // Beer style -> accent color for the pill behind the Style value below.
 // Matched by keyword against the free-text Style field (typed by hand or
 // scraped from Untappd, e.g. "IPA - Imperial / Double New England / Hazy"),
@@ -892,7 +917,8 @@ function buildSignElement(talker) {
 /**
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, ratings: [{reviewer, score}],
- *   brewery, location, style, abv, ibu, untappdRating, untappdRatingCount }
+ *   nose, palate, finish, brewery, location, style, abv, ibu, untappdRating,
+ *   untappdRatingCount }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -946,6 +972,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
+      ${isBeer ? '' : buildFlavorHtml(talker)}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>

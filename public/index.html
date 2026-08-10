@@ -229,6 +229,26 @@
             </div>
           </div>
 
+          <!-- Spirits-only, same visibility rule as Awards below (Shelf
+               Talkers only, hidden for Beer/Display Signs - see
+               applyFormMode in app.js). Filled by hand, or auto-filled by
+               the same "Find Tasting Notes" search above once a Source
+               (e.g. Distiller) returns them - see runTastingNotesSearch. -->
+          <div class="field-group" id="flavorFields">
+            <label class="field">
+              <span>Nose (optional)</span>
+              <textarea id="fNose" rows="2" maxlength="200" placeholder="Caramel corn, toasted oak, dried cherry"></textarea>
+            </label>
+            <label class="field">
+              <span>Palate (optional)</span>
+              <textarea id="fPalate" rows="2" maxlength="200" placeholder="Brown sugar, baking spice, orange peel"></textarea>
+            </label>
+            <label class="field">
+              <span>Finish (optional)</span>
+              <textarea id="fFinish" rows="2" maxlength="200" placeholder="Long and warm, a whisper of black pepper"></textarea>
+            </label>
+          </div>
+
           <div class="field-row">
             <label class="field">
               <span>Size / Unit *</span>
@@ -638,11 +658,31 @@
           <span>Preview &mdash; edit before adding, if you'd like</span>
           <textarea id="tastingNotesPreview" rows="6" maxlength="600" placeholder="Nothing found yet..."></textarea>
         </label>
+        <!-- Nose/Palate/Finish - only a source like Distiller (spirits
+             tasting notes are usually published pre-split under these three
+             headers) fills these; Wine.com/Vivino only ever return the
+             plain description above, so this whole block stays hidden after
+             a search that came back without any of the three - see
+             runTastingNotesSearch in app.js. -->
+        <div id="tastingNotesFlavorPreview" hidden>
+          <label class="field">
+            <span>Nose</span>
+            <textarea id="tastingNotesNosePreview" rows="2" maxlength="200"></textarea>
+          </label>
+          <label class="field">
+            <span>Palate</span>
+            <textarea id="tastingNotesPalatePreview" rows="2" maxlength="200"></textarea>
+          </label>
+          <label class="field">
+            <span>Finish</span>
+            <textarea id="tastingNotesFinishPreview" rows="2" maxlength="200"></textarea>
+          </label>
+        </div>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn" id="tastingNotesSearchBtn">Search Again</button>
         <button type="button" class="btn" id="tastingNotesCancelBtn">Cancel</button>
-        <button type="button" class="btn btn--primary" id="tastingNotesConfirmBtn">Use This Description</button>
+        <button type="button" class="btn btn--primary" id="tastingNotesConfirmBtn">Use These Notes</button>
       </div>
     </div>
   </div>

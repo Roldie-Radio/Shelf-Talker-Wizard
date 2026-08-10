@@ -30,6 +30,8 @@
       version: '2.6.0',
       items: [
         'Search by Name: picking a Beer result now also searches Untappd for the brewery, style, ABV, IBU, and rating, same as SKU Lookup and Scan UPC already do for beer.',
+        'New: Nose / Palate / Finish fields for Wine/Spirits Shelf Talkers, printed under the description.',
+        '"Find Tasting Notes" now has a Distiller.com source that fills Nose/Palate/Finish automatically, alongside Wine.com/Vivino\'s plain description.',
       ],
     },
     {
@@ -491,9 +493,17 @@
     tastingNotesQueryLabel: document.getElementById('tastingNotesQueryLabel'),
     tastingNotesModalStatus: document.getElementById('tastingNotesModalStatus'),
     tastingNotesPreview: document.getElementById('tastingNotesPreview'),
+    tastingNotesFlavorPreview: document.getElementById('tastingNotesFlavorPreview'),
+    tastingNotesNosePreview: document.getElementById('tastingNotesNosePreview'),
+    tastingNotesPalatePreview: document.getElementById('tastingNotesPalatePreview'),
+    tastingNotesFinishPreview: document.getElementById('tastingNotesFinishPreview'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
+    flavorFields: document.getElementById('flavorFields'),
+    nose: document.getElementById('fNose'),
+    palate: document.getElementById('fPalate'),
+    finish: document.getElementById('fFinish'),
     awardsField: document.getElementById('awardsField'),
     awards: document.getElementById('fAwards'),
     awardsColor: document.getElementById('fAwardsColor'),
@@ -939,6 +949,11 @@
     // showing the field for a sign would offer input with no visible
     // effect there.
     els.awardsField.hidden = isBeer || isSign;
+    // Same rule as Awards right above, and for the same reason - Nose/
+    // Palate/Finish only ever render onto the .card printout (see
+    // buildFlavorHtml in card.js), so a Display Sign would offer input with
+    // no visible effect.
+    els.flavorFields.hidden = isBeer || isSign;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
     // The store never runs a Super Sale on beer, so the option isn't just
@@ -1099,6 +1114,9 @@
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
+      nose: els.nose.value.trim(),
+      palate: els.palate.value.trim(),
+      finish: els.finish.value.trim(),
       sku: els.sku.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
@@ -1144,6 +1162,9 @@
     renderRatingsList();
     els.awards.value = talker.awards || '';
     els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
+    els.nose.value = talker.nose || '';
+    els.palate.value = talker.palate || '';
+    els.finish.value = talker.finish || '';
     els.sku.value = talker.sku || '';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
@@ -2150,6 +2171,25 @@
     renderTastingNotesSourceOptions();
   }
 
+  // Every field this dialog can fill, paired with the target form field it
+  // writes to on Confirm (see els.tastingNotesConfirmBtn's handler below).
+  // Wine.com/Vivino only ever return `description`; Distiller.com (the one
+  // structured source - see TASTING_NOTE_PROVIDERS in productImport.js)
+  // returns nose/palate/finish instead, and sometimes a plain description
+  // too (whichever fallback its own product page happened to expose) - see
+  // findTastingNotes. Listed once here so search, reset, and the confirm
+  // enable/disable check all walk the same four instead of drifting.
+  const TASTING_NOTES_FIELDS = [
+    { preview: 'tastingNotesPreview', target: 'description', max: 600 },
+    { preview: 'tastingNotesNosePreview', target: 'nose', max: 200 },
+    { preview: 'tastingNotesPalatePreview', target: 'palate', max: 200 },
+    { preview: 'tastingNotesFinishPreview', target: 'finish', max: 200 },
+  ];
+
+  function updateTastingNotesConfirmState() {
+    els.tastingNotesConfirmBtn.disabled = !TASTING_NOTES_FIELDS.some((f) => els[f.preview].value.trim());
+  }
+
   async function runTastingNotesSearch() {
     const title = els.title.value.trim();
     if (!title) {
@@ -2172,11 +2212,19 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not find tasting notes.');
 
-      // Respects the field's own maxlength, which only guards user typing,
+      // Respects each field's own maxlength, which only guards user typing,
       // not a value assigned from here.
       els.tastingNotesPreview.value = (data.description || '').slice(0, 600);
+      els.tastingNotesNosePreview.value = (data.nose || '').slice(0, 200);
+      els.tastingNotesPalatePreview.value = (data.palate || '').slice(0, 200);
+      els.tastingNotesFinishPreview.value = (data.finish || '').slice(0, 200);
+      // Only reveal the Nose/Palate/Finish rows when this result actually
+      // has at least one - keeps a plain Wine.com/Vivino description result
+      // looking exactly like it always has, no empty spirits-only fields
+      // tacked on.
+      els.tastingNotesFlavorPreview.hidden = !(data.nose || data.palate || data.finish);
       els.tastingNotesModalStatus.textContent = `Found via ${data.sourceName || source || 'the web'}.`;
-      els.tastingNotesConfirmBtn.disabled = !els.tastingNotesPreview.value.trim();
+      updateTastingNotesConfirmState();
     } catch (err) {
       els.tastingNotesModalStatus.textContent = err.message || 'Something went wrong finding tasting notes.';
     } finally {
@@ -2196,7 +2244,8 @@
       // "...Cabernet Sauvignon 2025" plus a separate Vintage of "2022").
       const showVintage = vintage && !/\b\d{4}\b/.test(title);
       els.tastingNotesQueryLabel.textContent = `Searching for: ${title}${showVintage ? ` ${vintage}` : ''}`;
-      els.tastingNotesPreview.value = '';
+      TASTING_NOTES_FIELDS.forEach((f) => { els[f.preview].value = ''; });
+      els.tastingNotesFlavorPreview.hidden = true;
       els.tastingNotesModalStatus.textContent = '';
       els.tastingNotesConfirmBtn.disabled = true;
       renderTastingNotesSourceOptions();
@@ -2227,18 +2276,24 @@
     els.tastingNotesModalStatus.textContent = 'Click "Search Again" to search this source.';
   });
 
-  els.tastingNotesPreview.addEventListener('input', () => {
-    els.tastingNotesConfirmBtn.disabled = !els.tastingNotesPreview.value.trim();
+  TASTING_NOTES_FIELDS.forEach((f) => {
+    els[f.preview].addEventListener('input', updateTastingNotesConfirmState);
   });
 
   els.tastingNotesConfirmBtn.addEventListener('click', () => {
-    const text = els.tastingNotesPreview.value.trim();
-    if (!text) return;
-    const existing = els.description.value.trim();
-    if (existing && existing !== text && !confirm('Replace the current description with this?')) {
-      return;
-    }
-    els.description.value = text.slice(0, 600);
+    const updates = TASTING_NOTES_FIELDS
+      .map((f) => ({ el: els[f.target], value: els[f.preview].value.trim(), max: f.max }))
+      .filter((u) => u.value);
+    if (!updates.length) return;
+    // One combined confirmation covers every field this would overwrite,
+    // rather than a separate popup per field (description, then nose, then
+    // palate...) for a single Distiller result.
+    const overwriting = updates.some((u) => {
+      const existing = u.el.value.trim();
+      return existing && existing !== u.value;
+    });
+    if (overwriting && !confirm('Replace the current tasting notes with these?')) return;
+    updates.forEach((u) => { u.el.value = u.value.slice(0, u.max); });
     tastingNotesModal.close();
     if (previewMode === 'single') renderPreview();
   });
