@@ -676,7 +676,7 @@
         <button type="button" class="btn btn--ghost btn--small" id="exportSettingsCloseBtn">&times; Close</button>
       </div>
       <div class="server-pc-body">
-        <p class="help-text">Point this at the product file WinePOS exports on this PC (CSV or tab-delimited, with a UPC/Barcode column and a price and description/title column). It's re-read automatically whenever the file changes &mdash; no need to restart the app after WinePOS updates it.</p>
+        <p class="help-text">Point this at the product file WinePOS exports on this PC (CSV or tab-delimited, with a UPC/Barcode column and a price and description/title column). It's re-read automatically whenever the file changes &mdash; no need to restart the app after WinePOS updates it. Only the PC WinePOS actually writes that file on (marked <strong>Server PC</strong> in the Advanced menu) needs this &mdash; every other register should use auto-sync below instead.</p>
         <label class="field">
           <span>Export File Path</span>
           <input type="text" id="exportSettingsPathInput" placeholder="C:\WinePOS\Exports\items.csv" />
@@ -686,6 +686,13 @@
           <button type="button" class="btn btn--small btn--primary" id="exportSettingsSaveBtn">Save Location</button>
         </div>
         <p class="help-text" id="exportSettingsStatus" role="status" aria-live="polite"></p>
+
+        <p class="help-text"><strong>Auto-sync</strong> &mdash; instead of a path above, automatically pull the export file over the network from whichever PC is currently marked <strong>Server PC</strong> (Advanced &rarr; Server PC on that PC), refreshed about every 30 seconds. Turn this on for every register except the Server PC itself.</p>
+        <label class="server-pc-checkbox">
+          <input type="checkbox" id="exportSettingsAutoSyncCheckbox" />
+          Automatically pull this file from the Server PC
+        </label>
+        <p class="help-text" id="exportSettingsSyncStatus" role="status" aria-live="polite"></p>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="exportSettingsCloseFooterBtn">Close</button>
@@ -738,10 +745,10 @@
 
   <!-- Advanced menu only (Electron) - lets staff mark this PC as the main
        store PC. Marking one broadcasts a small UDP announcement on the LAN
-       (see server/discovery.js) so *other* PCs can see which one it is -
-       that's purely visibility, still a first step toward sharing Print
-       History/the product cache across registers later, not that feature
-       itself; each PC still keeps its own separate data. -->
+       (see server/discovery.js) so *other* PCs can see which one it is, and
+       starts serving this PC's WinePOS export file to other PCs' Export File
+       Settings -> auto-sync (see server/exportSync.js). Print History and
+       the product cache still aren't shared - each PC keeps its own. -->
   <div id="serverPcOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="serverPcTitle">
       <div class="modal__header">
@@ -749,7 +756,7 @@
         <button type="button" class="btn btn--ghost btn--small" id="serverPcCloseBtn">&times; Close</button>
       </div>
       <div class="server-pc-body">
-        <p class="help-text">Marking a PC as the main store PC lets other PCs on the same network see which one it is &mdash; a first step toward sharing Print History and the product cache across registers later. It doesn't share any of that data yet; each PC still keeps its own.</p>
+        <p class="help-text">Marking a PC as the main store PC lets other PCs on the same network see which one it is, and lets them automatically pull its WinePOS export file (Export File Settings &rarr; auto-sync on each of those PCs) instead of that file being copied around by hand. Print History and the product cache still aren't shared &mdash; each PC keeps its own.</p>
         <dl class="server-pc-facts">
           <div><dt>This PC's network address</dt><dd id="serverPcAddresses">&ndash;</dd></div>
           <div><dt>Print History</dt><dd id="serverPcHistoryCount">&ndash;</dd></div>

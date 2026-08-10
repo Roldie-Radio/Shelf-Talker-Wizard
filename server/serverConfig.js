@@ -1,13 +1,16 @@
 // Backs the desktop app's "Server PC" dialog (Advanced menu): a small,
 // persisted flag marking this PC as the designated main store PC. Setting
 // it makes this PC announce itself on the LAN (see discovery.js) so other
-// PCs can see which one it is, but that's the only functional effect so
-// far - the HTTP server still only binds to 127.0.0.1 (see server/index.js),
-// so no data actually crosses PCs yet. It exists so a store with multiple
-// registers can start agreeing *now* on which PC would eventually host a
-// shared Print History/product cache database, ahead of that networking
-// actually being built - a deliberately small, honest first step rather
-// than a feature that pretends to already share data across PCs.
+// PCs can see which one it is, and starts serving this PC's own configured
+// export file to other PCs' auto-sync (see exportSync.js) - but that's the
+// extent of it so far: the main HTTP server still only binds to 127.0.0.1
+// (see server/index.js), so Print History and the product cache still don't
+// cross PCs. It exists so a store with multiple registers can start
+// agreeing *now* on which PC would eventually host a shared Print History/
+// product cache database, ahead of that networking actually being built -
+// a deliberately small, honest first step (export-file sharing being the
+// second) rather than a feature that pretends to already share everything
+// across PCs.
 //
 // Lives in the same per-PC directory as upcCatalog.js's config.json and
 // db.js's data.db (see appData.js), as its own small file rather than
