@@ -7,7 +7,7 @@ const path = require('node:path');
 const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
   getUpcSettings, setUpcSettings, setAutoSync, syncedExportFilePath, readExportFileRaw,
-  lookupUpc, searchByName, scoreNameMatch, previewExport, parsePackQtyFromSize,
+  lookupUpc, searchByName, scoreNameMatch, previewExport, parsePackQtyFromSize, dedupeProducts,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -178,6 +178,75 @@ test('parsePackQtyFromSize recognizes common pack-count phrasings', () => {
   assert.equal(parsePackQtyFromSize('18 count'), 18);
   assert.equal(parsePackQtyFromSize('750ml'), null);
   assert.equal(parsePackQtyFromSize(''), null);
+});
+
+// ---------- dedupeProducts ----------
+// Confirmed against a real WinePOS export: the same item can appear on more
+// than one row (e.g. one per bin/location) - dedupeProducts collapses exact
+// duplicates so they don't burn multiple slots in a Search by Name result
+// list or inflate the Settings dialog's item count (see buildIndex/
+// getUpcSettings).
+
+test('dedupeProducts collapses rows that are identical in every displayed field', () => {
+  const a = { title: 'Modelo Especial 12pk Btl', brand: '', sku: '2218', size: '12OZ', vintage: '', price: '2.29', salePrice: '', packPrice: '', packQty: 12, description: '', category: 'BEER' };
+  const b = { ...a };
+  const deduped = dedupeProducts([a, b]);
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0], a); // keeps the first occurrence
+});
+
+test('dedupeProducts keeps rows that differ in any displayed field, same SKU or not', () => {
+  const a = { title: 'Modelo Especial 12pk Btl', sku: '2218', size: '12OZ', price: '2.29' };
+  const differentPrice = { ...a, price: '2.49' };
+  const differentSku = { ...a, sku: '2219' };
+  const deduped = dedupeProducts([a, differentPrice, differentSku]);
+  assert.equal(deduped.length, 3);
+});
+
+test('dedupeProducts is case/whitespace-insensitive, same as a shelf-talker viewer would treat it', () => {
+  const a = { title: 'Modelo Especial', sku: '2218', price: '2.29' };
+  const b = { title: ' modelo especial ', sku: '2218', price: '2.29' };
+  assert.equal(dedupeProducts([a, b]).length, 1);
+});
+
+test('buildIndex dedupes duplicate rows in its returned products list, not in byUpc', () => {
+  const csv = [
+    'UPC,Title,SKU,Size,Regular Price',
+    '019214600037,Modelo Especial 12pk Btl,2218,12OZ,2.29',
+    '019214600038,Modelo Especial 12pk Btl,2218,12OZ,2.29', // duplicate row, different UPC
+  ].join('\n');
+  const { byUpc, products } = buildIndex(parseDelimited(csv));
+  assert.equal(products.length, 1); // collapsed
+  assert.equal(byUpc.size, 4); // both rows' UPC-A + EAN-13 variants still scan
+});
+
+test('getUpcSettings reports the deduplicated item count, not a raw row count', () => {
+  const csv = [
+    'UPC,Title,SKU,Regular Price',
+    '1,Modelo Especial,2218,2.29',
+    '2,Modelo Especial,2218,2.29',
+    '3,Modelo Especial,2218,2.29',
+    '4,Miller Lite,4120,1.99',
+  ].join('\n');
+  withTempConfigDir((dir) => {
+    const settings = setUpcSettings(writeExport(dir, 'items.csv', csv));
+    assert.equal(settings.itemCount, 2); // 4 rows, 2 distinct items
+  });
+});
+
+test('searchByName does not burn its result list on duplicate rows of the same item', () => {
+  const csv = [
+    'UPC,Title,SKU,Regular Price',
+    '1,Modelo Especial,2218,2.29',
+    '2,Modelo Especial,2218,2.29',
+    '3,Modelo Especial,2218,2.29',
+    '4,Modelo Negra,2219,2.49',
+  ].join('\n');
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', csv));
+    const results = searchByName('modelo');
+    assert.deepEqual(results.map((p) => p.title).sort(), ['Modelo Especial', 'Modelo Negra']);
+  });
 });
 
 // ---------- getUpcSettings / setUpcSettings / lookupUpc ----------
