@@ -370,7 +370,6 @@
     helpCloseBtn: document.getElementById('helpCloseBtn'),
     helpCloseFooterBtn: document.getElementById('helpCloseFooterBtn'),
 
-    whatsNewBtn: document.getElementById('whatsNewBtn'),
     whatsNewOverlay: document.getElementById('whatsNewOverlay'),
     whatsNewBody: document.getElementById('whatsNewBody'),
     whatsNewShowAllBtn: document.getElementById('whatsNewShowAllBtn'),
@@ -2938,8 +2937,8 @@
   // ---------- What's New ----------
 
   // Renders a list of WHATS_NEW_ENTRIES (see the top of this file) into the
-  // popup body - shared by the automatic launch check and the manual
-  // "What's New" button, which just show a different slice of the list
+  // popup body - shared by the automatic launch check and the Electron Help
+  // menu's "What's New" item, which just show a different slice of the list
   // (unseen-only vs. everything). "See Previous Updates" (below) only makes
   // sense when there's older history not currently shown, so it hides
   // itself once `entries` already covers the whole list.
@@ -2969,18 +2968,11 @@
     renderWhatsNewEntries(WHATS_NEW_ENTRIES);
   });
 
-  // The button always shows the full list, regardless of what this PC has
-  // already seen - unlike the automatic launch popup below, this is someone
-  // deliberately asking "what's changed lately", not a change notification.
-  els.whatsNewBtn.addEventListener('click', () => {
-    renderWhatsNewEntries(WHATS_NEW_ENTRIES);
-    whatsNewModal.open();
-  });
-
   // The Electron Help menu's own "What's New" item (see main.js) opens this
-  // same popup, full list, same as the app-bar button - one What's New
-  // panel, reachable two ways, same pairing as Help/onShowHelpRequested
-  // above.
+  // popup with the full list, regardless of what this PC has already seen -
+  // unlike the automatic launch popup below, this is someone deliberately
+  // asking "what's changed lately", not a change notification. Same pairing
+  // as Help/onShowHelpRequested above.
   if (window.shelfTalker && window.shelfTalker.onShowWhatsNewRequested) {
     window.shelfTalker.onShowWhatsNewRequested(() => {
       renderWhatsNewEntries(WHATS_NEW_ENTRIES);

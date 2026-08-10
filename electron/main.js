@@ -167,10 +167,9 @@ function handleShowHelp() {
   mainWindow.webContents.send('help:show-requested');
 }
 
-// Same pattern as handleShowHelp above, for the app bar's "What's New"
-// button - the renderer owns WHATS_NEW_ENTRIES and always shows the full
-// list here (not just whatever's unseen), same as clicking the button
-// itself would.
+// Same pattern as handleShowHelp above, for the Help menu's "What's New"
+// item - the renderer owns WHATS_NEW_ENTRIES and always shows the full
+// list here, not just whatever's unseen.
 function handleShowWhatsNew() {
   if (!mainWindow) return;
   mainWindow.webContents.send('whats-new:show-requested');
