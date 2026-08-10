@@ -265,6 +265,42 @@ function upcVariants(raw) {
   return [...variants];
 }
 
+// A content fingerprint of everything a product object actually surfaces to
+// staff (Search by Name's list/selected card, the Settings item count) -
+// used by dedupeProducts below to collapse rows that are indistinguishable
+// from a shelf-talker's perspective. Deliberately doesn't include the row's
+// UPC (byUpc, built separately in buildIndex, keeps every UPC variant
+// mapped regardless of this dedup - two genuinely different barcodes for
+// what looks like "the same" item still both need to scan correctly).
+function productSignature(p) {
+  return [
+    p.title, p.brand, p.sku, p.size, p.vintage, p.price, p.salePrice,
+    p.packPrice, p.packQty, p.description, p.category,
+  ].map((v) => (v === null || v === undefined ? '' : String(v)).trim().toLowerCase()).join('');
+}
+
+// Collapses rows that are exact duplicates of each other in every field
+// staff actually see (see productSignature) - confirmed against a real
+// WinePOS export, which can carry the same item on more than one row (e.g.
+// one per bin/location). Doesn't touch byUpc (still built from every row,
+// see buildIndex) - only what Search by Name lists and what the Settings
+// dialog counts as "items in the export", both of which duplicate rows were
+// making look worse than the file's real inventory: a search could burn
+// several of its limited result slots on the same item shown 5 times,
+// crowding out other real matches, and the item count over-reported how
+// much the export actually held. Keeps the first occurrence, file order.
+function dedupeProducts(products) {
+  const seen = new Set();
+  const deduped = [];
+  for (const product of products) {
+    const signature = productSignature(product);
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    deduped.push(product);
+  }
+  return deduped;
+}
+
 function buildIndex(rows) {
   if (!rows.length) return { byUpc: new Map(), headers: [], products: [] };
   const headerRow = rows[0];
@@ -277,11 +313,13 @@ function buildIndex(rows) {
   }
 
   const byUpc = new Map();
-  // One entry per data row with a UPC, in file order - the Search by Name
-  // tab (see searchByName below) scores against this list directly rather
-  // than deriving it from byUpc's values on every search, since a product
-  // sits at multiple keys there (its 12- and 13-digit UPC variants both
-  // point at the same object - see upcVariants).
+  // One entry per data row with a UPC, in file order - deduplicated before
+  // this function hands it back (see dedupeProducts below), so what actually
+  // gets returned is one entry per *distinct* item. The Search by Name tab
+  // (see searchByName below) scores against that returned list directly
+  // rather than deriving it from byUpc's values on every search, since a
+  // product sits at multiple keys there (its 12- and 13-digit UPC variants
+  // both point at the same object - see upcVariants).
   const products = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -316,7 +354,10 @@ function buildIndex(rows) {
       byUpc.set(variant, product);
     }
   }
-  return { byUpc, headers: headerRow, products };
+  // byUpc above still has an entry per row (every UPC variant needs to keep
+  // scanning correctly) - only the returned product list is deduplicated,
+  // see dedupeProducts.
+  return { byUpc, headers: headerRow, products: dedupeProducts(products) };
 }
 
 // ================================================================
@@ -377,9 +418,11 @@ function getUpcSettings() {
     const stat = fs.statSync(exportPath);
     settings.fileExists = true;
     settings.lastModified = stat.mtime.toISOString();
-    // products is already one entry per row (see buildIndex) - byUpc has
-    // multiple keys (12/13-digit variants) per product, so counting that
-    // map's own size would overcount.
+    // products is one entry per *distinct* item (buildIndex's own
+    // dedupeProducts pass already collapsed exact-duplicate rows - see its
+    // comment) - byUpc has multiple keys (12/13-digit variants, plus one per
+    // duplicate row) per product, so counting that map's own size would
+    // overcount further still.
     const { products } = loadCatalog(exportPath);
     settings.itemCount = products.length;
   } catch (err) {
@@ -617,5 +660,6 @@ module.exports = {
   buildIndex,
   scoreNameMatch,
   parsePackQtyFromSize,
+  dedupeProducts,
   configFilePath,
 };
