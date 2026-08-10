@@ -34,7 +34,7 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
-      version: '2.6.0',
+      version: '3.0.0',
       items: [
         'Search by Name: picking a Beer result now also searches Untappd for the brewery, style, ABV, IBU, and rating, same as SKU Lookup and Scan UPC already do for beer.',
         'New (experimental, off by default): Nose / Palate / Finish fields for Wine/Spirits Shelf Talkers, printed under the description, plus a Distiller.com source in "Find Tasting Notes" that fills them in automatically. Turn it on in Settings → Experimental Features → Bourbon Shelf Talkers.',
