@@ -278,6 +278,28 @@ h1, h2, h3 { margin: 0; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .field-row .field { min-width: 0; }
 
+/* Type / Product Type: the first choice on every tab, not just another
+   field-row - it drives currentSignType/currentSignSize/currentCategory
+   for the whole app (see the note above .type-product-row in index.html),
+   so it's called out with a caption, bolder labels/borders, and a divider
+   instead of blending into the fields below it. */
+.type-product-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ui-accent-ink);
+  margin-bottom: 0.5rem;
+}
+.type-product-row .field > span { font-size: 0.92rem; font-weight: 700; color: var(--ui-ink); }
+.type-product-row .field select { border-color: var(--ui-accent); border-width: 1.5px; }
+.type-product-divider {
+  height: 1px;
+  background: linear-gradient(to right, var(--ui-accent), var(--ui-border) 55%);
+  margin: 1rem 0 1.05rem;
+  opacity: 0.8;
+}
+
 .tasting-notes-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .tasting-notes-row .help-text { margin: 0; }
 
