@@ -42,6 +42,7 @@
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
       <button type="button" id="guideBtn" class="btn" title="Print a customer guide explaining how to read a shelf talker">Beer Talker Info</button>
       <button type="button" id="historyBtn" class="btn" title="Search and reprint past shelf talkers">History</button>
+      <button type="button" id="whatsNewBtn" class="btn" title="See what's changed recently">What's New</button>
       <button type="button" id="helpBtn" class="btn" title="Help">Help</button>
       <button type="button" id="themeToggle" class="btn btn--icon" aria-pressed="false" title="Switch to dark mode">
         <span class="theme-toggle__icon" aria-hidden="true">&#9789;</span>
@@ -583,6 +584,25 @@
       <div class="modal__footer">
         <button type="button" class="btn" id="guidePreviewCancelBtn">Cancel</button>
         <button type="button" class="btn btn--primary" id="guidePreviewConfirmBtn">Print Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shown automatically once after an update (see checkWhatsNew in app.js,
+       compared against the version /api/app-version reports), and always
+       reachable via the "What's New" button in the app bar. Content is
+       populated from WHATS_NEW_ENTRIES in app.js, not hardcoded here, so a
+       new release just needs a new entry added to that list. -->
+  <div id="whatsNewOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="whatsNewTitle">
+      <div class="modal__header">
+        <h2 id="whatsNewTitle">What's New</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="whatsNewCloseBtn">&times; Close</button>
+      </div>
+      <div class="whats-new-body" id="whatsNewBody"></div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="whatsNewShowAllBtn">See Previous Updates</button>
+        <button type="button" class="btn btn--primary" id="whatsNewCloseFooterBtn">Got it</button>
       </div>
     </div>
   </div>

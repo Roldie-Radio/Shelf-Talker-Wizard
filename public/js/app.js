@@ -10,6 +10,52 @@
   const ACCENT_KEY = 'shelfTalkerAccent.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
+  // The newest version this PC has shown a "What's New" popup for (see
+  // checkWhatsNew) - kept separate from THEME_KEY/STORAGE_KEY's per-browser
+  // storage in the same way, so each PC/profile tracks its own.
+  const WHATS_NEW_SEEN_KEY = 'shelfTalkerWhatsNewSeen.v1';
+
+  // One entry per release worth telling staff about, newest first. Add a
+  // new entry here whenever a release has something worth mentioning -
+  // checkWhatsNew (below, near Init) compares the server's reported version
+  // (see /api/app-version) against WHATS_NEW_SEEN_KEY and shows whichever
+  // entries are newer than what this PC last saw, so nothing here needs to
+  // be pruned by hand as it ages.
+  const WHATS_NEW_ENTRIES = [
+    {
+      version: '2.5.0',
+      items: [
+        "New: this “What's New” popup shows once after an update, and is always reachable from the What's New button next to Help (or the desktop app's Help menu).",
+        "New: the desktop app has a Tools › Settings menu with a Change Theme option, to switch the app's own accent color between Amber and Purple.",
+        'Website tab: added an explicit Add to Queue button, and importing now keeps you on the tab instead of jumping away — paste another URL and keep going.',
+        'Edit Talker, Website, and Search now call out Type / Product Type as the first thing to set.',
+        'Super Sale Price now defaults to 23pt on Small Display signs.',
+      ],
+    },
+    {
+      version: '2.4.2',
+      items: [
+        'Search by Name: choose Unit or Pack pricing for beer results, same as Scan UPC already offers.',
+        "Store website URLs now route straight to the store's own page parser for Size/Price.",
+        'Container size (e.g. "750mL") is stripped out of the title when importing from the store website.',
+      ],
+    },
+    {
+      version: '2.4.1',
+      items: [
+        'Tab labels renamed for clarity: "Manual Entry" → "Edit Talker", "Import from Website" → "Website".',
+        'The Edit Talker / Website / Search tab bar is now centered.',
+      ],
+    },
+    {
+      version: '2.4.0',
+      items: [
+        'The Search tab is consolidated: Search by Name, SKU Lookup, and Scan UPC now share one Type / Product Type picker instead of asking separately.',
+        '"Scan UPC" dropped its Beta label.',
+      ],
+    },
+  ];
+
   // Print-sheet geometry and the sheet/auto-arrange packing live in
   // layout.js, apart from this file's DOM wiring so they can be unit tested
   // against the @media print rules they have to agree with.
@@ -323,6 +369,13 @@
     helpOverlay: document.getElementById('helpOverlay'),
     helpCloseBtn: document.getElementById('helpCloseBtn'),
     helpCloseFooterBtn: document.getElementById('helpCloseFooterBtn'),
+
+    whatsNewBtn: document.getElementById('whatsNewBtn'),
+    whatsNewOverlay: document.getElementById('whatsNewOverlay'),
+    whatsNewBody: document.getElementById('whatsNewBody'),
+    whatsNewShowAllBtn: document.getElementById('whatsNewShowAllBtn'),
+    whatsNewCloseBtn: document.getElementById('whatsNewCloseBtn'),
+    whatsNewCloseFooterBtn: document.getElementById('whatsNewCloseFooterBtn'),
 
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
@@ -2882,6 +2935,111 @@
     window.shelfTalker.onShowHelpRequested(() => helpModal.open());
   }
 
+  // ---------- What's New ----------
+
+  // Renders a list of WHATS_NEW_ENTRIES (see the top of this file) into the
+  // popup body - shared by the automatic launch check and the manual
+  // "What's New" button, which just show a different slice of the list
+  // (unseen-only vs. everything). "See Previous Updates" (below) only makes
+  // sense when there's older history not currently shown, so it hides
+  // itself once `entries` already covers the whole list.
+  function renderWhatsNewEntries(entries) {
+    els.whatsNewShowAllBtn.hidden = entries.length >= WHATS_NEW_ENTRIES.length;
+    if (!entries.length) {
+      els.whatsNewBody.innerHTML = '<p class="whats-new-empty">Nothing new to report yet.</p>';
+      return;
+    }
+    els.whatsNewBody.innerHTML = entries.map((entry) => `
+      <div class="whats-new-entry">
+        <h3>Version ${escapeHtml(entry.version)}</h3>
+        <ul>${entry.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+      </div>
+    `).join('');
+  }
+
+  const whatsNewModal = createModal({
+    overlay: els.whatsNewOverlay,
+    closeBtns: [els.whatsNewCloseBtn, els.whatsNewCloseFooterBtn],
+  });
+
+  // Lets someone looking at just the "since you last opened this" slice
+  // (see checkWhatsNew below) expand in place to the full history, without
+  // having to close the popup and reopen it from the app-bar button.
+  els.whatsNewShowAllBtn.addEventListener('click', () => {
+    renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+  });
+
+  // The button always shows the full list, regardless of what this PC has
+  // already seen - unlike the automatic launch popup below, this is someone
+  // deliberately asking "what's changed lately", not a change notification.
+  els.whatsNewBtn.addEventListener('click', () => {
+    renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+    whatsNewModal.open();
+  });
+
+  // The Electron Help menu's own "What's New" item (see main.js) opens this
+  // same popup, full list, same as the app-bar button - one What's New
+  // panel, reachable two ways, same pairing as Help/onShowHelpRequested
+  // above.
+  if (window.shelfTalker && window.shelfTalker.onShowWhatsNewRequested) {
+    window.shelfTalker.onShowWhatsNewRequested(() => {
+      renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+      whatsNewModal.open();
+    });
+  }
+
+  // Breaks "2.4.10" > "2.4.9" ties correctly, unlike a plain string
+  // compare - returns negative/zero/positive same as a normal comparator.
+  function compareVersions(a, b) {
+    const partsA = String(a).split('.').map(Number);
+    const partsB = String(b).split('.').map(Number);
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i += 1) {
+      const diff = (partsA[i] || 0) - (partsB[i] || 0);
+      if (diff !== 0) return diff;
+    }
+    return 0;
+  }
+
+  // Shows the popup once per PC after an update: asks the server what
+  // version is actually running (see /api/app-version - works the same
+  // whether this is the plain browser dev copy or Electron's own local
+  // server) and compares it against the newest version this PC has already
+  // shown a popup for. A PC that's never seen one only gets the latest
+  // entry, not the entire history - staff opening the app for the first
+  // time don't need a changelog going back to 2.4.0, just the button to
+  // find one if they want it. Silently does nothing if the request fails or
+  // localStorage is unavailable (private/locked-down browser profile) -
+  // this is a nice-to-have, not something worth an error state over.
+  async function checkWhatsNew() {
+    let lastSeen;
+    try {
+      lastSeen = localStorage.getItem(WHATS_NEW_SEEN_KEY);
+    } catch {
+      return;
+    }
+
+    let version;
+    try {
+      const resp = await fetch('/api/app-version');
+      ({ version } = await resp.json());
+      if (!version) return;
+    } catch {
+      return;
+    }
+
+    if (lastSeen === version) return;
+
+    const entries = lastSeen
+      ? WHATS_NEW_ENTRIES.filter((entry) => compareVersions(entry.version, lastSeen) > 0)
+      : WHATS_NEW_ENTRIES.slice(0, 1);
+
+    try { localStorage.setItem(WHATS_NEW_SEEN_KEY, version); } catch { /* ignore */ }
+    if (!entries.length) return;
+
+    renderWhatsNewEntries(entries);
+    whatsNewModal.open();
+  }
+
   // ---------- History ----------
 
   // A permanent, searchable record of every talker actually printed (see
@@ -3450,4 +3608,5 @@
   renderReviewerSelect();
   renderQueue();
   renderPreview();
+  checkWhatsNew();
 })();

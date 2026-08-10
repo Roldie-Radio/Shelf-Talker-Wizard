@@ -16,6 +16,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Print History** &mdash; every talker actually printed is kept in a permanent, searchable record (a local SQLite database), separate from the queue above. Search by title or SKU and click **Reprint** to add a past talker back into the queue without re-entering it.
 - **Product cache** &mdash; SKU Lookup and Scan UPC both remember what they found for a given SKU/UPC; a repeat lookup within 24 hours skips the network/file read entirely, and a *failed* lookup falls back to whatever's cached (clearly marked, however old) rather than a hard error.
 - **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, SKU lookup, importing, History, and printing, so staff aren't sent looking for this README.
+- **What's New** &mdash; a popup shows automatically the first time the app launches after an update, and the What's New button (and the desktop app's Help menu) reopens it anytime with the full history.
 
 ## Running it
 

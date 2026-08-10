@@ -167,6 +167,15 @@ function handleShowHelp() {
   mainWindow.webContents.send('help:show-requested');
 }
 
+// Same pattern as handleShowHelp above, for the app bar's "What's New"
+// button - the renderer owns WHATS_NEW_ENTRIES and always shows the full
+// list here (not just whatever's unseen), same as clicking the button
+// itself would.
+function handleShowWhatsNew() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('whats-new:show-requested');
+}
+
 // Opens the in-app Settings panel (currently just Change Theme) the same
 // way handleShowHelp opens Help above - the renderer owns the actual
 // content, this just asks it to show it.
@@ -292,6 +301,7 @@ function buildMenu() {
       label: 'Help',
       submenu: [
         { label: 'Help', click: handleShowHelp },
+        { label: "What's New", click: handleShowWhatsNew },
         { type: 'separator' },
         { label: 'Check for Updates…', click: handleCheckForUpdates },
         { type: 'separator' },

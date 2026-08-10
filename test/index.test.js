@@ -497,6 +497,21 @@ test('GET /api/name-search reports a 404 with NO_EXPORT_PATH when nothing has be
 });
 
 // ================================================================
+// /api/app-version - backs the "What's New" popup (public/js/app.js), which
+// compares this against what it last showed a popup for. Just needs to
+// echo package.json's own version back.
+// ================================================================
+
+test('GET /api/app-version reports package.json\'s version', async () => {
+  const { version } = require('../package.json');
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/app-version');
+    assert.equal(status, 200);
+    assert.equal(body.version, version);
+  }));
+});
+
+// ================================================================
 // /api/server-status - see the comment above the routes in server/index.js.
 // withServer() builds its app with createApp() alone (no beacon, see
 // server/discovery.js), the same as every other test in this file - these
