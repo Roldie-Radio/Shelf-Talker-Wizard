@@ -353,10 +353,23 @@ function isStoreUrl(url) {
   }
 }
 
+// parseStoreProductHtml's own title is whatever's in the page's H1/og:title
+// verbatim, container size and all (e.g. "Michelob ULTRA 12pk-12oz Cans") -
+// fine for the SKU Lookup tab, which never uses that raw title directly
+// either (lookupSku/lookupSkuFromHtml below both run it through
+// composeProducerTitle first, the same size-stripping/brand-prepending step
+// applied here). Without this, a store URL pasted into "Import from
+// website" would end up with the container size duplicated in both the
+// Product Title field and the new Size field this now fills in.
+function parseStoreProductForImport(html, url) {
+  const product = parseStoreProductHtml(html, url);
+  return { ...product, title: composeProducerTitle(product) };
+}
+
 async function extractProduct(url) {
   if (isStoreUrl(url)) {
     const html = await fetchStoreHtml(url);
-    return parseStoreProductHtml(html, url);
+    return parseStoreProductForImport(html, url);
   }
   const html = await fetchProductHtml(url);
   return parseProductHtml(html, url);
@@ -375,7 +388,7 @@ function parsePastedProduct({ html, url, category }) {
   }
   const sourceUrl = typeof url === 'string' ? url.trim() : '';
   if (category === 'beer') return parseBeerHtml(html, sourceUrl);
-  return isStoreUrl(sourceUrl) ? parseStoreProductHtml(html, sourceUrl) : parseProductHtml(html, sourceUrl);
+  return isStoreUrl(sourceUrl) ? parseStoreProductForImport(html, sourceUrl) : parseProductHtml(html, sourceUrl);
 }
 
 // ================================================================
