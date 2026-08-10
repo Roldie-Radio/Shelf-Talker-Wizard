@@ -935,6 +935,15 @@ function buildCardElement(talker) {
   const isQuarter = talkerSize === 'quarter';
   const isBeer = talker.category === 'beer';
   card.dataset.category = isBeer ? 'beer' : 'wine';
+  // Settings -> Experimental Features -> Bourbon Shelf Talkers (see
+  // applyExperimentalBourbon in app.js, which publishes this) - read fresh
+  // on every render rather than cached, so switching the toggle off stops a
+  // talker's Nose/Palate/Finish from printing immediately, even one that
+  // already had that data from before the toggle existed or was last on.
+  // window.ShelfTalkerSettings may not exist at all yet (e.g. a test harness
+  // that loads card.js without app.js), hence the defensive check rather
+  // than a bare property read.
+  const experimentalBourbon = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalBourbon);
   const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
   const titleClasses = ['card__title'];
@@ -972,7 +981,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
-      ${isBeer ? '' : buildFlavorHtml(talker)}
+      ${(isBeer || !experimentalBourbon) ? '' : buildFlavorHtml(talker)}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       <div class="card__spacer"></div>

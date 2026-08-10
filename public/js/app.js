@@ -12,6 +12,13 @@
   // match the key the inline pre-paint script in index.html reads.
   const MENU_SIZE_KEY = 'shelfTalkerMenuSize.v1';
   const MENU_SIZES = ['compact', 'comfortable', 'large', 'xlarge'];
+  // Settings -> Experimental Features -> Bourbon Shelf Talkers: gates the
+  // Nose/Palate/Finish fields and the Distiller.com tasting-notes source in
+  // one switch (see applyExperimentalBourbon below). Off by default -
+  // Distiller's own scraper is unconfirmed against the live site (see
+  // productImport.js), so this stays opt-in rather than showing up for
+  // every store the moment it ships.
+  const EXPERIMENTAL_BOURBON_KEY = 'shelfTalkerExperimentalBourbon.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -30,8 +37,7 @@
       version: '2.6.0',
       items: [
         'Search by Name: picking a Beer result now also searches Untappd for the brewery, style, ABV, IBU, and rating, same as SKU Lookup and Scan UPC already do for beer.',
-        'New: Nose / Palate / Finish fields for Wine/Spirits Shelf Talkers, printed under the description.',
-        '"Find Tasting Notes" now has a Distiller.com source that fills Nose/Palate/Finish automatically, alongside Wine.com/Vivino\'s plain description.',
+        'New (experimental, off by default): Nose / Palate / Finish fields for Wine/Spirits Shelf Talkers, printed under the description, plus a Distiller.com source in "Find Tasting Notes" that fills them in automatically. Turn it on in Settings → Experimental Features → Bourbon Shelf Talkers.',
       ],
     },
     {
@@ -390,6 +396,18 @@
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
   let currentCategory = 'wine'; // 'wine' | 'beer'
 
+  // Settings -> Experimental Features -> Bourbon Shelf Talkers (see
+  // EXPERIMENTAL_BOURBON_KEY above and applyExperimentalBourbon further
+  // down) - read once at load, then kept in sync with the checkbox from
+  // there on.
+  let experimentalBourbonEnabled = false;
+  try {
+    experimentalBourbonEnabled = localStorage.getItem(EXPERIMENTAL_BOURBON_KEY) === 'true';
+  } catch {
+    // Same as reviewers/queue below - an unavailable store just means this
+    // stays at its off-by-default value.
+  }
+
   let previewMode = 'single'; // 'single' | 'sheet'
   let sheetPage = 0;
 
@@ -692,6 +710,7 @@
     settingsCloseFooterBtn: document.getElementById('settingsCloseFooterBtn'),
     settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
+    experimentalBourbonCheckbox: document.getElementById('experimentalBourbonCheckbox'),
 
     menuBar: document.getElementById('menuBar'),
   };
@@ -819,6 +838,40 @@
         // the click, the choice just won't survive a restart.
       }
     });
+  });
+
+  // ---------- Experimental Features (Settings -> Bourbon Shelf Talkers) ----------
+
+  // A single switch for everything the bourbon/spirits work in this session
+  // added: the Nose/Palate/Finish fields (applyFormMode's flavorFields
+  // line) and the Distiller.com source in "Find Tasting Notes"
+  // (renderTastingNotesSourceOptions/runTastingNotesSearch below). Also
+  // published onto window.ShelfTalkerSettings so card.js - a separate
+  // script, sharing this page's global scope the same way it already
+  // shares window.ShelfTalkerLayout with layout.js - can gate printing
+  // Nose/Palate/Finish the instant this is switched off, even for a talker
+  // that already has that data from before. Nothing here is ever deleted:
+  // fillForm/readForm don't check this flag at all, so a hidden field's
+  // value round-trips through a save untouched, and switching the toggle
+  // back on immediately shows/prints it again.
+  window.ShelfTalkerSettings = window.ShelfTalkerSettings || {};
+
+  function applyExperimentalBourbon(enabled) {
+    experimentalBourbonEnabled = enabled;
+    window.ShelfTalkerSettings.experimentalBourbon = enabled;
+    els.experimentalBourbonCheckbox.checked = enabled;
+    applyFormMode();
+    renderTastingNotesSourceOptions();
+    if (previewMode === 'single') renderPreview();
+  }
+
+  els.experimentalBourbonCheckbox.addEventListener('change', () => {
+    applyExperimentalBourbon(els.experimentalBourbonCheckbox.checked);
+    try {
+      localStorage.setItem(EXPERIMENTAL_BOURBON_KEY, String(els.experimentalBourbonCheckbox.checked));
+    } catch {
+      // Same as theme/accent above - the choice just won't survive a restart.
+    }
   });
 
   // ---------- Tabs ----------
@@ -952,8 +1005,11 @@
     // Same rule as Awards right above, and for the same reason - Nose/
     // Palate/Finish only ever render onto the .card printout (see
     // buildFlavorHtml in card.js), so a Display Sign would offer input with
-    // no visible effect.
-    els.flavorFields.hidden = isBeer || isSign;
+    // no visible effect. Also gated behind Settings -> Experimental
+    // Features -> Bourbon Shelf Talkers (see applyExperimentalBourbon) -
+    // off by default, so these fields stay out of the way until a store
+    // opts in.
+    els.flavorFields.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
     // The store never runs a Super Sale on beer, so the option isn't just
@@ -2143,15 +2199,30 @@
   // every provider in order, same as before this dialog existed.
   const ANY_TASTING_NOTES_SOURCE = 'Any source (recommended)';
   let tastingNotesSourceNames = [];
+  // Which of the above are gated behind Settings -> Experimental Features ->
+  // Bourbon Shelf Talkers (Distiller, today - see the server's own
+  // TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES) - read from the server rather
+  // than hardcoded, same reasoning as tastingNotesSourceNames itself below.
+  let tastingNotesExperimentalSourceNames = [];
   let tastingNotesSourcesLoaded = false;
 
   function renderTastingNotesSourceOptions() {
     const current = els.tastingNotesSourceSelect.value;
-    const options = [ANY_TASTING_NOTES_SOURCE, ...tastingNotesSourceNames];
+    // Experimental sources (Distiller) only show up in the dropdown once
+    // the Settings toggle is on - the server enforces this too (see
+    // findTastingNotes in productImport.js), this is just keeping staff
+    // from picking an option that would immediately error.
+    const visibleNames = experimentalBourbonEnabled
+      ? tastingNotesSourceNames
+      : tastingNotesSourceNames.filter((name) => !tastingNotesExperimentalSourceNames.includes(name));
+    const options = [ANY_TASTING_NOTES_SOURCE, ...visibleNames];
     els.tastingNotesSourceSelect.innerHTML = options
       .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
       .join('');
-    if (options.includes(current)) els.tastingNotesSourceSelect.value = current;
+    // A source that just got hidden (toggle switched off while it was
+    // selected) falls back to "Any source" rather than leaving the select
+    // showing a value with no matching <option>.
+    els.tastingNotesSourceSelect.value = options.includes(current) ? current : ANY_TASTING_NOTES_SOURCE;
   }
 
   // Fetched once per page load rather than hardcoded, so a provider added to
@@ -2164,6 +2235,7 @@
       const resp = await fetch('/api/tasting-notes/sources');
       const data = await resp.json();
       if (resp.ok && Array.isArray(data.sources)) tastingNotesSourceNames = data.sources;
+      if (resp.ok && Array.isArray(data.experimental)) tastingNotesExperimentalSourceNames = data.experimental;
     } catch {
       // Fall through with "Any source" only - the search itself still tries
       // every provider server-side regardless of whether this list loaded.
@@ -2207,7 +2279,7 @@
       const resp = await fetch('/api/tasting-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, vintage, source }),
+        body: JSON.stringify({ title, vintage, source, allowExperimental: experimentalBourbonEnabled }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not find tasting notes.');
@@ -4200,6 +4272,7 @@
     onOpen: () => {
       applyAccent(currentAccent());
       applyMenuSize(currentMenuSize());
+      els.experimentalBourbonCheckbox.checked = experimentalBourbonEnabled;
     },
   });
 
@@ -4483,7 +4556,9 @@
 
   applyTheme(currentTheme());
   applyAccent(currentAccent());
-  applyFormMode();
+  // Also runs applyFormMode() - see applyExperimentalBourbon's own comment
+  // above for why the two need to move together.
+  applyExperimentalBourbon(experimentalBourbonEnabled);
   applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();
