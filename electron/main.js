@@ -183,6 +183,15 @@ function handleShowSettings() {
   mainWindow.webContents.send('settings:show-requested');
 }
 
+// Same pattern as handleShowHelp above, for the Tools menu's "Beer Talker
+// Info" item - opens the renderer's guide preview modal (see
+// guidePreviewModal in app.js), which used to be reached from an app-bar
+// button of its own.
+function handleShowGuide() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('guide:show-requested');
+}
+
 function showAboutDialog() {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
@@ -293,6 +302,7 @@ function buildMenu() {
     {
       label: 'Tools',
       submenu: [
+        { label: 'Beer Talker Info', click: handleShowGuide },
         { label: 'Settings…', click: handleShowSettings },
       ],
     },
