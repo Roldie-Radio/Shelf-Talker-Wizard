@@ -787,6 +787,61 @@ test('extractProduct passes through a non-block failure unchanged', async () => 
   );
 });
 
+// liquoroutletwinecellars.com product pages don't carry the schema.org/Open
+// Graph price+size markup parseProductHtml looks for (see the note above
+// isStoreUrl in productImport.js) - a URL on this host pasted into "Import
+// from website" must be routed to parseStoreProductHtml instead, so Size
+// and Price come back filled in rather than silently blank. www. and
+// bare-domain both count as this host.
+test('extractProduct routes a liquoroutletwinecellars.com URL to the store-specific parser, filling in Size and Price', async () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <table><tr><th>Size</th><td>12pk-12oz Cans</td></tr></table>
+    `,
+  });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: html }),
+    async () => {
+      const result = await extractProduct('https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+      assert.equal(result.title, 'Michelob ULTRA');
+      assert.equal(result.price, '8.99');
+      assert.equal(result.size, '12pk-12oz Cans');
+    }
+  );
+});
+
+test('extractProduct routes the bare liquoroutletwinecellars.com domain (no "www.") to the store-specific parser too', async () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <table><tr><th>Size</th><td>12pk-12oz Cans</td></tr></table>
+    `,
+  });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: html }),
+    async () => {
+      const result = await extractProduct('https://liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/');
+      assert.equal(result.price, '8.99');
+      assert.equal(result.size, '12pk-12oz Cans');
+    }
+  );
+});
+
+test('extractProduct gives the store-specific blocked-request message for a blocked liquoroutletwinecellars.com fetch', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => extractProduct('https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/'),
+        /store site blocked/
+      );
+    }
+  );
+});
+
 // ================================================================
 // "Paste page HTML" fallback (parsePastedProduct) - what the "Import from
 // website" tab falls back to when even extractProduct's retry above keeps
@@ -828,6 +883,27 @@ test('parsePastedProduct treats a missing url as an optional field, not an error
 test('parsePastedProduct rejects an empty paste without attempting to parse it', () => {
   assert.throws(() => parsePastedProduct({ html: '   ', category: 'wine' }), /Paste the page's HTML first/);
   assert.throws(() => parsePastedProduct({ category: 'wine' }), /Paste the page's HTML first/);
+});
+
+// Same store-hostname routing as extractProduct above, but for the "paste
+// page HTML" fallback - a liquoroutletwinecellars.com page pasted here
+// still needs to go through parseStoreProductHtml, or Size and Price come
+// back blank the same way they would from the generic parser.
+test('parsePastedProduct routes a pasted liquoroutletwinecellars.com page to the store-specific parser too', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Michelob ULTRA</h1>
+      <div class="pricingDetails"><span class="priceFull">$8.99</span></div>
+      <table><tr><th>Size</th><td>12pk-12oz Cans</td></tr></table>
+    `,
+  });
+  const result = parsePastedProduct({
+    html,
+    url: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/',
+    category: 'wine',
+  });
+  assert.equal(result.price, '8.99');
+  assert.equal(result.size, '12pk-12oz Cans');
 });
 
 // ================================================================

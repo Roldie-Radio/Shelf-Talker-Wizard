@@ -258,6 +258,33 @@ test('switching a cached SKU to Beer re-runs the lookup (and Untappd search) ins
 });
 
 // ================================================================
+// /api/import-url ("Import from website") for a liquoroutletwinecellars.com
+// product URL pasted in directly, rather than looked up by SKU. Generic
+// retail parsing (parseProductHtml) has nothing on this site to read Size
+// or Price from - see the note above isStoreUrl in productImport.js - so
+// this confirms the route delegates to the store-specific parser instead
+// and both fields actually come back filled in.
+// ================================================================
+
+test('/api/import-url fills in Size and Price for a liquoroutletwinecellars.com product URL', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await withMockFetch(
+      async () => mockResponse({ body: storeProductHtml }),
+      async () => {
+        const result = await postJson(port, '/api/import-url', {
+          url: 'https://www.liquoroutletwinecellars.com/Michelob-ULTRA-09144-1009144/',
+          category: 'wine',
+        });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Michelob ULTRA');
+        assert.equal(result.body.price, '8.99');
+        assert.equal(result.body.size, '12pk-12oz Cans');
+      }
+    );
+  }));
+});
+
+// ================================================================
 // /api/upc-lookup's Wine/Spirits store-description enrichment (see the
 // comment above the route in server/index.js) and its own category-aware
 // cache, mirroring the /api/sku-lookup tests above.

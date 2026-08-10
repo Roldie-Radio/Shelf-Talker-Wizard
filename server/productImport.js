@@ -326,7 +326,38 @@ async function fetchProductHtml(url) {
   }
 }
 
+// liquoroutletwinecellars.com's own product pages - reachable here via a
+// URL pasted straight into "Import from website", not just via the SKU
+// Lookup tab's search-by-SKU flow (see storeSearchUrl/lookupStoreSku below) -
+// don't carry the schema.org/Open Graph markup parseProductHtml above looks
+// for Size and Price in: no JSON-LD Product `offers`/`size`, no
+// `product:price:amount` (or similarly-named) meta tag, and none of the
+// Shopify/WooCommerce "was/now" price selectors pricesFromCommonSelectors
+// checks. Size and Price instead live in this site's own plain-text spec
+// table and `.pricingDetails` markup - exactly what parseStoreProductHtml
+// already reads, and already has real-page-confirmed tests for (see the
+// note above it). Nothing here throws on a generic-looking parse failure;
+// Title and Description still come back fine either way (both sites emit
+// Open Graph tags), so without this a store URL pasted into "Import from
+// website" would quietly leave Size and Price blank instead of failing
+// loudly. Any URL on this host is routed to that parser instead, both for a
+// live fetch (extractProduct) and for the "paste page HTML" fallback
+// (parsePastedProduct) below.
+const STORE_HOSTNAMES = new Set(['liquoroutletwinecellars.com', 'www.liquoroutletwinecellars.com']);
+
+function isStoreUrl(url) {
+  try {
+    return STORE_HOSTNAMES.has(new URL(url).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 async function extractProduct(url) {
+  if (isStoreUrl(url)) {
+    const html = await fetchStoreHtml(url);
+    return parseStoreProductHtml(html, url);
+  }
   const html = await fetchProductHtml(url);
   return parseProductHtml(html, url);
 }
@@ -343,7 +374,8 @@ function parsePastedProduct({ html, url, category }) {
     throw new Error("Paste the page's HTML first.");
   }
   const sourceUrl = typeof url === 'string' ? url.trim() : '';
-  return category === 'beer' ? parseBeerHtml(html, sourceUrl) : parseProductHtml(html, sourceUrl);
+  if (category === 'beer') return parseBeerHtml(html, sourceUrl);
+  return isStoreUrl(sourceUrl) ? parseStoreProductHtml(html, sourceUrl) : parseProductHtml(html, sourceUrl);
 }
 
 // ================================================================
