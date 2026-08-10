@@ -755,6 +755,15 @@ h1, h2, h3 { margin: 0; }
   border-radius: 999px;
   vertical-align: middle;
 }
+/* .field span (see the note above .font-size-control__icon) is a
+   class+type selector, so it outranks .beta-badge's plain class whenever
+   the badge sits inside a .field - the Find Tasting Notes button's Beta
+   badge does, since it's inside #descriptionField. Without this, that one
+   badge's text fell back to .field span's muted --ui-ink-soft grey instead
+   of the white/near-white --ui-on-accent every other Beta badge gets,
+   which barely read against the amber (or purple) accent background in
+   light mode. */
+.field .beta-badge { color: var(--ui-on-accent); }
 
 #printPreviewSummary { padding: 0 1.2rem; margin-bottom: 0.75rem; }
 
