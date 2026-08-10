@@ -830,6 +830,13 @@ h1, h2, h3 { margin: 0; }
    leave it swimming in empty space. */
 .modal--narrow { max-width: 480px; }
 
+/* Tools -> Settings (see index.html): separates "Change Theme" from the
+   Experimental Features placeholder below it without a full second modal
+   section header - this modal only has room-scale content, not a proper
+   sidebar/tab layout. */
+.settings-section-divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 0; }
+.settings-section-title { font-size: 0.85rem; font-weight: 700; color: var(--ui-ink); margin: 0 0 0.4rem; }
+
 /* The "Beer Talker Info" guide (see .guide below) is a single 10.44in-
    wide document meant to be read closely, not a scrollable list of
    thumbnails like Print Preview - the default 920px .modal width left ~880px
