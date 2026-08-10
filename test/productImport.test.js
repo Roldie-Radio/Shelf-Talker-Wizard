@@ -12,7 +12,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
-const cheerio = require('cheerio');
 
 const {
   parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl,
@@ -27,6 +26,13 @@ const {
   algoliaSearchBeerCandidates, searchUntappd, composeProducerTitle, enrichBeerScanFromStore,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
+
+// Must come after the require('../server/productImport') above - that
+// module shims the global File class (see its own top-of-file comment)
+// before it requires cheerio itself, which is what lets cheerio's own
+// undici dependency load without crashing on Node 18. Requiring cheerio
+// here first would skip that shim and blow up instead.
+const cheerio = require('cheerio');
 
 function page({ head = '', body = '' } = {}) {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
