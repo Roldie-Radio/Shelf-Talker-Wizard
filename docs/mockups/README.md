@@ -14,3 +14,14 @@ browser.
   wired as shared state across tabs. Inside Search, a method chooser (Search by
   Name / SKU Lookup / Scan UPC) sits below Type/Product Type, styled as the same
   pill-button group used elsewhere in the form.
+- **food-pairing-suggestions.html** &mdash; proposes an optional **Food Pairing
+  Suggestions** block on Wine / Spirits talkers: up to 3 small icon+word pairings
+  (e.g. "🥩 Grilled Steak") printed between the description and the price block.
+  Pairings come from a small ordered list of varietal &rarr; pairings rules,
+  matched by keyword against the Product Title/Description &mdash; the same
+  pattern `public/js/card.js` already uses for `BEER_STYLE_COLORS`, just applied
+  to wine varietals. Staff can accept the suggested pairings, toggle individual
+  ones on/off, add a custom pairing, or hide the block entirely per talker. Try
+  the sample wines in the left panel to see detection run against the rule list
+  shown in the right panel; the live card preview in the center reuses the real
+  card's proportions/fonts/logo so the new block can be judged in context.
