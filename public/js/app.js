@@ -46,11 +46,13 @@
   // whenever Ratings is, on Shelf Talkers and Large Display Signs alike;
   // Large is the only sign size that renders a rating row at all, see
   // buildLargeSignBodyHtml in card.js): card__ratings' 0.0645 * 72 *
-  // 2.8in ≈ 13pt, sign__rating's (Large-only, so using Large's own
-  // --sign-text like closeoutBadge above) 0.016 * 1.4 * 72 * 8.5in ≈ 13.5pt.
+  // 2.8in ≈ 13pt for Shelf Talkers. sign.ratings is set directly to 22pt
+  // (rather than derived from sign__rating's current CSS ratio) since
+  // Large Display Signs are its only consumer and 22pt is the desired
+  // default there.
   const DEFAULT_FONT_SIZE_PT = {
     talker: { title: 12, description: 10.5, superSalePrice: 22, closeoutBadge: 23, ratings: 13 },
-    sign: { title: 20, description: 10, superSalePrice: 17, closeoutBadge: 22.5, ratings: 13.5 },
+    sign: { title: 20, description: 10, superSalePrice: 17, closeoutBadge: 22.5, ratings: 22 },
   };
 
   // Human-readable names for the queue list's meta line (see renderQueue).
