@@ -382,6 +382,59 @@ h1, h2, h3 { margin: 0; }
 }
 .selected-card__clear:hover { color: var(--ui-danger); }
 
+/* Unit-vs-pack price choice on a beer's selected-product card (Search by
+   Name only - see productHasPackPrice/priceChoiceHtml in app.js). Sits
+   inside .selected-card's own title/meta column, above the price shown in
+   .selected-card__price-row, which always reflects whichever option below
+   is currently active. */
+.price-choice {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--ui-border);
+}
+.price-choice__prompt { font-size: 0.78rem; font-weight: 700; color: var(--ui-ink-soft); margin-bottom: 0.35rem; }
+.price-choice__group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.price-choice__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-panel);
+  border-radius: 7px;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+}
+.price-choice__opt:hover { border-color: var(--ui-accent-ink); }
+.price-choice__opt-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.price-choice__opt-price { font-size: 0.92rem; font-weight: 800; color: var(--ui-ink); font-variant-numeric: tabular-nums; }
+.price-choice__opt.is-active { border-color: var(--ui-accent-ink); background: var(--ui-hover); }
+.price-choice__opt.is-active .price-choice__opt-label { color: var(--ui-accent-ink); }
+.price-choice__opt-check {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid var(--ui-border);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.price-choice__opt.is-active .price-choice__opt-check {
+  border-color: var(--ui-accent-ink);
+  background: var(--ui-accent-ink);
+  box-shadow: inset 0 0 0 2px var(--ui-panel);
+}
+.price-choice__note { margin-top: 0.4rem; font-size: 0.72rem; color: var(--ui-muted); line-height: 1.4; }
+
 /* ---------- Ratings builder ---------- */
 
 .ratings-field { margin-bottom: 0.85rem; }
