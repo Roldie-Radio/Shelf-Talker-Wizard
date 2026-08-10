@@ -10,7 +10,9 @@
   // Applied before first paint, deliberately inline and before the
   // stylesheet's work is visible: setting this from app.js instead would
   // render one frame of the light theme first, so opening the app in dark
-  // mode would flash white every time.
+  // mode would flash white every time. Same reasoning for the accent
+  // (Settings -> Change Theme, see applyAccent in app.js) - a saved Purple
+  // choice would otherwise flash Amber for one frame on every launch.
   (function () {
     try {
       var saved = localStorage.getItem('shelfTalkerTheme.v1');
@@ -18,6 +20,10 @@
         : window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (dark) document.documentElement.setAttribute('data-theme', 'dark');
     } catch (e) { /* storage unavailable - stay on the light default */ }
+    try {
+      var accent = localStorage.getItem('shelfTalkerAccent.v1');
+      if (accent === 'purple') document.documentElement.setAttribute('data-accent', 'purple');
+    } catch (e) { /* storage unavailable - stay on the amber default */ }
   })();
 </script>
 </head>
@@ -813,6 +819,33 @@
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="serverPcSaveBtn">Save</button>
         <button type="button" class="btn" id="serverPcCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tools -> Settings (Electron menu, see main.js) - the plain browser dev
+       copy has no menu to trigger this from at all, same as the Server PC/
+       Export File Settings/etc. dialogs above. Currently holds just the
+       accent (Change Theme) choice; a natural place to add more app-wide
+       preferences later without needing another menu item. -->
+  <div id="settingsOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal__header">
+        <h2 id="settingsTitle">Settings</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="settingsCloseBtn">&times; Close</button>
+      </div>
+      <div class="server-pc-body">
+        <label class="field">
+          <span>Change Theme</span>
+          <div class="preview-toggle" role="radiogroup" aria-label="App colour theme">
+            <button type="button" class="toggle-btn" data-accent="amber" role="radio" aria-checked="false" id="settingsAccentAmberBtn">Amber Theme</button>
+            <button type="button" class="toggle-btn" data-accent="purple" role="radio" aria-checked="false" id="settingsAccentPurpleBtn">Purple Theme</button>
+          </div>
+        </label>
+        <p class="help-text">Changes the colour of the app's own text and buttons. Shelf talkers and display signs keep whatever Theme (Amber/Purple) is picked for each one on the form - this only affects the app around them.</p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="settingsCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

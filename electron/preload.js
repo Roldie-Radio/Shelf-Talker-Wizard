@@ -21,6 +21,10 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // above, for the app bar's own "What's New" button.
   onShowWhatsNewRequested: (callback) => ipcRenderer.on('whats-new:show-requested', () => callback()),
 
+  // Tools menu "Settings" (see main.js) - opens the in-app Settings panel
+  // (Change Theme, etc.), same pattern as onShowHelpRequested above.
+  onShowSettingsRequested: (callback) => ipcRenderer.on('settings:show-requested', () => callback()),
+
   // Scan UPC tab's Settings "Browse..." button (see main.js) - only present
   // here, so app.js only shows that button when this bridge exists; the
   // plain browser dev copy has no native file dialog and just falls back to
