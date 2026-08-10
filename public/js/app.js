@@ -18,9 +18,9 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
-      version: '2.4.3',
+      version: '2.5.0',
       items: [
-        "New: this “What's New” popup shows once after an update, and is always reachable from the What's New button next to Help.",
+        "New: this “What's New” popup shows once after an update, and is always reachable from the What's New button next to Help (or the desktop app's Help menu).",
         'Website tab: added an explicit Add to Queue button, and importing now keeps you on the tab instead of jumping away — paste another URL and keep going.',
         'Edit Talker, Website, and Search now call out Type / Product Type as the first thing to set.',
         'Super Sale Price now defaults to 23pt on Small Display signs.',
