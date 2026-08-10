@@ -18,7 +18,8 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   onShowHelpRequested: (callback) => ipcRenderer.on('help:show-requested', () => callback()),
 
   // Help menu "What's New" (see main.js) - same pattern as onShowHelpRequested
-  // above, for the app bar's own "What's New" button.
+  // above; the in-app popup it opens is otherwise only shown automatically
+  // after an update (see checkWhatsNew in app.js).
   onShowWhatsNewRequested: (callback) => ipcRenderer.on('whats-new:show-requested', () => callback()),
 
   // Tools menu "Settings" (see main.js) - opens the in-app Settings panel
