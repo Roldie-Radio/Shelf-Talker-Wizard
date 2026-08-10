@@ -185,6 +185,15 @@ const FIELD_ALIASES = {
   vintage: ['vintage', 'year'],
   price: ['price', 'regular price', 'retail price', 'reg price', 'unit price', 'list price'],
   salePrice: ['sale price', 'promo price', 'special price', 'promotion price', 'sale'],
+  // Beer is commonly shelved and shopped by the pack/case, but a WinePOS
+  // export's `price` column above is priced per single bottle/can (a store's
+  // own inventory convention, confirmed against a real export) - these are
+  // for stores whose export separately carries what the whole pack rings up
+  // for, so Search by Name can offer that instead of (or alongside) the
+  // per-unit price. Both are optional: a row with no matching column here
+  // just has no pack price to offer, same as any other unmatched field.
+  packPrice: ['pack price', 'case price', 'carton price', 'multi-pack price', 'multipack price', 'pack retail price'],
+  packQty: ['pack qty', 'pack quantity', 'pack count', 'units per pack', 'case qty', 'case quantity', 'case count', 'units per case'],
   description: ['tasting notes', 'notes', 'long description', 'web description'],
   category: ['category', 'department', 'class', 'dept'],
 };
@@ -213,6 +222,20 @@ function normalizeMoney(raw) {
   if (!raw) return '';
   const cleaned = raw.replace(/[^0-9.]/g, '');
   return cleaned;
+}
+
+// Recovers a pack's unit count from the Size column itself ("12pk 12oz
+// Cans", "6 Pack 12oz Btl") when the export has no dedicated pack-quantity
+// column of its own (see packQty in FIELD_ALIASES above) - beer sizes
+// commonly spell the count out there already, so this saves a store from
+// having to add one more column just to label a pack price "Pack (12)"
+// instead of just "Pack". Returns null (rather than 1) when nothing looks
+// like a pack count, since "unknown count" and "definitely one" shouldn't
+// both suppress the label the same way.
+function parsePackQtyFromSize(size) {
+  const m = String(size || '').match(/(\d+)\s*[- ]?(?:pk|pack|ct|count)\b/i);
+  const qty = m ? parseInt(m[1], 10) : NaN;
+  return Number.isFinite(qty) && qty > 1 ? qty : null;
 }
 
 // A scanner (or the export itself) can represent the same product as a
@@ -266,14 +289,25 @@ function buildIndex(rows) {
     const rawUpc = cell(row, colFor, 'upc');
     if (!rawUpc) continue;
 
+    const size = cell(row, colFor, 'size');
+    const packQtyCell = cell(row, colFor, 'packQty');
+    const packQtyFromColumn = packQtyCell ? parseInt(packQtyCell, 10) : NaN;
+    const packQty = Number.isFinite(packQtyFromColumn) && packQtyFromColumn > 1
+      ? packQtyFromColumn
+      : parsePackQtyFromSize(size);
+
     const product = {
       title: cell(row, colFor, 'title'),
       brand: cell(row, colFor, 'brand'),
       sku: cell(row, colFor, 'sku'),
-      size: cell(row, colFor, 'size'),
+      size,
       vintage: cell(row, colFor, 'vintage'),
       price: normalizeMoney(cell(row, colFor, 'price')),
       salePrice: normalizeMoney(cell(row, colFor, 'salePrice')),
+      // See packPrice/packQty in FIELD_ALIASES above - both blank/null when
+      // the export has no pack pricing of its own to offer.
+      packPrice: normalizeMoney(cell(row, colFor, 'packPrice')),
+      packQty,
       description: cell(row, colFor, 'description'),
       category: cell(row, colFor, 'category'),
     };
@@ -582,5 +616,6 @@ module.exports = {
   upcVariants,
   buildIndex,
   scoreNameMatch,
+  parsePackQtyFromSize,
   configFilePath,
 };

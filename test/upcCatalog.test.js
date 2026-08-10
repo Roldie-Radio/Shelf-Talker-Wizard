@@ -7,7 +7,7 @@ const path = require('node:path');
 const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
   getUpcSettings, setUpcSettings, setAutoSync, syncedExportFilePath, readExportFileRaw,
-  lookupUpc, searchByName, scoreNameMatch, previewExport,
+  lookupUpc, searchByName, scoreNameMatch, previewExport, parsePackQtyFromSize,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -143,6 +143,41 @@ test('buildIndex throws a descriptive error when no UPC column is found', () => 
     () => buildIndex(parseDelimited(csv)),
     /Could not find a UPC\/barcode column.*Title, Price/s
   );
+});
+
+test('buildIndex reads an explicit Pack Price/Pack Qty column when the export has one', () => {
+  const csv = [
+    'UPC,Title,Size,Regular Price,Pack Price,Pack Qty',
+    '019214600037,Corona Extra 12pk Cans,12pk 12oz Can,1.79,16.99,12',
+  ].join('\n');
+  const { byUpc } = buildIndex(parseDelimited(csv));
+  const product = byUpc.get('019214600037');
+  assert.equal(product.price, '1.79');
+  assert.equal(product.packPrice, '16.99');
+  assert.equal(product.packQty, 12);
+});
+
+test('buildIndex derives pack quantity from the Size text when there is no dedicated column', () => {
+  const { byUpc } = buildIndex(parseDelimited(SAMPLE_CSV)); // Corona row's Size is "12pk", no Pack Qty column at all
+  const product = byUpc.get('019214600037');
+  assert.equal(product.packQty, 12);
+  assert.equal(product.packPrice, ''); // no Pack Price column either - just no pack price to offer
+});
+
+test('buildIndex leaves packPrice/packQty blank when neither a column nor the Size text has one', () => {
+  const { byUpc } = buildIndex(parseDelimited(SAMPLE_CSV));
+  const product = byUpc.get('085000010652'); // wine, sized "750ml"
+  assert.equal(product.packPrice, '');
+  assert.equal(product.packQty, null);
+});
+
+test('parsePackQtyFromSize recognizes common pack-count phrasings', () => {
+  assert.equal(parsePackQtyFromSize('12pk 12oz Cans'), 12);
+  assert.equal(parsePackQtyFromSize('6 Pack 12oz Btl'), 6);
+  assert.equal(parsePackQtyFromSize('24-ct Case'), 24);
+  assert.equal(parsePackQtyFromSize('18 count'), 18);
+  assert.equal(parsePackQtyFromSize('750ml'), null);
+  assert.equal(parsePackQtyFromSize(''), null);
 });
 
 // ---------- getUpcSettings / setUpcSettings / lookupUpc ----------
@@ -450,6 +485,20 @@ test('searchByName finds a real export row by (partial) name', () => {
     assert.equal(results.length, 1);
     assert.equal(results[0].title, '14 HANDS CABERNET');
     assert.equal(results[0].sku, '9415');
+  });
+});
+
+test('searchByName results carry a pack price/quantity through when the export has one', () => {
+  const csv = [
+    'UPC,Title,Size,Regular Price,Pack Price',
+    '019214600037,Corona Extra 12pk Cans,12pk 12oz Can,1.79,16.99',
+  ].join('\n');
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', csv));
+    const results = searchByName('corona');
+    assert.equal(results.length, 1);
+    assert.equal(results[0].packPrice, '16.99');
+    assert.equal(results[0].packQty, 12); // derived from the Size text, no Pack Qty column
   });
 });
 

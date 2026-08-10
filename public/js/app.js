@@ -2017,6 +2017,12 @@
   let nameSearchResults = [];
   let nameSearchFocusIndex = -1;
   let nameSearchSelectedProduct = null;
+  // 'unit' or 'pack' - which of the selected product's prices goes on the
+  // talker (see the price-choice control in renderNameSearchSelected below).
+  // Only ever matters when the selected product actually has a pack price
+  // to offer (see productHasPackPrice) - reset to the right default every
+  // time a new product is picked, see selectNameSearchProduct.
+  let nameSearchPriceMode = 'unit';
   // Cancels a still-in-flight search when a newer keystroke starts another
   // one, so a slow response to an old (now-stale) query can't land after a
   // faster response to what's actually in the box and clobber it - a real
@@ -2116,18 +2122,38 @@
     }
   }
 
+  // A WinePOS export's own `price` column is priced per single bottle/can
+  // (see packPrice's comment in upcCatalog.js) - this is true whether or not
+  // the export also has a pack price to offer, so it's true for any
+  // product, not just beer. Only beer's search results actually surface the
+  // Unit/Pack choice below, but this stays category-agnostic so that isn't
+  // hardcoded in two places.
+  function productHasPackPrice(p) {
+    return !!(p && p.packPrice && Number(p.packPrice) > 0);
+  }
+
   // Fills the same fields applySkuLookupProduct/applyUpcScanProduct do -
   // picking a search result is just a third way to load a product onto the
   // shared form (see the note on applyUpcScanProduct in the Scan UPC
-  // section above for why beer/wine split the same way here).
-  function applyNameSearchProduct(product, isBeer) {
+  // section above for why beer/wine split the same way here). `priceMode`
+  // ('unit' or 'pack') picks which of the product's prices lands on the
+  // talker - see the price-choice control in renderNameSearchSelected,
+  // which is the only thing that ever passes 'pack'.
+  function applyNameSearchProduct(product, isBeer, priceMode = 'unit') {
+    const usePack = priceMode === 'pack' && productHasPackPrice(product);
     const fields = {
       category: isBeer ? 'beer' : 'wine',
       title: product.title,
       description: product.description,
       size: product.size,
-      price: product.price,
-      salePrice: product.salePrice,
+      price: usePack ? product.packPrice : product.price,
+      // The export has no separate "pack sale price" to offer (see
+      // packPrice's comment in upcCatalog.js) - the unit sale price doesn't
+      // apply to the pack price, so carrying it over as-is would put a
+      // misleading "was $X" (a per-unit figure) under a pack price on the
+      // talker. Left blank for staff to fill in by hand if the pack itself
+      // is genuinely on sale.
+      salePrice: usePack ? '' : product.salePrice,
       theme: els.theme.value,
     };
     if (isBeer) {
@@ -2144,6 +2170,32 @@
     renderPreview();
   }
 
+  // The Unit/Pack price-choice control shown on a beer's selected-product
+  // card below - only rendered when the product actually has a pack price
+  // to offer (see productHasPackPrice). Defaults to Pack (see
+  // selectNameSearchProduct) since beer at this store is mostly shelved and
+  // shopped by the pack/case, not the single can/bottle; one click switches
+  // it to Unit for a talker that's meant for singles.
+  function priceChoiceHtml(p) {
+    const packQtyLabel = p.packQty ? ` (${escapeHtml(String(p.packQty))})` : '';
+    return `
+      <div class="price-choice">
+        <div class="price-choice__prompt">Which price goes on the talker?</div>
+        <div class="price-choice__group" role="radiogroup" aria-label="Unit or pack price">
+          <button type="button" class="price-choice__opt${nameSearchPriceMode === 'unit' ? ' is-active' : ''}" data-mode="unit" role="radio" aria-checked="${nameSearchPriceMode === 'unit'}">
+            <span class="price-choice__opt-label"><span class="price-choice__opt-check"></span>Unit</span>
+            <span class="price-choice__opt-price">${escapeHtml(formatMoney(p.price))}</span>
+          </button>
+          <button type="button" class="price-choice__opt${nameSearchPriceMode === 'pack' ? ' is-active' : ''}" data-mode="pack" role="radio" aria-checked="${nameSearchPriceMode === 'pack'}">
+            <span class="price-choice__opt-label"><span class="price-choice__opt-check"></span>Pack${packQtyLabel}</span>
+            <span class="price-choice__opt-price">${escapeHtml(formatMoney(p.packPrice))}</span>
+          </button>
+        </div>
+        <div class="price-choice__note">Beer defaults to Pack Price. Switch to Unit if this talker's for singles.</div>
+      </div>
+    `;
+  }
+
   // The form's own fields aren't visible from this tab (same reasoning as
   // SKU Lookup/Scan UPC staying put instead of switching to Manual Entry -
   // see applySkuLookupProduct's note above), so this small summary is what
@@ -2154,28 +2206,43 @@
       els.nameSearchSelectedWrap.innerHTML = '';
       return;
     }
+    const isBeer = currentCategory === 'beer';
+    const showPriceChoice = isBeer && productHasPackPrice(p);
+    const activePrice = showPriceChoice && nameSearchPriceMode === 'pack' ? p.packPrice : p.price;
+
     const metaParts = [];
     if (p.size) metaParts.push(escapeHtml(p.size));
     if (p.vintage) metaParts.push(`Vintage ${escapeHtml(p.vintage)}`);
     if (p.sku) metaParts.push(`SKU ${escapeHtml(p.sku)}`);
-    metaParts.push(currentCategory === 'beer' ? 'Beer' : 'Wine / Spirits');
+    metaParts.push(isBeer ? 'Beer' : 'Wine / Spirits');
     els.nameSearchSelectedWrap.innerHTML = `
       <div class="selected-card">
-        <div>
+        <div style="flex:1; min-width:0;">
           <div class="selected-card__title">${escapeHtml(p.title || 'Untitled')}</div>
           <div class="selected-card__meta">${metaParts.join(' &middot; ')}</div>
+          ${showPriceChoice ? priceChoiceHtml(p) : ''}
         </div>
         <div class="selected-card__price-row">
-          <div class="selected-card__price">${escapeHtml(formatMoney(p.price))}</div>
+          <div class="selected-card__price">${escapeHtml(formatMoney(activePrice))}</div>
           <button type="button" class="selected-card__clear" id="nameSearchClearBtn" title="Clear selection">&times;</button>
         </div>
       </div>
     `;
     document.getElementById('nameSearchClearBtn').addEventListener('click', clearNameSearchSelection);
+    if (showPriceChoice) {
+      els.nameSearchSelectedWrap.querySelectorAll('.price-choice__opt').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          nameSearchPriceMode = btn.dataset.mode;
+          applyNameSearchProduct(p, isBeer, nameSearchPriceMode);
+          renderNameSearchSelected();
+        });
+      });
+    }
   }
 
   function clearNameSearchSelection() {
     nameSearchSelectedProduct = null;
+    nameSearchPriceMode = 'unit';
     els.nameSearchSaveBtn.disabled = true;
     renderNameSearchSelected();
   }
@@ -2186,7 +2253,12 @@
     closeNameSearchResults();
     els.nameSearchSaveBtn.disabled = false;
     els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
-    applyNameSearchProduct(product, currentCategory === 'beer');
+    const isBeer = currentCategory === 'beer';
+    // Beer defaults to Pack Price whenever the export has one to offer -
+    // see priceChoiceHtml's note. Anything else (no pack price, or not
+    // beer) defaults to Unit, same as before this control existed.
+    nameSearchPriceMode = isBeer && productHasPackPrice(product) ? 'pack' : 'unit';
+    applyNameSearchProduct(product, isBeer, nameSearchPriceMode);
     renderNameSearchSelected();
   }
 
