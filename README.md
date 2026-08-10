@@ -3,7 +3,7 @@
 A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talkers without opening Photoshop. It reproduces the look of the existing amber/purple templates (same logo, layout, and card size) and adds:
 
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
-- **Type and Product Type dropdowns on every tab** &mdash; **Type** (Shelf Talker / Small Display / Large Display) and **Product Type** (Wine / Spirits / Beer) sit at the top of Manual Entry, Import from Website, and Search alike, and stay in sync with each other: change either one on any tab and it's still set that way when you switch tabs.
+- **Type and Product Type dropdowns on every tab** &mdash; **Type** (Shelf Talker / Small Display / Large Display) and **Product Type** (Wine / Spirits / Beer) sit at the top of Edit Talker, Website, and Search alike, and stay in sync with each other: change either one on any tab and it's still set that way when you switch tabs.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch Product Type to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
 - **Search** &mdash; one tab, three lookup methods so you don't have to type everything by hand: **Search by Name** matches by product title against a local product file, no internet needed; **SKU Lookup** searches liquoroutletwinecellars.com by the store's own SKU number for the title, size, and price (plus, for Beer, an Untappd-sourced description, brewery, style, ABV, IBU, and rating); **Scan UPC** looks a bottle's manufacturer UPC up in a product file exported locally from WinePOS (a USB/Bluetooth barcode scanner just types it, like a keyboard) &mdash; a different number from the store's own SKU that SKU Lookup searches for. For Wine / Spirits, a UPC scan's Description is then filled from liquoroutletwinecellars.com (matched by the item's store SKU, if the export has one) rather than the export file's own Description column, which is often blank or just an internal note; Beer keeps whatever the export file has. Only one PC needs WinePOS's own export &mdash; every other register can pull that file automatically over the network instead of it being copied around by hand (see "Sharing the export file across registers" below).
 - **Standardized sizing** &mdash; every card is the same print dimensions as the original template, and title/description text automatically shrinks (or clamps with an ellipsis as a last resort) so it always fits, no manual formatting needed. The shrink-to-fit is applied to what actually prints, so the Print Preview and the paper agree.
@@ -106,7 +106,7 @@ ABI mismatch error on startup. Afterwards, running `npm test`/`npm start` again 
 
 ## Using the website import
 
-Click **Import from Website**, paste a product page URL from liquoroutletwinecellars.com, and click **Fetch Product Data**. The importer looks for (in order):
+Click **Website**, paste a product page URL from liquoroutletwinecellars.com, and click **Fetch Product Data**. The importer looks for (in order):
 
 1. The page's `application/ld+json` Product schema (name, description, price) &mdash; most modern storefronts (Shopify, WooCommerce, BigCommerce, etc.) include this automatically.
 2. Open Graph / meta description tags as a fallback.
@@ -118,7 +118,7 @@ If a site blocks the request outright (some, like wine.com, actively block autom
 
 ### Finding tasting notes automatically
 
-On Manual Entry, Wine / Spirits items have a **Find Tasting Notes** button under the Description field. Unlike the website importer above, there's no URL to paste: click it (with a Product Title already filled in) to open a dialog that searches using **Product Title** (plus **Vintage**, if set).
+On Edit Talker, Wine / Spirits items have a **Find Tasting Notes** button under the Description field. Unlike the website importer above, there's no URL to paste: click it (with a Product Title already filled in) to open a dialog that searches using **Product Title** (plus **Vintage**, if set).
 
 - The **Source** dropdown picks which site to search &mdash; **Any source** (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one.
 - Whatever's found shows in an editable preview box, so you can review or tweak it before it goes anywhere near the queue.
@@ -187,7 +187,7 @@ This only ever moves the export file itself &mdash; Print History and the produc
 
 ## Printing
 
-1. Add shelf talkers via Manual Entry, Import from Website, or any of Search's three lookup methods.
+1. Add shelf talkers via Edit Talker, Website, or any of Search's three lookup methods.
 2. Review them in the **Queue** panel. Each row's &vellip; menu can move it up or
    down (queue order is print order), edit it, copy it, or delete it.
 3. Click **Print Sheet(s)**. A preview shows every sheet exactly as it will print
