@@ -2041,7 +2041,7 @@
 
   function renderNameSearchResults() {
     if (!nameSearchResults.length) {
-      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.nameSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Manual Entry.</div>`;
+      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.nameSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Edit Talker.</div>`;
       els.nameSearchResults.hidden = false;
       els.nameSearchInput.setAttribute('aria-expanded', 'true');
       return;
