@@ -58,6 +58,255 @@
         '"Scan UPC" dropped its Beta label.',
       ],
     },
+    {
+      version: '2.3.3',
+      items: [
+        'The WinePOS export file used by Scan UPC and Search by Name now auto-syncs to other store PCs on the network, so every register stays current.',
+      ],
+    },
+    {
+      version: '2.3.2',
+      items: [
+        'Beer talkers no longer show "Not Specified" as Brand/title text; the Untappd Rating now reads "N/A" instead of being hidden when a beer has no numeric rating.',
+      ],
+    },
+    {
+      version: '2.3.1',
+      items: [
+        "Scan UPC (Beer) now searches Untappd using the store's own cleaned-up product title instead of the export file's abbreviated one, and no longer auto-adds a scan to the queue when something failed to resolve.",
+        'Fixed the tab bar wrapping mid-word once Search by Name made five tabs share the panel.',
+      ],
+    },
+    {
+      version: '2.3.0',
+      items: [
+        'New: a "Search by Name" tab looks up a product by partial title from the local WinePOS export file, no network request needed.',
+        'Scan UPC (Beer) now pulls live pricing from the store website and enrichment (brewery/style/ABV/IBU/rating) from Untappd, and a successful scan is added to the queue automatically so scanning can go item to item.',
+      ],
+    },
+    {
+      version: '2.2.12',
+      items: [
+        "Scan UPC now pulls Wine/Spirits descriptions from the store website instead of relying on the export file's own note.",
+        'Marking a PC as the main store PC now lets other PCs on the network see it (Advanced menu → Server PC).',
+      ],
+    },
+    {
+      version: '2.2.11',
+      items: [
+        'Looking up a SKU as Beer now always re-runs the Untappd search, even when that SKU was recently cached under Wine/Spirits.',
+      ],
+    },
+    {
+      version: '2.2.10',
+      items: [
+        'The Add to Queue button now sits next to Look Up SKU / Look Up UPC instead of below the status message.',
+      ],
+    },
+    {
+      version: '2.2.9',
+      items: [
+        'The CLOSEOUT!! badge is bolder: switched to Arial Black at weight 900.',
+      ],
+    },
+    {
+      version: '2.2.8',
+      items: [
+        'New: a Ratings Font Size control, for wine ratings on Shelf Talkers and Large Display Signs.',
+      ],
+    },
+    {
+      version: '2.2.7',
+      items: [
+        'Fixed three Scan UPC bugs found against a real WinePOS export file: an unrecognized UPC column name, missing leading zeros on UPC values, and a stray character from the file\'s byte-order mark.',
+      ],
+    },
+    {
+      version: '2.2.6',
+      items: [
+        "Scan UPC's export file settings moved from an inline box on the tab to Advanced menu → Export File Settings.",
+      ],
+    },
+    {
+      version: '2.2.5',
+      items: [
+        'New: an Advanced menu (desktop app) with View Export File, View Database, and Server PC, for confirming Scan UPC setup and store data without leaving the app.',
+      ],
+    },
+    {
+      version: '2.2.4',
+      items: [
+        'New: Print History, a permanent searchable record of every talker actually printed, plus a local product cache that speeds up repeat SKU/UPC lookups.',
+      ],
+    },
+    {
+      version: '2.2.3',
+      items: [
+        'New: a font size control for CLOSEOUT!! badges, matching the existing Title/Description/Super Sale Price controls.',
+      ],
+    },
+    {
+      version: '2.2.2',
+      items: [
+        'Scan UPC is marked Beta.',
+      ],
+    },
+    {
+      version: '2.2.1',
+      items: [
+        'New: a Scan UPC tab looks products up offline by scanning the manufacturer UPC against a local WinePOS export file.',
+      ],
+    },
+    {
+      version: '2.2.0',
+      items: [
+        'Cleaned up scraped beer titles: strips "Not Specified" placeholder text and abbreviated pack counts (e.g. "4pk") that were leaking into the Beer Name field.',
+      ],
+    },
+    {
+      version: '2.1.14',
+      items: [
+        'Beer Shelf Talkers now show the Store SKU in the footer band.',
+        'SKU Lookup now pulls Pack Size (e.g. "4-Pack") separately from Size when the store page lists them apart.',
+      ],
+    },
+    {
+      version: '2.1.13',
+      items: [
+        'Quarter Size Shelf Talkers simplified to Title/Size/Price only - the smaller format was too crowded for vintage, ratings, beer info, and badges to stay legible.',
+        'Selected text in the Live Preview (desktop app) can now be copied via right-click.',
+        'New: an Add to Queue button directly on the SKU Lookup tab, no need to switch to Edit Talker first.',
+      ],
+    },
+    {
+      version: '2.1.12',
+      items: [
+        'Halved the gap between the header band and the product title on Shelf Talkers.',
+      ],
+    },
+    {
+      version: '2.1.11',
+      items: [
+        'New: a Super Sale Price!!! font size box, matching Title/Description.',
+      ],
+    },
+    {
+      version: '2.1.10',
+      items: [
+        'Super Sale Price text pushed further to fill its available width.',
+      ],
+    },
+    {
+      version: '2.1.9',
+      items: [
+        'New: a Title Auto Size toggle; finalized Super Sale Price sizing (larger, no more overlap with the price below).',
+      ],
+    },
+    {
+      version: '2.1.8',
+      items: [
+        'New: an Auto Size toggle for description text (off by default).',
+      ],
+    },
+    {
+      version: '2.1.7',
+      items: [
+        'Tightened edge margins about 20% on Shelf Talkers and Display Signs, freeing up more room for content.',
+      ],
+    },
+    {
+      version: '2.1.6',
+      items: [
+        'Description text no longer auto-scales; it now clips with an ellipsis instead, so the point size you set is always what prints.',
+      ],
+    },
+    {
+      version: '2.1.5',
+      items: [
+        'Enlarged the Super Sale Price!!! callout text and tightened the gap to the price below it.',
+      ],
+    },
+    {
+      version: '2.1.4',
+      items: [
+        'Dropped the redundant "United States" text from beer talker Location - domestic breweries already get their own flag/state badge.',
+      ],
+    },
+    {
+      version: '2.1.3',
+      items: [
+        'Tightened beer Shelf Talker spacing to give the description more room to grow.',
+      ],
+    },
+    {
+      version: '2.1.2',
+      items: [
+        "SKU Lookup: beer Description is now left blank when Untappd has no description for a match, instead of falling back to the store's generic blurb.",
+      ],
+    },
+    {
+      version: '2.1.1',
+      items: [
+        'Fixed SKU Lookup showing "Not Specified" in the Vintage field for non-vintage wines, and dropping the producer name from beer titles.',
+      ],
+    },
+    {
+      version: '2.1.0',
+      items: [
+        '"About the Shelf Talker" renamed to "Beer Talker Info", now shown with the purple theme in its preview.',
+      ],
+    },
+    {
+      version: '2.0.7',
+      items: [
+        'Fixed the automatic Untappd search for beer SKU lookups (a live 403 from a missing request header).',
+      ],
+    },
+    {
+      version: '2.0.6',
+      items: [
+        "Fixed the automatic Untappd search for beer SKU lookups, which had never actually worked - it now searches via Untappd's own API instead of a page that needs JavaScript to render results.",
+      ],
+    },
+    {
+      version: '2.0.5',
+      items: [
+        'SKU Lookup no longer auto-switches to Edit Talker, so staff can see and use the beer fallback options before moving on.',
+        'Fixed beer Location never getting filled in when pulling data from Untappd.',
+      ],
+    },
+    {
+      version: '2.0.4',
+      items: [
+        'New: a manual Untappd fallback for beer SKU lookups, for when the automatic search comes back empty.',
+      ],
+    },
+    {
+      version: '2.0.3',
+      items: [
+        'Beer SKU lookups now include the brewery name in the Untappd search, so short or common beer names are more likely to match.',
+      ],
+    },
+    {
+      version: '2.0.2',
+      items: [
+        'Beer SKU lookups now strip container size (e.g. "16OZ") out of the title, and Untappd search failures are shown instead of failing silently.',
+      ],
+    },
+    {
+      version: '2.0.1',
+      items: [
+        "Wine/Spirits SKU lookups now compose the producer name into the title and pull the vintage year, instead of just using the store page's title as-is.",
+      ],
+    },
+    {
+      version: '2.0.0',
+      items: [
+        'New: SKU Lookup replaces Bulk CSV Import - look up a product by the store\'s own SKU number to pull title/size/price (and, for beer, Untappd details) automatically.',
+        'New: Title Font Size and Description Font Size controls on Edit Talker, for both Shelf Talkers and Display Signs.',
+        'Widened the Beer Talker Info preview so the guide renders at full size.',
+      ],
+    },
   ];
 
   // Print-sheet geometry and the sheet/auto-arrange packing live in
@@ -3172,14 +3421,10 @@
 
   // ---------- What's New ----------
 
-  // Renders a list of WHATS_NEW_ENTRIES (see the top of this file) into the
-  // popup body - shared by the automatic launch check and the Electron Help
-  // menu's "What's New" item, which just show a different slice of the list
-  // (unseen-only vs. everything). "See Previous Updates" (below) only makes
-  // sense when there's older history not currently shown, so it hides
-  // itself once `entries` already covers the whole list.
+  // Renders a list of entries into the popup body. Internal - callers go
+  // through showWhatsNewEntries below, which also drives the "See Previous
+  // Updates" / "Hide Previous Updates" toggle button.
   function renderWhatsNewEntries(entries) {
-    els.whatsNewShowAllBtn.hidden = entries.length >= WHATS_NEW_ENTRIES.length;
     if (!entries.length) {
       els.whatsNewBody.innerHTML = '<p class="whats-new-empty">Nothing new to report yet.</p>';
       return;
@@ -3192,16 +3437,48 @@
     `).join('');
   }
 
+  // The "current" (non-expanded) slice of entries the popup was opened
+  // with - see checkWhatsNew below (unseen-only) and runMenuAction's
+  // 'whats-new' case (everything). Remembered so the "Hide Previous
+  // Updates" toggle has something to collapse back to.
+  let whatsNewBaseEntries = [];
+  let whatsNewExpanded = false;
+
+  // Shared by the automatic launch check and the menu bar's Help > What's
+  // New item, which just show a different slice of the list (unseen-only
+  // vs. everything). Resets the collapse toggle back to
+  // whatever `entries` is each time the popup is (re)opened with a fresh
+  // slice, so a previous expand doesn't leak into the next launch popup.
+  function showWhatsNewEntries(entries) {
+    whatsNewBaseEntries = entries;
+    whatsNewExpanded = false;
+    updateWhatsNewView();
+  }
+
+  // Renders whichever slice is currently selected (base vs. full history)
+  // and keeps the toggle button's visibility/label in sync with it. "See
+  // Previous Updates" only makes sense when there's older history not
+  // currently shown, so it hides itself once the base slice already covers
+  // the whole list; once expanded, the same button flips to "Hide Previous
+  // Updates" so the popup can collapse back to that base slice in place.
+  function updateWhatsNewView() {
+    renderWhatsNewEntries(whatsNewExpanded ? WHATS_NEW_ENTRIES : whatsNewBaseEntries);
+    els.whatsNewShowAllBtn.hidden = whatsNewBaseEntries.length >= WHATS_NEW_ENTRIES.length;
+    els.whatsNewShowAllBtn.textContent = whatsNewExpanded ? 'Hide Previous Updates' : 'See Previous Updates';
+  }
+
   const whatsNewModal = createModal({
     overlay: els.whatsNewOverlay,
     closeBtns: [els.whatsNewCloseBtn, els.whatsNewCloseFooterBtn],
   });
 
   // Lets someone looking at just the "since you last opened this" slice
-  // (see checkWhatsNew below) expand in place to the full history, without
-  // having to close the popup and reopen it from Help > What's New.
+  // (see checkWhatsNew below) expand in place to the full history, and
+  // collapse back to that slice again, without having to close the popup
+  // and reopen it from Help > What's New.
   els.whatsNewShowAllBtn.addEventListener('click', () => {
-    renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+    whatsNewExpanded = !whatsNewExpanded;
+    updateWhatsNewView();
   });
 
   // Help > What's New in the menu bar (see runMenuAction's 'whats-new'
@@ -3228,8 +3505,8 @@
   // server) and compares it against the newest version this PC has already
   // shown a popup for. A PC that's never seen one only gets the latest
   // entry, not the entire history - staff opening the app for the first
-  // time don't need a changelog going back to 2.4.0, just the button to
-  // find one if they want it. Silently does nothing if the request fails or
+  // time don't need the full changelog, just the button to find one if
+  // they want it. Silently does nothing if the request fails or
   // localStorage is unavailable (private/locked-down browser profile) -
   // this is a nice-to-have, not something worth an error state over.
   async function checkWhatsNew() {
@@ -3258,7 +3535,7 @@
     try { localStorage.setItem(WHATS_NEW_SEEN_KEY, version); } catch { /* ignore */ }
     if (!entries.length) return;
 
-    renderWhatsNewEntries(entries);
+    showWhatsNewEntries(entries);
     whatsNewModal.open();
   }
 
@@ -3845,7 +4122,7 @@
         helpModal.open();
         break;
       case 'whats-new':
-        renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+        showWhatsNewEntries(WHATS_NEW_ENTRIES);
         whatsNewModal.open();
         break;
       case 'check-updates':
