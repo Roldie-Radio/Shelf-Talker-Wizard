@@ -172,16 +172,19 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- Tabs ---------- */
 
-/* flex-wrap here is what keeps a tab's own label intact - without it, the
-   five tabs (previously four - Search by Name is the newest) no longer fit
-   this panel's fixed 380px width (see .layout below) in one row, and the
-   flex item shrinking that's the default without flex-wrap doesn't drop a
-   whole tab to a second row: it squeezes each button narrower than its
-   label, wrapping the label's own words onto 2-3 ragged lines instead
-   (confirmed - every tab, not just the long ones, fragmented like that
-   before this). white-space: nowrap on .tab is the other half - it's what
-   makes a tab that doesn't fit the current row move to the next one whole,
-   rather than getting squeezed and wrapped in place the same broken way. */
+/* flex-wrap here is what keeps a tab's own label intact - back when there
+   were five of these (Search by Name, SKU Lookup, and Scan UPC have since
+   been folded into the Search tab below), the fixed 380px form panel (see
+   .layout below) couldn't fit them all in one row, and the flex item
+   shrinking that's the default without flex-wrap doesn't drop a whole tab
+   to a second row: it squeezes each button narrower than its label,
+   wrapping the label's own words onto 2-3 ragged lines instead (confirmed -
+   every tab, not just the long ones, fragmented like that before this).
+   Keeping it now that there are only three tabs is just cheap insurance
+   against the same thing happening again if a tab is ever added back.
+   white-space: nowrap on .tab is the other half - it's what makes a tab
+   that doesn't fit the current row move to the next one whole, rather than
+   getting squeezed and wrapped in place the same broken way. */
 .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-border); }
 .tab {
   border: none;
@@ -198,9 +201,17 @@ h1, h2, h3 { margin: 0; }
 .tab-panel { display: none; }
 .tab-panel.is-active { display: block; }
 
-/* ---------- Form ---------- */
+/* Search's own method chooser (Search by Name / SKU Lookup / Scan UPC) -
+   one level down from .tabs above, switching which .method-panel is
+   visible inside the Search tab-panel rather than which tab-panel is
+   visible. Same toggle-btn pills Manual Entry already used for e.g. Shelf
+   Talkers vs. Display Signs, not a second, nested .tabs strip - see
+   activateMethod in app.js. */
+.method-toggle { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
+.method-panel { display: none; }
+.method-panel.is-active { display: block; }
 
-.signtype-toggle, .signsize-toggle, .category-toggle { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
+/* ---------- Form ---------- */
 
 .field-group { margin-bottom: 0.85rem; }
 .field-group .field { margin-bottom: 0.6rem; }
