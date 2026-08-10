@@ -54,7 +54,22 @@
 
   --radius: 10px;
   color-scheme: light;
+
+  /* Menu bar size (Settings -> Menu Bar Size, see applyMenuSize in app.js) -
+     Comfortable is the default; the other three tiers are opt-in via
+     [data-menu-size] below, set before first paint by the inline script in
+     index.html. Two tokens rather than one font-size alone, since a taller
+     row needs a bit more room than a proportionally scaled font gives it on
+     its own to still feel comfortable to click. Not theme-dependent (same
+     in light/dark), so these live here rather than being redefined per
+     [data-theme] like the color tokens above/below. */
+  --menubar-h: 32px;
+  --menubar-fs: 15px;
 }
+
+:root[data-menu-size="compact"] { --menubar-h: 26px; --menubar-fs: 13px; }
+:root[data-menu-size="large"] { --menubar-h: 38px; --menubar-fs: 18px; }
+:root[data-menu-size="xlarge"] { --menubar-h: 46px; --menubar-fs: 22px; }
 
 /* Purple accent (light mode) - opt-in via Settings -> Change Theme, applied
    as the [data-accent="purple"] attribute (see applyAccent in app.js, set
@@ -129,6 +144,100 @@ h1, h2, h3 { margin: 0; }
 
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* ---------- Menu bar ---------- */
+
+/* Own top-of-page bar, sticky above .appbar - see the "Menu bar" section
+   near the end of app.js for the open/close/keyboard logic, and index.html
+   for the markup this styles. */
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: var(--menubar-h);
+  font-size: var(--menubar-fs);
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
+  padding: 0 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  /* Deliberately no overflow-x here even at Extra Large, where the four
+     labels are at their widest: setting overflow-x to anything but
+     visible makes the browser compute overflow-y as auto too (per the CSS
+     overflow spec), which would clip every .menubar__dropdown below - they
+     rely on escaping this box entirely via position:absolute. Not a
+     real-world problem either way: the desktop window has its own
+     minWidth (1024px, see electron/main.js), comfortably wider than four
+     items ever need even at Extra Large. */
+}
+.menubar__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.9em;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--ui-ink-soft);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.menubar__item:hover { background: var(--ui-panel-alt); color: var(--ui-ink); }
+.menubar__item.is-open { background: var(--ui-accent); color: var(--ui-on-accent); }
+.menubar__item:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+
+.menubar__dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 2px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+  padding: 0.35rem;
+  min-width: 15em;
+  z-index: 25;
+  font-size: 0.93em;
+  font-weight: 400;
+}
+.menubar__item.is-open .menubar__dropdown { display: block; }
+
+.menubar__dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5em;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  padding: 0.45em 0.7em;
+  border-radius: 6px;
+  color: var(--ui-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menubar__dropdown-item:hover,
+.menubar__dropdown-item:focus,
+.menubar__dropdown-item.is-active { background: var(--ui-accent); color: var(--ui-on-accent); outline: none; }
+.menubar__dropdown-item[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.menubar__dropdown-item[aria-disabled="true"]:hover,
+.menubar__dropdown-item[aria-disabled="true"]:focus,
+.menubar__dropdown-item[aria-disabled="true"].is-active { background: none; color: var(--ui-ink); }
+.menubar__accel {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  color: var(--ui-muted);
+}
+.menubar__dropdown-item:hover .menubar__accel,
+.menubar__dropdown-item:focus .menubar__accel,
+.menubar__dropdown-item.is-active .menubar__accel { color: inherit; opacity: 0.85; }
+.menubar__sep { height: 1px; background: var(--ui-border); margin: 0.3rem 0.2rem; }
+
 /* ---------- App bar ---------- */
 
 .appbar {
@@ -140,7 +249,7 @@ h1, h2, h3 { margin: 0; }
   background: var(--ui-panel);
   border-bottom: 1px solid var(--ui-border);
   position: sticky;
-  top: 0;
+  top: var(--menubar-h);
   z-index: 10;
 }
 
@@ -603,6 +712,9 @@ h1, h2, h3 { margin: 0; }
 .sheet-preview .sign { flex-shrink: 0; }
 
 .preview-toggle { display: flex; gap: 0.3rem; }
+/* Settings -> Menu Bar Size has four options (vs. the usual two) - wraps
+   to a second row in the narrow Settings modal instead of overflowing. */
+.preview-toggle--wrap { flex-wrap: wrap; }
 .toggle-btn {
   border: 1px solid var(--ui-border);
   background: var(--ui-btn);
@@ -728,6 +840,123 @@ h1, h2, h3 { margin: 0; }
 
 .tasting-notes-modal-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .tasting-notes-modal-body .field { margin-bottom: 0; }
+
+/* ---------- Find Queue ---------- */
+
+/* No modal__header/modal__footer here - the search input itself is the
+   header (see findQueueModal in app.js), so .modal's generic chrome is
+   skipped in favor of this row/results/hints layout the whole thing owns. */
+.find-modal { padding: 0; overflow: hidden; }
+.find-modal__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--ui-border);
+}
+.find-modal__icon { flex: none; color: var(--ui-muted); }
+.find-modal__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ui-ink);
+  outline: none;
+}
+.find-modal__input::placeholder { color: var(--ui-muted); }
+.find-modal__count {
+  font-size: 0.76rem;
+  color: var(--ui-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.find-modal__results { max-height: 50vh; overflow-y: auto; padding: 0.4rem; }
+.find-modal__empty { padding: 1.4rem 1rem; text-align: center; color: var(--ui-muted); font-size: 0.85rem; }
+
+/* Same swatch/title/meta layout as the real .queue-item rows (see below),
+   kept as its own class rather than reusing .queue-item directly - this
+   list is a set of jump-to-item links, not editable queue rows, and
+   shouldn't pick up .queue-item's expand/kebab-menu behavior by accident. */
+.find-modal__result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.find-modal__result:hover,
+.find-modal__result.is-active { background: var(--ui-accent); }
+.find-modal__result:hover .find-modal__result-title,
+.find-modal__result.is-active .find-modal__result-title,
+.find-modal__result:hover .find-modal__result-meta,
+.find-modal__result.is-active .find-modal__result-meta,
+.find-modal__result:hover .find-modal__result-hit,
+.find-modal__result.is-active .find-modal__result-hit { color: var(--ui-on-accent); }
+.find-modal__result:hover mark,
+.find-modal__result.is-active mark { background: rgba(255, 255, 255, 0.32); color: inherit; }
+.find-modal__result-body { flex: 1; min-width: 0; }
+.find-modal__result-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.find-modal__result-meta { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
+/* Shown only when a result matched on description/SKU rather than title or
+   size (see renderFindQueueResults in app.js) - those two fields are
+   otherwise displayed as-is, so a hit there is already visible without
+   this; description/SKU aren't shown anywhere else in the row. */
+.find-modal__result-hit {
+  font-size: 0.76rem;
+  color: var(--ui-muted);
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.find-modal__hints {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--ui-border);
+  font-size: 0.74rem;
+  color: var(--ui-muted);
+}
+.find-modal__hints span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.find-modal__hints kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+  background: var(--ui-panel-alt);
+}
+
+.find-modal mark {
+  background: var(--ui-hover);
+  color: var(--ui-accent-ink);
+  border-radius: 2px;
+  padding: 0 0.05em;
+}
+
+/* Flashed on the matching row in the real Queue panel (see jumpToQueueItem
+   in app.js) after picking a Find result, so it's obvious which one it
+   jumped to - not just that the list scrolled. */
+.queue-item.is-find-target { box-shadow: inset 0 0 0 1px var(--ui-accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .queue-item.is-find-flash { animation: find-flash 1.1s ease-out 1; }
+}
+@keyframes find-flash {
+  0% { background: var(--ui-hover); box-shadow: inset 0 0 0 1px var(--ui-accent); }
+  100% { background: var(--ui-panel); box-shadow: inset 0 0 0 1px transparent; }
+}
 
 /* ---------- Print preview ---------- */
 

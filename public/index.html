@@ -24,11 +24,105 @@
       var accent = localStorage.getItem('shelfTalkerAccent.v1');
       if (accent === 'purple') document.documentElement.setAttribute('data-accent', 'purple');
     } catch (e) { /* storage unavailable - stay on the amber default */ }
+    try {
+      // Menu bar size (Settings -> Menu Bar Size, see applyMenuSize in
+      // app.js) - same before-first-paint reasoning as theme/accent above,
+      // otherwise a saved Large/Extra Large choice would render one frame
+      // at the default Comfortable size on every launch.
+      var menuSize = localStorage.getItem('shelfTalkerMenuSize.v1');
+      if (menuSize === 'compact' || menuSize === 'large' || menuSize === 'xlarge') {
+        document.documentElement.setAttribute('data-menu-size', menuSize);
+      }
+    } catch (e) { /* storage unavailable - stay on the Comfortable default */ }
   })();
 </script>
 </head>
 <body>
 <div class="app">
+
+  <!-- Replaces Electron's native File/Tools/Help/Advanced menu (see
+       electron/main.js) - built here instead so its size is something we
+       control (Tools > Settings > Menu Bar Size, see applyMenuSize in
+       app.js) rather than inheriting Windows' own menu font/DPI setting.
+       Renders in both Electron and a plain browser tab; items marked
+       data-requires-electron need real OS access (native file dialogs,
+       DevTools, checking for updates, the About dialog's app version) and
+       are disabled outside Electron - see the "Menu bar" section of app.js
+       for the click/keyboard logic and electron/preload.js for the IPC
+       calls those items make. -->
+  <nav class="menubar no-print" id="menuBar" role="menubar" aria-label="Application menu">
+    <div class="menubar__item" role="menuitem" tabindex="0" aria-haspopup="true" aria-expanded="false" data-menu="file">
+      File
+      <div class="menubar__dropdown" role="menu" aria-label="File">
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="open-queue" data-requires-electron>
+          <span>Open Queue&hellip;</span><span class="menubar__accel">Ctrl+O</span>
+        </button>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="save-queue">
+          <span>Save Queue</span><span class="menubar__accel">Ctrl+S</span>
+        </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="exit" data-requires-electron>
+          <span>Exit</span>
+        </button>
+      </div>
+    </div>
+    <div class="menubar__item" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false" data-menu="tools">
+      Tools
+      <div class="menubar__dropdown" role="menu" aria-label="Tools">
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="find-queue">
+          <span>Find Queue&hellip;</span><span class="menubar__accel">Ctrl+F</span>
+        </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="beer-talker-info">
+          <span>Beer Talker Info</span>
+        </button>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="settings">
+          <span>Settings&hellip;</span>
+        </button>
+      </div>
+    </div>
+    <div class="menubar__item" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false" data-menu="help">
+      Help
+      <div class="menubar__dropdown" role="menu" aria-label="Help">
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="help">
+          <span>Help</span>
+        </button>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="whats-new">
+          <span>What&rsquo;s New</span>
+        </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="check-updates" data-requires-electron>
+          <span>Check for Updates&hellip;</span>
+        </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="about" data-requires-electron>
+          <span>About Shelf Talker Wizard</span>
+        </button>
+      </div>
+    </div>
+    <div class="menubar__item" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false" data-menu="advanced">
+      Advanced
+      <div class="menubar__dropdown" role="menu" aria-label="Advanced">
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="toggle-devtools" data-requires-electron>
+          <span>Toggle Developer Tools</span><span class="menubar__accel">Ctrl+Shift+I</span>
+        </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="export-settings">
+          <span>Export File Settings&hellip;</span>
+        </button>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="view-export">
+          <span>View Export File&hellip;</span>
+        </button>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="view-database">
+          <span>View Database&hellip;</span>
+        </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="server-pc">
+          <span>Server PC&hellip;</span>
+        </button>
+      </div>
+    </div>
+  </nav>
 
   <header class="appbar no-print">
     <div class="appbar__brand">
@@ -586,11 +680,49 @@
     </div>
   </div>
 
+  <!-- Reachable via Tools > Find Queue… in the menu bar - no app-bar
+       button. Its Ctrl+F accelerator only fires inside Electron (see the
+       menu bar section of app.js), so a plain browser tab's own Find still
+       works untouched there; clicking the menu item still opens this in
+       both contexts. Searches the live Queue below (app.js owns the
+       matching/highlighting), not Print History, which already has its own
+       search box on the History tab. -->
+  <div id="findQueueOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow find-modal" role="dialog" aria-modal="true" aria-label="Find in Queue">
+      <div class="find-modal__row">
+        <svg class="find-modal__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M11.2 11.2L15 15" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <input
+          type="text"
+          id="findQueueInput"
+          class="find-modal__input"
+          placeholder="Find in Queue&hellip;"
+          autocomplete="off"
+          spellcheck="false"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="findQueueResults"
+          aria-autocomplete="list"
+        />
+        <span class="find-modal__count" id="findQueueCount" aria-live="polite"></span>
+        <button type="button" class="btn btn--ghost btn--small" id="findQueueCloseBtn">&times;</button>
+      </div>
+      <div class="find-modal__results" id="findQueueResults" role="listbox" aria-label="Matching queue items"></div>
+      <div class="find-modal__hints">
+        <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
+        <span><kbd>Enter</kbd> Jump to item</span>
+        <span><kbd>Esc</kbd> Close</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Shown automatically once after an update (see checkWhatsNew in app.js,
        compared against the version /api/app-version reports), and always
-       reachable via the desktop app's Help menu (see electron/main.js).
-       Content is populated from WHATS_NEW_ENTRIES in app.js, not hardcoded
-       here, so a new release just needs a new entry added to that list. -->
+       reachable via Help > What's New in the menu bar. Content is
+       populated from WHATS_NEW_ENTRIES in app.js, not hardcoded here, so a
+       new release just needs a new entry added to that list. -->
   <div id="whatsNewOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="whatsNewTitle">
       <div class="modal__header">
@@ -707,13 +839,14 @@
     </div>
   </div>
 
-  <!-- Advanced menu only (Electron) - configures the WinePOS export file
-       path the Scan UPC method (Search tab) reads from. Previously an
+  <!-- Advanced > Export File Settings… - configures the WinePOS export
+       file path the Scan UPC method (Search tab) reads from. Previously an
        inline "Settings" box on that method itself; moved here so it stays
-       focused on scanning, with setup as a one-time admin task in the app
-       menu instead. Still reachable from a plain browser dev copy too (see
-       app.js) via Scan UPC's own "nothing set up yet" fallback - only the
-       Advanced menu entry point itself is Electron-only. -->
+       focused on scanning, with setup as a one-time admin task in the menu
+       bar instead. Reachable from both Electron and a plain browser dev
+       copy (this panel's own content comes from the same-origin API
+       either way) - also reachable in browser via Scan UPC's own "nothing
+       set up yet" fallback (see app.js). -->
   <div id="exportSettingsOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="exportSettingsTitle">
       <div class="modal__header">
@@ -745,7 +878,7 @@
     </div>
   </div>
 
-  <!-- Advanced menu only (Electron) - a read-only look at the raw WinePOS
+  <!-- Advanced > View Export File… - a read-only look at the raw WinePOS
        export file configured above, so staff/support can confirm it's
        actually hooked up right without going to find and open the file
        themselves. Shown exactly as WinePOS wrote it (headers as named, not
@@ -768,7 +901,7 @@
     </div>
   </div>
 
-  <!-- Advanced menu only (Electron) - a read-only look at what's actually
+  <!-- Advanced > View Database… - a read-only look at what's actually
        stored in the local database (see server/db.js): Print History and
        product cache counts, plus a page of the most recent printed talkers,
        for confirming this PC has real accumulated data. -->
@@ -788,7 +921,7 @@
     </div>
   </div>
 
-  <!-- Advanced menu only (Electron) - lets staff mark this PC as the main
+  <!-- Advanced > Server PC… - lets staff mark this PC as the main
        store PC. Marking one broadcasts a small UDP announcement on the LAN
        (see server/discovery.js) so *other* PCs can see which one it is, and
        starts serving this PC's WinePOS export file to other PCs' Export File
@@ -821,11 +954,10 @@
     </div>
   </div>
 
-  <!-- Tools -> Settings (Electron menu, see main.js) - the plain browser dev
-       copy has no menu to trigger this from at all, same as the Server PC/
-       Export File Settings/etc. dialogs above. Currently holds just the
-       accent (Change Theme) choice; a natural place to add more app-wide
-       preferences later without needing another menu item. -->
+  <!-- Tools -> Settings (menu bar, see public/js/app.js) - reachable in
+       both Electron and a plain browser tab. Holds app-wide preferences
+       that aren't tied to any one tab: the accent (Change Theme) and the
+       menu bar's own text size. -->
   <div id="settingsOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
       <div class="modal__header">
@@ -841,6 +973,17 @@
           </div>
         </label>
         <p class="help-text">Changes the colour of the app's own text and buttons. Shelf talkers and display signs keep whatever Theme (Amber/Purple) is picked for each one on the form - this only affects the app around them.</p>
+
+        <label class="field">
+          <span>Menu Bar Size</span>
+          <div class="preview-toggle preview-toggle--wrap" role="radiogroup" aria-label="Menu bar size">
+            <button type="button" class="toggle-btn" data-menu-size="compact" role="radio" aria-checked="false" id="settingsMenuSizeCompactBtn">Compact</button>
+            <button type="button" class="toggle-btn" data-menu-size="comfortable" role="radio" aria-checked="false" id="settingsMenuSizeComfortableBtn">Comfortable</button>
+            <button type="button" class="toggle-btn" data-menu-size="large" role="radio" aria-checked="false" id="settingsMenuSizeLargeBtn">Large</button>
+            <button type="button" class="toggle-btn" data-menu-size="xlarge" role="radio" aria-checked="false" id="settingsMenuSizeXlargeBtn">Extra Large</button>
+          </div>
+        </label>
+        <p class="help-text">Changes the size of the File / Tools / Help / Advanced menu bar at the top of the window - useful on a touchscreen register or a high-resolution display where the default can run small.</p>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn" id="settingsCloseFooterBtn">Close</button>
