@@ -367,6 +367,7 @@
     whatsNewBtn: document.getElementById('whatsNewBtn'),
     whatsNewOverlay: document.getElementById('whatsNewOverlay'),
     whatsNewBody: document.getElementById('whatsNewBody'),
+    whatsNewShowAllBtn: document.getElementById('whatsNewShowAllBtn'),
     whatsNewCloseBtn: document.getElementById('whatsNewCloseBtn'),
     whatsNewCloseFooterBtn: document.getElementById('whatsNewCloseFooterBtn'),
 
@@ -2890,8 +2891,11 @@
   // Renders a list of WHATS_NEW_ENTRIES (see the top of this file) into the
   // popup body - shared by the automatic launch check and the manual
   // "What's New" button, which just show a different slice of the list
-  // (unseen-only vs. everything).
+  // (unseen-only vs. everything). "See Previous Updates" (below) only makes
+  // sense when there's older history not currently shown, so it hides
+  // itself once `entries` already covers the whole list.
   function renderWhatsNewEntries(entries) {
+    els.whatsNewShowAllBtn.hidden = entries.length >= WHATS_NEW_ENTRIES.length;
     if (!entries.length) {
       els.whatsNewBody.innerHTML = '<p class="whats-new-empty">Nothing new to report yet.</p>';
       return;
@@ -2907,6 +2911,13 @@
   const whatsNewModal = createModal({
     overlay: els.whatsNewOverlay,
     closeBtns: [els.whatsNewCloseBtn, els.whatsNewCloseFooterBtn],
+  });
+
+  // Lets someone looking at just the "since you last opened this" slice
+  // (see checkWhatsNew below) expand in place to the full history, without
+  // having to close the popup and reopen it from the app-bar button.
+  els.whatsNewShowAllBtn.addEventListener('click', () => {
+    renderWhatsNewEntries(WHATS_NEW_ENTRIES);
   });
 
   // The button always shows the full list, regardless of what this PC has
