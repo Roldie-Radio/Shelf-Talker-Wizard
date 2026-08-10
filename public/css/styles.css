@@ -185,7 +185,7 @@ h1, h2, h3 { margin: 0; }
    white-space: nowrap on .tab is the other half - it's what makes a tab
    that doesn't fit the current row move to the next one whole, rather than
    getting squeezed and wrapped in place the same broken way. */
-.tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-border); }
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-border); }
 .tab {
   border: none;
   background: none;
