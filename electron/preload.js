@@ -17,6 +17,10 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // bar's own Help button does, rather than a separate window.
   onShowHelpRequested: (callback) => ipcRenderer.on('help:show-requested', () => callback()),
 
+  // Help menu "What's New" (see main.js) - same pattern as onShowHelpRequested
+  // above, for the app bar's own "What's New" button.
+  onShowWhatsNewRequested: (callback) => ipcRenderer.on('whats-new:show-requested', () => callback()),
+
   // Scan UPC tab's Settings "Browse..." button (see main.js) - only present
   // here, so app.js only shows that button when this bridge exists; the
   // plain browser dev copy has no native file dialog and just falls back to

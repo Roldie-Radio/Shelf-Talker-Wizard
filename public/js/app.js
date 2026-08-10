@@ -2917,6 +2917,17 @@
     whatsNewModal.open();
   });
 
+  // The Electron Help menu's own "What's New" item (see main.js) opens this
+  // same popup, full list, same as the app-bar button - one What's New
+  // panel, reachable two ways, same pairing as Help/onShowHelpRequested
+  // above.
+  if (window.shelfTalker && window.shelfTalker.onShowWhatsNewRequested) {
+    window.shelfTalker.onShowWhatsNewRequested(() => {
+      renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+      whatsNewModal.open();
+    });
+  }
+
   // Breaks "2.4.10" > "2.4.9" ties correctly, unlike a plain string
   // compare - returns negative/zero/positive same as a normal comparator.
   function compareVersions(a, b) {
