@@ -309,7 +309,14 @@
           <span id="importUrlLabel">Product Page URL</span>
           <input type="url" id="importUrl" placeholder="https://www.liquoroutletwinecellars.com/products/..." />
         </label>
-        <button type="button" class="btn btn--primary" id="importBtn">Fetch Product Data</button>
+        <div class="form-actions">
+          <button type="button" class="btn btn--primary" id="importBtn">Fetch Product Data</button>
+          <!-- Same "Add to Queue" pattern as SKU Lookup/Scan UPC's own save
+               buttons - see els.skuSaveBtn's note in app.js. Saves whatever the
+               fetch (or the pasted-HTML fallback below) just filled into the
+               shared form fields without switching to Edit Talker first. -->
+          <button type="button" class="btn" id="importSaveBtn">Add to Queue</button>
+        </div>
         <p class="help-text" id="importStatus" role="status" aria-live="polite"></p>
 
         <button type="button" class="link-btn" id="importHtmlToggle" aria-expanded="false" aria-controls="importHtmlSection">Site blocking the fetch? Paste the page's HTML instead</button>
