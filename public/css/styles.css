@@ -54,7 +54,22 @@
 
   --radius: 10px;
   color-scheme: light;
+
+  /* Menu bar size (Settings -> Menu Bar Size, see applyMenuSize in app.js) -
+     Comfortable is the default; the other three tiers are opt-in via
+     [data-menu-size] below, set before first paint by the inline script in
+     index.html. Two tokens rather than one font-size alone, since a taller
+     row needs a bit more room than a proportionally scaled font gives it on
+     its own to still feel comfortable to click. Not theme-dependent (same
+     in light/dark), so these live here rather than being redefined per
+     [data-theme] like the color tokens above/below. */
+  --menubar-h: 32px;
+  --menubar-fs: 15px;
 }
+
+:root[data-menu-size="compact"] { --menubar-h: 26px; --menubar-fs: 13px; }
+:root[data-menu-size="large"] { --menubar-h: 38px; --menubar-fs: 18px; }
+:root[data-menu-size="xlarge"] { --menubar-h: 46px; --menubar-fs: 22px; }
 
 /* Purple accent (light mode) - opt-in via Settings -> Change Theme, applied
    as the [data-accent="purple"] attribute (see applyAccent in app.js, set
@@ -129,6 +144,100 @@ h1, h2, h3 { margin: 0; }
 
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* ---------- Menu bar ---------- */
+
+/* Own top-of-page bar, sticky above .appbar - see the "Menu bar" section
+   near the end of app.js for the open/close/keyboard logic, and index.html
+   for the markup this styles. */
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: var(--menubar-h);
+  font-size: var(--menubar-fs);
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
+  padding: 0 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  /* Deliberately no overflow-x here even at Extra Large, where the four
+     labels are at their widest: setting overflow-x to anything but
+     visible makes the browser compute overflow-y as auto too (per the CSS
+     overflow spec), which would clip every .menubar__dropdown below - they
+     rely on escaping this box entirely via position:absolute. Not a
+     real-world problem either way: the desktop window has its own
+     minWidth (1024px, see electron/main.js), comfortably wider than four
+     items ever need even at Extra Large. */
+}
+.menubar__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.9em;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--ui-ink-soft);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.menubar__item:hover { background: var(--ui-panel-alt); color: var(--ui-ink); }
+.menubar__item.is-open { background: var(--ui-accent); color: var(--ui-on-accent); }
+.menubar__item:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+
+.menubar__dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 2px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+  padding: 0.35rem;
+  min-width: 15em;
+  z-index: 25;
+  font-size: 0.93em;
+  font-weight: 400;
+}
+.menubar__item.is-open .menubar__dropdown { display: block; }
+
+.menubar__dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5em;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  padding: 0.45em 0.7em;
+  border-radius: 6px;
+  color: var(--ui-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menubar__dropdown-item:hover,
+.menubar__dropdown-item:focus,
+.menubar__dropdown-item.is-active { background: var(--ui-accent); color: var(--ui-on-accent); outline: none; }
+.menubar__dropdown-item[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.menubar__dropdown-item[aria-disabled="true"]:hover,
+.menubar__dropdown-item[aria-disabled="true"]:focus,
+.menubar__dropdown-item[aria-disabled="true"].is-active { background: none; color: var(--ui-ink); }
+.menubar__accel {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  color: var(--ui-muted);
+}
+.menubar__dropdown-item:hover .menubar__accel,
+.menubar__dropdown-item:focus .menubar__accel,
+.menubar__dropdown-item.is-active .menubar__accel { color: inherit; opacity: 0.85; }
+.menubar__sep { height: 1px; background: var(--ui-border); margin: 0.3rem 0.2rem; }
+
 /* ---------- App bar ---------- */
 
 .appbar {
@@ -140,7 +249,7 @@ h1, h2, h3 { margin: 0; }
   background: var(--ui-panel);
   border-bottom: 1px solid var(--ui-border);
   position: sticky;
-  top: 0;
+  top: var(--menubar-h);
   z-index: 10;
 }
 
@@ -603,6 +712,9 @@ h1, h2, h3 { margin: 0; }
 .sheet-preview .sign { flex-shrink: 0; }
 
 .preview-toggle { display: flex; gap: 0.3rem; }
+/* Settings -> Menu Bar Size has four options (vs. the usual two) - wraps
+   to a second row in the narrow Settings modal instead of overflowing. */
+.preview-toggle--wrap { flex-wrap: wrap; }
 .toggle-btn {
   border: 1px solid var(--ui-border);
   background: var(--ui-btn);

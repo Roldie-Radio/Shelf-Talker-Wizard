@@ -8,6 +8,10 @@
   // THEME_KEY/data-theme above: this picks the UI's own accent colour, not
   // light vs dark.
   const ACCENT_KEY = 'shelfTalkerAccent.v1';
+  // Same, for Settings -> Menu Bar Size (see applyMenuSize below). Must
+  // match the key the inline pre-paint script in index.html reads.
+  const MENU_SIZE_KEY = 'shelfTalkerMenuSize.v1';
+  const MENU_SIZES = ['compact', 'comfortable', 'large', 'xlarge'];
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -422,6 +426,9 @@
     settingsCloseBtn: document.getElementById('settingsCloseBtn'),
     settingsCloseFooterBtn: document.getElementById('settingsCloseFooterBtn'),
     settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
+    settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
+
+    menuBar: document.getElementById('menuBar'),
   };
 
   // ---------- Theme ----------
@@ -508,6 +515,43 @@
       } catch {
         // Same as theme/queue: an unavailable store shouldn't break the
         // click, the choice just won't survive a restart.
+      }
+    });
+  });
+
+  // ---------- Menu Bar Size (Settings -> Menu Bar Size) ----------
+
+  // Drives --menubar-h/--menubar-fs in styles.css via [data-menu-size] on
+  // <html> - same before-first-paint handling as accent above (see the
+  // inline script in index.html), and the same "everything else is em
+  // units off the menu bar's own font-size" trick the menu-bar-size mockup
+  // this was built from used, so one attribute resizes the whole bar
+  // (labels, dropdowns, items) together.
+  function currentMenuSize() {
+    const attr = document.documentElement.getAttribute('data-menu-size');
+    return MENU_SIZES.includes(attr) ? attr : 'comfortable';
+  }
+
+  function applyMenuSize(size) {
+    const resolved = MENU_SIZES.includes(size) ? size : 'comfortable';
+    if (resolved === 'comfortable') document.documentElement.removeAttribute('data-menu-size');
+    else document.documentElement.setAttribute('data-menu-size', resolved);
+    els.settingsMenuSizeButtons.forEach((btn) => {
+      const isActive = btn.dataset.menuSize === resolved;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-checked', String(isActive));
+    });
+  }
+
+  els.settingsMenuSizeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = MENU_SIZES.includes(btn.dataset.menuSize) ? btn.dataset.menuSize : 'comfortable';
+      applyMenuSize(next);
+      try {
+        localStorage.setItem(MENU_SIZE_KEY, next);
+      } catch {
+        // Same as accent/theme/queue: an unavailable store shouldn't break
+        // the click, the choice just won't survive a restart.
       }
     });
   });
@@ -1357,8 +1401,9 @@
   // separate from the automatic localStorage persistence (see saveQueue),
   // for moving a queue to another computer or keeping a copy of a batch
   // outside the browser. Used by both the in-page Save Queue button (browser
-  // download, below) and the Electron File menu's "Save Queue" (native save
-  // dialog, see onSaveRequested below).
+  // download, below) and the menu bar's own File > Save Queue (see
+  // runMenuAction's 'save-queue' case), which uses the native save dialog
+  // instead when running in Electron.
   function buildQueueExportPayload() {
     return {
       app: 'Shelf Talker Wizard',
@@ -1382,15 +1427,10 @@
 
   els.saveQueueBtn.addEventListener('click', saveQueueToFile);
 
-  // Electron's File menu "Open Queue…"/"Save Queue" (see electron/main.js) -
-  // absent entirely outside Electron, where window.shelfTalker is never
-  // injected (see preload.js), same guard pattern as print() above.
-  if (window.shelfTalker && window.shelfTalker.onSaveRequested) {
-    window.shelfTalker.onSaveRequested(() => {
-      if (queue.length === 0) return;
-      window.shelfTalker.saveQueueToFile(buildQueueExportPayload());
-    });
-  }
+  // File > Open Queue… (see runMenuAction's 'open-queue' case) asks the main
+  // process to show a native "open file" dialog (see electron/main.js);
+  // once it's read and parsed the chosen file, it hands the queue back here
+  // the same way, regardless of what triggered the request.
   if (window.shelfTalker && window.shelfTalker.onQueueOpened) {
     window.shelfTalker.onQueueOpened((openedQueue) => {
       if (queue.length > 0 && !confirm('Opening a queue file will replace your current queue. Continue?')) {
@@ -1408,10 +1448,10 @@
 
   // Tools menu "Find Queue…" (see electron/main.js) - a quick way to locate
   // one talker in a long queue without scrolling the whole panel by hand.
-  // Electron-only, same as Beer Talker Info: no app-bar button, and
-  // deliberately no Ctrl+F keydown listener on the page itself, so a plain
-  // browser tab's own Find-in-page still works untouched (only the desktop
-  // app's native menu accelerator triggers this, via IPC).
+  // Reachable via Tools > Find Queue… in the menu bar (see runMenuAction's
+  // 'find-queue' case) in both Electron and a plain browser tab; its
+  // Ctrl+F accelerator only fires inside Electron, though - see the menu
+  // bar section's note on why accelerators are gated that way.
   //
   // Matches title, description, SKU, and size - broader than History's own
   // search (title/SKU only, see server/db.js), since this runs client-side
@@ -1590,13 +1630,6 @@
       if (findQueueActiveIndex !== -1) jumpToQueueItem(findQueueMatches[findQueueActiveIndex].id);
     }
   });
-
-  // Tools menu "Find Queue…" (see main.js). Deliberately no page-level
-  // Ctrl+F keydown listener anywhere in this file - see the note atop this
-  // section.
-  if (window.shelfTalker && window.shelfTalker.onFindQueueRequested) {
-    window.shelfTalker.onFindQueueRequested(() => findQueueModal.open());
-  }
 
   els.cancelEditBtn.addEventListener('click', resetForm);
   els.clearFormBtn.addEventListener('click', resetForm);
@@ -3113,13 +3146,9 @@
     printGuide();
   });
 
-  // Tools menu "Beer Talker Info" (see main.js) - the only way to open this
-  // now that it's been moved out of the app bar, same onShowXRequested
-  // pattern as Help/What's New elsewhere in this file. Electron-only: there
-  // is no plain-browser fallback trigger for it anymore.
-  if (window.shelfTalker && window.shelfTalker.onShowGuideRequested) {
-    window.shelfTalker.onShowGuideRequested(() => guidePreviewModal.open());
-  }
+  // Reachable via Tools > Beer Talker Info in the menu bar (see
+  // runMenuAction's 'beer-talker-info' case) - no app-bar button of its
+  // own.
 
   // ---------- Help ----------
 
@@ -3138,11 +3167,8 @@
     document.querySelectorAll('[data-electron-only]').forEach((el) => { el.style.display = ''; });
   }
 
-  // The Electron Help menu's own "Help" item (see main.js) opens this same
-  // panel rather than a separate window - one help doc, reachable two ways.
-  if (window.shelfTalker && window.shelfTalker.onShowHelpRequested) {
-    window.shelfTalker.onShowHelpRequested(() => helpModal.open());
-  }
+  // Also reachable via Help > Help in the menu bar (see runMenuAction's
+  // 'help' case) - one help doc, reachable two ways.
 
   // ---------- What's New ----------
 
@@ -3173,22 +3199,16 @@
 
   // Lets someone looking at just the "since you last opened this" slice
   // (see checkWhatsNew below) expand in place to the full history, without
-  // having to close the popup and reopen it from the app-bar button.
+  // having to close the popup and reopen it from Help > What's New.
   els.whatsNewShowAllBtn.addEventListener('click', () => {
     renderWhatsNewEntries(WHATS_NEW_ENTRIES);
   });
 
-  // The Electron Help menu's own "What's New" item (see main.js) opens this
-  // popup with the full list, regardless of what this PC has already seen -
-  // unlike the automatic launch popup below, this is someone deliberately
-  // asking "what's changed lately", not a change notification. Same pairing
-  // as Help/onShowHelpRequested above.
-  if (window.shelfTalker && window.shelfTalker.onShowWhatsNewRequested) {
-    window.shelfTalker.onShowWhatsNewRequested(() => {
-      renderWhatsNewEntries(WHATS_NEW_ENTRIES);
-      whatsNewModal.open();
-    });
-  }
+  // Help > What's New in the menu bar (see runMenuAction's 'whats-new'
+  // case) opens this popup with the full list, regardless of what this PC
+  // has already seen - unlike the automatic launch popup below, this is
+  // someone deliberately asking "what's changed lately", not a change
+  // notification.
 
   // Breaks "2.4.10" > "2.4.9" ties correctly, unlike a plain string
   // compare - returns negative/zero/positive same as a normal comparator.
@@ -3596,9 +3616,8 @@
     });
   }
 
-  if (window.shelfTalker && window.shelfTalker.onExportSettingsRequested) {
-    window.shelfTalker.onExportSettingsRequested(() => exportSettingsModal.open());
-  }
+  // Also reachable via Advanced > Export File Settings… in the menu bar
+  // (see runMenuAction's 'export-settings' case).
 
   const exportPreviewModal = createModal({
     overlay: els.exportPreviewOverlay,
@@ -3759,31 +3778,283 @@
     }
   });
 
-  // Electron-only: the Advanced menu items that open these three dialogs
-  // (see main.js) have no equivalent in the plain browser dev copy, so
-  // these listeners simply never fire there - same pattern as
-  // onShowHelpRequested above.
-  if (window.shelfTalker && window.shelfTalker.onViewExportRequested) {
-    window.shelfTalker.onViewExportRequested(() => exportPreviewModal.open());
-  }
-  if (window.shelfTalker && window.shelfTalker.onViewDatabaseRequested) {
-    window.shelfTalker.onViewDatabaseRequested(() => databasePreviewModal.open());
-  }
-  if (window.shelfTalker && window.shelfTalker.onServerPcRequested) {
-    window.shelfTalker.onServerPcRequested(() => serverPcModal.open());
-  }
+  // These three, and Settings below, are reachable via the menu bar's
+  // Advanced/Tools items (see runMenuAction's 'view-export'/'view-database'/
+  // 'server-pc'/'settings' cases) in both Electron and a plain browser tab -
+  // each panel's own content comes from the same-origin API either way.
 
-  // Tools -> Settings (Electron menu, see main.js). onOpen re-syncs the
-  // toggle buttons rather than relying on applyAccent's own initial call
-  // (below) to have kept them current - harmless either way, but this is
-  // the one place that has to be right every time the dialog opens.
+  // onOpen re-syncs the toggle buttons rather than relying on applyAccent's
+  // own initial call (below) to have kept them current - harmless either
+  // way, but this is the one place that has to be right every time the
+  // dialog opens.
   const settingsModal = createModal({
     overlay: els.settingsOverlay,
     closeBtns: [els.settingsCloseBtn, els.settingsCloseFooterBtn],
-    onOpen: () => applyAccent(currentAccent()),
+    onOpen: () => {
+      applyAccent(currentAccent());
+      applyMenuSize(currentMenuSize());
+    },
   });
-  if (window.shelfTalker && window.shelfTalker.onShowSettingsRequested) {
-    window.shelfTalker.onShowSettingsRequested(() => settingsModal.open());
+
+  // ---------- Menu bar ----------
+  //
+  // Replaces Electron's native File/Tools/Help/Advanced menu (see
+  // electron/main.js) with our own, so its size is something Settings can
+  // actually control (see applyMenuSize above) instead of inheriting
+  // whatever Windows' own menu font/DPI setting happens to be. Renders in
+  // both Electron and a plain browser tab; items that need real OS access
+  // (native file dialogs, DevTools, checking for updates, the About
+  // dialog's app version) are marked [data-requires-electron] in
+  // index.html and disabled below when window.shelfTalker doesn't exist.
+  //
+  // Keyboard accelerators (Ctrl+O/S/F, Ctrl+Shift+I) are bound ONLY inside
+  // Electron - binding them unconditionally would hijack a plain browser
+  // tab's own Ctrl+F/Ctrl+S, exactly what Find Queue's own matching was
+  // already careful to avoid. Every accelerator-bound action is still
+  // reachable by clicking the menu regardless of context.
+
+  // Routes a clicked/activated menu item to its real behavior. Items that
+  // just open an in-page modal call it directly (no IPC needed at all -
+  // that's the whole point of owning the menu now); items needing native
+  // OS access go through window.shelfTalker (see preload.js), which is
+  // undefined outside Electron, so those quietly no-op there instead of
+  // throwing (the items are also visibly disabled - see initMenuBar).
+  function runMenuAction(action) {
+    switch (action) {
+      case 'open-queue':
+        window.shelfTalker?.openQueueFile();
+        break;
+      case 'save-queue':
+        if (queue.length === 0) return;
+        if (window.shelfTalker) window.shelfTalker.saveQueueToFile(buildQueueExportPayload());
+        else saveQueueToFile();
+        break;
+      case 'exit':
+        window.shelfTalker?.quitApp();
+        break;
+      case 'find-queue':
+        findQueueModal.open();
+        break;
+      case 'beer-talker-info':
+        guidePreviewModal.open();
+        break;
+      case 'settings':
+        settingsModal.open();
+        break;
+      case 'help':
+        helpModal.open();
+        break;
+      case 'whats-new':
+        renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+        whatsNewModal.open();
+        break;
+      case 'check-updates':
+        window.shelfTalker?.checkForUpdates();
+        break;
+      case 'about':
+        window.shelfTalker?.showAbout();
+        break;
+      case 'toggle-devtools':
+        window.shelfTalker?.toggleDevTools();
+        break;
+      case 'export-settings':
+        exportSettingsModal.open();
+        break;
+      case 'view-export':
+        exportPreviewModal.open();
+        break;
+      case 'view-database':
+        databasePreviewModal.open();
+        break;
+      case 'server-pc':
+        serverPcModal.open();
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Open/close, hover-to-switch, and full keyboard navigation for the menu
+  // bar - the same behavior Windows' native menu used to give for free
+  // (see the "what we'd own" side of the menu-bar-size conversation this
+  // was built from). Wrapped in its own IIFE purely to scope the handful
+  // of helper closures below without leaking them into the rest of the
+  // file.
+  (function initMenuBar() {
+    const bar = els.menuBar;
+    if (!bar) return;
+
+    const topItems = [...bar.querySelectorAll(':scope > .menubar__item')];
+
+    // Outside Electron, gray out (rather than hide) anything that needs
+    // real OS access - still visible, so someone testing the plain
+    // browser dev copy can see what the desktop app offers, but inert.
+    if (!window.shelfTalker) {
+      bar.querySelectorAll('[data-requires-electron]').forEach((el) => {
+        el.setAttribute('aria-disabled', 'true');
+        el.title = 'Only available in the desktop app';
+      });
+    }
+
+    function dropdownItemsOf(topItem) {
+      return [...topItem.querySelectorAll('.menubar__dropdown-item')];
+    }
+    function enabledDropdownItemsOf(topItem) {
+      return dropdownItemsOf(topItem).filter((el) => el.getAttribute('aria-disabled') !== 'true');
+    }
+
+    function closeAllMenus({ refocus = false } = {}) {
+      topItems.forEach((item) => {
+        delete item.dataset.justHoverOpened;
+        if (!item.classList.contains('is-open')) return;
+        item.classList.remove('is-open');
+        item.setAttribute('aria-expanded', 'false');
+        if (refocus) item.focus();
+      });
+    }
+
+    // Roving tabindex across the top-level items (File/Tools/Help/
+    // Advanced) - only one is ever a Tab stop at a time; arrow keys move
+    // it, same keyboard model as a real menu bar.
+    function setRovingFocus(target) {
+      topItems.forEach((item) => item.setAttribute('tabindex', item === target ? '0' : '-1'));
+      target.focus();
+    }
+
+    function openMenu(topItem, { focusFirst = false } = {}) {
+      closeAllMenus();
+      topItem.classList.add('is-open');
+      topItem.setAttribute('aria-expanded', 'true');
+      setRovingFocus(topItem);
+      if (focusFirst) enabledDropdownItemsOf(topItem)[0]?.focus();
+    }
+
+    function isAnyMenuOpen() {
+      return topItems.some((item) => item.classList.contains('is-open'));
+    }
+
+    function adjacentTopItem(current, delta) {
+      const idx = topItems.indexOf(current);
+      return topItems[(idx + delta + topItems.length) % topItems.length];
+    }
+
+    function activateDropdownItem(el) {
+      if (el.getAttribute('aria-disabled') === 'true') return;
+      closeAllMenus();
+      runMenuAction(el.dataset.action);
+    }
+
+    topItems.forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // A hover-switch (below) already opened this item a moment ago,
+        // as part of the same gesture that's now clicking it - without
+        // this check, the click's own toggle logic would see "already
+        // open" and immediately close what the hover just opened, which
+        // looks like the menu never responded to the click at all.
+        if (item.dataset.justHoverOpened) {
+          delete item.dataset.justHoverOpened;
+          return;
+        }
+        if (item.classList.contains('is-open')) closeAllMenus({ refocus: true });
+        else openMenu(item);
+      });
+      // Switches which menu is open on hover, but only once one is
+      // already open via a click - hovering the bar with nothing open
+      // shouldn't pop a menu open on its own, same as a real menu bar.
+      item.addEventListener('mouseenter', () => {
+        if (isAnyMenuOpen() && !item.classList.contains('is-open')) {
+          openMenu(item, { focusFirst: true });
+          item.dataset.justHoverOpened = '1';
+        }
+      });
+      item.addEventListener('mouseleave', () => { delete item.dataset.justHoverOpened; });
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const next = adjacentTopItem(item, e.key === 'ArrowRight' ? 1 : -1);
+          if (item.classList.contains('is-open')) openMenu(next, { focusFirst: true });
+          else setRovingFocus(next);
+        } else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openMenu(item, { focusFirst: true });
+        } else if (e.key === 'Escape' && item.classList.contains('is-open')) {
+          e.preventDefault();
+          closeAllMenus({ refocus: true });
+        }
+      });
+    });
+
+    bar.querySelectorAll('.menubar__dropdown-item').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activateDropdownItem(el);
+      });
+      el.addEventListener('mouseenter', () => el.focus());
+      el.addEventListener('keydown', (e) => {
+        // Without this, every key here would also reach the ancestor
+        // top-level item's own keydown listener (keydown bubbles, and a
+        // dropdown item is a descendant of its .menubar__item) - which
+        // has its own handling for the same keys and would immediately
+        // undo whatever this handler just did (e.g. ArrowDown moving
+        // focus to the next item, only for the top-level handler to reset
+        // it back to the first item a moment later).
+        e.stopPropagation();
+        const topItem = el.closest('.menubar__item');
+        const items = enabledDropdownItemsOf(topItem);
+        const idx = items.indexOf(el);
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          (items[idx + 1] || items[0])?.focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          (items[idx - 1] || items[items.length - 1])?.focus();
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          items[0]?.focus();
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          items[items.length - 1]?.focus();
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          openMenu(adjacentTopItem(topItem, e.key === 'ArrowRight' ? 1 : -1), { focusFirst: true });
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activateDropdownItem(el);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          closeAllMenus({ refocus: true });
+        }
+      });
+    });
+
+    document.addEventListener('click', () => closeAllMenus());
+    // A menu left open shouldn't trap Tab - once focus actually leaves the
+    // bar for good (not just moving from one of its own items to another),
+    // close everything so nothing is left showing.
+    bar.addEventListener('focusout', (e) => {
+      if (!bar.contains(e.relatedTarget)) closeAllMenus();
+    });
+  })();
+
+  if (window.shelfTalker) {
+    document.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'o') {
+        e.preventDefault();
+        runMenuAction('open-queue');
+      } else if (key === 's') {
+        e.preventDefault();
+        runMenuAction('save-queue');
+      } else if (key === 'f') {
+        e.preventDefault();
+        runMenuAction('find-queue');
+      } else if (e.shiftKey && key === 'i') {
+        e.preventDefault();
+        runMenuAction('toggle-devtools');
+      }
+    });
   }
 
   function triggerPrint() {
