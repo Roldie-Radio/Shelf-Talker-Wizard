@@ -27,6 +27,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '2.6.0',
+      items: [
+        'Search by Name: picking a Beer result now also searches Untappd for the brewery, style, ABV, IBU, and rating, same as SKU Lookup and Scan UPC already do for beer.',
+      ],
+    },
+    {
       version: '2.5.0',
       items: [
         "New: this “What's New” popup shows once after an update, and is always reachable from the What's New button next to Help (or the desktop app's Help menu).",
@@ -2653,6 +2659,15 @@
   // tab bar, every keystroke fires its own request.
   let nameSearchAbortController = null;
   let nameSearchDebounce;
+  // Bumped on every pick (see selectNameSearchProduct) so a slow
+  // /api/name-search-select response for an earlier pick can't land after a
+  // faster one for whatever staff picked next and clobber it - same
+  // "newest wins" guard nameSearchAbortController gives the ranked list
+  // above, but that AbortController is about to be reused for a fresh
+  // keystroke search the moment a result's clicked (see els.nameSearchInput's
+  // 'input' listener clearing the prior selection), so this pick's own
+  // in-flight Untappd request needs a guard that isn't tied to it.
+  let nameSearchSelectToken = 0;
 
   // Below this many characters, a search isn't run at all - a 1-character
   // query against a store's full inventory would return a huge, mostly
@@ -2782,7 +2797,18 @@
     if (isBeer) {
       Object.assign(fields, {
         sku: product.sku,
-        brewery: product.brand,
+        // Once /api/name-search-select's Untappd step (see
+        // selectNameSearchProduct below) comes back, product.brewery is
+        // Untappd's own brewery name - falls back to the export's own Brand
+        // column (same as before that step existed) whenever Untappd didn't
+        // have one, or hasn't answered yet.
+        brewery: product.brewery || product.brand,
+        location: product.location,
+        style: product.style,
+        abv: product.abv,
+        ibu: product.ibu,
+        untappdRating: product.untappdRating,
+        untappdRatingCount: product.untappdRatingCount,
       });
     } else {
       fields.vintage = product.vintage;
@@ -2864,18 +2890,32 @@
   }
 
   function clearNameSearchSelection() {
+    // Bumped so a still-in-flight /api/name-search-select response for the
+    // pick being cleared can't land afterward and silently repopulate the
+    // form/status line out from under whatever staff do next (see
+    // selectNameSearchProduct's own token check).
+    nameSearchSelectToken++;
     nameSearchSelectedProduct = null;
     nameSearchPriceMode = 'unit';
     els.nameSearchSaveBtn.disabled = true;
     renderNameSearchSelected();
   }
 
-  function selectNameSearchProduct(product) {
+  // Picking a result fills the form immediately from the export's own
+  // columns (title/size/price/etc - no network needed for those), then, for
+  // beer only, kicks off a best-effort Untappd search in the background (see
+  // /api/name-search-select in server/index.js) for the brewery/location/
+  // style/ABV/IBU/rating the export file doesn't carry - the same
+  // enrichment step SKU Lookup and Scan UPC already run for beer, just
+  // reached from a picked export row instead of a typed SKU or scanned UPC.
+  // Wine/Spirits has nothing further to fetch (see applyNameSearchProduct's
+  // note), so it's done the moment the export data lands.
+  async function selectNameSearchProduct(product) {
+    const myToken = ++nameSearchSelectToken;
     nameSearchSelectedProduct = product;
     els.nameSearchInput.value = product.title;
     closeNameSearchResults();
     els.nameSearchSaveBtn.disabled = false;
-    els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
     const isBeer = currentCategory === 'beer';
     // Beer defaults to Pack Price whenever the export has one to offer -
     // see priceChoiceHtml's note. Anything else (no pack price, or not
@@ -2883,6 +2923,41 @@
     nameSearchPriceMode = isBeer && productHasPackPrice(product) ? 'pack' : 'unit';
     applyNameSearchProduct(product, isBeer, nameSearchPriceMode);
     renderNameSearchSelected();
+
+    if (!isBeer) {
+      els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+      return;
+    }
+
+    els.nameSearchSpinner.hidden = false;
+    els.nameSearchSaveBtn.disabled = true;
+    els.nameSearchStatus.textContent = 'Found it! Searching Untappd...';
+    try {
+      const resp = await fetch('/api/name-search-select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, category: 'beer' }),
+      });
+      const data = await resp.json();
+      // Superseded by a newer pick while this was in flight - leave
+      // whatever that pick already put on the form/status line alone.
+      if (myToken !== nameSearchSelectToken) return;
+      if (!resp.ok) throw new Error(data.error || 'Could not search Untappd for that beer.');
+      nameSearchSelectedProduct = data;
+      applyNameSearchProduct(data, true, nameSearchPriceMode);
+      renderNameSearchSelected();
+      els.nameSearchStatus.textContent = data.untappdError
+        ? `Found it! Untappd: ${data.untappdError}`
+        : 'Found it! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      if (myToken !== nameSearchSelectToken) return;
+      els.nameSearchStatus.textContent = `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`;
+    } finally {
+      if (myToken === nameSearchSelectToken) {
+        els.nameSearchSpinner.hidden = true;
+        els.nameSearchSaveBtn.disabled = false;
+      }
+    }
   }
 
   els.nameSearchInput.addEventListener('input', () => {
