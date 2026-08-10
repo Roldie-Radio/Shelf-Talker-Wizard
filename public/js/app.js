@@ -38,6 +38,10 @@
       items: [
         'Search by Name: picking a Beer result now also searches Untappd for the brewery, style, ABV, IBU, and rating, same as SKU Lookup and Scan UPC already do for beer.',
         'New (experimental, off by default): Nose / Palate / Finish fields for Wine/Spirits Shelf Talkers, printed under the description, plus a Distiller.com source in "Find Tasting Notes" that fills them in automatically. Turn it on in Settings → Experimental Features → Bourbon Shelf Talkers.',
+        'Desktop app: the File / Tools / Help / Advanced menu is now built into the app itself, with a new Menu Bar Size setting (Compact/Comfortable/Large/Extra Large) under Tools → Settings.',
+        'New: Find Queue… (Ctrl+F, on the Tools menu) jumps straight to a talker in a long queue by title, description, SKU, or size.',
+        'Settings gained a new Experimental Features section — home to opt-in features like Bourbon Shelf Talkers above.',
+        "The What's New history's See Previous Updates button now toggles open and closed in place, instead of just expanding.",
       ],
     },
     {
