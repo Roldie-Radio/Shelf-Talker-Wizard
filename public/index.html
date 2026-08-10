@@ -62,7 +62,12 @@
              never loses the choice. A real select element rather than the
              tap/toggle-btn rows this used to be (three settings - sign
              type, sign size, category - collapsed into two dropdowns, Type
-             folding sign type and size into one flat list of three). -->
+             folding sign type and size into one flat list of three). The
+             eyebrow caption + divider below (shared across all three tabs -
+             see .type-product-eyebrow/.type-product-divider in styles.css)
+             calls this out as the form's first decision, not just another
+             field-row. -->
+        <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
           <label class="field">
             <span>Type</span>
@@ -80,6 +85,7 @@
             </select>
           </label>
         </div>
+        <div class="type-product-divider"></div>
         <form id="talkerForm" novalidate>
           <input type="hidden" id="editId" value="" />
 
@@ -286,7 +292,9 @@
              change handling, keeping every instance in sync, aria - covers
              every tab automatically; these are views onto the same
              currentSignType/currentSignSize/currentCategory, not
-             independent settings. -->
+             independent settings. Eyebrow + divider match Manual Entry's
+             copy of this row - see the note there. -->
+        <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
           <label class="field">
             <span>Type</span>
@@ -304,6 +312,7 @@
             </select>
           </label>
         </div>
+        <div class="type-product-divider"></div>
         <p class="help-text" id="importHelpText">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
         <label class="field">
           <span id="importUrlLabel">Product Page URL</span>
@@ -334,8 +343,10 @@
            activateMethod in app.js. Each keeps its own fields/status/
            fallbacks exactly as before, just nested one level deeper; none
            of the three has its own Type/Product Type control anymore, since
-           the pair above now covers all three. -->
+           the pair above now covers all three. Eyebrow + divider match
+           Manual Entry's copy of this row - see the note there. -->
       <div class="tab-panel" data-panel="search" id="panelSearch" role="tabpanel" aria-labelledby="tabSearch" tabindex="0">
+        <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
           <label class="field">
             <span>Type</span>
@@ -353,6 +364,7 @@
             </select>
           </label>
         </div>
+        <div class="type-product-divider"></div>
 
         <div class="method-toggle" role="radiogroup" aria-label="Search method" id="searchMethodToggle">
           <button type="button" class="toggle-btn is-active" data-method="searchName" role="radio" aria-checked="true" id="methodSearchNameBtn" aria-controls="methodPanelSearchName">Search by Name</button>
