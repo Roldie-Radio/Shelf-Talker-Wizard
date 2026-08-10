@@ -774,21 +774,28 @@ async function extractBeer(url) {
 // Structured as a list of providers (TASTING_NOTE_PROVIDERS below) tried in
 // order, so a source can be added as one more entry rather than a rewrite -
 // findTastingNotes just walks the list and returns the first provider that
-// turns up something usable. Currently two: Wine.com and Vivino.
+// turns up something usable. Currently three: Wine.com, Vivino, and
+// Distiller (see the Distiller-specific note further down, near
+// parseDistillerProductHtml) - the first two only ever return one
+// description blob; Distiller is the one that returns nose/palate/finish
+// pre-split, since that's how its own spirit pages actually publish tasting
+// notes (see buildFlavorHtml in card.js and the Nose/Palate/Finish fields in
+// index.html for where those three end up).
 //
 // As with the Untappd beer importer above, this was written and unit
 // tested against hand-built fixture HTML only - the environment this was
-// built in blocks every outbound request to wine.com and vivino.com before
-// it arrives (see the note above RESILIENT_HEADER_SETS for the equivalent
-// situation with Untappd), so none of the URL patterns or selectors below
-// have been confirmed against the real sites. Confirmed in real-world use,
-// though: both sites have been seen actively blocking this app's requests
-// (a 403) rather than just having an unconfirmed URL/markup guess, so a
-// second source existing at all - not just its specific implementation -
-// is meaningfully useful here, not merely "nice to have." Every step
-// degrades to "found nothing" rather than throwing on a shape it doesn't
-// recognize, and the caller falls back to the next provider (and
-// ultimately to "enter it by hand") instead of surfacing a confusing error.
+// built in blocks every outbound request to wine.com, vivino.com, and
+// distiller.com before it arrives (see the note above RESILIENT_HEADER_SETS
+// for the equivalent situation with Untappd), so none of the URL patterns
+// or selectors below have been confirmed against the real sites. Confirmed
+// in real-world use, though: wine.com and Vivino have both been seen
+// actively blocking this app's requests (a 403) rather than just having an
+// unconfirmed URL/markup guess, so a second (now third) source existing at
+// all - not just its specific implementation - is meaningfully useful here,
+// not merely "nice to have." Every step degrades to "found nothing" rather
+// than throwing on a shape it doesn't recognize, and the caller falls back
+// to the next provider (and ultimately to "enter it by hand") instead of
+// surfacing a confusing error.
 // ================================================================
 
 // wine.com's search results page - unconfirmed from this environment (see
@@ -1013,12 +1020,27 @@ async function searchProductCatalog({ title, vintage, siteName, searchUrlFor, pa
   }
 
   const productHtml = await fetchCatalogHtml(match.url, siteName);
-  const { description } = parseProductPage(productHtml, match.url);
-  if (!description) {
-    throw new Error(`Found "${match.title}" on ${siteName}, but it has no description to import.`);
+  // wine.com/Vivino's parseProductPage only ever returns `description`;
+  // Distiller's (see parseDistillerProductHtml below) also returns nose/
+  // palate/finish when its page has them pre-split. Whichever of the four
+  // a given provider didn't set comes back undefined here and is normalized
+  // to '' below, so findTastingNotes's callers (the "Find Tasting Notes"
+  // dialog - see runTastingNotesSearch in app.js) can read all four off
+  // every result the same way, regardless of which provider it came from.
+  const { description, nose, palate, finish } = parseProductPage(productHtml, match.url);
+  if (!description && !nose && !palate && !finish) {
+    throw new Error(`Found "${match.title}" on ${siteName}, but it has no tasting notes to import.`);
   }
 
-  return { description, sourceUrl: match.url, sourceName: siteName, matchedTitle: match.title };
+  return {
+    description: description || '',
+    nose: nose || '',
+    palate: palate || '',
+    finish: finish || '',
+    sourceUrl: match.url,
+    sourceName: siteName,
+    matchedTitle: match.title,
+  };
 }
 
 function searchWineCom(title, vintage) {
@@ -1040,6 +1062,139 @@ function searchVivino(title, vintage) {
     searchUrlFor: vivinoSearchUrl,
     parseSearchResults: parseVivinoSearchResults,
     parseProductPage: parseVivinoProductHtml,
+  });
+}
+
+// ================================================================
+// Distiller.com - the third tasting-notes provider, and the only one of
+// the three whose product pages already publish Nose/Palate/Finish
+// pre-split rather than one description blob (spirits tasting notes are
+// conventionally written that way - wine.com/Vivino above have no
+// equivalent for wine). See the module comment above for the shared
+// "unconfirmed against the real site" caveat; the one thing about
+// Distiller that IS confirmed is the /spirits/<slug> product URL shape
+// itself (seen in a search engine's indexed results for real bottles,
+// e.g. distiller.com/spirits/buffalo-trace-bourbon - not a direct fetch,
+// which this environment can't make), which is why it's used as
+// parseDistillerSearchResults' href marker below, the same way
+// parseWineComSearchResults/parseVivinoSearchResults use their own
+// confirmed URL shapes.
+//
+// The search URL and the exact markup around a spirit's tasting notes are
+// both genuine guesses, unlike that URL shape - extractFlavorNotes below
+// is deliberately written against the page's plain rendered text instead
+// of specific selectors, so a class/element rename that would break a
+// CSS-selector scrape doesn't necessarily break this too. The tradeoff is
+// noise: "Nose", "Palate", and "Finish" are ordinary English words that
+// could turn up somewhere on the page unrelated to this bottle (nav
+// chrome, a "you might also like" rail) - selectTastingNotesContainer
+// narrows the scan to a likely tasting-notes container first to cut that
+// risk down, and findTastingNotes's whole reason for being a review-
+// before-you-accept dialog rather than a silent auto-fill (see
+// runTastingNotesSearch in app.js) is the backstop for whatever noise
+// still gets through.
+// ================================================================
+
+function distillerSearchUrl(query) {
+  return `https://distiller.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function parseDistillerSearchResults(html, baseUrl) {
+  return parseGenericSearchResults(html, baseUrl, '/spirits/');
+}
+
+// A handful of phrases that show up right after a real tasting note ends
+// on a typical product page (buy buttons, review prompts, cross-sell
+// rails) - only used to trim the *last* label found (see extractFlavorNotes
+// below), since that one has no following label of its own to stop at.
+const FLAVOR_STOP_PATTERN = /\b(buy now|add to cart|shop now|write a review|related products?|you (?:may|might) also like|reviews?)\b/i;
+
+// Prefers whichever element's own class/id hints at holding tasting notes
+// ("tasting-notes", "flavor-profile", etc. - the common convention on
+// review/spec sites) over scanning the whole page, for the noise reasons
+// in the module comment above. Falls back to the full body when nothing
+// hints at it, rather than finding nothing at all - a noisier match beats
+// no match, given a human reviews this before it's used either way.
+function selectTastingNotesContainer($) {
+  let hinted;
+  $('[class], [id]').each((_, el) => {
+    if (hinted) return;
+    const attrs = `${$(el).attr('class') || ''} ${$(el).attr('id') || ''}`.toLowerCase();
+    if (/tasting|flavor|flavour/.test(attrs)) hinted = $(el);
+  });
+  return hinted && hinted.length ? hinted : $('body');
+}
+
+// cheerio's own .text() concatenates every element's text with nothing
+// between them - fine for a single run of inline text, but
+// "<h3>Nose</h3><p>Caramel corn...</p>" flattens to "NoseCaramel corn..."
+// with no space at the tag boundary, which breaks the \b word-boundary
+// extractFlavorNotes' labelPattern needs right after "Nose" below. Walking
+// the tree by hand and padding a space around every element's own text
+// avoids that, whether the notes are separate headings+paragraphs or one
+// inline run - either way this comes out the same "words separated by
+// whitespace" shape labelPattern expects.
+function spacedText($, el) {
+  let out = '';
+  $(el).contents().each((_, node) => {
+    if (node.type === 'text') out += node.data;
+    else if (node.type === 'tag') out += ` ${spacedText($, node)} `;
+  });
+  return out;
+}
+
+// Finds "Nose"/"Palate"/"Finish" as whole words in the container's plain
+// rendered text (not markup - see the module comment above for why), and
+// takes whatever text runs from right after each label up to the next one
+// - or, for whichever label comes last with nothing to bound it, up to the
+// first stop phrase found or a fixed length cap. Works the same whether
+// the three are separate headings+paragraphs or one inline run ("Nose:
+// ... Palate: ... Finish: ..."), since neither shape matters to a scan
+// over flattened text. A label with nothing usable after it (or not present
+// at all) is simply left out of the returned object - each field is
+// independent, same "found nothing rather than a wrong answer" rule as the
+// rest of this file.
+function extractFlavorNotes($) {
+  const container = selectTastingNotesContainer($);
+  const text = spacedText($, container.get(0)).replace(/\s+/g, ' ').trim();
+  const labelPattern = /\b(nose|palate|finish)\b\s*:?\s*/gi;
+  const matches = [...text.matchAll(labelPattern)];
+
+  const notes = {};
+  matches.forEach((m, i) => {
+    const field = m[1].toLowerCase();
+    if (notes[field]) return; // keep the first mention of each label
+    const start = m.index + m[0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index : Math.min(text.length, start + 300);
+    let value = text.slice(start, end).trim();
+    const stopAt = value.search(FLAVOR_STOP_PATTERN);
+    if (stopAt > 0) value = value.slice(0, stopAt).trim();
+    value = value.replace(/[.,;:\-\s]+$/, '');
+    if (value) notes[field] = value;
+  });
+  return notes;
+}
+
+// Same tiered fallback as parseGenericProductDescription (JSON-LD, then
+// Open Graph/meta description) for `description`, plus the Nose/Palate/
+// Finish extraction above - a Distiller page found via search but missing
+// tasting notes (an unreviewed release, say) still comes back with
+// whatever description it does have, rather than nothing at all.
+function parseDistillerProductHtml(html, url) {
+  const generic = parseGenericProductDescription(html, url);
+  const $ = cheerio.load(html);
+  const { nose, palate, finish } = extractFlavorNotes($);
+  return { ...generic, nose: nose || '', palate: palate || '', finish: finish || '' };
+}
+
+function searchDistiller(title, vintage) {
+  return searchProductCatalog({
+    title,
+    vintage,
+    siteName: 'Distiller',
+    searchUrlFor: distillerSearchUrl,
+    parseSearchResults: parseDistillerSearchResults,
+    parseProductPage: parseDistillerProductHtml,
   });
 }
 
@@ -1572,10 +1727,17 @@ async function lookupSkuFromHtml({ html, url, category }) {
 // Ordered list of tasting-notes sources - see the module comment above.
 // findTastingNotes tries each in order (unless a specific one was
 // requested) and stops at the first that returns something; adding a third
-// source later is just one more entry here.
+// source later is just one more entry here. `experimental: true` marks a
+// provider as gated behind the "Experimental Features -> Bourbon Shelf
+// Talkers" toggle in Settings (see the client's own note in app.js) -
+// Distiller is the one so far, since (unlike Wine.com/Vivino, which are at
+// least confirmed to exist and confirmed-blocked) its scraper has never
+// been confirmed against the live site at all. findTastingNotes below
+// skips every experimental provider unless the caller explicitly opts in.
 const TASTING_NOTE_PROVIDERS = [
   { name: 'Wine.com', search: searchWineCom },
   { name: 'Vivino', search: searchVivino },
+  { name: 'Distiller', search: searchDistiller, experimental: true },
 ];
 
 // Names only, for the "Find Tasting Notes" dialog's Source dropdown (see
@@ -1583,20 +1745,43 @@ const TASTING_NOTE_PROVIDERS = [
 // without exposing the provider objects' search functions.
 const TASTING_NOTE_PROVIDER_NAMES = TASTING_NOTE_PROVIDERS.map((p) => p.name);
 
+// Subset of the above that's experimental (see the note on
+// TASTING_NOTE_PROVIDERS) - the client uses this to grey/filter those
+// specific options out of the Source dropdown while the toggle is off,
+// rather than hardcoding "Distiller" by name on the client side too.
+const TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES = TASTING_NOTE_PROVIDERS
+  .filter((p) => p.experimental)
+  .map((p) => p.name);
+
 // `source` picks one named provider to search instead of the full ordered
 // list - what the "Find Tasting Notes" dialog sends once staff choose a
 // specific site from the dropdown, rather than the default "Any source"
 // (which still tries them in order, same as before that dialog existed).
-async function findTastingNotes({ title, vintage, source }) {
+// `allowExperimental` is the server-side half of the Bourbon Shelf Talkers
+// toggle (see app.js) - the client already keeps Distiller out of the
+// dropdown and out of its own "Any source" expectations while the toggle
+// is off, but this is what actually stops a request from reaching it: the
+// client is what a browser's dev tools can edit, this function is not.
+async function findTastingNotes({ title, vintage, source, allowExperimental }) {
   if (!title || !title.trim()) {
     throw new Error('Enter a product title first.');
   }
 
-  const providers = source
-    ? TASTING_NOTE_PROVIDERS.filter((p) => p.name === source)
-    : TASTING_NOTE_PROVIDERS;
-  if (source && providers.length === 0) {
-    throw new Error(`Unknown tasting notes source: "${source}".`);
+  let providers;
+  if (source) {
+    const named = TASTING_NOTE_PROVIDERS.find((p) => p.name === source);
+    if (!named) throw new Error(`Unknown tasting notes source: "${source}".`);
+    if (named.experimental && !allowExperimental) {
+      throw new Error(
+        `${source} is an experimental source - turn on Experimental Features `
+        + '-> Bourbon Shelf Talkers in Settings first.'
+      );
+    }
+    providers = [named];
+  } else {
+    providers = allowExperimental
+      ? TASTING_NOTE_PROVIDERS
+      : TASTING_NOTE_PROVIDERS.filter((p) => !p.experimental);
   }
 
   const errors = [];
@@ -1625,6 +1810,7 @@ module.exports = {
   extractBreweryUrl,
   findTastingNotes,
   TASTING_NOTE_PROVIDER_NAMES,
+  TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES,
   buildTastingNotesQuery,
   pickBestMatch,
   parseWineComSearchResults,
@@ -1633,6 +1819,11 @@ module.exports = {
   parseVivinoSearchResults,
   parseVivinoProductHtml,
   vivinoSearchUrl,
+  distillerSearchUrl,
+  parseDistillerSearchResults,
+  parseDistillerProductHtml,
+  extractFlavorNotes,
+  selectTastingNotesContainer,
   storeSearchUrl,
   parseStoreSearchResults,
   pickSkuMatch,

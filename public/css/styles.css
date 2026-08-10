@@ -847,6 +847,12 @@ h1, h2, h3 { margin: 0; }
 
 .tasting-notes-modal-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .tasting-notes-modal-body .field { margin-bottom: 0; }
+/* Nose/Palate/Finish preview (Distiller results only - see
+   #tastingNotesFlavorPreview in index.html) - its own flex column so the
+   three stacked fields get breathing room, same as the gap between every
+   other row in this modal, which .field's own margin-bottom: 0 override
+   right above would otherwise remove entirely. */
+#tastingNotesFlavorPreview { display: flex; flex-direction: column; gap: 0.6rem; }
 
 /* ---------- Find Queue ---------- */
 
@@ -1687,6 +1693,56 @@ h1, h2, h3 { margin: 0; }
   line-height: 1.35;
   flex: 0 0 auto;
   margin-top: calc(var(--w) * 0.02 * var(--price-fit, 1));
+}
+
+/* Nose/Palate/Finish - spirits tasting notes (see buildFlavorHtml in
+   card.js). Wine/Spirits Shelf Talkers only (not Beer, not Quarter Size -
+   see buildCardElement's isBeer/isQuarter guards), sitting directly under
+   the description and above Ratings. Gets its own margin/divider, same
+   "clear separation from what's above" reasoning .card__ratings below
+   already uses - prose tasting notes and a numeric rating badge read as
+   different kinds of information, so each gets its own line when both are
+   present, the same way Ratings and Awards intentionally share just one
+   line between them (see .card__awards' comment). Scaled by --price-fit
+   like every other optional block here, so fitCardText()'s last-resort
+   whole-card shrink (see card.js) covers this too. */
+.card__flavor {
+  flex: 0 0 auto;
+  margin-top: calc(var(--w) * 0.03 * var(--price-fit, 1));
+  padding-top: calc(var(--w) * 0.022 * var(--price-fit, 1));
+  border-top: 1px solid #e5ddd0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--w) * 0.012 * var(--price-fit, 1));
+}
+/* A row is only ever rendered when that field has a value (see
+   buildFlavorHtml) - no empty-row CSS to hide, unlike the ABV/IBU pairing
+   in .card__beer-table-row above. */
+.card__flavor-row {
+  display: flex;
+  gap: calc(var(--w) * 0.02 * var(--price-fit, 1));
+  align-items: baseline;
+}
+.card__flavor-label {
+  flex: 0 0 auto;
+  width: calc(var(--w) * 0.15);
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  font-size: calc(var(--w) * 0.032 * var(--price-fit, 1));
+}
+/* Arial, not Verdana - reads as a continuation of the description's own
+   prose (same font-family as .card__description above) rather than another
+   bold Verdana line like the title/ratings/awards around it. */
+.card__flavor-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: calc(var(--w) * 0.042 * var(--price-fit, 1));
+  line-height: 1.3;
+  color: var(--ink);
 }
 
 .card__spacer { flex: 1 1 auto; }

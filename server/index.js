@@ -2,7 +2,8 @@ const os = require('os');
 const path = require('path');
 const express = require('express');
 const {
-  extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
+  extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
+  TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
   enrichBeerScanFromStore, enrichBeerFromUntappd,
 } = require('./productImport');
@@ -96,8 +97,12 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // Populates the Source dropdown in the "Find Tasting Notes" dialog - a
   // plain list of provider names, so a new provider added to
   // TASTING_NOTE_PROVIDERS shows up there without an app.js change.
+  // `experimental` names the subset gated behind Settings' "Experimental
+  // Features -> Bourbon Shelf Talkers" toggle - the client filters those
+  // out of the dropdown while the toggle is off (see
+  // renderTastingNotesSourceOptions in app.js).
   app.get('/api/tasting-notes/sources', (req, res) => {
-    res.json({ sources: TASTING_NOTE_PROVIDER_NAMES });
+    res.json({ sources: TASTING_NOTE_PROVIDER_NAMES, experimental: TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES });
   });
 
   // Backs the "Find Tasting Notes" dialog (Manual Entry, Wine/Spirits only) -
@@ -105,9 +110,13 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // straight from whatever's already in the form, and the server does the
   // searching (see findTastingNotes). An optional `source` restricts the
   // search to one named provider (the dialog's Source dropdown) instead of
-  // trying all of them in order.
+  // trying all of them in order. `allowExperimental` is Settings' "Bourbon
+  // Shelf Talkers" toggle, sent on every request rather than trusted as
+  // server-side state - see findTastingNotes for why this (not just the
+  // dropdown filtering) is what actually keeps Distiller unreachable while
+  // the toggle is off.
   app.post('/api/tasting-notes', async (req, res) => {
-    const { title, vintage, source } = req.body || {};
+    const { title, vintage, source, allowExperimental } = req.body || {};
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'A product title is required.' });
@@ -118,6 +127,7 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
         title: title.trim(),
         vintage: typeof vintage === 'string' ? vintage.trim() : '',
         source: typeof source === 'string' && source.trim() ? source.trim() : undefined,
+        allowExperimental: !!allowExperimental,
       });
       res.json(result);
     } catch (err) {
