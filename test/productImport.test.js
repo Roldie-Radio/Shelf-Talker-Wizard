@@ -842,6 +842,32 @@ test('extractProduct gives the store-specific blocked-request message for a bloc
   );
 });
 
+// A store page's own H1 sometimes trails off with the container size, just
+// like the SKU Lookup tab's fixtures already confirm (see
+// composeProducerTitle's own tests further down) - extractProduct needs to
+// run the same size-stripping/brand-prepending step SKU Lookup already does
+// for that path, or the size ends up duplicated: once in the new Size field
+// this now fills in, and again inside the Product Title itself.
+test('extractProduct strips the container size out of the title and prepends the brand, same as SKU Lookup does', async () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Cabernet Sauvignon 750mL</h1>
+      <h6><a href="/brand/josh-cellars">Josh Cellars</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$14.99</span></div>
+      <table><tr><th>Size</th><td>750mL</td></tr></table>
+    `,
+  });
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: html }),
+    async () => {
+      const result = await extractProduct('https://www.liquoroutletwinecellars.com/Josh-Cellars-Cabernet-55555-1055555/');
+      assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
+      assert.equal(result.size, '750mL');
+      assert.equal(result.price, '14.99');
+    }
+  );
+});
+
 // ================================================================
 // "Paste page HTML" fallback (parsePastedProduct) - what the "Import from
 // website" tab falls back to when even extractProduct's retry above keeps
@@ -904,6 +930,26 @@ test('parsePastedProduct routes a pasted liquoroutletwinecellars.com page to the
   });
   assert.equal(result.price, '8.99');
   assert.equal(result.size, '12pk-12oz Cans');
+});
+
+// Same size-stripping/brand-prepending as extractProduct's own version of
+// this test above - the "paste page HTML" fallback must not reintroduce a
+// size-in-the-title bug that only the live-fetch path was fixed for.
+test('parsePastedProduct strips the container size out of a pasted store page\'s title too', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Cabernet Sauvignon 750mL</h1>
+      <h6><a href="/brand/josh-cellars">Josh Cellars</a></h6>
+      <table><tr><th>Size</th><td>750mL</td></tr></table>
+    `,
+  });
+  const result = parsePastedProduct({
+    html,
+    url: 'https://www.liquoroutletwinecellars.com/Josh-Cellars-Cabernet-55555-1055555/',
+    category: 'wine',
+  });
+  assert.equal(result.title, 'Josh Cellars Cabernet Sauvignon');
+  assert.equal(result.size, '750mL');
 });
 
 // ================================================================

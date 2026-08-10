@@ -284,6 +284,35 @@ test('/api/import-url fills in Size and Price for a liquoroutletwinecellars.com 
   }));
 });
 
+// The page's own H1 can trail off with the container size ("Cabernet
+// Sauvignon 750mL") - the Product Title field should read just the
+// producer + name, not that size repeated a second time on top of the new
+// Size field above.
+test('/api/import-url strips the container size out of the title for a liquoroutletwinecellars.com product URL', async () => {
+  const sizedTitleHtml = page({
+    body: `
+      <h1 itemprop="name">Cabernet Sauvignon 750mL</h1>
+      <h6><a href="/brand/josh-cellars">Josh Cellars</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$14.99</span></div>
+      <table><tr><th>Size</th><td>750mL</td></tr></table>
+    `,
+  });
+  await withTempDb(() => withServer(async (port) => {
+    await withMockFetch(
+      async () => mockResponse({ body: sizedTitleHtml }),
+      async () => {
+        const result = await postJson(port, '/api/import-url', {
+          url: 'https://www.liquoroutletwinecellars.com/Josh-Cellars-Cabernet-55555-1055555/',
+          category: 'wine',
+        });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Josh Cellars Cabernet Sauvignon');
+        assert.equal(result.body.size, '750mL');
+      }
+    );
+  }));
+});
+
 // ================================================================
 // /api/upc-lookup's Wine/Spirits store-description enrichment (see the
 // comment above the route in server/index.js) and its own category-aware
