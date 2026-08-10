@@ -497,6 +497,113 @@ test('GET /api/name-search reports a 404 with NO_EXPORT_PATH when nothing has be
 });
 
 // ================================================================
+// /api/name-search-select - backs picking a candidate off the "Search by
+// Name" tab's dropdown (see the comment above the route in
+// server/index.js). No export file/setUpcSettings needed here - unlike
+// /api/name-search above, this never reads the export itself, only the
+// `product` the client already got back from that endpoint.
+// ================================================================
+
+test('POST /api/name-search-select runs a Beer pick through Untappd, same as SKU Lookup\'s beer path', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'grupo-modelo-corona-extra', bid: 4321, beer_name: 'Corona Extra', brewery_name: 'Grupo Modelo' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Corona Extra by Grupo Modelo | Untappd" />',
+      body: '<p class="brewery"><a href="#">Grupo Modelo</a></p><p class="style">Pale Lager</p>'
+        + '<div class="details"><p class="abv">4.60% ABV</p></div>',
+    });
+    await withMockFetch(
+      async (url) => (url.includes('algolia.net') ? mockResponse({ body: algoliaBody }) : mockResponse({ body: untappdBeerHtml })),
+      async () => {
+        const product = { title: 'Corona Extra 12pk Cans', sku: '55555', price: '14.99', brand: 'Corona' };
+        const result = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
+        assert.equal(result.status, 200);
+        // The export's own price/sku carry straight through - only
+        // Untappd's own fields (brewery/style/ABV) get layered on top.
+        assert.equal(result.body.price, '14.99');
+        assert.equal(result.body.sku, '55555');
+        assert.equal(result.body.brewery, 'Grupo Modelo');
+        assert.equal(result.body.style, 'Pale Lager');
+        assert.equal(result.body.abv, '4.6%');
+        assert.equal(result.body.untappdError, undefined);
+      }
+    );
+  }));
+});
+
+test('POST /api/name-search-select is a pass-through for Wine/Spirits (no Untappd data to fetch)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    let calls = 0;
+    await withMockFetch(
+      async () => { calls++; return mockResponse({ body: '<html></html>' }); },
+      async () => {
+        const product = { title: 'Josh Cellars Cabernet Sauvignon', sku: '10432', price: '12.99', vintage: '2021' };
+        const result = await postJson(port, '/api/name-search-select', { product, category: 'wine' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Josh Cellars Cabernet Sauvignon');
+        assert.equal(result.body.vintage, '2021');
+        assert.equal(calls, 0, 'Wine/Spirits should never hit the network here');
+      }
+    );
+  }));
+});
+
+test('POST /api/name-search-select surfaces untappdError when Untappd has no match, without failing the pick', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaHitsResponse([]) }),
+      async () => {
+        const product = { title: 'Corona Extra 12pk Cans', sku: '55555', price: '14.99' };
+        const result = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.price, '14.99');
+        assert.match(result.body.untappdError, /Could not find/);
+      }
+    );
+  }));
+});
+
+test('POST /api/name-search-select caches a Beer pick by SKU, same as SKU Lookup/Scan UPC', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'grupo-modelo-corona-extra', bid: 4321, beer_name: 'Corona Extra', brewery_name: 'Grupo Modelo' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Corona Extra by Grupo Modelo | Untappd" />',
+      body: '<p class="brewery"><a href="#">Grupo Modelo</a></p>',
+    });
+    const calls = [];
+    await withMockFetch(
+      async (url) => {
+        calls.push(url);
+        return url.includes('algolia.net') ? mockResponse({ body: algoliaBody }) : mockResponse({ body: untappdBeerHtml });
+      },
+      async () => {
+        const product = { title: 'Corona Extra 12pk Cans', sku: '55555', price: '14.99' };
+        const first = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
+        assert.equal(first.body.fromCache, undefined);
+        const callsAfterFirst = calls.length;
+        assert.ok(callsAfterFirst > 0);
+
+        const second = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
+        assert.equal(second.body.fromCache, true);
+        assert.equal(second.body.brewery, 'Grupo Modelo');
+        assert.equal(calls.length, callsAfterFirst, 'a second pick of the same SKU should be served from cache');
+      }
+    );
+  }));
+});
+
+test('POST /api/name-search-select requires a product with a title', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const result = await postJson(port, '/api/name-search-select', { category: 'beer' });
+    assert.equal(result.status, 400);
+  }));
+});
+
+// ================================================================
 // /api/app-version - backs the "What's New" popup (public/js/app.js), which
 // compares this against what it last showed a popup for. Just needs to
 // echo package.json's own version back.
