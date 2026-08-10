@@ -3,6 +3,11 @@
   const REVIEWERS_KEY = 'shelfTalkerReviewers.v1';
   // Must match the key the inline pre-paint script in index.html reads.
   const THEME_KEY = 'shelfTalkerTheme.v1';
+  // Same, for the Settings -> Change Theme accent choice (Amber/Purple) -
+  // see applyAccent below. Deliberately a separate key/attribute from
+  // THEME_KEY/data-theme above: this picks the UI's own accent colour, not
+  // light vs dark.
+  const ACCENT_KEY = 'shelfTalkerAccent.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // Print-sheet geometry and the sheet/auto-arrange packing live in
@@ -354,6 +359,11 @@
     serverPcCheckbox: document.getElementById('serverPcCheckbox'),
     serverPcStatus: document.getElementById('serverPcStatus'),
     serverPcSaveBtn: document.getElementById('serverPcSaveBtn'),
+
+    settingsOverlay: document.getElementById('settingsOverlay'),
+    settingsCloseBtn: document.getElementById('settingsCloseBtn'),
+    settingsCloseFooterBtn: document.getElementById('settingsCloseFooterBtn'),
+    settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
   };
 
   // ---------- Theme ----------
@@ -405,6 +415,44 @@
       if (!saved) applyTheme(e.matches ? 'dark' : 'light');
     });
   }
+
+  // ---------- Accent (Settings -> Change Theme) ----------
+
+  // Amber vs. Purple for the app's own text/buttons - independent of dark
+  // mode above, and independent of the per-talker Amber/Purple Theme picker
+  // on the form (that one colours the printed shelf talker/sign itself; see
+  // the note at the top of styles.css on why the print and UI palettes are
+  // kept apart). Same before-first-paint handling as dark mode: the
+  // attribute is set by the inline script in index.html so a saved Purple
+  // choice doesn't flash Amber for a frame on launch; this only handles
+  // switching it afterwards and remembering the choice.
+  function currentAccent() {
+    return document.documentElement.getAttribute('data-accent') === 'purple' ? 'purple' : 'amber';
+  }
+
+  function applyAccent(accent) {
+    const purple = accent === 'purple';
+    if (purple) document.documentElement.setAttribute('data-accent', 'purple');
+    else document.documentElement.removeAttribute('data-accent');
+    els.settingsAccentButtons.forEach((btn) => {
+      const isActive = btn.dataset.accent === (purple ? 'purple' : 'amber');
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-checked', String(isActive));
+    });
+  }
+
+  els.settingsAccentButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = btn.dataset.accent === 'purple' ? 'purple' : 'amber';
+      applyAccent(next);
+      try {
+        localStorage.setItem(ACCENT_KEY, next);
+      } catch {
+        // Same as theme/queue: an unavailable store shouldn't break the
+        // click, the choice just won't survive a restart.
+      }
+    });
+  });
 
   // ---------- Tabs ----------
 
@@ -3365,6 +3413,19 @@
     window.shelfTalker.onServerPcRequested(() => serverPcModal.open());
   }
 
+  // Tools -> Settings (Electron menu, see main.js). onOpen re-syncs the
+  // toggle buttons rather than relying on applyAccent's own initial call
+  // (below) to have kept them current - harmless either way, but this is
+  // the one place that has to be right every time the dialog opens.
+  const settingsModal = createModal({
+    overlay: els.settingsOverlay,
+    closeBtns: [els.settingsCloseBtn, els.settingsCloseFooterBtn],
+    onOpen: () => applyAccent(currentAccent()),
+  });
+  if (window.shelfTalker && window.shelfTalker.onShowSettingsRequested) {
+    window.shelfTalker.onShowSettingsRequested(() => settingsModal.open());
+  }
+
   function triggerPrint() {
     // Inside the packaged desktop app, print through the main process (see
     // electron/main.js) instead of window.print() - Electron's renderer-side
@@ -3383,6 +3444,7 @@
   // ---------- Init ----------
 
   applyTheme(currentTheme());
+  applyAccent(currentAccent());
   applyFormMode();
   applyFontSizeDefaults();
   renderReviewerSelect();

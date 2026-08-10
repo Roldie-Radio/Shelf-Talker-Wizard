@@ -167,6 +167,14 @@ function handleShowHelp() {
   mainWindow.webContents.send('help:show-requested');
 }
 
+// Opens the in-app Settings panel (currently just Change Theme) the same
+// way handleShowHelp opens Help above - the renderer owns the actual
+// content, this just asks it to show it.
+function handleShowSettings() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('settings:show-requested');
+}
+
 function showAboutDialog() {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
@@ -272,6 +280,12 @@ function buildMenu() {
         { label: 'Save Queue', accelerator: 'CmdOrCtrl+S', click: handleSaveQueueRequest },
         { type: 'separator' },
         { role: 'quit', label: 'Exit' },
+      ],
+    },
+    {
+      label: 'Tools',
+      submenu: [
+        { label: 'Settings…', click: handleShowSettings },
       ],
     },
     {
