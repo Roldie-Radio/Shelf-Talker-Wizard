@@ -349,7 +349,6 @@
     themeToggle: document.getElementById('themeToggle'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
-    guideBtn: document.getElementById('guideBtn'),
 
     printPreviewOverlay: document.getElementById('printPreviewOverlay'),
     printPreviewSummary: document.getElementById('printPreviewSummary'),
@@ -2688,8 +2687,8 @@
   // the guide and shelf-talker sheets never print at once, so reusing the
   // same root rather than a second .print-only container guarantees that)
   // and sends it to the system print dialog. Only reached from the guide
-  // preview modal's "Print Now", never directly from the app bar button -
-  // see guidePreviewModal below.
+  // preview modal's "Print Now", never directly from the Tools menu item
+  // that opens the preview - see guidePreviewModal below.
   function printGuide() {
     els.printRoot.innerHTML = '';
     const { guide, diagramWrap, card } = buildGuideElement();
@@ -2905,11 +2904,18 @@
     printPreviewModal.close();
     printNow();
   });
-  els.guideBtn.addEventListener('click', guidePreviewModal.open);
   els.guidePreviewConfirmBtn.addEventListener('click', () => {
     guidePreviewModal.close();
     printGuide();
   });
+
+  // Tools menu "Beer Talker Info" (see main.js) - the only way to open this
+  // now that it's been moved out of the app bar, same onShowXRequested
+  // pattern as Help/What's New elsewhere in this file. Electron-only: there
+  // is no plain-browser fallback trigger for it anymore.
+  if (window.shelfTalker && window.shelfTalker.onShowGuideRequested) {
+    window.shelfTalker.onShowGuideRequested(() => guidePreviewModal.open());
+  }
 
   // ---------- Help ----------
 

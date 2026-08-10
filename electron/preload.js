@@ -26,6 +26,11 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // (Change Theme, etc.), same pattern as onShowHelpRequested above.
   onShowSettingsRequested: (callback) => ipcRenderer.on('settings:show-requested', () => callback()),
 
+  // Tools menu "Beer Talker Info" (see main.js) - opens the in-app guide
+  // preview modal, same pattern as onShowHelpRequested above. Used to be an
+  // app-bar button; now only reachable from this menu item.
+  onShowGuideRequested: (callback) => ipcRenderer.on('guide:show-requested', () => callback()),
+
   // Scan UPC tab's Settings "Browse..." button (see main.js) - only present
   // here, so app.js only shows that button when this bridge exists; the
   // plain browser dev copy has no native file dialog and just falls back to
