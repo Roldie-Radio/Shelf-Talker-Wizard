@@ -6,9 +6,11 @@ browser.
 
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
-  panel's top-level tab row from five tabs to three. Inside the tab, a method
-  chooser (Search by Name / SKU Lookup / Scan UPC) sits above the Wine / Spirits
-  &middot; Beer toggle, both built from the same toggle-btn radiogroup pattern
-  Manual Entry already uses. Includes a Current UI / Proposed UI toggle so both
-  layouts can be compared side by side; all three search forms are reused as-is
-  in both, only the surrounding navigation changes.
+  panel's top-level tab row from five tabs to three. Every top-level tab (Manual
+  Entry, Import from Website, Search) now opens with the same two dropdowns:
+  **Type** (Shelf Talker / Small Display / Large Display) and **Product Type**
+  (Wine / Spirits / Beer), replacing the old Shelf Talkers/Display Signs +
+  Large/Small toggle buttons and the Wine/Spirits/Beer pill toggle. Both are
+  wired as shared state across tabs. Inside Search, a method chooser (Search by
+  Name / SKU Lookup / Scan UPC) sits below Type/Product Type, styled as the same
+  pill-button group used elsewhere in the form.

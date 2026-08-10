@@ -108,7 +108,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   gap: 1.75rem;
 }
 
-.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 62ch; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 66ch; }
 .eyebrow {
   margin: 0;
   font-size: 0.72rem;
@@ -120,35 +120,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .intro h1 { font-size: 1.7rem; letter-spacing: -0.01em; }
 .intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
 .intro p strong { color: var(--ui-ink); }
-
-.controls-row {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-  margin-top: 0.3rem;
-}
-.compare-switch {
-  display: inline-flex;
-  gap: 0.2rem;
-  padding: 0.2rem;
-  background: var(--ui-panel-alt);
-  border: 1px solid var(--ui-border);
-  border-radius: 999px;
-}
-.compare-switch button {
-  border: none;
-  background: none;
-  color: var(--ui-muted);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.45rem 1rem;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.compare-switch button.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
-.controls-row .help-text { margin: 0; font-size: 0.85rem; color: var(--ui-muted); }
+.intro .footnote-list { margin: 0.2rem 0 0; padding-left: 1.15rem; color: var(--ui-ink-soft); font-size: 0.9rem; line-height: 1.6; }
+.intro .footnote-list li { margin-bottom: 0.15rem; }
 
 /* ---------- Device frame ---------- */
 
@@ -227,7 +200,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
 .btn--small { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
 .btn--icon { display: inline-flex; align-items: center; gap: 0.4rem; }
-.btn:focus-visible, .tab:focus-visible, .toggle-btn:focus-visible, input:focus-visible, .search-result:focus-visible {
+.btn:focus-visible, .tab:focus-visible, .toggle-btn:focus-visible, input:focus-visible, select:focus-visible, .search-result:focus-visible {
   outline: 2px solid var(--ui-accent-ink);
   outline-offset: 2px;
 }
@@ -272,24 +245,15 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   white-space: nowrap;
 }
 .tab.is-active { color: var(--ui-accent-ink); border-bottom-color: var(--ui-accent); }
-.tab .beta-badge { margin-left: 0.35rem; }
-
 .tab-panel { display: none; }
 .tab-panel.is-active { display: block; }
 
 /* ---------- Shared form bits ---------- */
 
-.category-toggle, .signtype-toggle { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
-/* The Search tab's own method chooser (Search by Name / SKU Lookup / Scan
-   UPC) - deliberately built from the same toggle-btn radiogroup the rest of
-   the form already uses for Wine/Spirits vs. Beer and Shelf Talkers vs.
-   Display Signs, rather than a second, unfamiliar tab-strip nested inside a
-   tab-panel. It sits first (see markup below) since which method to use is
-   the primary choice here; a size step up from the ordinary toggle-btn
-   below it is the only thing marking it as the more important of the two. */
-.method-toggle { margin-bottom: 0.6rem; }
-.method-toggle .toggle-btn { font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; }
-.method-toggle .beta-badge { margin-left: 0.35rem; }
+/* A row of pill buttons acting as one radio choice - still used for the
+   Search tab's own method chooser (Search by Name / SKU Lookup / Scan UPC),
+   now that Type and Product Type below have moved to plain dropdowns. */
+.pill-group { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
 .toggle-btn {
   border: 1px solid var(--ui-border);
   background: var(--ui-btn);
@@ -302,10 +266,12 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   color: var(--ui-muted);
 }
 .toggle-btn.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.method-toggle .toggle-btn { font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; }
+.method-toggle .beta-badge { margin-left: 0.35rem; }
 
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; min-width: 0; }
 .field span { color: var(--ui-ink-soft); }
-.field input, .field textarea {
+.field input, .field textarea, .field select {
   font: inherit;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--ui-border);
@@ -317,6 +283,13 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   min-width: 0;
 }
 .field input::placeholder, .field textarea::placeholder { color: var(--ui-muted); opacity: 0.85; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.field-row .field { min-width: 0; }
+
+/* Type + Product Type - the pair every top-level tab now opens with. Same
+   .field-row two-up grid Manual Entry already uses for e.g. Size/Theme, so
+   this reads as an ordinary field row, not a bolted-on control cluster. */
+.top-controls { margin-bottom: 0.15rem; }
 
 .form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
 .help-text { font-size: 0.84rem; color: var(--ui-muted); margin: 0 0 0.75rem; line-height: 1.5; }
@@ -467,37 +440,31 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .empty-hint { color: var(--ui-muted); font-size: 0.85rem; margin: 0; }
 
 /* ---------- Footnote ---------- */
-.footnote { font-size: 0.8rem; color: var(--ui-muted); max-width: 62ch; }
+.footnote { font-size: 0.8rem; color: var(--ui-muted); max-width: 66ch; }
 </style>
 
 <div class="page">
 
   <header class="intro">
     <p class="eyebrow">UI Mockup &middot; Shelf Talker Wizard</p>
-    <h1>Group the three lookup tabs under one "Search" tab</h1>
+    <h1>Type &amp; Product Type, the same on every tab</h1>
     <p>
-      <strong>Search by Name</strong>, <strong>SKU Lookup</strong>, and <strong>Scan UPC</strong> currently sit as three
-      separate top-level tabs alongside Manual Entry and Import from Website. This groups all three under a single
-      <strong>Search</strong> tab as a method chooser &mdash; every form stays available, just organized one level
-      deeper, and the top bar goes from five tabs to three. Inside the tab, picking <strong>Search by Name</strong>,
-      <strong>SKU Lookup</strong>, or <strong>Scan UPC</strong> comes first, styled the same as the form's other
-      toggle-btn groups rather than a second row of tabs; the <strong>Wine / Spirits</strong> &middot; <strong>Beer</strong>
-      toggle sits right below it &mdash; set once for whichever method is picked, instead of repeated on each of the three.
+      Every top-level tab &mdash; <strong>Manual Entry</strong>, <strong>Import from Website</strong>, and
+      <strong>Search</strong> &mdash; now opens with the same two dropdowns instead of each tab carrying its own mix of
+      toggle buttons:
     </p>
-    <div class="controls-row">
-      <div class="compare-switch" role="radiogroup" aria-label="Comparison view">
-        <button type="button" data-mode="before" id="modeBeforeBtn">Current UI</button>
-        <button type="button" data-mode="after" id="modeAfterBtn" class="is-active">Proposed UI</button>
-      </div>
-      <p class="help-text" id="modeNote">Showing the proposed layout &mdash; click any tab below, it's live.</p>
-    </div>
+    <ul class="footnote-list">
+      <li><strong>Type</strong> &mdash; <code>Shelf Talker</code>, <code>Small Display</code>, or <code>Large Display</code>, replacing the old Shelf Talkers/Display Signs toggle plus the Large/Small toggle that only showed up once Display Signs was picked.</li>
+      <li><strong>Product Type</strong> &mdash; <code>Wine / Spirits</code> or <code>Beer</code>, replacing the pill toggle previously repeated on Manual Entry and, before this round of changes, on each search method separately.</li>
+    </ul>
+    <p>Both are shared state across the whole app &mdash; change either on one tab, switch tabs, and it's still set the way you left it. Try it below.</p>
   </header>
 
   <div class="device-frame">
     <div class="device-chrome">
       <span class="device-chrome__dots"><span></span><span></span><span></span></span>
       <span class="device-chrome__label">localhost:3000 &mdash; Shelf Talker Wizard</span>
-      <span class="device-chrome__count" id="tabCountBadge">3 tabs (was 5)</span>
+      <span class="device-chrome__count">Type &amp; Product Type on every tab</span>
     </div>
 
     <div class="app-shell">
@@ -525,31 +492,30 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 
         <section class="panel panel--form">
 
-          <!-- BEFORE: today's flat 5-tab row -->
-          <div class="tabs" id="tabsBefore" role="tablist" aria-label="How to add a product" hidden>
-            <button class="tab" data-tab="manual" role="tab">Manual Entry</button>
-            <button class="tab" data-tab="import" role="tab">Import from Website</button>
-            <button class="tab" data-tab="searchName" role="tab">Search by Name</button>
-            <button class="tab" data-tab="sku" role="tab">SKU Lookup</button>
-            <button class="tab" data-tab="scan" role="tab">Scan UPC <span class="beta-badge">Beta</span></button>
+          <div class="tabs" id="primaryTabs" role="tablist" aria-label="How to add a product">
+            <button class="tab is-active" data-tab="manual" role="tab" aria-selected="true">Manual Entry</button>
+            <button class="tab" data-tab="import" role="tab" aria-selected="false">Import from Website</button>
+            <button class="tab" data-tab="search" role="tab" aria-selected="false">Search</button>
           </div>
 
-          <!-- AFTER: proposed 3-tab row -->
-          <div class="tabs" id="tabsAfter" role="tablist" aria-label="How to add a product">
-            <button class="tab" data-tab="manual" role="tab">Manual Entry</button>
-            <button class="tab" data-tab="import" role="tab">Import from Website</button>
-            <button class="tab" data-tab="search" role="tab">Search</button>
-          </div>
-
-          <!-- Manual Entry - unchanged by this proposal, shown collapsed -->
-          <div class="tab-panel" data-panel="manual" id="panel_manual">
-            <div class="signtype-toggle" role="radiogroup" aria-label="Sign type">
-              <button type="button" class="toggle-btn is-active">Shelf Talkers</button>
-              <button type="button" class="toggle-btn">Display Signs</button>
-            </div>
-            <div class="category-toggle" role="radiogroup" aria-label="Product category">
-              <button type="button" class="toggle-btn is-active">Wine / Spirits</button>
-              <button type="button" class="toggle-btn">Beer</button>
+          <!-- Manual Entry -->
+          <div class="tab-panel is-active" data-panel="manual" id="panel_manual">
+            <div class="field-row top-controls">
+              <label class="field">
+                <span>Type</span>
+                <select class="js-type-select">
+                  <option value="talker">Shelf Talker</option>
+                  <option value="small">Small Display</option>
+                  <option value="large">Large Display</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Product Type</span>
+                <select class="js-product-select">
+                  <option value="wine">Wine / Spirits</option>
+                  <option value="beer">Beer</option>
+                </select>
+              </label>
             </div>
             <label class="field">
               <span>Product Title *</span>
@@ -562,15 +528,29 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             <div class="annotation">
               <span class="annotation__icon">&#9998;</span>
               <span>Not part of this change &mdash; the rest of Manual Entry's fields (Description, Ratings, Awards, and
-              so on) are unchanged, so they're collapsed here to keep focus on Search.</span>
+              so on) are unchanged; only Type and Product Type move from toggle buttons to dropdowns here, the same way
+              on every tab.</span>
             </div>
           </div>
 
-          <!-- Import from Website - also unchanged -->
+          <!-- Import from Website -->
           <div class="tab-panel" data-panel="import" id="panel_import">
-            <div class="category-toggle" role="radiogroup" aria-label="Product category">
-              <button type="button" class="toggle-btn is-active">Wine / Spirits</button>
-              <button type="button" class="toggle-btn">Beer</button>
+            <div class="field-row top-controls">
+              <label class="field">
+                <span>Type</span>
+                <select class="js-type-select">
+                  <option value="talker">Shelf Talker</option>
+                  <option value="small">Small Display</option>
+                  <option value="large">Large Display</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Product Type</span>
+                <select class="js-product-select">
+                  <option value="wine">Wine / Spirits</option>
+                  <option value="beer">Beer</option>
+                </select>
+              </label>
             </div>
             <p class="help-text">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
             <label class="field">
@@ -582,27 +562,31 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             </div>
           </div>
 
-          <!-- BEFORE-only: three flat top-level tabs, each with its own mount point -->
-          <div class="tab-panel" data-panel="searchNameFlat" id="panel_searchNameFlat"></div>
-          <div class="tab-panel" data-panel="skuFlat" id="panel_skuFlat"></div>
-          <div class="tab-panel" data-panel="scanFlat" id="panel_scanFlat"></div>
-
-          <!-- AFTER-only: the new Search tab, holding all three as sub-tabs.
-               Method chooser first (the primary choice), category second
-               (a shared setting that applies to whichever method is picked)
-               - both built from the same toggle-btn radiogroup pattern
-               Manual Entry already uses, just stacked, so this reads as one
-               more panel in the same family rather than a new widget. -->
+          <!-- Search - Type/Product Type first (same as every other tab), then
+               which lookup method, then that method's own fields. -->
           <div class="tab-panel" data-panel="search" id="panel_search">
-            <div class="category-toggle method-toggle" id="searchSubNav" role="radiogroup" aria-label="Search method">
+            <div class="field-row top-controls">
+              <label class="field">
+                <span>Type</span>
+                <select class="js-type-select">
+                  <option value="talker">Shelf Talker</option>
+                  <option value="small">Small Display</option>
+                  <option value="large">Large Display</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Product Type</span>
+                <select class="js-product-select">
+                  <option value="wine">Wine / Spirits</option>
+                  <option value="beer">Beer</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="pill-group method-toggle" id="searchSubNav" role="radiogroup" aria-label="Search method">
               <button type="button" class="toggle-btn is-active" data-sub="searchName" role="radio" aria-checked="true">Search by Name</button>
               <button type="button" class="toggle-btn" data-sub="sku" role="radio" aria-checked="false">SKU Lookup</button>
               <button type="button" class="toggle-btn" data-sub="scan" role="radio" aria-checked="false">Scan UPC <span class="beta-badge">Beta</span></button>
-            </div>
-
-            <div class="category-toggle" role="radiogroup" aria-label="Product category">
-              <button type="button" class="toggle-btn is-active" role="radio" aria-checked="true">Wine / Spirits</button>
-              <button type="button" class="toggle-btn" role="radio" aria-checked="false">Beer</button>
             </div>
 
             <div id="searchSubMount"></div>
@@ -646,21 +630,17 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     </div>
   </div>
 
-  <p class="footnote">This is a click-through mockup, not the running app &mdash; "Look Up", "Add to Queue", and similar buttons don't do anything except the Search-by-Name example result rows, which populate the summary card above the button so you can see that flow. Toggle <strong>Current UI</strong> above to compare against today's five-tab layout; the same three search forms are reused in both, only the navigation around them changes.</p>
+  <p class="footnote">This is a click-through mockup, not the running app &mdash; "Look Up", "Add to Queue", and similar buttons don't do anything except the Search-by-Name example result rows, which populate the summary card above the button so you can see that flow. The Type and Product Type dropdowns are wired up, though: change one on any tab, then switch tabs, and the others stay in sync.</p>
 
 </div>
 
 <!-- ===================================================================
-     Method panel contents - defined once each, then relocated by JS
-     between the "before" flat slots and the "after" Search sub-mount so
-     there's a single source of truth (and single set of ids) for each
-     form, instead of two copies drifting apart.
+     Method panel contents - defined once each, then relocated by JS into
+     the Search tab's mount point below its method chooser. No Product Type
+     control of their own anymore - that now lives once, above the method
+     chooser, shared with every other tab.
      =================================================================== -->
 <template id="tpl_searchName">
-  <div class="category-toggle category-toggle--own" role="radiogroup" aria-label="Product category">
-    <button type="button" class="toggle-btn is-active">Wine / Spirits</button>
-    <button type="button" class="toggle-btn">Beer</button>
-  </div>
   <p class="help-text">Search your store's inventory by product name. This reads the same WinePOS export file the other search methods use &mdash; no internet connection needed.</p>
   <div class="field" style="position: relative;">
     <label><span>Product Name</span></label>
@@ -700,10 +680,6 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 </template>
 
 <template id="tpl_sku">
-  <div class="category-toggle category-toggle--own" role="radiogroup" aria-label="Product category">
-    <button type="button" class="toggle-btn is-active">Wine / Spirits</button>
-    <button type="button" class="toggle-btn">Beer</button>
-  </div>
   <p class="help-text">Enter the store SKU number. We'll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically &mdash; review the fields before adding it to your queue.</p>
   <label class="field">
     <span>Store SKU</span>
@@ -721,10 +697,6 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 </template>
 
 <template id="tpl_scan">
-  <div class="category-toggle category-toggle--own" role="radiogroup" aria-label="Product category">
-    <button type="button" class="toggle-btn is-active">Wine / Spirits</button>
-    <button type="button" class="toggle-btn">Beer</button>
-  </div>
   <p class="help-text"><strong>Beta</strong> &mdash; scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed.</p>
   <label class="field">
     <span>UPC</span>
@@ -757,6 +729,23 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     syncThemeLabel();
   });
   syncThemeLabel();
+
+  // ---------- Type / Product Type: shared state across every tab ----------
+  // Real app precedent: the category toggle was always one piece of state
+  // shown in multiple places (see the comments in the real index.html) -
+  // this just extends that to a real <select> repeated on all three tabs.
+  function wireSyncedSelects(selector) {
+    var selects = Array.prototype.slice.call(document.querySelectorAll(selector));
+    selects.forEach(function (select) {
+      select.addEventListener('change', function () {
+        selects.forEach(function (other) {
+          if (other !== select) other.value = select.value;
+        });
+      });
+    });
+  }
+  wireSyncedSelects('.js-type-select');
+  wireSyncedSelects('.js-product-select');
 
   // ---------- Build the three search-method panels from their templates ----------
   function build(tplId) {
@@ -813,7 +802,9 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     btn.setAttribute('aria-expanded', String(open));
   });
 
-  // Cosmetic toggle-btn groups (category / sign type / preview) - purely visual
+  // Cosmetic toggle-btn groups (preview mode, search method) - visual only,
+  // except the search method group also swaps the mounted panel below (see
+  // the dedicated listener further down).
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.toggle-btn');
     if (!btn) return;
@@ -821,101 +812,38 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     if (!group) return;
     Array.prototype.forEach.call(group.children, function (child) {
       child.classList.toggle('is-active', child === btn);
+      if (child.hasAttribute('aria-checked')) child.setAttribute('aria-checked', String(child === btn));
     });
   });
 
-  // ---------- Tab plumbing ----------
-  var toplevelIds = ['manual', 'import', 'searchNameFlat', 'skuFlat', 'scanFlat', 'search'];
-  function showToplevel(name) {
-    toplevelIds.forEach(function (id) {
-      var el = document.getElementById('panel_' + id);
-      if (el) el.classList.toggle('is-active', id === name);
+  // ---------- Primary tabs (Manual Entry / Import from Website / Search) ----------
+  var primaryTabs = document.getElementById('primaryTabs');
+  primaryTabs.addEventListener('click', function (e) {
+    var btn = e.target.closest('.tab');
+    if (!btn) return;
+    var name = btn.dataset.tab;
+    primaryTabs.querySelectorAll('.tab').forEach(function (t) {
+      var match = t === btn;
+      t.classList.toggle('is-active', match);
+      t.setAttribute('aria-selected', String(match));
     });
-  }
-  function setActiveTabButton(nav, tabName, attr) {
-    nav.querySelectorAll('.tab').forEach(function (btn) {
-      btn.classList.toggle('is-active', btn.dataset[attr] === tabName);
-      btn.setAttribute('aria-selected', String(btn.dataset[attr] === tabName));
+    document.querySelectorAll('.tab-panel[data-panel]').forEach(function (panel) {
+      panel.classList.toggle('is-active', panel.id === 'panel_' + name);
     });
-  }
+  });
 
-  var tabsBefore = document.getElementById('tabsBefore');
-  var tabsAfter = document.getElementById('tabsAfter');
+  // ---------- Search tab's own method chooser ----------
   var searchSubNav = document.getElementById('searchSubNav');
   var searchSubMount = document.getElementById('searchSubMount');
-  var flatMounts = {
-    searchName: document.getElementById('panel_searchNameFlat'),
-    sku: document.getElementById('panel_skuFlat'),
-    scan: document.getElementById('panel_scanFlat')
-  };
-
-  var mode = 'after';
-  var activeSub = 'searchName';
-
   function selectSub(name) {
-    activeSub = name;
     searchSubMount.innerHTML = '';
     searchSubMount.appendChild(methodPanels[name]);
-    // The generic toggle-btn delegation above already flips is-active on a
-    // real click; this also covers the programmatic call from applyMode()
-    // below (switching Current UI -> Proposed UI), which never fires a
-    // click at all.
-    searchSubNav.querySelectorAll('.toggle-btn').forEach(function (btn) {
-      var match = btn.dataset.sub === name;
-      btn.classList.toggle('is-active', match);
-      btn.setAttribute('aria-checked', String(match));
-    });
   }
-
-  function applyMode(next) {
-    mode = next;
-    document.getElementById('modeBeforeBtn').classList.toggle('is-active', mode === 'before');
-    document.getElementById('modeAfterBtn').classList.toggle('is-active', mode === 'after');
-    tabsBefore.hidden = mode !== 'before';
-    tabsAfter.hidden = mode !== 'after';
-    document.getElementById('tabCountBadge').textContent = mode === 'before' ? '5 tabs' : '3 tabs (was 5)';
-    document.getElementById('modeNote').textContent = mode === 'before'
-      ? 'Showing today’s layout — Search by Name, SKU Lookup, and Scan UPC are their own top-level tabs.'
-      : 'Showing the proposed layout — click any tab below, it’s live.';
-
-    if (mode === 'before') {
-      flatMounts.searchName.appendChild(methodPanels.searchName);
-      flatMounts.sku.appendChild(methodPanels.sku);
-      flatMounts.scan.appendChild(methodPanels.scan);
-      showToplevel('manual');
-      setActiveTabButton(tabsBefore, 'manual', 'tab');
-    } else {
-      selectSub(activeSub);
-      showToplevel('manual');
-      setActiveTabButton(tabsAfter, 'manual', 'tab');
-    }
-  }
-
-  document.getElementById('modeBeforeBtn').addEventListener('click', function () { applyMode('before'); });
-  document.getElementById('modeAfterBtn').addEventListener('click', function () { applyMode('after'); });
-
-  tabsBefore.addEventListener('click', function (e) {
-    var btn = e.target.closest('.tab');
-    if (!btn) return;
-    var name = btn.dataset.tab;
-    showToplevel(name);
-    setActiveTabButton(tabsBefore, name, 'tab');
-  });
-
-  tabsAfter.addEventListener('click', function (e) {
-    var btn = e.target.closest('.tab');
-    if (!btn) return;
-    var name = btn.dataset.tab;
-    showToplevel(name);
-    setActiveTabButton(tabsAfter, name, 'tab');
-  });
-
   searchSubNav.addEventListener('click', function (e) {
     var btn = e.target.closest('.toggle-btn');
     if (!btn) return;
     selectSub(btn.dataset.sub);
   });
-
-  applyMode('after');
+  selectSub('searchName');
 })();
 </script>
