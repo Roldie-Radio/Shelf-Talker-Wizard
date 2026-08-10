@@ -586,6 +586,43 @@
     </div>
   </div>
 
+  <!-- Reachable only via the desktop app's Tools > Find Queue… menu item
+       (see electron/main.js) - no app-bar button, and no Ctrl+F listener on
+       the page itself, so a plain browser tab's own Find still works
+       untouched. Searches the live Queue below (public/js/app.js owns the
+       matching/highlighting), not Print History, which already has its own
+       search box on the History tab. -->
+  <div id="findQueueOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow find-modal" role="dialog" aria-modal="true" aria-label="Find in Queue">
+      <div class="find-modal__row">
+        <svg class="find-modal__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M11.2 11.2L15 15" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <input
+          type="text"
+          id="findQueueInput"
+          class="find-modal__input"
+          placeholder="Find in Queue&hellip;"
+          autocomplete="off"
+          spellcheck="false"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="findQueueResults"
+          aria-autocomplete="list"
+        />
+        <span class="find-modal__count" id="findQueueCount" aria-live="polite"></span>
+        <button type="button" class="btn btn--ghost btn--small" id="findQueueCloseBtn">&times;</button>
+      </div>
+      <div class="find-modal__results" id="findQueueResults" role="listbox" aria-label="Matching queue items"></div>
+      <div class="find-modal__hints">
+        <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
+        <span><kbd>Enter</kbd> Jump to item</span>
+        <span><kbd>Esc</kbd> Close</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Shown automatically once after an update (see checkWhatsNew in app.js,
        compared against the version /api/app-version reports), and always
        reachable via the desktop app's Help menu (see electron/main.js).

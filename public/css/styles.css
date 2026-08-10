@@ -729,6 +729,123 @@ h1, h2, h3 { margin: 0; }
 .tasting-notes-modal-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .tasting-notes-modal-body .field { margin-bottom: 0; }
 
+/* ---------- Find Queue ---------- */
+
+/* No modal__header/modal__footer here - the search input itself is the
+   header (see findQueueModal in app.js), so .modal's generic chrome is
+   skipped in favor of this row/results/hints layout the whole thing owns. */
+.find-modal { padding: 0; overflow: hidden; }
+.find-modal__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--ui-border);
+}
+.find-modal__icon { flex: none; color: var(--ui-muted); }
+.find-modal__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ui-ink);
+  outline: none;
+}
+.find-modal__input::placeholder { color: var(--ui-muted); }
+.find-modal__count {
+  font-size: 0.76rem;
+  color: var(--ui-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.find-modal__results { max-height: 50vh; overflow-y: auto; padding: 0.4rem; }
+.find-modal__empty { padding: 1.4rem 1rem; text-align: center; color: var(--ui-muted); font-size: 0.85rem; }
+
+/* Same swatch/title/meta layout as the real .queue-item rows (see below),
+   kept as its own class rather than reusing .queue-item directly - this
+   list is a set of jump-to-item links, not editable queue rows, and
+   shouldn't pick up .queue-item's expand/kebab-menu behavior by accident. */
+.find-modal__result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.find-modal__result:hover,
+.find-modal__result.is-active { background: var(--ui-accent); }
+.find-modal__result:hover .find-modal__result-title,
+.find-modal__result.is-active .find-modal__result-title,
+.find-modal__result:hover .find-modal__result-meta,
+.find-modal__result.is-active .find-modal__result-meta,
+.find-modal__result:hover .find-modal__result-hit,
+.find-modal__result.is-active .find-modal__result-hit { color: var(--ui-on-accent); }
+.find-modal__result:hover mark,
+.find-modal__result.is-active mark { background: rgba(255, 255, 255, 0.32); color: inherit; }
+.find-modal__result-body { flex: 1; min-width: 0; }
+.find-modal__result-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.find-modal__result-meta { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
+/* Shown only when a result matched on description/SKU rather than title or
+   size (see renderFindQueueResults in app.js) - those two fields are
+   otherwise displayed as-is, so a hit there is already visible without
+   this; description/SKU aren't shown anywhere else in the row. */
+.find-modal__result-hit {
+  font-size: 0.76rem;
+  color: var(--ui-muted);
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.find-modal__hints {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--ui-border);
+  font-size: 0.74rem;
+  color: var(--ui-muted);
+}
+.find-modal__hints span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.find-modal__hints kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+  background: var(--ui-panel-alt);
+}
+
+.find-modal mark {
+  background: var(--ui-hover);
+  color: var(--ui-accent-ink);
+  border-radius: 2px;
+  padding: 0 0.05em;
+}
+
+/* Flashed on the matching row in the real Queue panel (see jumpToQueueItem
+   in app.js) after picking a Find result, so it's obvious which one it
+   jumped to - not just that the list scrolled. */
+.queue-item.is-find-target { box-shadow: inset 0 0 0 1px var(--ui-accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .queue-item.is-find-flash { animation: find-flash 1.1s ease-out 1; }
+}
+@keyframes find-flash {
+  0% { background: var(--ui-hover); box-shadow: inset 0 0 0 1px var(--ui-accent); }
+  100% { background: var(--ui-panel); box-shadow: inset 0 0 0 1px transparent; }
+}
+
 /* ---------- Print preview ---------- */
 
 .auto-arrange-toggle {

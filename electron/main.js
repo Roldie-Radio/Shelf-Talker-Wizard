@@ -192,6 +192,16 @@ function handleShowGuide() {
   mainWindow.webContents.send('guide:show-requested');
 }
 
+// Same pattern as handleShowHelp above, for the Tools menu's "Find Queue…"
+// item - opens the renderer's Find Queue search modal (see findQueueModal
+// in app.js). Its own accelerator (see the Tools submenu below) rather than
+// a page-level Ctrl+F listener, so it never fights a plain browser tab's
+// own Find when this app is loaded outside Electron.
+function handleShowFindQueue() {
+  if (!mainWindow) return;
+  mainWindow.webContents.send('find-queue:show-requested');
+}
+
 function showAboutDialog() {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
@@ -302,6 +312,8 @@ function buildMenu() {
     {
       label: 'Tools',
       submenu: [
+        { label: 'Find Queue…', accelerator: 'CmdOrCtrl+F', click: handleShowFindQueue },
+        { type: 'separator' },
         { label: 'Beer Talker Info', click: handleShowGuide },
         { label: 'Settings…', click: handleShowSettings },
       ],

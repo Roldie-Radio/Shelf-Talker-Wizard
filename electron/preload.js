@@ -31,6 +31,10 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // app-bar button; now only reachable from this menu item.
   onShowGuideRequested: (callback) => ipcRenderer.on('guide:show-requested', () => callback()),
 
+  // Tools menu "Find Queue…" (see main.js) - opens the in-app Find Queue
+  // search modal, same pattern as onShowHelpRequested above.
+  onFindQueueRequested: (callback) => ipcRenderer.on('find-queue:show-requested', () => callback()),
+
   // Scan UPC tab's Settings "Browse..." button (see main.js) - only present
   // here, so app.js only shows that button when this bridge exists; the
   // plain browser dev copy has no native file dialog and just falls back to

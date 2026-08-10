@@ -346,6 +346,13 @@
     clearQueueBtn: document.getElementById('clearQueueBtn'),
     saveQueueBtn: document.getElementById('saveQueueBtn'),
     queueItemMenu: document.getElementById('queueItemMenu'),
+
+    findQueueOverlay: document.getElementById('findQueueOverlay'),
+    findQueueInput: document.getElementById('findQueueInput'),
+    findQueueCount: document.getElementById('findQueueCount'),
+    findQueueResults: document.getElementById('findQueueResults'),
+    findQueueCloseBtn: document.getElementById('findQueueCloseBtn'),
+
     themeToggle: document.getElementById('themeToggle'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
@@ -1184,6 +1191,9 @@
       const item = document.createElement('div');
       const isExpanded = expandedQueueItemIds.has(talker.id);
       item.className = `queue-item${isExpanded ? ' is-expanded' : ''}`;
+      // Lets Find Queue (see jumpToQueueItem below) locate this row again by
+      // id after a re-render, to scroll to and flash it.
+      item.dataset.id = talker.id;
       const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
         ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
         : formatMoney(talker.price);
@@ -1392,6 +1402,200 @@
       renderQueue();
       refreshPreview();
     });
+  }
+
+  // ---------- Find Queue ----------
+
+  // Tools menu "Find Queue…" (see electron/main.js) - a quick way to locate
+  // one talker in a long queue without scrolling the whole panel by hand.
+  // Electron-only, same as Beer Talker Info: no app-bar button, and
+  // deliberately no Ctrl+F keydown listener on the page itself, so a plain
+  // browser tab's own Find-in-page still works untouched (only the desktop
+  // app's native menu accelerator triggers this, via IPC).
+  //
+  // Matches title, description, SKU, and size - broader than History's own
+  // search (title/SKU only, see server/db.js), since this runs client-side
+  // against whatever's already in the small in-memory queue rather than a
+  // LIKE query against the whole printed-talkers table.
+  let findQueueMatches = [];
+  let findQueueActiveIndex = -1;
+
+  function findQueueMatchesFor(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return queue.slice();
+    return queue.filter((talker) => [talker.title, talker.description, talker.sku, talker.size]
+      .some((field) => field && String(field).toLowerCase().includes(q)));
+  }
+
+  // Wraps the first case-insensitive match of `query` in `text` with <mark>,
+  // HTML-escaping everything else - same escape-then-wrap approach as the
+  // rest of this file's innerHTML building (see renderQueue above). Returns
+  // the escaped text untouched (no <mark>) when there's no match, so it's
+  // safe to call unconditionally on fields that might not be the hit.
+  function highlightMatch(text, query) {
+    const safe = escapeHtml(text || '');
+    const q = query.trim();
+    if (!q) return safe;
+    const idx = (text || '').toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return safe;
+    const before = escapeHtml(text.slice(0, idx));
+    const hit = escapeHtml(text.slice(idx, idx + q.length));
+    const after = escapeHtml(text.slice(idx + q.length));
+    return `${before}<mark>${hit}</mark>${after}`;
+  }
+
+  // Same idea as highlightMatch, but for a field that isn't otherwise shown
+  // in the result row (description, SKU) - trims to a short window around
+  // the hit with an ellipsis on either truncated side, rather than dumping
+  // the whole field in. Returns null when `text` doesn't contain `query`,
+  // so callers can tell "no snippet" apart from "matched at position 0".
+  function snippetHit(text, query, radius = 30) {
+    const str = text || '';
+    const q = query.trim();
+    const idx = str.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return null;
+    const start = Math.max(0, idx - radius);
+    const end = Math.min(str.length, idx + q.length + radius);
+    const before = (start > 0 ? '&hellip;' : '') + escapeHtml(str.slice(start, idx));
+    const hit = escapeHtml(str.slice(idx, idx + q.length));
+    const after = escapeHtml(str.slice(idx + q.length, end)) + (end < str.length ? '&hellip;' : '');
+    return `${before}<mark>${hit}</mark>${after}`;
+  }
+
+  function renderFindQueueResults(query) {
+    findQueueMatches = findQueueMatchesFor(query);
+    findQueueActiveIndex = findQueueMatches.length ? 0 : -1;
+    const q = query.trim();
+    els.findQueueCount.textContent = q ? `${findQueueMatches.length} of ${queue.length}` : '';
+
+    if (!findQueueMatches.length) {
+      els.findQueueResults.innerHTML = q
+        ? `<p class="find-modal__empty">No matches for &ldquo;${escapeHtml(q)}&rdquo;.</p>`
+        : '<p class="find-modal__empty">No shelf talkers in the queue yet.</p>';
+      els.findQueueInput.removeAttribute('aria-activedescendant');
+      return;
+    }
+
+    els.findQueueResults.innerHTML = findQueueMatches.map((talker, i) => {
+      const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
+        ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
+        : formatMoney(talker.price);
+      const metaParts = [];
+      if (talker.size) metaParts.push(highlightMatch(talker.size, q));
+      metaParts.push(escapeHtml(priceLabel));
+
+      // Title and size are always visible, so highlighting a hit in either
+      // is enough to show why a result matched. Description and SKU aren't
+      // otherwise shown at all - without this, a result matching only on
+      // (say) a beer's description would show up with nothing visibly
+      // matching anywhere in the row. Checked in this order since it's the
+      // order fields are shown top-to-bottom.
+      const visibleHasHit = q && [talker.title, talker.size]
+        .some((f) => f && f.toLowerCase().includes(q.toLowerCase()));
+      let hitLine = '';
+      if (q && !visibleHasHit) {
+        const descHit = snippetHit(talker.description, q);
+        const skuHit = talker.sku && talker.sku.toLowerCase().includes(q.toLowerCase())
+          ? `SKU ${highlightMatch(talker.sku, q)}`
+          : null;
+        const shown = descHit || skuHit;
+        if (shown) hitLine = `<div class="find-modal__result-hit">${shown}</div>`;
+      }
+
+      return `
+        <div
+          class="find-modal__result${i === findQueueActiveIndex ? ' is-active' : ''}"
+          id="findQueueResult-${i}"
+          role="option"
+          aria-selected="${i === findQueueActiveIndex}"
+          data-id="${talker.id}"
+        >
+          <div class="queue-item__swatch" data-theme="${talker.theme}"></div>
+          <div class="find-modal__result-body">
+            <div class="find-modal__result-title">${highlightMatch(talker.title || 'Untitled', q)}</div>
+            <div class="find-modal__result-meta">${metaParts.join(' &middot; ')}</div>
+            ${hitLine}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    updateFindQueueActiveDescendant();
+    els.findQueueResults.querySelectorAll('.find-modal__result').forEach((el) => {
+      el.addEventListener('mouseenter', () => {
+        findQueueActiveIndex = findQueueMatches.findIndex((t) => t.id === el.dataset.id);
+        renderFindQueueActiveState();
+      });
+      el.addEventListener('click', () => jumpToQueueItem(el.dataset.id));
+    });
+  }
+
+  function renderFindQueueActiveState() {
+    els.findQueueResults.querySelectorAll('.find-modal__result').forEach((el, i) => {
+      const isActive = i === findQueueActiveIndex;
+      el.classList.toggle('is-active', isActive);
+      el.setAttribute('aria-selected', String(isActive));
+    });
+    updateFindQueueActiveDescendant();
+  }
+
+  function updateFindQueueActiveDescendant() {
+    if (findQueueActiveIndex === -1) {
+      els.findQueueInput.removeAttribute('aria-activedescendant');
+    } else {
+      els.findQueueInput.setAttribute('aria-activedescendant', `findQueueResult-${findQueueActiveIndex}`);
+      els.findQueueResults.querySelector(`#findQueueResult-${findQueueActiveIndex}`)
+        ?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function moveFindQueueActive(delta) {
+    if (!findQueueMatches.length) return;
+    findQueueActiveIndex = (findQueueActiveIndex + delta + findQueueMatches.length) % findQueueMatches.length;
+    renderFindQueueActiveState();
+  }
+
+  // Closes the modal, scrolls the matching row into view in the real Queue
+  // panel, and flashes it - same "which one did it mean" feedback as the
+  // Find Queue mockup this was built from.
+  function jumpToQueueItem(id) {
+    findQueueModal.close();
+    const row = els.queueGrid.querySelector(`[data-id="${CSS.escape(id)}"]`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    row.classList.add('is-find-target', 'is-find-flash');
+    setTimeout(() => row.classList.remove('is-find-target', 'is-find-flash'), 1200);
+  }
+
+  const findQueueModal = createModal({
+    overlay: els.findQueueOverlay,
+    closeBtns: [els.findQueueCloseBtn],
+    onOpen: () => {
+      els.findQueueInput.value = '';
+      renderFindQueueResults('');
+    },
+    onClose: () => { els.findQueueResults.innerHTML = ''; },
+  });
+
+  els.findQueueInput.addEventListener('input', () => renderFindQueueResults(els.findQueueInput.value));
+  els.findQueueInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveFindQueueActive(1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveFindQueueActive(-1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (findQueueActiveIndex !== -1) jumpToQueueItem(findQueueMatches[findQueueActiveIndex].id);
+    }
+  });
+
+  // Tools menu "Find Queue…" (see main.js). Deliberately no page-level
+  // Ctrl+F keydown listener anywhere in this file - see the note atop this
+  // section.
+  if (window.shelfTalker && window.shelfTalker.onFindQueueRequested) {
+    window.shelfTalker.onFindQueueRequested(() => findQueueModal.open());
   }
 
   els.cancelEditBtn.addEventListener('click', resetForm);
