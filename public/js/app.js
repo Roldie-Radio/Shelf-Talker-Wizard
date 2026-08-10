@@ -27,11 +27,12 @@
   // leaving the boxes untouched renders identically to before this feature.
   // superSalePrice matches the "Super Sale Price!!!" callout's current
   // effective size the same way - card__supersale-text's 0.11 * 72 * 2.8in
-  // ≈ 22pt, sign__supersale-text's (small-sign-only) 0.042 * 1.2 * 72 *
-  // 4.75in ≈ 17pt (see fSuperSaleFontSize/superSaleFontSizeField, shown only
-  // for Super Sale talkers/Small Display Signs - Large Display Signs fold
-  // this text into the regular sale-price line instead, see
-  // buildSignPriceRowHtml in card.js).
+  // ≈ 22pt. sign__supersale-text's (small-sign-only) CSS ratio works out to
+  // ≈ 17pt, but the default here is set to 23pt instead, by request (see
+  // fSuperSaleFontSize/superSaleFontSizeField, shown only for Super Sale
+  // talkers/Small Display Signs - Large Display Signs fold this text into
+  // the regular sale-price line instead, see buildSignPriceRowHtml in
+  // card.js).
   // closeoutBadge matches the "CLOSEOUT!!" badge's current effective size
   // the same way (see fCloseoutFontSize/closeoutFontSizeField, shown for
   // any Closeout talker, unlike Super Sale above - the badge itself renders
@@ -52,7 +53,7 @@
   // default there.
   const DEFAULT_FONT_SIZE_PT = {
     talker: { title: 12, description: 10.5, superSalePrice: 22, closeoutBadge: 23, ratings: 13 },
-    sign: { title: 20, description: 10, superSalePrice: 17, closeoutBadge: 22.5, ratings: 22 },
+    sign: { title: 20, description: 10, superSalePrice: 23, closeoutBadge: 22.5, ratings: 22 },
   };
 
   // Human-readable names for the queue list's meta line (see renderQueue).
