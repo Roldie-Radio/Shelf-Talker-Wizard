@@ -4,11 +4,17 @@
    PRINT palette (--ink, --muted, --accent, --sale-red, the band colours):
    the colours of the shelf talkers and display signs themselves. These
    describe ink on paper, so they are FIXED - never themed, never overridden
-   by dark mode. A talker prints the same whatever the app looks like on
-   screen, and the preview has to keep showing what will actually print.
+   by dark mode or the accent setting below. A talker prints the same
+   whatever the app looks like on screen, and the preview has to keep
+   showing what will actually print.
 
    UI palette (--ui-*): the application chrome around the previews - panels,
-   the form, the queue, the modal. Only these are re-pointed by dark mode.
+   the form, the queue, the modal. Re-pointed by dark mode, and the four
+   --ui-accent* tokens are additionally re-pointed by the Settings ->
+   Change Theme accent choice (see applyAccent in app.js and the
+   [data-accent="purple"] blocks below). Amber is the default/base value set
+   here; picking Purple only overrides those four tokens, on top of
+   whichever light/dark surface colours are already in effect.
    ================================================================ */
 :root {
   /* --- Print palette (fixed) --- */
@@ -50,6 +56,20 @@
   color-scheme: light;
 }
 
+/* Purple accent (light mode) - opt-in via Settings -> Change Theme, applied
+   as the [data-accent="purple"] attribute (see applyAccent in app.js, set
+   before first paint by the inline script in index.html). Only the four
+   accent tokens are overridden; every other light-mode token above still
+   applies. Reuses --purple-band (#7d3a52) rather than a new colour, so the
+   accent matches the same brand purple already used for the beer print
+   theme. 8.1:1 on --ui-panel (white), clear of the 4.5:1 AA threshold. */
+:root[data-accent="purple"] {
+  --ui-accent: #7d3a52;
+  --ui-accent-hover: #6a2e5c;
+  --ui-accent-ink: #7d3a52;
+  --ui-on-accent: #ffffff;
+}
+
 /* Dark mode re-points the UI palette only. Contrast was chosen against the
    surface each token actually sits on: --ui-accent-ink reads 8.7:1 on
    --ui-panel, and --ui-on-accent 7.6:1 on --ui-accent, so accent text and
@@ -77,6 +97,17 @@
   --ui-code-bg: #302c28;
   --ui-danger: #ff8f8f;
   color-scheme: dark;
+}
+
+/* Purple accent (dark mode) - same idea as the light-mode block above, but
+   needs its own lightened values to keep reading against the dark panel
+   rather than reusing the light-mode purple as-is. --ui-accent-ink 6.5:1 on
+   --ui-panel, --ui-on-accent 5.7:1 on --ui-accent. */
+:root[data-theme="dark"][data-accent="purple"] {
+  --ui-accent: #c77aa8;
+  --ui-accent-hover: #d68fc0;
+  --ui-accent-ink: #d68fc0;
+  --ui-on-accent: #2a1024;
 }
 
 * { box-sizing: border-box; }
@@ -724,6 +755,15 @@ h1, h2, h3 { margin: 0; }
   border-radius: 999px;
   vertical-align: middle;
 }
+/* .field span (see the note above .font-size-control__icon) is a
+   class+type selector, so it outranks .beta-badge's plain class whenever
+   the badge sits inside a .field - the Find Tasting Notes button's Beta
+   badge does, since it's inside #descriptionField. Without this, that one
+   badge's text fell back to .field span's muted --ui-ink-soft grey instead
+   of the white/near-white --ui-on-accent every other Beta badge gets,
+   which barely read against the amber (or purple) accent background in
+   light mode. */
+.field .beta-badge { color: var(--ui-on-accent); }
 
 #printPreviewSummary { padding: 0 1.2rem; margin-bottom: 0.75rem; }
 
