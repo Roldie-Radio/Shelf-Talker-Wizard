@@ -233,6 +233,7 @@
     importUrlLabel: document.getElementById('importUrlLabel'),
     importUrl: document.getElementById('importUrl'),
     importBtn: document.getElementById('importBtn'),
+    importSaveBtn: document.getElementById('importSaveBtn'),
     importStatus: document.getElementById('importStatus'),
     importHtmlToggle: document.getElementById('importHtmlToggle'),
     importHtmlSection: document.getElementById('importHtmlSection'),
@@ -1652,8 +1653,14 @@
 
   // Shared by both the live fetch below and the "paste page HTML" fallback
   // further down - once product data has been obtained, either way, filling
-  // the form and switching to Manual Entry is identical.
+  // the form is identical.
   function applyImportedProduct(data, isBeer) {
+    // Carries over whatever Type (Shelf Talker/Small Display/Large Display)
+    // and Talker Size were already picked at the top of the tab before the
+    // fetch ran - fillForm falls back to Shelf Talker/Full Size for any of
+    // these it isn't given, which would otherwise silently override a
+    // Display Sign selection every time product data loads.
+    const currentType = { signType: currentSignType, signSize: currentSignSize, talkerSize: currentTalkerSize };
     if (isBeer) {
       // No price/salePrice/size here - Untappd is a rating and check-in
       // site, not a retailer, so it has no price to pull. Staff still add
@@ -1661,6 +1668,7 @@
       // location, style, ABV, IBU, rating, description) comes from the
       // page.
       fillForm({
+        ...currentType,
         category: 'beer',
         title: data.title,
         description: data.description,
@@ -1675,6 +1683,7 @@
       });
     } else {
       fillForm({
+        ...currentType,
         title: data.title,
         description: data.description,
         size: data.size,
@@ -1686,7 +1695,11 @@
     previewMode = 'single';
     setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
     renderPreview();
-    document.querySelector('.tab[data-tab="manual"]').click();
+    // Deliberately stays on the Website tab instead of switching to Edit
+    // Talker - same reasoning as applySkuLookupProduct's own note below: the
+    // Live Preview panel already updates live regardless of which tab is
+    // active, and staff can review the fetched fields and click "Add to
+    // Queue" right here (see els.importSaveBtn) without losing their place.
   }
 
   els.importBtn.addEventListener('click', async () => {
@@ -1717,6 +1730,28 @@
     } finally {
       els.importBtn.disabled = false;
     }
+  });
+
+  // Website's own "Add to Queue" - saves whatever the fetch (or the
+  // pasted-HTML fallback below) just filled into the shared form fields
+  // without making staff switch to Edit Talker first. Same pattern as
+  // els.skuSaveBtn/els.scanUpcSaveBtn: reuses the form's real submit handler
+  // via requestSubmit() rather than a third copy of validate/save.
+  els.importSaveBtn.addEventListener('click', () => {
+    els.form.requestSubmit();
+    if (!els.formError.hidden) {
+      // The form's own error banner lives on the Edit Talker tab-panel, not
+      // visible from here - mirror it into this tab's own status line
+      // instead of switching tabs away from the Website workflow.
+      els.importStatus.textContent = els.formError.textContent;
+      return;
+    }
+    // Saved successfully - resetForm() already cleared the shared fields
+    // (title/size/price/etc.); the URL box lives outside <form> and needs
+    // its own reset so the tab is ready for the next product instead of
+    // still showing the one that was just added.
+    els.importUrl.value = '';
+    els.importStatus.textContent = 'Added to queue! Paste another URL to fetch the next one.';
   });
 
   // "Site blocking the fetch? Paste the page's HTML instead" - the fallback
