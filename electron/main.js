@@ -159,38 +159,14 @@ function handleCheckForUpdates() {
   autoUpdater.checkForUpdates().catch(() => {});
 }
 
-// Opens the same in-app Help panel the app bar's own Help button does,
-// rather than a separate window - the renderer owns the actual content
-// (see index.html/app.js), this just asks it to show it.
-function handleShowHelp() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('help:show-requested');
-}
-
-// Same pattern as handleShowHelp above, for the Help menu's "What's New"
-// item - the renderer owns WHATS_NEW_ENTRIES and always shows the full
-// list here, not just whatever's unseen.
-function handleShowWhatsNew() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('whats-new:show-requested');
-}
-
-// Opens the in-app Settings panel (currently just Change Theme) the same
-// way handleShowHelp opens Help above - the renderer owns the actual
-// content, this just asks it to show it.
-function handleShowSettings() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('settings:show-requested');
-}
-
-// Same pattern as handleShowHelp above, for the Tools menu's "Beer Talker
-// Info" item - opens the renderer's guide preview modal (see
-// guidePreviewModal in app.js), which used to be reached from an app-bar
-// button of its own.
-function handleShowGuide() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('guide:show-requested');
-}
+// The menu bar itself is now built in the renderer (see the "Menu bar"
+// section of public/js/app.js), not here - this file just backs the
+// handful of its items that genuinely need main-process/OS access, each
+// exposed to the renderer as an ipcMain.handle below and called through
+// electron/preload.js. Items that only open an in-page modal (Help, What's
+// New, Beer Talker Info, Settings, Find Queue, and the three Advanced
+// panel dialogs) don't need any of this anymore - the renderer just opens
+// them directly, since it owns the menu that triggers them now too.
 
 function showAboutDialog() {
   dialog.showMessageBox(mainWindow, {
@@ -202,12 +178,21 @@ function showAboutDialog() {
     buttons: ['OK'],
   });
 }
+ipcMain.handle('app:about', showAboutDialog);
 
-// Loads a previously saved queue file (see the "Save Queue" export format in
-// app.js: { app, exportedAt, queue }) and hands the queue array off to the
-// renderer, which owns actually applying it - the main process only knows
-// how to read/validate the file, not how to render a queue.
-async function handleOpenQueue() {
+ipcMain.handle('app:quit', () => app.quit());
+
+ipcMain.handle('devtools:toggle', () => {
+  if (mainWindow) mainWindow.webContents.toggleDevTools();
+});
+
+ipcMain.handle('updates:check', () => handleCheckForUpdates());
+
+// File > Open Queue… - loads a previously saved queue file (see the "Save
+// Queue" export format in app.js: { app, exportedAt, queue }) and hands the
+// queue array off to the renderer, which owns actually applying it - this
+// only knows how to read/validate the file, not how to render a queue.
+ipcMain.handle('queue:open-file', async () => {
   if (!mainWindow) return;
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Open Shelf Talker Queue',
@@ -225,15 +210,23 @@ async function handleOpenQueue() {
   } catch (err) {
     dialog.showErrorBox('Could not open queue', err.message);
   }
-}
+});
 
-// "Save Queue" from the File menu can't build the export payload itself (the
-// live queue only exists in the renderer), so it asks the renderer for one
-// via this event and waits for the queue:save invoke below.
-function handleSaveQueueRequest() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('queue:save-requested');
-}
+// File > Save Queue (Electron path only - see runMenuAction's 'save-queue'
+// case in app.js, which falls back to a plain browser download outside
+// Electron) - the live queue only exists in the renderer, so it builds the
+// export payload and passes it here for the native save dialog + write.
+ipcMain.handle('queue:save', async (_event, payload) => {
+  if (!mainWindow) return { success: false };
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Shelf Talker Queue',
+    defaultPath: `shelf-talker-queue-${new Date().toISOString().slice(0, 10)}.json`,
+    filters: [{ name: 'Shelf Talker Queue', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { success: false };
+  await fs.writeFile(result.filePath, JSON.stringify(payload, null, 2), 'utf-8');
+  return { success: true, filePath: result.filePath };
+});
 
 // Native "Browse..." for the Scan UPC tab's Settings box (see preload.js /
 // public/js/app.js) - only the main process can show OS file dialogs, so
@@ -252,100 +245,6 @@ ipcMain.handle('upc-export:pick-file', async () => {
   if (result.canceled || !result.filePaths[0]) return null;
   return result.filePaths[0];
 });
-
-// Advanced menu's "Export File Settings...", "View Export File...", "View
-// Database...", and "Server PC..." (see buildMenu below) - the renderer
-// owns fetching the actual data (from the same-origin API the rest of the
-// app already uses) and rendering it, same split as handleShowHelp above:
-// the main process only knows how to ask the renderer to open a panel, not
-// what goes in it.
-function handleExportSettings() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('export-settings-requested');
-}
-function handleViewExportFile() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('view-export-requested');
-}
-function handleViewDatabase() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('view-database-requested');
-}
-function handleServerPc() {
-  if (!mainWindow) return;
-  mainWindow.webContents.send('server-pc-requested');
-}
-
-ipcMain.handle('queue:save', async (_event, payload) => {
-  if (!mainWindow) return { success: false };
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Save Shelf Talker Queue',
-    defaultPath: `shelf-talker-queue-${new Date().toISOString().slice(0, 10)}.json`,
-    filters: [{ name: 'Shelf Talker Queue', extensions: ['json'] }],
-  });
-  if (result.canceled || !result.filePath) return { success: false };
-  await fs.writeFile(result.filePath, JSON.stringify(payload, null, 2), 'utf-8');
-  return { success: true, filePath: result.filePath };
-});
-
-function buildMenu() {
-  const template = [
-    {
-      label: 'File',
-      submenu: [
-        { label: 'Open Queue…', accelerator: 'CmdOrCtrl+O', click: handleOpenQueue },
-        { label: 'Save Queue', accelerator: 'CmdOrCtrl+S', click: handleSaveQueueRequest },
-        { type: 'separator' },
-        { role: 'quit', label: 'Exit' },
-      ],
-    },
-    {
-      label: 'Tools',
-      submenu: [
-        { label: 'Beer Talker Info', click: handleShowGuide },
-        { label: 'Settings…', click: handleShowSettings },
-      ],
-    },
-    {
-      label: 'Help',
-      submenu: [
-        { label: 'Help', click: handleShowHelp },
-        { label: "What's New", click: handleShowWhatsNew },
-        { type: 'separator' },
-        { label: 'Check for Updates…', click: handleCheckForUpdates },
-        { type: 'separator' },
-        {
-          label: 'About Shelf Talker Wizard',
-          click: showAboutDialog,
-        },
-      ],
-    },
-    // This custom menu replaces Electron's default application menu wholesale
-    // (see the Menu.setApplicationMenu call below) - the default is the only
-    // place "Toggle Developer Tools" normally lives, so without an entry
-    // here there was no way to open DevTools in the packaged app at all, not
-    // even the usual Ctrl+Shift+I/F12 shortcuts. Kept under its own menu
-    // (not tucked into Help) since it's a troubleshooting tool for staff on
-    // the phone with support, not something to stumble into during normal use.
-    {
-      label: 'Advanced',
-      submenu: [
-        {
-          label: 'Toggle Developer Tools',
-          accelerator: process.platform === 'darwin' ? 'Cmd+Alt+I' : 'Ctrl+Shift+I',
-          click: () => { if (mainWindow) mainWindow.webContents.toggleDevTools(); },
-        },
-        { type: 'separator' },
-        { label: 'Export File Settings…', click: handleExportSettings },
-        { label: 'View Export File…', click: handleViewExportFile },
-        { label: 'View Database…', click: handleViewDatabase },
-        { type: 'separator' },
-        { label: 'Server PC…', click: handleServerPc },
-      ],
-    },
-  ];
-  return Menu.buildFromTemplate(template);
-}
 
 // Electron's default print (triggered by the renderer calling window.print())
 // doesn't reliably honor our @page CSS (landscape Letter) or print background
@@ -396,7 +295,12 @@ async function createWindow() {
     },
   });
 
-  Menu.setApplicationMenu(buildMenu());
+  // No native application menu - File/Tools/Help/Advanced now live in the
+  // renderer itself (see the "Menu bar" section of public/js/app.js) so
+  // their size is something Settings can control. Explicitly null rather
+  // than just skipping this call, which would leave Electron's own default
+  // menu (File/Edit/View/Window/Help) in place instead of none at all.
+  Menu.setApplicationMenu(null);
   mainWindow.loadURL(`http://127.0.0.1:${PORT}`);
 
   // Electron's BrowserWindow doesn't show a native copy/paste context menu on

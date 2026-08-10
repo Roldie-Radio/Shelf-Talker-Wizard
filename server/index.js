@@ -2,9 +2,10 @@ const os = require('os');
 const path = require('path');
 const express = require('express');
 const {
-  extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, parsePastedProduct,
+  extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
+  TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
-  enrichBeerScanFromStore,
+  enrichBeerScanFromStore, enrichBeerFromUntappd,
 } = require('./productImport');
 const {
   getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, searchByName, previewExport,
@@ -96,8 +97,12 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // Populates the Source dropdown in the "Find Tasting Notes" dialog - a
   // plain list of provider names, so a new provider added to
   // TASTING_NOTE_PROVIDERS shows up there without an app.js change.
+  // `experimental` names the subset gated behind Settings' "Experimental
+  // Features -> Bourbon Shelf Talkers" toggle - the client filters those
+  // out of the dropdown while the toggle is off (see
+  // renderTastingNotesSourceOptions in app.js).
   app.get('/api/tasting-notes/sources', (req, res) => {
-    res.json({ sources: TASTING_NOTE_PROVIDER_NAMES });
+    res.json({ sources: TASTING_NOTE_PROVIDER_NAMES, experimental: TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES });
   });
 
   // Backs the "Find Tasting Notes" dialog (Manual Entry, Wine/Spirits only) -
@@ -105,9 +110,13 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // straight from whatever's already in the form, and the server does the
   // searching (see findTastingNotes). An optional `source` restricts the
   // search to one named provider (the dialog's Source dropdown) instead of
-  // trying all of them in order.
+  // trying all of them in order. `allowExperimental` is Settings' "Bourbon
+  // Shelf Talkers" toggle, sent on every request rather than trusted as
+  // server-side state - see findTastingNotes for why this (not just the
+  // dropdown filtering) is what actually keeps Distiller unreachable while
+  // the toggle is off.
   app.post('/api/tasting-notes', async (req, res) => {
-    const { title, vintage, source } = req.body || {};
+    const { title, vintage, source, allowExperimental } = req.body || {};
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'A product title is required.' });
@@ -118,6 +127,7 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
         title: title.trim(),
         vintage: typeof vintage === 'string' ? vintage.trim() : '',
         source: typeof source === 'string' && source.trim() ? source.trim() : undefined,
+        allowExperimental: !!allowExperimental,
       });
       res.json(result);
     } catch (err) {
@@ -325,6 +335,53 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     } catch (err) {
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not search the export file.', code: err.code });
+    }
+  });
+
+  // Backs picking a candidate off the "Search by Name" tab's dropdown - runs
+  // once, on that click/Enter, not per keystroke against the whole result
+  // list above (an Untappd search per row would be both slow and a good way
+  // to get this app's Algolia key rate-limited or revoked). Wine/Spirits has
+  // nothing further to fetch - the export file's own columns are already
+  // everything that tab shows - so this is a same-shape pass-through for it,
+  // matching the local-only lookup staff already got before this route
+  // existed. Beer runs the same best-effort Untappd step SKU Lookup and Scan
+  // UPC already layer on top of their own product (see enrichBeerFromUntappd
+  // in productImport.js), off of the export's own title/brand/size rather
+  // than a store page - Search by Name never touches
+  // liquoroutletwinecellars.com, only the local WinePOS export. A miss
+  // (blocked, no match) comes back as untappdError, same as those two tabs,
+  // rather than failing the pick outright - the export's own fields are
+  // still good enough to queue a talker from.
+  //
+  // Shares the SKU-keyed product cache /api/sku-lookup and /api/upc-lookup
+  // use, same category-aware freshness check, so a beer already resolved by
+  // one lookup method skips a redundant Untappd search from any of the
+  // others - and a Search by Name pick with no SKU in the export just skips
+  // caching rather than failing.
+  app.post('/api/name-search-select', async (req, res) => {
+    const { product, category } = req.body || {};
+    if (!product || typeof product !== 'object' || !product.title) {
+      return res.status(400).json({ error: 'A product is required.' });
+    }
+    const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
+    if (normalizedCategory !== 'beer') {
+      return res.json({ ...product, category: normalizedCategory });
+    }
+
+    const sku = typeof product.sku === 'string' ? product.sku.trim() : '';
+    const cached = sku ? getCachedProduct({ keyType: 'sku', key: sku }) : null;
+    if (isFresh(cached) && cached.data.category === 'beer') {
+      return res.json({ ...cached.data, fromCache: true });
+    }
+
+    try {
+      const data = { ...(await enrichBeerFromUntappd(product)), category: 'beer' };
+      if (sku) upsertCachedProduct({ keyType: 'sku', key: sku, source: 'name-search', data });
+      res.json(data);
+    } catch (err) {
+      if (cached) return res.json({ ...cached.data, fromCache: true, stale: true });
+      res.status(502).json({ error: err.message || 'Could not search Untappd for that beer.' });
     }
   });
 

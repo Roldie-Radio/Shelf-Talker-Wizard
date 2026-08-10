@@ -8,6 +8,17 @@
   // THEME_KEY/data-theme above: this picks the UI's own accent colour, not
   // light vs dark.
   const ACCENT_KEY = 'shelfTalkerAccent.v1';
+  // Same, for Settings -> Menu Bar Size (see applyMenuSize below). Must
+  // match the key the inline pre-paint script in index.html reads.
+  const MENU_SIZE_KEY = 'shelfTalkerMenuSize.v1';
+  const MENU_SIZES = ['compact', 'comfortable', 'large', 'xlarge'];
+  // Settings -> Experimental Features -> Bourbon Shelf Talkers: gates the
+  // Nose/Palate/Finish fields and the Distiller.com tasting-notes source in
+  // one switch (see applyExperimentalBourbon below). Off by default -
+  // Distiller's own scraper is unconfirmed against the live site (see
+  // productImport.js), so this stays opt-in rather than showing up for
+  // every store the moment it ships.
+  const EXPERIMENTAL_BOURBON_KEY = 'shelfTalkerExperimentalBourbon.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -22,6 +33,17 @@
   // entries are newer than what this PC last saw, so nothing here needs to
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
+    {
+      version: '3.0.0',
+      items: [
+        'Search by Name: picking a Beer result now also searches Untappd for the brewery, style, ABV, IBU, and rating, same as SKU Lookup and Scan UPC already do for beer.',
+        'New (experimental, off by default): Nose / Palate / Finish fields for Wine/Spirits Shelf Talkers, printed under the description, plus a Distiller.com source in "Find Tasting Notes" that fills them in automatically. Turn it on in Settings → Experimental Features → Bourbon Shelf Talkers.',
+        'Desktop app: the File / Tools / Help / Advanced menu is now built into the app itself, with a new Menu Bar Size setting (Compact/Comfortable/Large/Extra Large) under Tools → Settings.',
+        'New: Find Queue… (Ctrl+F, on the Tools menu) jumps straight to a talker in a long queue by title, description, SKU, or size.',
+        'Settings gained a new Experimental Features section — home to opt-in features like Bourbon Shelf Talkers above.',
+        "The What's New history's See Previous Updates button now toggles open and closed in place, instead of just expanding.",
+      ],
+    },
     {
       version: '2.5.0',
       items: [
@@ -52,6 +74,255 @@
       items: [
         'The Search tab is consolidated: Search by Name, SKU Lookup, and Scan UPC now share one Type / Product Type picker instead of asking separately.',
         '"Scan UPC" dropped its Beta label.',
+      ],
+    },
+    {
+      version: '2.3.3',
+      items: [
+        'The WinePOS export file used by Scan UPC and Search by Name now auto-syncs to other store PCs on the network, so every register stays current.',
+      ],
+    },
+    {
+      version: '2.3.2',
+      items: [
+        'Beer talkers no longer show "Not Specified" as Brand/title text; the Untappd Rating now reads "N/A" instead of being hidden when a beer has no numeric rating.',
+      ],
+    },
+    {
+      version: '2.3.1',
+      items: [
+        "Scan UPC (Beer) now searches Untappd using the store's own cleaned-up product title instead of the export file's abbreviated one, and no longer auto-adds a scan to the queue when something failed to resolve.",
+        'Fixed the tab bar wrapping mid-word once Search by Name made five tabs share the panel.',
+      ],
+    },
+    {
+      version: '2.3.0',
+      items: [
+        'New: a "Search by Name" tab looks up a product by partial title from the local WinePOS export file, no network request needed.',
+        'Scan UPC (Beer) now pulls live pricing from the store website and enrichment (brewery/style/ABV/IBU/rating) from Untappd, and a successful scan is added to the queue automatically so scanning can go item to item.',
+      ],
+    },
+    {
+      version: '2.2.12',
+      items: [
+        "Scan UPC now pulls Wine/Spirits descriptions from the store website instead of relying on the export file's own note.",
+        'Marking a PC as the main store PC now lets other PCs on the network see it (Advanced menu → Server PC).',
+      ],
+    },
+    {
+      version: '2.2.11',
+      items: [
+        'Looking up a SKU as Beer now always re-runs the Untappd search, even when that SKU was recently cached under Wine/Spirits.',
+      ],
+    },
+    {
+      version: '2.2.10',
+      items: [
+        'The Add to Queue button now sits next to Look Up SKU / Look Up UPC instead of below the status message.',
+      ],
+    },
+    {
+      version: '2.2.9',
+      items: [
+        'The CLOSEOUT!! badge is bolder: switched to Arial Black at weight 900.',
+      ],
+    },
+    {
+      version: '2.2.8',
+      items: [
+        'New: a Ratings Font Size control, for wine ratings on Shelf Talkers and Large Display Signs.',
+      ],
+    },
+    {
+      version: '2.2.7',
+      items: [
+        'Fixed three Scan UPC bugs found against a real WinePOS export file: an unrecognized UPC column name, missing leading zeros on UPC values, and a stray character from the file\'s byte-order mark.',
+      ],
+    },
+    {
+      version: '2.2.6',
+      items: [
+        "Scan UPC's export file settings moved from an inline box on the tab to Advanced menu → Export File Settings.",
+      ],
+    },
+    {
+      version: '2.2.5',
+      items: [
+        'New: an Advanced menu (desktop app) with View Export File, View Database, and Server PC, for confirming Scan UPC setup and store data without leaving the app.',
+      ],
+    },
+    {
+      version: '2.2.4',
+      items: [
+        'New: Print History, a permanent searchable record of every talker actually printed, plus a local product cache that speeds up repeat SKU/UPC lookups.',
+      ],
+    },
+    {
+      version: '2.2.3',
+      items: [
+        'New: a font size control for CLOSEOUT!! badges, matching the existing Title/Description/Super Sale Price controls.',
+      ],
+    },
+    {
+      version: '2.2.2',
+      items: [
+        'Scan UPC is marked Beta.',
+      ],
+    },
+    {
+      version: '2.2.1',
+      items: [
+        'New: a Scan UPC tab looks products up offline by scanning the manufacturer UPC against a local WinePOS export file.',
+      ],
+    },
+    {
+      version: '2.2.0',
+      items: [
+        'Cleaned up scraped beer titles: strips "Not Specified" placeholder text and abbreviated pack counts (e.g. "4pk") that were leaking into the Beer Name field.',
+      ],
+    },
+    {
+      version: '2.1.14',
+      items: [
+        'Beer Shelf Talkers now show the Store SKU in the footer band.',
+        'SKU Lookup now pulls Pack Size (e.g. "4-Pack") separately from Size when the store page lists them apart.',
+      ],
+    },
+    {
+      version: '2.1.13',
+      items: [
+        'Quarter Size Shelf Talkers simplified to Title/Size/Price only - the smaller format was too crowded for vintage, ratings, beer info, and badges to stay legible.',
+        'Selected text in the Live Preview (desktop app) can now be copied via right-click.',
+        'New: an Add to Queue button directly on the SKU Lookup tab, no need to switch to Edit Talker first.',
+      ],
+    },
+    {
+      version: '2.1.12',
+      items: [
+        'Halved the gap between the header band and the product title on Shelf Talkers.',
+      ],
+    },
+    {
+      version: '2.1.11',
+      items: [
+        'New: a Super Sale Price!!! font size box, matching Title/Description.',
+      ],
+    },
+    {
+      version: '2.1.10',
+      items: [
+        'Super Sale Price text pushed further to fill its available width.',
+      ],
+    },
+    {
+      version: '2.1.9',
+      items: [
+        'New: a Title Auto Size toggle; finalized Super Sale Price sizing (larger, no more overlap with the price below).',
+      ],
+    },
+    {
+      version: '2.1.8',
+      items: [
+        'New: an Auto Size toggle for description text (off by default).',
+      ],
+    },
+    {
+      version: '2.1.7',
+      items: [
+        'Tightened edge margins about 20% on Shelf Talkers and Display Signs, freeing up more room for content.',
+      ],
+    },
+    {
+      version: '2.1.6',
+      items: [
+        'Description text no longer auto-scales; it now clips with an ellipsis instead, so the point size you set is always what prints.',
+      ],
+    },
+    {
+      version: '2.1.5',
+      items: [
+        'Enlarged the Super Sale Price!!! callout text and tightened the gap to the price below it.',
+      ],
+    },
+    {
+      version: '2.1.4',
+      items: [
+        'Dropped the redundant "United States" text from beer talker Location - domestic breweries already get their own flag/state badge.',
+      ],
+    },
+    {
+      version: '2.1.3',
+      items: [
+        'Tightened beer Shelf Talker spacing to give the description more room to grow.',
+      ],
+    },
+    {
+      version: '2.1.2',
+      items: [
+        "SKU Lookup: beer Description is now left blank when Untappd has no description for a match, instead of falling back to the store's generic blurb.",
+      ],
+    },
+    {
+      version: '2.1.1',
+      items: [
+        'Fixed SKU Lookup showing "Not Specified" in the Vintage field for non-vintage wines, and dropping the producer name from beer titles.',
+      ],
+    },
+    {
+      version: '2.1.0',
+      items: [
+        '"About the Shelf Talker" renamed to "Beer Talker Info", now shown with the purple theme in its preview.',
+      ],
+    },
+    {
+      version: '2.0.7',
+      items: [
+        'Fixed the automatic Untappd search for beer SKU lookups (a live 403 from a missing request header).',
+      ],
+    },
+    {
+      version: '2.0.6',
+      items: [
+        "Fixed the automatic Untappd search for beer SKU lookups, which had never actually worked - it now searches via Untappd's own API instead of a page that needs JavaScript to render results.",
+      ],
+    },
+    {
+      version: '2.0.5',
+      items: [
+        'SKU Lookup no longer auto-switches to Edit Talker, so staff can see and use the beer fallback options before moving on.',
+        'Fixed beer Location never getting filled in when pulling data from Untappd.',
+      ],
+    },
+    {
+      version: '2.0.4',
+      items: [
+        'New: a manual Untappd fallback for beer SKU lookups, for when the automatic search comes back empty.',
+      ],
+    },
+    {
+      version: '2.0.3',
+      items: [
+        'Beer SKU lookups now include the brewery name in the Untappd search, so short or common beer names are more likely to match.',
+      ],
+    },
+    {
+      version: '2.0.2',
+      items: [
+        'Beer SKU lookups now strip container size (e.g. "16OZ") out of the title, and Untappd search failures are shown instead of failing silently.',
+      ],
+    },
+    {
+      version: '2.0.1',
+      items: [
+        "Wine/Spirits SKU lookups now compose the producer name into the title and pull the vintage year, instead of just using the store page's title as-is.",
+      ],
+    },
+    {
+      version: '2.0.0',
+      items: [
+        'New: SKU Lookup replaces Bulk CSV Import - look up a product by the store\'s own SKU number to pull title/size/price (and, for beer, Untappd details) automatically.',
+        'New: Title Font Size and Description Font Size controls on Edit Talker, for both Shelf Talkers and Display Signs.',
+        'Widened the Beer Talker Info preview so the guide renders at full size.',
       ],
     },
   ];
@@ -128,6 +399,18 @@
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
   let currentCategory = 'wine'; // 'wine' | 'beer'
+
+  // Settings -> Experimental Features -> Bourbon Shelf Talkers (see
+  // EXPERIMENTAL_BOURBON_KEY above and applyExperimentalBourbon further
+  // down) - read once at load, then kept in sync with the checkbox from
+  // there on.
+  let experimentalBourbonEnabled = false;
+  try {
+    experimentalBourbonEnabled = localStorage.getItem(EXPERIMENTAL_BOURBON_KEY) === 'true';
+  } catch {
+    // Same as reviewers/queue below - an unavailable store just means this
+    // stays at its off-by-default value.
+  }
 
   let previewMode = 'single'; // 'single' | 'sheet'
   let sheetPage = 0;
@@ -232,9 +515,17 @@
     tastingNotesQueryLabel: document.getElementById('tastingNotesQueryLabel'),
     tastingNotesModalStatus: document.getElementById('tastingNotesModalStatus'),
     tastingNotesPreview: document.getElementById('tastingNotesPreview'),
+    tastingNotesFlavorPreview: document.getElementById('tastingNotesFlavorPreview'),
+    tastingNotesNosePreview: document.getElementById('tastingNotesNosePreview'),
+    tastingNotesPalatePreview: document.getElementById('tastingNotesPalatePreview'),
+    tastingNotesFinishPreview: document.getElementById('tastingNotesFinishPreview'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
+    flavorFields: document.getElementById('flavorFields'),
+    nose: document.getElementById('fNose'),
+    palate: document.getElementById('fPalate'),
+    finish: document.getElementById('fFinish'),
     awardsField: document.getElementById('awardsField'),
     awards: document.getElementById('fAwards'),
     awardsColor: document.getElementById('fAwardsColor'),
@@ -346,6 +637,13 @@
     clearQueueBtn: document.getElementById('clearQueueBtn'),
     saveQueueBtn: document.getElementById('saveQueueBtn'),
     queueItemMenu: document.getElementById('queueItemMenu'),
+
+    findQueueOverlay: document.getElementById('findQueueOverlay'),
+    findQueueInput: document.getElementById('findQueueInput'),
+    findQueueCount: document.getElementById('findQueueCount'),
+    findQueueResults: document.getElementById('findQueueResults'),
+    findQueueCloseBtn: document.getElementById('findQueueCloseBtn'),
+
     themeToggle: document.getElementById('themeToggle'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
@@ -415,6 +713,10 @@
     settingsCloseBtn: document.getElementById('settingsCloseBtn'),
     settingsCloseFooterBtn: document.getElementById('settingsCloseFooterBtn'),
     settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
+    settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
+    experimentalBourbonCheckbox: document.getElementById('experimentalBourbonCheckbox'),
+
+    menuBar: document.getElementById('menuBar'),
   };
 
   // ---------- Theme ----------
@@ -503,6 +805,77 @@
         // click, the choice just won't survive a restart.
       }
     });
+  });
+
+  // ---------- Menu Bar Size (Settings -> Menu Bar Size) ----------
+
+  // Drives --menubar-h/--menubar-fs in styles.css via [data-menu-size] on
+  // <html> - same before-first-paint handling as accent above (see the
+  // inline script in index.html), and the same "everything else is em
+  // units off the menu bar's own font-size" trick the menu-bar-size mockup
+  // this was built from used, so one attribute resizes the whole bar
+  // (labels, dropdowns, items) together.
+  function currentMenuSize() {
+    const attr = document.documentElement.getAttribute('data-menu-size');
+    return MENU_SIZES.includes(attr) ? attr : 'comfortable';
+  }
+
+  function applyMenuSize(size) {
+    const resolved = MENU_SIZES.includes(size) ? size : 'comfortable';
+    if (resolved === 'comfortable') document.documentElement.removeAttribute('data-menu-size');
+    else document.documentElement.setAttribute('data-menu-size', resolved);
+    els.settingsMenuSizeButtons.forEach((btn) => {
+      const isActive = btn.dataset.menuSize === resolved;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-checked', String(isActive));
+    });
+  }
+
+  els.settingsMenuSizeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = MENU_SIZES.includes(btn.dataset.menuSize) ? btn.dataset.menuSize : 'comfortable';
+      applyMenuSize(next);
+      try {
+        localStorage.setItem(MENU_SIZE_KEY, next);
+      } catch {
+        // Same as accent/theme/queue: an unavailable store shouldn't break
+        // the click, the choice just won't survive a restart.
+      }
+    });
+  });
+
+  // ---------- Experimental Features (Settings -> Bourbon Shelf Talkers) ----------
+
+  // A single switch for everything the bourbon/spirits work in this session
+  // added: the Nose/Palate/Finish fields (applyFormMode's flavorFields
+  // line) and the Distiller.com source in "Find Tasting Notes"
+  // (renderTastingNotesSourceOptions/runTastingNotesSearch below). Also
+  // published onto window.ShelfTalkerSettings so card.js - a separate
+  // script, sharing this page's global scope the same way it already
+  // shares window.ShelfTalkerLayout with layout.js - can gate printing
+  // Nose/Palate/Finish the instant this is switched off, even for a talker
+  // that already has that data from before. Nothing here is ever deleted:
+  // fillForm/readForm don't check this flag at all, so a hidden field's
+  // value round-trips through a save untouched, and switching the toggle
+  // back on immediately shows/prints it again.
+  window.ShelfTalkerSettings = window.ShelfTalkerSettings || {};
+
+  function applyExperimentalBourbon(enabled) {
+    experimentalBourbonEnabled = enabled;
+    window.ShelfTalkerSettings.experimentalBourbon = enabled;
+    els.experimentalBourbonCheckbox.checked = enabled;
+    applyFormMode();
+    renderTastingNotesSourceOptions();
+    if (previewMode === 'single') renderPreview();
+  }
+
+  els.experimentalBourbonCheckbox.addEventListener('change', () => {
+    applyExperimentalBourbon(els.experimentalBourbonCheckbox.checked);
+    try {
+      localStorage.setItem(EXPERIMENTAL_BOURBON_KEY, String(els.experimentalBourbonCheckbox.checked));
+    } catch {
+      // Same as theme/accent above - the choice just won't survive a restart.
+    }
   });
 
   // ---------- Tabs ----------
@@ -633,6 +1006,14 @@
     // showing the field for a sign would offer input with no visible
     // effect there.
     els.awardsField.hidden = isBeer || isSign;
+    // Same rule as Awards right above, and for the same reason - Nose/
+    // Palate/Finish only ever render onto the .card printout (see
+    // buildFlavorHtml in card.js), so a Display Sign would offer input with
+    // no visible effect. Also gated behind Settings -> Experimental
+    // Features -> Bourbon Shelf Talkers (see applyExperimentalBourbon) -
+    // off by default, so these fields stay out of the way until a store
+    // opts in.
+    els.flavorFields.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
     // The store never runs a Super Sale on beer, so the option isn't just
@@ -793,6 +1174,9 @@
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
+      nose: els.nose.value.trim(),
+      palate: els.palate.value.trim(),
+      finish: els.finish.value.trim(),
       sku: els.sku.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
@@ -838,6 +1222,9 @@
     renderRatingsList();
     els.awards.value = talker.awards || '';
     els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
+    els.nose.value = talker.nose || '';
+    els.palate.value = talker.palate || '';
+    els.finish.value = talker.finish || '';
     els.sku.value = talker.sku || '';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
@@ -1184,6 +1571,9 @@
       const item = document.createElement('div');
       const isExpanded = expandedQueueItemIds.has(talker.id);
       item.className = `queue-item${isExpanded ? ' is-expanded' : ''}`;
+      // Lets Find Queue (see jumpToQueueItem below) locate this row again by
+      // id after a re-render, to scroll to and flash it.
+      item.dataset.id = talker.id;
       const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
         ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
         : formatMoney(talker.price);
@@ -1347,8 +1737,9 @@
   // separate from the automatic localStorage persistence (see saveQueue),
   // for moving a queue to another computer or keeping a copy of a batch
   // outside the browser. Used by both the in-page Save Queue button (browser
-  // download, below) and the Electron File menu's "Save Queue" (native save
-  // dialog, see onSaveRequested below).
+  // download, below) and the menu bar's own File > Save Queue (see
+  // runMenuAction's 'save-queue' case), which uses the native save dialog
+  // instead when running in Electron.
   function buildQueueExportPayload() {
     return {
       app: 'Shelf Talker Wizard',
@@ -1372,15 +1763,10 @@
 
   els.saveQueueBtn.addEventListener('click', saveQueueToFile);
 
-  // Electron's File menu "Open Queue…"/"Save Queue" (see electron/main.js) -
-  // absent entirely outside Electron, where window.shelfTalker is never
-  // injected (see preload.js), same guard pattern as print() above.
-  if (window.shelfTalker && window.shelfTalker.onSaveRequested) {
-    window.shelfTalker.onSaveRequested(() => {
-      if (queue.length === 0) return;
-      window.shelfTalker.saveQueueToFile(buildQueueExportPayload());
-    });
-  }
+  // File > Open Queue… (see runMenuAction's 'open-queue' case) asks the main
+  // process to show a native "open file" dialog (see electron/main.js);
+  // once it's read and parsed the chosen file, it hands the queue back here
+  // the same way, regardless of what triggered the request.
   if (window.shelfTalker && window.shelfTalker.onQueueOpened) {
     window.shelfTalker.onQueueOpened((openedQueue) => {
       if (queue.length > 0 && !confirm('Opening a queue file will replace your current queue. Continue?')) {
@@ -1393,6 +1779,193 @@
       refreshPreview();
     });
   }
+
+  // ---------- Find Queue ----------
+
+  // Tools menu "Find Queue…" (see electron/main.js) - a quick way to locate
+  // one talker in a long queue without scrolling the whole panel by hand.
+  // Reachable via Tools > Find Queue… in the menu bar (see runMenuAction's
+  // 'find-queue' case) in both Electron and a plain browser tab; its
+  // Ctrl+F accelerator only fires inside Electron, though - see the menu
+  // bar section's note on why accelerators are gated that way.
+  //
+  // Matches title, description, SKU, and size - broader than History's own
+  // search (title/SKU only, see server/db.js), since this runs client-side
+  // against whatever's already in the small in-memory queue rather than a
+  // LIKE query against the whole printed-talkers table.
+  let findQueueMatches = [];
+  let findQueueActiveIndex = -1;
+
+  function findQueueMatchesFor(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return queue.slice();
+    return queue.filter((talker) => [talker.title, talker.description, talker.sku, talker.size]
+      .some((field) => field && String(field).toLowerCase().includes(q)));
+  }
+
+  // Wraps the first case-insensitive match of `query` in `text` with <mark>,
+  // HTML-escaping everything else - same escape-then-wrap approach as the
+  // rest of this file's innerHTML building (see renderQueue above). Returns
+  // the escaped text untouched (no <mark>) when there's no match, so it's
+  // safe to call unconditionally on fields that might not be the hit.
+  function highlightMatch(text, query) {
+    const safe = escapeHtml(text || '');
+    const q = query.trim();
+    if (!q) return safe;
+    const idx = (text || '').toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return safe;
+    const before = escapeHtml(text.slice(0, idx));
+    const hit = escapeHtml(text.slice(idx, idx + q.length));
+    const after = escapeHtml(text.slice(idx + q.length));
+    return `${before}<mark>${hit}</mark>${after}`;
+  }
+
+  // Same idea as highlightMatch, but for a field that isn't otherwise shown
+  // in the result row (description, SKU) - trims to a short window around
+  // the hit with an ellipsis on either truncated side, rather than dumping
+  // the whole field in. Returns null when `text` doesn't contain `query`,
+  // so callers can tell "no snippet" apart from "matched at position 0".
+  function snippetHit(text, query, radius = 30) {
+    const str = text || '';
+    const q = query.trim();
+    const idx = str.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return null;
+    const start = Math.max(0, idx - radius);
+    const end = Math.min(str.length, idx + q.length + radius);
+    const before = (start > 0 ? '&hellip;' : '') + escapeHtml(str.slice(start, idx));
+    const hit = escapeHtml(str.slice(idx, idx + q.length));
+    const after = escapeHtml(str.slice(idx + q.length, end)) + (end < str.length ? '&hellip;' : '');
+    return `${before}<mark>${hit}</mark>${after}`;
+  }
+
+  function renderFindQueueResults(query) {
+    findQueueMatches = findQueueMatchesFor(query);
+    findQueueActiveIndex = findQueueMatches.length ? 0 : -1;
+    const q = query.trim();
+    els.findQueueCount.textContent = q ? `${findQueueMatches.length} of ${queue.length}` : '';
+
+    if (!findQueueMatches.length) {
+      els.findQueueResults.innerHTML = q
+        ? `<p class="find-modal__empty">No matches for &ldquo;${escapeHtml(q)}&rdquo;.</p>`
+        : '<p class="find-modal__empty">No shelf talkers in the queue yet.</p>';
+      els.findQueueInput.removeAttribute('aria-activedescendant');
+      return;
+    }
+
+    els.findQueueResults.innerHTML = findQueueMatches.map((talker, i) => {
+      const priceLabel = talker.salePrice && Number(talker.salePrice) > 0
+        ? `${formatMoney(talker.salePrice)} (was ${formatMoney(talker.price)})`
+        : formatMoney(talker.price);
+      const metaParts = [];
+      if (talker.size) metaParts.push(highlightMatch(talker.size, q));
+      metaParts.push(escapeHtml(priceLabel));
+
+      // Title and size are always visible, so highlighting a hit in either
+      // is enough to show why a result matched. Description and SKU aren't
+      // otherwise shown at all - without this, a result matching only on
+      // (say) a beer's description would show up with nothing visibly
+      // matching anywhere in the row. Checked in this order since it's the
+      // order fields are shown top-to-bottom.
+      const visibleHasHit = q && [talker.title, talker.size]
+        .some((f) => f && f.toLowerCase().includes(q.toLowerCase()));
+      let hitLine = '';
+      if (q && !visibleHasHit) {
+        const descHit = snippetHit(talker.description, q);
+        const skuHit = talker.sku && talker.sku.toLowerCase().includes(q.toLowerCase())
+          ? `SKU ${highlightMatch(talker.sku, q)}`
+          : null;
+        const shown = descHit || skuHit;
+        if (shown) hitLine = `<div class="find-modal__result-hit">${shown}</div>`;
+      }
+
+      return `
+        <div
+          class="find-modal__result${i === findQueueActiveIndex ? ' is-active' : ''}"
+          id="findQueueResult-${i}"
+          role="option"
+          aria-selected="${i === findQueueActiveIndex}"
+          data-id="${talker.id}"
+        >
+          <div class="queue-item__swatch" data-theme="${talker.theme}"></div>
+          <div class="find-modal__result-body">
+            <div class="find-modal__result-title">${highlightMatch(talker.title || 'Untitled', q)}</div>
+            <div class="find-modal__result-meta">${metaParts.join(' &middot; ')}</div>
+            ${hitLine}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    updateFindQueueActiveDescendant();
+    els.findQueueResults.querySelectorAll('.find-modal__result').forEach((el) => {
+      el.addEventListener('mouseenter', () => {
+        findQueueActiveIndex = findQueueMatches.findIndex((t) => t.id === el.dataset.id);
+        renderFindQueueActiveState();
+      });
+      el.addEventListener('click', () => jumpToQueueItem(el.dataset.id));
+    });
+  }
+
+  function renderFindQueueActiveState() {
+    els.findQueueResults.querySelectorAll('.find-modal__result').forEach((el, i) => {
+      const isActive = i === findQueueActiveIndex;
+      el.classList.toggle('is-active', isActive);
+      el.setAttribute('aria-selected', String(isActive));
+    });
+    updateFindQueueActiveDescendant();
+  }
+
+  function updateFindQueueActiveDescendant() {
+    if (findQueueActiveIndex === -1) {
+      els.findQueueInput.removeAttribute('aria-activedescendant');
+    } else {
+      els.findQueueInput.setAttribute('aria-activedescendant', `findQueueResult-${findQueueActiveIndex}`);
+      els.findQueueResults.querySelector(`#findQueueResult-${findQueueActiveIndex}`)
+        ?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function moveFindQueueActive(delta) {
+    if (!findQueueMatches.length) return;
+    findQueueActiveIndex = (findQueueActiveIndex + delta + findQueueMatches.length) % findQueueMatches.length;
+    renderFindQueueActiveState();
+  }
+
+  // Closes the modal, scrolls the matching row into view in the real Queue
+  // panel, and flashes it - same "which one did it mean" feedback as the
+  // Find Queue mockup this was built from.
+  function jumpToQueueItem(id) {
+    findQueueModal.close();
+    const row = els.queueGrid.querySelector(`[data-id="${CSS.escape(id)}"]`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    row.classList.add('is-find-target', 'is-find-flash');
+    setTimeout(() => row.classList.remove('is-find-target', 'is-find-flash'), 1200);
+  }
+
+  const findQueueModal = createModal({
+    overlay: els.findQueueOverlay,
+    closeBtns: [els.findQueueCloseBtn],
+    onOpen: () => {
+      els.findQueueInput.value = '';
+      renderFindQueueResults('');
+    },
+    onClose: () => { els.findQueueResults.innerHTML = ''; },
+  });
+
+  els.findQueueInput.addEventListener('input', () => renderFindQueueResults(els.findQueueInput.value));
+  els.findQueueInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveFindQueueActive(1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveFindQueueActive(-1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (findQueueActiveIndex !== -1) jumpToQueueItem(findQueueMatches[findQueueActiveIndex].id);
+    }
+  });
 
   els.cancelEditBtn.addEventListener('click', resetForm);
   els.clearFormBtn.addEventListener('click', resetForm);
@@ -1630,15 +2203,30 @@
   // every provider in order, same as before this dialog existed.
   const ANY_TASTING_NOTES_SOURCE = 'Any source (recommended)';
   let tastingNotesSourceNames = [];
+  // Which of the above are gated behind Settings -> Experimental Features ->
+  // Bourbon Shelf Talkers (Distiller, today - see the server's own
+  // TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES) - read from the server rather
+  // than hardcoded, same reasoning as tastingNotesSourceNames itself below.
+  let tastingNotesExperimentalSourceNames = [];
   let tastingNotesSourcesLoaded = false;
 
   function renderTastingNotesSourceOptions() {
     const current = els.tastingNotesSourceSelect.value;
-    const options = [ANY_TASTING_NOTES_SOURCE, ...tastingNotesSourceNames];
+    // Experimental sources (Distiller) only show up in the dropdown once
+    // the Settings toggle is on - the server enforces this too (see
+    // findTastingNotes in productImport.js), this is just keeping staff
+    // from picking an option that would immediately error.
+    const visibleNames = experimentalBourbonEnabled
+      ? tastingNotesSourceNames
+      : tastingNotesSourceNames.filter((name) => !tastingNotesExperimentalSourceNames.includes(name));
+    const options = [ANY_TASTING_NOTES_SOURCE, ...visibleNames];
     els.tastingNotesSourceSelect.innerHTML = options
       .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
       .join('');
-    if (options.includes(current)) els.tastingNotesSourceSelect.value = current;
+    // A source that just got hidden (toggle switched off while it was
+    // selected) falls back to "Any source" rather than leaving the select
+    // showing a value with no matching <option>.
+    els.tastingNotesSourceSelect.value = options.includes(current) ? current : ANY_TASTING_NOTES_SOURCE;
   }
 
   // Fetched once per page load rather than hardcoded, so a provider added to
@@ -1651,11 +2239,31 @@
       const resp = await fetch('/api/tasting-notes/sources');
       const data = await resp.json();
       if (resp.ok && Array.isArray(data.sources)) tastingNotesSourceNames = data.sources;
+      if (resp.ok && Array.isArray(data.experimental)) tastingNotesExperimentalSourceNames = data.experimental;
     } catch {
       // Fall through with "Any source" only - the search itself still tries
       // every provider server-side regardless of whether this list loaded.
     }
     renderTastingNotesSourceOptions();
+  }
+
+  // Every field this dialog can fill, paired with the target form field it
+  // writes to on Confirm (see els.tastingNotesConfirmBtn's handler below).
+  // Wine.com/Vivino only ever return `description`; Distiller.com (the one
+  // structured source - see TASTING_NOTE_PROVIDERS in productImport.js)
+  // returns nose/palate/finish instead, and sometimes a plain description
+  // too (whichever fallback its own product page happened to expose) - see
+  // findTastingNotes. Listed once here so search, reset, and the confirm
+  // enable/disable check all walk the same four instead of drifting.
+  const TASTING_NOTES_FIELDS = [
+    { preview: 'tastingNotesPreview', target: 'description', max: 600 },
+    { preview: 'tastingNotesNosePreview', target: 'nose', max: 200 },
+    { preview: 'tastingNotesPalatePreview', target: 'palate', max: 200 },
+    { preview: 'tastingNotesFinishPreview', target: 'finish', max: 200 },
+  ];
+
+  function updateTastingNotesConfirmState() {
+    els.tastingNotesConfirmBtn.disabled = !TASTING_NOTES_FIELDS.some((f) => els[f.preview].value.trim());
   }
 
   async function runTastingNotesSearch() {
@@ -1675,16 +2283,24 @@
       const resp = await fetch('/api/tasting-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, vintage, source }),
+        body: JSON.stringify({ title, vintage, source, allowExperimental: experimentalBourbonEnabled }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not find tasting notes.');
 
-      // Respects the field's own maxlength, which only guards user typing,
+      // Respects each field's own maxlength, which only guards user typing,
       // not a value assigned from here.
       els.tastingNotesPreview.value = (data.description || '').slice(0, 600);
+      els.tastingNotesNosePreview.value = (data.nose || '').slice(0, 200);
+      els.tastingNotesPalatePreview.value = (data.palate || '').slice(0, 200);
+      els.tastingNotesFinishPreview.value = (data.finish || '').slice(0, 200);
+      // Only reveal the Nose/Palate/Finish rows when this result actually
+      // has at least one - keeps a plain Wine.com/Vivino description result
+      // looking exactly like it always has, no empty spirits-only fields
+      // tacked on.
+      els.tastingNotesFlavorPreview.hidden = !(data.nose || data.palate || data.finish);
       els.tastingNotesModalStatus.textContent = `Found via ${data.sourceName || source || 'the web'}.`;
-      els.tastingNotesConfirmBtn.disabled = !els.tastingNotesPreview.value.trim();
+      updateTastingNotesConfirmState();
     } catch (err) {
       els.tastingNotesModalStatus.textContent = err.message || 'Something went wrong finding tasting notes.';
     } finally {
@@ -1704,7 +2320,8 @@
       // "...Cabernet Sauvignon 2025" plus a separate Vintage of "2022").
       const showVintage = vintage && !/\b\d{4}\b/.test(title);
       els.tastingNotesQueryLabel.textContent = `Searching for: ${title}${showVintage ? ` ${vintage}` : ''}`;
-      els.tastingNotesPreview.value = '';
+      TASTING_NOTES_FIELDS.forEach((f) => { els[f.preview].value = ''; });
+      els.tastingNotesFlavorPreview.hidden = true;
       els.tastingNotesModalStatus.textContent = '';
       els.tastingNotesConfirmBtn.disabled = true;
       renderTastingNotesSourceOptions();
@@ -1735,18 +2352,24 @@
     els.tastingNotesModalStatus.textContent = 'Click "Search Again" to search this source.';
   });
 
-  els.tastingNotesPreview.addEventListener('input', () => {
-    els.tastingNotesConfirmBtn.disabled = !els.tastingNotesPreview.value.trim();
+  TASTING_NOTES_FIELDS.forEach((f) => {
+    els[f.preview].addEventListener('input', updateTastingNotesConfirmState);
   });
 
   els.tastingNotesConfirmBtn.addEventListener('click', () => {
-    const text = els.tastingNotesPreview.value.trim();
-    if (!text) return;
-    const existing = els.description.value.trim();
-    if (existing && existing !== text && !confirm('Replace the current description with this?')) {
-      return;
-    }
-    els.description.value = text.slice(0, 600);
+    const updates = TASTING_NOTES_FIELDS
+      .map((f) => ({ el: els[f.target], value: els[f.preview].value.trim(), max: f.max }))
+      .filter((u) => u.value);
+    if (!updates.length) return;
+    // One combined confirmation covers every field this would overwrite,
+    // rather than a separate popup per field (description, then nose, then
+    // palate...) for a single Distiller result.
+    const overwriting = updates.some((u) => {
+      const existing = u.el.value.trim();
+      return existing && existing !== u.value;
+    });
+    if (overwriting && !confirm('Replace the current tasting notes with these?')) return;
+    updates.forEach((u) => { u.el.value = u.value.slice(0, u.max); });
     tastingNotesModal.close();
     if (previewMode === 'single') renderPreview();
   });
@@ -2167,6 +2790,15 @@
   // tab bar, every keystroke fires its own request.
   let nameSearchAbortController = null;
   let nameSearchDebounce;
+  // Bumped on every pick (see selectNameSearchProduct) so a slow
+  // /api/name-search-select response for an earlier pick can't land after a
+  // faster one for whatever staff picked next and clobber it - same
+  // "newest wins" guard nameSearchAbortController gives the ranked list
+  // above, but that AbortController is about to be reused for a fresh
+  // keystroke search the moment a result's clicked (see els.nameSearchInput's
+  // 'input' listener clearing the prior selection), so this pick's own
+  // in-flight Untappd request needs a guard that isn't tied to it.
+  let nameSearchSelectToken = 0;
 
   // Below this many characters, a search isn't run at all - a 1-character
   // query against a store's full inventory would return a huge, mostly
@@ -2296,7 +2928,18 @@
     if (isBeer) {
       Object.assign(fields, {
         sku: product.sku,
-        brewery: product.brand,
+        // Once /api/name-search-select's Untappd step (see
+        // selectNameSearchProduct below) comes back, product.brewery is
+        // Untappd's own brewery name - falls back to the export's own Brand
+        // column (same as before that step existed) whenever Untappd didn't
+        // have one, or hasn't answered yet.
+        brewery: product.brewery || product.brand,
+        location: product.location,
+        style: product.style,
+        abv: product.abv,
+        ibu: product.ibu,
+        untappdRating: product.untappdRating,
+        untappdRatingCount: product.untappdRatingCount,
       });
     } else {
       fields.vintage = product.vintage;
@@ -2378,18 +3021,32 @@
   }
 
   function clearNameSearchSelection() {
+    // Bumped so a still-in-flight /api/name-search-select response for the
+    // pick being cleared can't land afterward and silently repopulate the
+    // form/status line out from under whatever staff do next (see
+    // selectNameSearchProduct's own token check).
+    nameSearchSelectToken++;
     nameSearchSelectedProduct = null;
     nameSearchPriceMode = 'unit';
     els.nameSearchSaveBtn.disabled = true;
     renderNameSearchSelected();
   }
 
-  function selectNameSearchProduct(product) {
+  // Picking a result fills the form immediately from the export's own
+  // columns (title/size/price/etc - no network needed for those), then, for
+  // beer only, kicks off a best-effort Untappd search in the background (see
+  // /api/name-search-select in server/index.js) for the brewery/location/
+  // style/ABV/IBU/rating the export file doesn't carry - the same
+  // enrichment step SKU Lookup and Scan UPC already run for beer, just
+  // reached from a picked export row instead of a typed SKU or scanned UPC.
+  // Wine/Spirits has nothing further to fetch (see applyNameSearchProduct's
+  // note), so it's done the moment the export data lands.
+  async function selectNameSearchProduct(product) {
+    const myToken = ++nameSearchSelectToken;
     nameSearchSelectedProduct = product;
     els.nameSearchInput.value = product.title;
     closeNameSearchResults();
     els.nameSearchSaveBtn.disabled = false;
-    els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
     const isBeer = currentCategory === 'beer';
     // Beer defaults to Pack Price whenever the export has one to offer -
     // see priceChoiceHtml's note. Anything else (no pack price, or not
@@ -2397,6 +3054,41 @@
     nameSearchPriceMode = isBeer && productHasPackPrice(product) ? 'pack' : 'unit';
     applyNameSearchProduct(product, isBeer, nameSearchPriceMode);
     renderNameSearchSelected();
+
+    if (!isBeer) {
+      els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+      return;
+    }
+
+    els.nameSearchSpinner.hidden = false;
+    els.nameSearchSaveBtn.disabled = true;
+    els.nameSearchStatus.textContent = 'Found it! Searching Untappd...';
+    try {
+      const resp = await fetch('/api/name-search-select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, category: 'beer' }),
+      });
+      const data = await resp.json();
+      // Superseded by a newer pick while this was in flight - leave
+      // whatever that pick already put on the form/status line alone.
+      if (myToken !== nameSearchSelectToken) return;
+      if (!resp.ok) throw new Error(data.error || 'Could not search Untappd for that beer.');
+      nameSearchSelectedProduct = data;
+      applyNameSearchProduct(data, true, nameSearchPriceMode);
+      renderNameSearchSelected();
+      els.nameSearchStatus.textContent = data.untappdError
+        ? `Found it! Untappd: ${data.untappdError}`
+        : 'Found it! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      if (myToken !== nameSearchSelectToken) return;
+      els.nameSearchStatus.textContent = `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`;
+    } finally {
+      if (myToken === nameSearchSelectToken) {
+        els.nameSearchSpinner.hidden = true;
+        els.nameSearchSaveBtn.disabled = false;
+      }
+    }
   }
 
   els.nameSearchInput.addEventListener('input', () => {
@@ -2909,13 +3601,9 @@
     printGuide();
   });
 
-  // Tools menu "Beer Talker Info" (see main.js) - the only way to open this
-  // now that it's been moved out of the app bar, same onShowXRequested
-  // pattern as Help/What's New elsewhere in this file. Electron-only: there
-  // is no plain-browser fallback trigger for it anymore.
-  if (window.shelfTalker && window.shelfTalker.onShowGuideRequested) {
-    window.shelfTalker.onShowGuideRequested(() => guidePreviewModal.open());
-  }
+  // Reachable via Tools > Beer Talker Info in the menu bar (see
+  // runMenuAction's 'beer-talker-info' case) - no app-bar button of its
+  // own.
 
   // ---------- Help ----------
 
@@ -2934,22 +3622,15 @@
     document.querySelectorAll('[data-electron-only]').forEach((el) => { el.style.display = ''; });
   }
 
-  // The Electron Help menu's own "Help" item (see main.js) opens this same
-  // panel rather than a separate window - one help doc, reachable two ways.
-  if (window.shelfTalker && window.shelfTalker.onShowHelpRequested) {
-    window.shelfTalker.onShowHelpRequested(() => helpModal.open());
-  }
+  // Also reachable via Help > Help in the menu bar (see runMenuAction's
+  // 'help' case) - one help doc, reachable two ways.
 
   // ---------- What's New ----------
 
-  // Renders a list of WHATS_NEW_ENTRIES (see the top of this file) into the
-  // popup body - shared by the automatic launch check and the Electron Help
-  // menu's "What's New" item, which just show a different slice of the list
-  // (unseen-only vs. everything). "See Previous Updates" (below) only makes
-  // sense when there's older history not currently shown, so it hides
-  // itself once `entries` already covers the whole list.
+  // Renders a list of entries into the popup body. Internal - callers go
+  // through showWhatsNewEntries below, which also drives the "See Previous
+  // Updates" / "Hide Previous Updates" toggle button.
   function renderWhatsNewEntries(entries) {
-    els.whatsNewShowAllBtn.hidden = entries.length >= WHATS_NEW_ENTRIES.length;
     if (!entries.length) {
       els.whatsNewBody.innerHTML = '<p class="whats-new-empty">Nothing new to report yet.</p>';
       return;
@@ -2962,29 +3643,55 @@
     `).join('');
   }
 
+  // The "current" (non-expanded) slice of entries the popup was opened
+  // with - see checkWhatsNew below (unseen-only) and runMenuAction's
+  // 'whats-new' case (everything). Remembered so the "Hide Previous
+  // Updates" toggle has something to collapse back to.
+  let whatsNewBaseEntries = [];
+  let whatsNewExpanded = false;
+
+  // Shared by the automatic launch check and the menu bar's Help > What's
+  // New item, which just show a different slice of the list (unseen-only
+  // vs. everything). Resets the collapse toggle back to
+  // whatever `entries` is each time the popup is (re)opened with a fresh
+  // slice, so a previous expand doesn't leak into the next launch popup.
+  function showWhatsNewEntries(entries) {
+    whatsNewBaseEntries = entries;
+    whatsNewExpanded = false;
+    updateWhatsNewView();
+  }
+
+  // Renders whichever slice is currently selected (base vs. full history)
+  // and keeps the toggle button's visibility/label in sync with it. "See
+  // Previous Updates" only makes sense when there's older history not
+  // currently shown, so it hides itself once the base slice already covers
+  // the whole list; once expanded, the same button flips to "Hide Previous
+  // Updates" so the popup can collapse back to that base slice in place.
+  function updateWhatsNewView() {
+    renderWhatsNewEntries(whatsNewExpanded ? WHATS_NEW_ENTRIES : whatsNewBaseEntries);
+    els.whatsNewShowAllBtn.hidden = whatsNewBaseEntries.length >= WHATS_NEW_ENTRIES.length;
+    els.whatsNewShowAllBtn.textContent = whatsNewExpanded ? 'Hide Previous Updates' : 'See Previous Updates';
+  }
+
   const whatsNewModal = createModal({
     overlay: els.whatsNewOverlay,
     closeBtns: [els.whatsNewCloseBtn, els.whatsNewCloseFooterBtn],
   });
 
   // Lets someone looking at just the "since you last opened this" slice
-  // (see checkWhatsNew below) expand in place to the full history, without
-  // having to close the popup and reopen it from the app-bar button.
+  // (see checkWhatsNew below) expand in place to the full history, and
+  // collapse back to that slice again, without having to close the popup
+  // and reopen it from Help > What's New.
   els.whatsNewShowAllBtn.addEventListener('click', () => {
-    renderWhatsNewEntries(WHATS_NEW_ENTRIES);
+    whatsNewExpanded = !whatsNewExpanded;
+    updateWhatsNewView();
   });
 
-  // The Electron Help menu's own "What's New" item (see main.js) opens this
-  // popup with the full list, regardless of what this PC has already seen -
-  // unlike the automatic launch popup below, this is someone deliberately
-  // asking "what's changed lately", not a change notification. Same pairing
-  // as Help/onShowHelpRequested above.
-  if (window.shelfTalker && window.shelfTalker.onShowWhatsNewRequested) {
-    window.shelfTalker.onShowWhatsNewRequested(() => {
-      renderWhatsNewEntries(WHATS_NEW_ENTRIES);
-      whatsNewModal.open();
-    });
-  }
+  // Help > What's New in the menu bar (see runMenuAction's 'whats-new'
+  // case) opens this popup with the full list, regardless of what this PC
+  // has already seen - unlike the automatic launch popup below, this is
+  // someone deliberately asking "what's changed lately", not a change
+  // notification.
 
   // Breaks "2.4.10" > "2.4.9" ties correctly, unlike a plain string
   // compare - returns negative/zero/positive same as a normal comparator.
@@ -3004,8 +3711,8 @@
   // server) and compares it against the newest version this PC has already
   // shown a popup for. A PC that's never seen one only gets the latest
   // entry, not the entire history - staff opening the app for the first
-  // time don't need a changelog going back to 2.4.0, just the button to
-  // find one if they want it. Silently does nothing if the request fails or
+  // time don't need the full changelog, just the button to find one if
+  // they want it. Silently does nothing if the request fails or
   // localStorage is unavailable (private/locked-down browser profile) -
   // this is a nice-to-have, not something worth an error state over.
   async function checkWhatsNew() {
@@ -3034,7 +3741,7 @@
     try { localStorage.setItem(WHATS_NEW_SEEN_KEY, version); } catch { /* ignore */ }
     if (!entries.length) return;
 
-    renderWhatsNewEntries(entries);
+    showWhatsNewEntries(entries);
     whatsNewModal.open();
   }
 
@@ -3392,9 +4099,8 @@
     });
   }
 
-  if (window.shelfTalker && window.shelfTalker.onExportSettingsRequested) {
-    window.shelfTalker.onExportSettingsRequested(() => exportSettingsModal.open());
-  }
+  // Also reachable via Advanced > Export File Settings… in the menu bar
+  // (see runMenuAction's 'export-settings' case).
 
   const exportPreviewModal = createModal({
     overlay: els.exportPreviewOverlay,
@@ -3555,31 +4261,284 @@
     }
   });
 
-  // Electron-only: the Advanced menu items that open these three dialogs
-  // (see main.js) have no equivalent in the plain browser dev copy, so
-  // these listeners simply never fire there - same pattern as
-  // onShowHelpRequested above.
-  if (window.shelfTalker && window.shelfTalker.onViewExportRequested) {
-    window.shelfTalker.onViewExportRequested(() => exportPreviewModal.open());
-  }
-  if (window.shelfTalker && window.shelfTalker.onViewDatabaseRequested) {
-    window.shelfTalker.onViewDatabaseRequested(() => databasePreviewModal.open());
-  }
-  if (window.shelfTalker && window.shelfTalker.onServerPcRequested) {
-    window.shelfTalker.onServerPcRequested(() => serverPcModal.open());
-  }
+  // These three, and Settings below, are reachable via the menu bar's
+  // Advanced/Tools items (see runMenuAction's 'view-export'/'view-database'/
+  // 'server-pc'/'settings' cases) in both Electron and a plain browser tab -
+  // each panel's own content comes from the same-origin API either way.
 
-  // Tools -> Settings (Electron menu, see main.js). onOpen re-syncs the
-  // toggle buttons rather than relying on applyAccent's own initial call
-  // (below) to have kept them current - harmless either way, but this is
-  // the one place that has to be right every time the dialog opens.
+  // onOpen re-syncs the toggle buttons rather than relying on applyAccent's
+  // own initial call (below) to have kept them current - harmless either
+  // way, but this is the one place that has to be right every time the
+  // dialog opens.
   const settingsModal = createModal({
     overlay: els.settingsOverlay,
     closeBtns: [els.settingsCloseBtn, els.settingsCloseFooterBtn],
-    onOpen: () => applyAccent(currentAccent()),
+    onOpen: () => {
+      applyAccent(currentAccent());
+      applyMenuSize(currentMenuSize());
+      els.experimentalBourbonCheckbox.checked = experimentalBourbonEnabled;
+    },
   });
-  if (window.shelfTalker && window.shelfTalker.onShowSettingsRequested) {
-    window.shelfTalker.onShowSettingsRequested(() => settingsModal.open());
+
+  // ---------- Menu bar ----------
+  //
+  // Replaces Electron's native File/Tools/Help/Advanced menu (see
+  // electron/main.js) with our own, so its size is something Settings can
+  // actually control (see applyMenuSize above) instead of inheriting
+  // whatever Windows' own menu font/DPI setting happens to be. Renders in
+  // both Electron and a plain browser tab; items that need real OS access
+  // (native file dialogs, DevTools, checking for updates, the About
+  // dialog's app version) are marked [data-requires-electron] in
+  // index.html and disabled below when window.shelfTalker doesn't exist.
+  //
+  // Keyboard accelerators (Ctrl+O/S/F, Ctrl+Shift+I) are bound ONLY inside
+  // Electron - binding them unconditionally would hijack a plain browser
+  // tab's own Ctrl+F/Ctrl+S, exactly what Find Queue's own matching was
+  // already careful to avoid. Every accelerator-bound action is still
+  // reachable by clicking the menu regardless of context.
+
+  // Routes a clicked/activated menu item to its real behavior. Items that
+  // just open an in-page modal call it directly (no IPC needed at all -
+  // that's the whole point of owning the menu now); items needing native
+  // OS access go through window.shelfTalker (see preload.js), which is
+  // undefined outside Electron, so those quietly no-op there instead of
+  // throwing (the items are also visibly disabled - see initMenuBar).
+  function runMenuAction(action) {
+    switch (action) {
+      case 'open-queue':
+        window.shelfTalker?.openQueueFile();
+        break;
+      case 'save-queue':
+        if (queue.length === 0) return;
+        if (window.shelfTalker) window.shelfTalker.saveQueueToFile(buildQueueExportPayload());
+        else saveQueueToFile();
+        break;
+      case 'exit':
+        window.shelfTalker?.quitApp();
+        break;
+      case 'find-queue':
+        findQueueModal.open();
+        break;
+      case 'beer-talker-info':
+        guidePreviewModal.open();
+        break;
+      case 'settings':
+        settingsModal.open();
+        break;
+      case 'help':
+        helpModal.open();
+        break;
+      case 'whats-new':
+        showWhatsNewEntries(WHATS_NEW_ENTRIES);
+        whatsNewModal.open();
+        break;
+      case 'check-updates':
+        window.shelfTalker?.checkForUpdates();
+        break;
+      case 'about':
+        window.shelfTalker?.showAbout();
+        break;
+      case 'toggle-devtools':
+        window.shelfTalker?.toggleDevTools();
+        break;
+      case 'export-settings':
+        exportSettingsModal.open();
+        break;
+      case 'view-export':
+        exportPreviewModal.open();
+        break;
+      case 'view-database':
+        databasePreviewModal.open();
+        break;
+      case 'server-pc':
+        serverPcModal.open();
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Open/close, hover-to-switch, and full keyboard navigation for the menu
+  // bar - the same behavior Windows' native menu used to give for free
+  // (see the "what we'd own" side of the menu-bar-size conversation this
+  // was built from). Wrapped in its own IIFE purely to scope the handful
+  // of helper closures below without leaking them into the rest of the
+  // file.
+  (function initMenuBar() {
+    const bar = els.menuBar;
+    if (!bar) return;
+
+    const topItems = [...bar.querySelectorAll(':scope > .menubar__item')];
+
+    // Outside Electron, gray out (rather than hide) anything that needs
+    // real OS access - still visible, so someone testing the plain
+    // browser dev copy can see what the desktop app offers, but inert.
+    if (!window.shelfTalker) {
+      bar.querySelectorAll('[data-requires-electron]').forEach((el) => {
+        el.setAttribute('aria-disabled', 'true');
+        el.title = 'Only available in the desktop app';
+      });
+    }
+
+    function dropdownItemsOf(topItem) {
+      return [...topItem.querySelectorAll('.menubar__dropdown-item')];
+    }
+    function enabledDropdownItemsOf(topItem) {
+      return dropdownItemsOf(topItem).filter((el) => el.getAttribute('aria-disabled') !== 'true');
+    }
+
+    function closeAllMenus({ refocus = false } = {}) {
+      topItems.forEach((item) => {
+        delete item.dataset.justHoverOpened;
+        if (!item.classList.contains('is-open')) return;
+        item.classList.remove('is-open');
+        item.setAttribute('aria-expanded', 'false');
+        if (refocus) item.focus();
+      });
+    }
+
+    // Roving tabindex across the top-level items (File/Tools/Help/
+    // Advanced) - only one is ever a Tab stop at a time; arrow keys move
+    // it, same keyboard model as a real menu bar.
+    function setRovingFocus(target) {
+      topItems.forEach((item) => item.setAttribute('tabindex', item === target ? '0' : '-1'));
+      target.focus();
+    }
+
+    function openMenu(topItem, { focusFirst = false } = {}) {
+      closeAllMenus();
+      topItem.classList.add('is-open');
+      topItem.setAttribute('aria-expanded', 'true');
+      setRovingFocus(topItem);
+      if (focusFirst) enabledDropdownItemsOf(topItem)[0]?.focus();
+    }
+
+    function isAnyMenuOpen() {
+      return topItems.some((item) => item.classList.contains('is-open'));
+    }
+
+    function adjacentTopItem(current, delta) {
+      const idx = topItems.indexOf(current);
+      return topItems[(idx + delta + topItems.length) % topItems.length];
+    }
+
+    function activateDropdownItem(el) {
+      if (el.getAttribute('aria-disabled') === 'true') return;
+      closeAllMenus();
+      runMenuAction(el.dataset.action);
+    }
+
+    topItems.forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // A hover-switch (below) already opened this item a moment ago,
+        // as part of the same gesture that's now clicking it - without
+        // this check, the click's own toggle logic would see "already
+        // open" and immediately close what the hover just opened, which
+        // looks like the menu never responded to the click at all.
+        if (item.dataset.justHoverOpened) {
+          delete item.dataset.justHoverOpened;
+          return;
+        }
+        if (item.classList.contains('is-open')) closeAllMenus({ refocus: true });
+        else openMenu(item);
+      });
+      // Switches which menu is open on hover, but only once one is
+      // already open via a click - hovering the bar with nothing open
+      // shouldn't pop a menu open on its own, same as a real menu bar.
+      item.addEventListener('mouseenter', () => {
+        if (isAnyMenuOpen() && !item.classList.contains('is-open')) {
+          openMenu(item, { focusFirst: true });
+          item.dataset.justHoverOpened = '1';
+        }
+      });
+      item.addEventListener('mouseleave', () => { delete item.dataset.justHoverOpened; });
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const next = adjacentTopItem(item, e.key === 'ArrowRight' ? 1 : -1);
+          if (item.classList.contains('is-open')) openMenu(next, { focusFirst: true });
+          else setRovingFocus(next);
+        } else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openMenu(item, { focusFirst: true });
+        } else if (e.key === 'Escape' && item.classList.contains('is-open')) {
+          e.preventDefault();
+          closeAllMenus({ refocus: true });
+        }
+      });
+    });
+
+    bar.querySelectorAll('.menubar__dropdown-item').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activateDropdownItem(el);
+      });
+      el.addEventListener('mouseenter', () => el.focus());
+      el.addEventListener('keydown', (e) => {
+        // Without this, every key here would also reach the ancestor
+        // top-level item's own keydown listener (keydown bubbles, and a
+        // dropdown item is a descendant of its .menubar__item) - which
+        // has its own handling for the same keys and would immediately
+        // undo whatever this handler just did (e.g. ArrowDown moving
+        // focus to the next item, only for the top-level handler to reset
+        // it back to the first item a moment later).
+        e.stopPropagation();
+        const topItem = el.closest('.menubar__item');
+        const items = enabledDropdownItemsOf(topItem);
+        const idx = items.indexOf(el);
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          (items[idx + 1] || items[0])?.focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          (items[idx - 1] || items[items.length - 1])?.focus();
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          items[0]?.focus();
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          items[items.length - 1]?.focus();
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          openMenu(adjacentTopItem(topItem, e.key === 'ArrowRight' ? 1 : -1), { focusFirst: true });
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activateDropdownItem(el);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          closeAllMenus({ refocus: true });
+        }
+      });
+    });
+
+    document.addEventListener('click', () => closeAllMenus());
+    // A menu left open shouldn't trap Tab - once focus actually leaves the
+    // bar for good (not just moving from one of its own items to another),
+    // close everything so nothing is left showing.
+    bar.addEventListener('focusout', (e) => {
+      if (!bar.contains(e.relatedTarget)) closeAllMenus();
+    });
+  })();
+
+  if (window.shelfTalker) {
+    document.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'o') {
+        e.preventDefault();
+        runMenuAction('open-queue');
+      } else if (key === 's') {
+        e.preventDefault();
+        runMenuAction('save-queue');
+      } else if (key === 'f') {
+        e.preventDefault();
+        runMenuAction('find-queue');
+      } else if (e.shiftKey && key === 'i') {
+        e.preventDefault();
+        runMenuAction('toggle-devtools');
+      }
+    });
   }
 
   function triggerPrint() {
@@ -3601,7 +4560,9 @@
 
   applyTheme(currentTheme());
   applyAccent(currentAccent());
-  applyFormMode();
+  // Also runs applyFormMode() - see applyExperimentalBourbon's own comment
+  // above for why the two need to move together.
+  applyExperimentalBourbon(experimentalBourbonEnabled);
   applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();

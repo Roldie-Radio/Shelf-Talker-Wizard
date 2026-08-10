@@ -16,14 +16,23 @@ const path = require('node:path');
 const {
   parseBeerHtml, fetchBeerHtml, extractBeer, parseBreweryHtml, extractBreweryUrl,
   buildTastingNotesQuery, pickBestMatch, parseWineComSearchResults, parseWineComProductHtml,
-  wineComSearchUrl, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
+  wineComSearchUrl, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES, TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES,
   parseVivinoSearchResults, parseVivinoProductHtml, vivinoSearchUrl,
+  distillerSearchUrl, parseDistillerSearchResults, parseDistillerProductHtml,
+  extractFlavorNotes, selectTastingNotesContainer,
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore,
   algoliaSearchBeerCandidates, searchUntappd, composeProducerTitle, enrichBeerScanFromStore,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
+
+// Must come after the require('../server/productImport') above - that
+// module shims the global File class (see its own top-of-file comment)
+// before it requires cheerio itself, which is what lets cheerio's own
+// undici dependency load without crashing on Node 18. Requiring cheerio
+// here first would skip that shim and blow up instead.
+const cheerio = require('cheerio');
 
 function page({ head = '', body = '' } = {}) {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
@@ -1209,8 +1218,8 @@ test('findTastingNotes rejects immediately when there is no title to search with
   await assert.rejects(() => findTastingNotes({ title: '' }), /Enter a product title first\./);
 });
 
-test('TASTING_NOTE_PROVIDER_NAMES lists both providers - the Source dropdown in the Find Tasting Notes dialog reads straight from this', () => {
-  assert.deepEqual(TASTING_NOTE_PROVIDER_NAMES, ['Wine.com', 'Vivino']);
+test('TASTING_NOTE_PROVIDER_NAMES lists all three providers - the Source dropdown in the Find Tasting Notes dialog reads straight from this', () => {
+  assert.deepEqual(TASTING_NOTE_PROVIDER_NAMES, ['Wine.com', 'Vivino', 'Distiller']);
 });
 
 test('findTastingNotes with a matching source only searches that provider', async () => {
@@ -1239,6 +1248,203 @@ test('findTastingNotes rejects an unrecognized source without making any request
     }
   );
   assert.equal(calls, 0, 'an unrecognized source name should short-circuit before any fetch');
+});
+
+// ================================================================
+// Distiller - the third tasting-notes provider, and the only one that
+// returns Nose/Palate/Finish pre-split instead of one description blob
+// (see productImport.js's own note above parseDistillerProductHtml). Same
+// testing constraint as wine.com/Vivino above - no real fetch to
+// distiller.com is available from here.
+// ================================================================
+
+test('distillerSearchUrl encodes the query', () => {
+  assert.equal(distillerSearchUrl('Buffalo Trace Bourbon'), 'https://distiller.com/search?q=Buffalo%20Trace%20Bourbon');
+});
+
+test('parseDistillerSearchResults falls back to /spirits/ links when there is no ItemList JSON-LD', () => {
+  const html = page({
+    body: `
+      <a href="/spirits/buffalo-trace-bourbon">Buffalo Trace Bourbon</a>
+      <a href="/account/sign-in">Sign In</a>
+    `,
+  });
+  const candidates = parseDistillerSearchResults(html, 'https://distiller.com/search?q=buffalo%20trace');
+  assert.deepEqual(candidates, [
+    { url: 'https://distiller.com/spirits/buffalo-trace-bourbon', title: 'Buffalo Trace Bourbon' },
+  ]);
+});
+
+test('selectTastingNotesContainer prefers an element hinting at tasting notes over the full page', () => {
+  const $ = cheerio.load(page({
+    body: `
+      <nav>Finish Line Rewards - Palate Cleanser Recipes - Nose around our other spirits</nav>
+      <div class="tasting-notes">Nose: Caramel. Palate: Spice. Finish: Long.</div>
+    `,
+  }));
+  const container = selectTastingNotesContainer($);
+  assert.equal(container.hasClass('tasting-notes'), true);
+});
+
+test('selectTastingNotesContainer falls back to the full body when nothing hints at tasting notes', () => {
+  const $ = cheerio.load(page({ body: '<p>Nose: Caramel. Palate: Spice. Finish: Long.</p>' }));
+  const container = selectTastingNotesContainer($);
+  assert.equal(container.is('body'), true);
+});
+
+test('extractFlavorNotes reads Nose/Palate/Finish from separate headings and paragraphs', () => {
+  const $ = cheerio.load(page({
+    body: `
+      <div class="tasting-notes">
+        <h3>Nose</h3><p>Caramel corn, toasted oak, dried cherry</p>
+        <h3>Palate</h3><p>Brown sugar, baking spice, orange peel</p>
+        <h3>Finish</h3><p>Long and warm, a whisper of black pepper</p>
+      </div>
+    `,
+  }));
+  assert.deepEqual(extractFlavorNotes($), {
+    nose: 'Caramel corn, toasted oak, dried cherry',
+    palate: 'Brown sugar, baking spice, orange peel',
+    finish: 'Long and warm, a whisper of black pepper',
+  });
+});
+
+test('extractFlavorNotes reads Nose/Palate/Finish from one inline run of text', () => {
+  const $ = cheerio.load(page({
+    body: '<div class="tasting-notes">Nose: caramel and oak. Palate: spice and brown sugar. Finish: long, warm.</div>',
+  }));
+  const notes = extractFlavorNotes($);
+  assert.equal(notes.nose, 'caramel and oak');
+  assert.equal(notes.palate, 'spice and brown sugar');
+  assert.equal(notes.finish, 'long, warm');
+});
+
+test('extractFlavorNotes trims Finish (the label with nothing after it to bound it) at a buy-button/cross-sell stop phrase', () => {
+  const $ = cheerio.load(page({
+    body: '<div class="tasting-notes">Finish: long and warm, a whisper of pepper. Buy Now for $34.99. You might also like...</div>',
+  }));
+  assert.equal(extractFlavorNotes($).finish, 'long and warm, a whisper of pepper');
+});
+
+test('extractFlavorNotes does not mistake "Finished..." for a Finish label', () => {
+  const $ = cheerio.load(page({
+    body: '<div class="tasting-notes">Finished in a sherry cask for the last six months.</div>',
+  }));
+  assert.deepEqual(extractFlavorNotes($), {});
+});
+
+test('extractFlavorNotes leaves out whichever label the page never has', () => {
+  const $ = cheerio.load(page({
+    body: '<div class="tasting-notes">Nose: caramel and oak. Finish: long, warm.</div>',
+  }));
+  assert.deepEqual(extractFlavorNotes($), { nose: 'caramel and oak', finish: 'long, warm' });
+});
+
+test('parseDistillerProductHtml combines the generic description fallback with Nose/Palate/Finish', () => {
+  const html = page({
+    head: '<meta property="og:description" content="A cornerstone of the American whiskey category." />',
+    body: '<div class="tasting-notes">Nose: caramel corn. Palate: brown sugar. Finish: long and warm.</div>',
+  });
+  const result = parseDistillerProductHtml(html, 'https://distiller.com/spirits/buffalo-trace-bourbon');
+  assert.equal(result.description, 'A cornerstone of the American whiskey category.');
+  assert.equal(result.nose, 'caramel corn');
+  assert.equal(result.palate, 'brown sugar');
+  assert.equal(result.finish, 'long and warm');
+});
+
+test('findTastingNotes with source "Distiller" and allowExperimental returns Nose/Palate/Finish end-to-end against fixture pages', async () => {
+  const searchHtml = page({ body: '<a href="/spirits/buffalo-trace-bourbon">Buffalo Trace Bourbon</a>' });
+  const productHtml = page({
+    body: '<div class="tasting-notes">Nose: caramel corn, toasted oak. Palate: brown sugar, baking spice. Finish: long and warm.</div>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('/search?q=') ? searchHtml : productHtml }),
+    async () => {
+      const result = await findTastingNotes({ title: 'Buffalo Trace Bourbon', source: 'Distiller', allowExperimental: true });
+      assert.equal(result.sourceName, 'Distiller');
+      assert.equal(result.nose, 'caramel corn, toasted oak');
+      assert.equal(result.palate, 'brown sugar, baking spice');
+      assert.equal(result.finish, 'long and warm');
+      assert.equal(result.description, '', 'no meta/JSON-LD description on this fixture - should come back empty, not undefined');
+    }
+  );
+});
+
+test('findTastingNotes with "Any source" and allowExperimental falls all the way through to Distiller when Wine.com and Vivino both find nothing', async () => {
+  const distillerSearchHtml = page({ body: '<a href="/spirits/buffalo-trace-bourbon">Buffalo Trace Bourbon</a>' });
+  const distillerProductHtml = page({ body: '<div class="tasting-notes">Nose: caramel. Palate: spice. Finish: long.</div>' });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('wine.com') || url.includes('vivino.com')) return mockResponse({ status: 404 });
+      if (url.includes('/search?q=')) return mockResponse({ status: 200, body: distillerSearchHtml });
+      return mockResponse({ status: 200, body: distillerProductHtml });
+    },
+    async () => {
+      const result = await findTastingNotes({ title: 'Buffalo Trace Bourbon', allowExperimental: true });
+      assert.equal(result.sourceName, 'Distiller');
+      assert.equal(result.nose, 'caramel');
+    }
+  );
+});
+
+test('findTastingNotes turns a persistently blocked Distiller response into an actionable message too, when allowed', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 403 }),
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Buffalo Trace Bourbon', source: 'Distiller', allowExperimental: true }),
+        /Distiller blocked this request/
+      );
+    }
+  );
+});
+
+// ================================================================
+// The "Experimental Features -> Bourbon Shelf Talkers" gate (Settings) -
+// Distiller is the one provider marked experimental (see
+// TASTING_NOTE_PROVIDERS), and findTastingNotes has to actually enforce
+// that server-side, not just trust the dropdown filtering app.js already
+// does client-side (see the note above findTastingNotes).
+// ================================================================
+
+test('TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES lists only Distiller', () => {
+  assert.deepEqual(TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, ['Distiller']);
+});
+
+test('findTastingNotes rejects an explicit source: "Distiller" without allowExperimental, before making any request', async () => {
+  let calls = 0;
+  await withMockFetch(
+    async () => { calls += 1; return mockResponse({ status: 200 }); },
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Buffalo Trace Bourbon', source: 'Distiller' }),
+        /Distiller is an experimental source - turn on Experimental Features -> Bourbon Shelf Talkers in Settings first\./
+      );
+    }
+  );
+  assert.equal(calls, 0, 'an experimental source without the flag should short-circuit before any fetch');
+});
+
+test('findTastingNotes with "Any source" and no allowExperimental skips Distiller entirely, even when Wine.com and Vivino both find nothing', async () => {
+  const calls = [];
+  await withMockFetch(
+    async (url) => {
+      calls.push(url);
+      return mockResponse({ status: 404 });
+    },
+    async () => {
+      await assert.rejects(
+        () => findTastingNotes({ title: 'Buffalo Trace Bourbon' }),
+        (err) => {
+          assert.match(err.message, /Wine\.com/);
+          assert.match(err.message, /Vivino/);
+          assert.doesNotMatch(err.message, /Distiller/);
+          return true;
+        }
+      );
+    }
+  );
+  assert.ok(calls.every((url) => !url.includes('distiller.com')), 'Distiller should never be reached while the toggle is off');
 });
 
 // ================================================================
