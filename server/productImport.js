@@ -834,22 +834,41 @@ function tokenize(text) {
 // query's own words (title + vintage) appear in their listed title, and
 // only accepted if at least half of them do - a weak or absent match
 // returns nothing rather than a confident-looking wrong answer.
+//
+// That "half of the query's words" bar is sized off the query alone, which
+// is fine for wine.com/Vivino/Distiller - a listed search-result title
+// there is always at least as long as the query it's being matched
+// against, so sizing off the query or the candidate comes to the same
+// thing. Untappd (searchUntappd below) is the one caller where that stops
+// being true: Algolia hands back a bare "<Brewery> <Beer Name>", with none
+// of a store title's own style/descriptor words folded in. Confirmed
+// against a real miss - a Scan UPC title of "Oakflower Augury Dry Irish
+// Stout" (5 query words) scored only 2 against Untappd's own "Oakflower
+// Brewing Company Augury": "Dry"/"Irish"/"Stout" have nowhere to match on
+// a beer page that never repeats its own style in the name, and
+// "Brewing"/"Company" have nowhere to match the other way - so a real,
+// correct hit still fell 1 short of a threshold sized for a 5-word query,
+// and the lookup failed until staff manually trimmed the title down to
+// "Oakflower Augury". Sizing the bar off whichever of the query/candidate
+// is *shorter* fixes that without loosening anything for a candidate at
+// least as long as the query, where min() just returns the query length
+// again - identical to the old behavior.
 function pickBestMatch(candidates, query) {
   const queryTokens = tokenize(query);
   if (queryTokens.length === 0 || candidates.length === 0) return undefined;
-  const threshold = Math.max(1, Math.ceil(queryTokens.length / 2));
 
   let best;
   let bestScore = 0;
   for (const candidate of candidates) {
     const candidateTokens = new Set(tokenize(candidate.title));
     const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
-    if (score > bestScore) {
+    const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
+    if (score >= threshold && score > bestScore) {
       bestScore = score;
       best = candidate;
     }
   }
-  return bestScore >= threshold ? best : undefined;
+  return best;
 }
 
 // schema.org ItemList JSON-LD, as emitted by many large e-commerce sites on
