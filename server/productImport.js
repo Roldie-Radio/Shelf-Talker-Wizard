@@ -1708,13 +1708,31 @@ const BEER_STYLE_WORD_PATTERN = new RegExp(
   'gi'
 );
 
+// Container/packaging codes that turn up in a WinePOS beer title the same
+// way a raw size does (see SIZE_PATTERN/stripSize above) but slip past that
+// pattern since they're not a unit+number or an "N-pack" count - e.g.
+// "Session IPA 12pk CN", "Downtown Brown KEG 1/6", "Porter NR". None of
+// these carry any signal for an Untappd search (Untappd doesn't list a beer
+// differently by container), so - like BEER_STYLE_WORD_PATTERN above -
+// they're stripped from the search QUERY only, never from
+// composeProducerTitle's own return value:
+//   - "KEG", "1/6", "1/4": a keg, or its fractional-barrel size (a sixth-
+//     or quarter-barrel keg)
+//   - "Can"/"Cans", "CN": a can, spelled out or abbreviated
+//   - "NR": "non-returnable", a bottle-deposit code
+const CONTAINER_WORD_PATTERN = /\b(?:nr|cn|keg|cans?)\b|\b1\/6\b|\b1\/4\b/gi;
+
 // Cleans a beer title down to just what's worth sending Untappd as a
-// search query (see BEER_STYLE_WORD_PATTERN above). Guards against
-// stripping a title down to nothing - a rare SKU literally titled just
-// "IPA" would otherwise search Untappd with an empty string instead of the
-// original, still-noisy-but-non-empty query.
+// search query (see BEER_STYLE_WORD_PATTERN and CONTAINER_WORD_PATTERN
+// above). Guards against stripping a title down to nothing - a rare SKU
+// literally titled just "IPA" would otherwise search Untappd with an empty
+// string instead of the original, still-noisy-but-non-empty query.
 function buildUntappdSearchQuery(title) {
-  const stripped = (title || '').replace(BEER_STYLE_WORD_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+  const stripped = (title || '')
+    .replace(BEER_STYLE_WORD_PATTERN, ' ')
+    .replace(CONTAINER_WORD_PATTERN, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return stripped || (title || '').trim();
 }
 
