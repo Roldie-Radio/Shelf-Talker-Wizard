@@ -12,7 +12,7 @@ const {
 } = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
-  upsertCachedProduct, getCachedProduct, isFresh, getStats,
+  upsertCachedProduct, getCachedProduct, getStats,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
@@ -142,21 +142,16 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // found (see enrichBeerFromUntappd in productImport.js) to fill in the
   // description/brewery/style/ABV/IBU/rating a retail page wouldn't have.
   //
-  // Layered with a local cache (db.js) keyed by SKU: a lookup less than a
-  // day old skips the network entirely (fromCache: true) rather than
-  // re-scraping the same product every time it's re-entered; a *failed*
-  // network lookup falls back to whatever's cached regardless of age
-  // (fromCache + stale: true) rather than a hard error, since a stale price
-  // beats no data at all when the site is temporarily blocking requests.
-  // Cache key is the SKU as typed, not the category (a user can switch
-  // Wine/Beer on the same SKU, a mistake but not this app's to prevent), so
-  // the cached entry itself carries the category it was last resolved under
-  // (see `category` folded into `data` below) - a fresh hit only skips the
-  // network when that matches what's being asked for *now*. Without this, a
-  // SKU looked up as Wine/Spirits first, then re-looked-up as Beer within
-  // the freshness window, would silently serve back the Wine-only cached
-  // copy and skip the beer-only Untappd enrichment step entirely, even
-  // though Beer was explicitly requested this time.
+  // Every lookup here is live - a "still fresh, skip the network" shortcut
+  // used to live here, keyed by SKU, but it had a real cost: a beer that
+  // missed on Untappd (or came back ambiguous) got cached as "fresh" for a
+  // full day exactly like a successful lookup, so a fix that would have
+  // found it on a retry never got the chance to - staff just saw the exact
+  // same stale result the next time they looked it up. `cached` below is
+  // read only as a fallback (see db.js) - a *failed* live attempt still
+  // falls back to whatever's cached, however old (fromCache + stale: true),
+  // rather than a hard error, since a stale price beats no data at all when
+  // the site is temporarily blocking requests.
   app.post('/api/sku-lookup', async (req, res) => {
     const { sku, category } = req.body || {};
 
@@ -166,10 +161,6 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     const trimmedSku = sku.trim();
     const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
     const cached = getCachedProduct({ keyType: 'sku', key: trimmedSku });
-
-    if (isFresh(cached) && cached.data.category === normalizedCategory) {
-      return res.json({ ...cached.data, fromCache: true });
-    }
 
     try {
       const product = await lookupSku({ sku: trimmedSku, category });
@@ -284,20 +275,15 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // independently best-effort, same as the Wine/Spirits description above.
   //
   // Also layered with the same product cache /api/sku-lookup uses (see its
-  // note above), keyed by UPC instead of SKU - and, now that both categories
-  // make a real network request as part of resolving this, the same
-  // category-aware freshness check /api/sku-lookup uses: the cached copy
-  // records which category it was resolved under (`lookupCategory`, kept
-  // separate from `category`, the WinePOS export's own department/class
-  // column - Wine/Spirits' own enrichment never overwrites it, though a
-  // successful Beer store lookup does, the same as it replaces every other
-  // export-only field with the store's own), and a fresh cache hit is only
-  // served when that matches what's being asked for now. Without this, a
-  // UPC scanned as Beer first and then rescanned as Wine/Spirits within the
-  // freshness window would silently serve back the Beer-only cached copy
-  // and skip the Wine/Spirits enrichment entirely. A *failed* lookup still
-  // falls back to whatever's cached regardless of category, same as before -
+  // note above), keyed by UPC instead of SKU: every lookup is live,
+  // `cached` below is read only as a fallback for a failed live attempt -
   // stale data (clearly marked) beats sending staff to Manual Entry.
+  // `lookupCategory` still gets folded into what's written to the cache
+  // (kept separate from `category`, the WinePOS export's own department/
+  // class column - Wine/Spirits' own enrichment never overwrites it, though
+  // a successful Beer store lookup does, the same as it replaces every
+  // other export-only field with the store's own) purely as a record of
+  // what a stale fallback actually contains, not to gate anything here.
   app.post('/api/upc-lookup', async (req, res) => {
     const { upc, category } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {
@@ -306,10 +292,6 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     const trimmedUpc = upc.trim();
     const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
     const cached = getCachedProduct({ keyType: 'upc', key: trimmedUpc });
-
-    if (isFresh(cached) && cached.data.lookupCategory === normalizedCategory) {
-      return res.json({ ...cached.data, fromCache: true });
-    }
 
     try {
       const rawProduct = lookupUpc(trimmedUpc);
@@ -371,10 +353,10 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // still good enough to queue a talker from.
   //
   // Shares the SKU-keyed product cache /api/sku-lookup and /api/upc-lookup
-  // use, same category-aware freshness check, so a beer already resolved by
-  // one lookup method skips a redundant Untappd search from any of the
-  // others - and a Search by Name pick with no SKU in the export just skips
-  // caching rather than failing.
+  // use, same as those two: every pick runs a live Untappd search, `cached`
+  // below is read only as a fallback if that search fails outright - and a
+  // Search by Name pick with no SKU in the export just skips caching
+  // rather than failing.
   app.post('/api/name-search-select', async (req, res) => {
     const { product, category } = req.body || {};
     if (!product || typeof product !== 'object' || !product.title) {
@@ -387,9 +369,6 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
 
     const sku = typeof product.sku === 'string' ? product.sku.trim() : '';
     const cached = sku ? getCachedProduct({ keyType: 'sku', key: sku }) : null;
-    if (isFresh(cached) && cached.data.category === 'beer') {
-      return res.json({ ...cached.data, fromCache: true });
-    }
 
     try {
       const data = { ...(await enrichBeerFromUntappd(product)), category: 'beer' };

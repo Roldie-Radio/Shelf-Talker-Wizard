@@ -2968,9 +2968,9 @@
   }
   // Small aside appended to a lookup's status message when the server
   // served a cached copy (see the product cache note above /api/sku-lookup
-  // and /api/upc-lookup in server/index.js) instead of a fresh network/file
-  // lookup - `stale` only ever comes back set when that cached copy was
-  // served *after* the real lookup itself failed.
+  // and /api/upc-lookup in server/index.js) - every lookup is live now, so
+  // this only ever comes up when that live attempt itself failed and
+  // `stale` comes back set alongside it.
   function cacheNote(data) {
     if (!data.fromCache) return '';
     return ` (cached${data.stale ? ', may be stale' : ''})`;
