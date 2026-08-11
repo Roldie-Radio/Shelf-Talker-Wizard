@@ -761,7 +761,15 @@ function buildCountryFlagHtml(talker) {
 // here) rather than baking it into every caller of this shared function.
 function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
   const ratingNum = Number(talker.untappdRating);
-  const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
+  // A rating of exactly 0 is treated the same as no rating at all: it's
+  // Untappd's own sentinel for "no computed average yet" (shown on the real
+  // page as empty dots and "(N/A)", even alongside a nonzero check-in
+  // count), not a real zero score - see the matching note on asRatingAttr
+  // in server/productImport.js, which is what keeps a freshly-imported beer
+  // from ever landing here with "0" in the first place. This check exists
+  // as a safety net for talkers imported before that fix, or a "0" typed
+  // straight into the rating field by hand.
+  const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum) && ratingNum > 0;
   const style = includeStyle && talker.style ? String(talker.style).trim() : '';
   // Untappd's own beer page always renders this widget, showing empty dots
   // and "(N/A)" in place of a score for a beer with no ratings yet rather

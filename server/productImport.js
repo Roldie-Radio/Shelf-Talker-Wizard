@@ -511,9 +511,19 @@ function firstMatch(text, patterns) {
 // beers with their own ratings and check-in counts; only accept it as
 // Untappd's own rating if it's actually shaped like one (0-5, one or two
 // decimal places).
+//
+// A bare "0"/"0.00" is excluded even though it's shaped like a rating: a
+// real Untappd beer page (confirmed via a user-supplied screenshot) shows
+// empty dots and "(N/A)" - not a zero score - for a beer with no computed
+// average yet, even one with check-ins/"Ratings" already counted against
+// it. No real average can land on exactly 0.00 anyway (the lowest single
+// score Untappd allows is a quarter cap), so a literal 0 here always means
+// "no rating", and importing it as "0.00" would misrepresent the beer as
+// having the worst possible score instead of none at all.
 function asRating(text) {
   const trimmed = (text || '').trim();
-  return /^[0-5](\.\d{1,2})?$/.test(trimmed) ? trimmed : undefined;
+  if (!/^[0-5](\.\d{1,2})?$/.test(trimmed)) return undefined;
+  return Number(trimmed) === 0 ? undefined : trimmed;
 }
 
 // Untappd's current beer page (confirmed via a user-supplied DevTools
@@ -531,11 +541,16 @@ function asRating(text) {
 // for a value read directly out of an attribute literally named
 // "data-rating", but its shape (more than 2 raw decimal digits) would
 // otherwise fail that check for an unrelated reason.
+// Same "0 means no rating, not a real zero" rule as asRating() above
+// applies here too - and this attribute is in fact where that 0 actually
+// comes from: Untappd's own markup sets data-rating="0" on the caps widget
+// for a beer with no computed average, which is what its page then renders
+// as empty dots and "(N/A)" rather than a score.
 function asRatingAttr(raw) {
   const trimmed = (raw || '').trim();
   if (!trimmed) return undefined;
   const num = Number(trimmed);
-  return Number.isFinite(num) && num >= 0 && num <= 5 ? num.toFixed(2) : undefined;
+  return Number.isFinite(num) && num > 0 && num <= 5 ? num.toFixed(2) : undefined;
 }
 
 // Untappd formats large counts with thousands separators ("1,382"); strip
