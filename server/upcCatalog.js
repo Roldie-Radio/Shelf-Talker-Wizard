@@ -244,7 +244,18 @@ function parsePackQtyFromSize(size) {
 // the barcode, so a lookup tries both rather than requiring an exact-length
 // match. Returns a de-duplicated list, digits only.
 function upcVariants(raw) {
-  const digits = String(raw || '').replace(/\D/g, '');
+  // Same "stored as a number, not text" root cause as the leading-zero fix
+  // below, a different symptom: a UPC column typed as a float rather than
+  // an integer can print a whole-number UPC with a spurious trailing ".0"
+  // (or ".00") - e.g. WinePOS exporting 88586001895 as "88586001895.0".
+  // Stripped here, before the non-digit strip just below, or that ".0"
+  // would be read back in as extra trailing digits of the code itself
+  // (turning a correct 11-digit stored value into a wrong 12-digit one) -
+  // dropped rather than kept, since a real barcode never has a fractional
+  // part. Deliberately only an all-zero fraction (not e.g. ".5"), so this
+  // can't misfire on some other column matched as UPC by mistake.
+  const withoutTrailingZeroDecimal = String(raw || '').replace(/\.0+$/, '');
+  const digits = withoutTrailingZeroDecimal.replace(/\D/g, '');
   if (!digits) return [];
   const variants = new Set([digits]);
   if (digits.length === 13 && digits[0] === '0') variants.add(digits.slice(1));

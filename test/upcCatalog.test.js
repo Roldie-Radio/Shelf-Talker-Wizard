@@ -112,6 +112,33 @@ test('upcVariants returns nothing for an empty/non-numeric input', () => {
   assert.deepEqual(upcVariants('abc'), []);
 });
 
+test('upcVariants strips a spurious trailing ".0" from a UPC column stored as a float', () => {
+  // A number-typed UPC column can print a whole-number UPC as a float
+  // ("88586001895.0") - the trailing ".0" isn't part of the real code and
+  // must be dropped, not read back in as extra digits.
+  assert.deepEqual(upcVariants('085000010652.0').sort(), ['0085000010652', '085000010652'].sort());
+});
+
+test('upcVariants also strips a trailing ".00"', () => {
+  assert.deepEqual(upcVariants('085000010652.00').sort(), ['0085000010652', '085000010652'].sort());
+});
+
+test('upcVariants recovers a UPC that lost its leading zero and gained a trailing ".0", both from being stored as a float', () => {
+  assert.deepEqual(
+    upcVariants('88586001895.0').sort(),
+    ['88586001895', '088586001895', '0088586001895'].sort()
+  );
+});
+
+test('upcVariants leaves a non-zero fractional part alone (not actually a "stored as a float" UPC artifact)', () => {
+  // Only an all-zero fraction is stripped - a query that happens to end in
+  // ".5" or similar isn't a UPC at all, and shouldn't have digits silently
+  // dropped as if it were.
+  const digits = upcVariants('085000010652.5');
+  assert.ok(digits.every((v) => !v.includes('.')));
+  assert.ok(!digits.includes('085000010652'));
+});
+
 // ---------- buildIndex ----------
 
 test('buildIndex maps rows onto product fields by matched columns', () => {
@@ -397,6 +424,20 @@ test('lookupUpc finds a UPC-A product when the export stores it as EAN-13', () =
     const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
     setUpcSettings(filePath);
     const product = lookupUpc('0085000010652');
+    assert.equal(product.title, 'Josh Cellars, Cabernet Sauvignon');
+  });
+});
+
+test('lookupUpc finds a product whose export row has a spurious trailing ".0" (UPC column stored as a float)', () => {
+  const csv = [
+    'UPC,Title,Regular Price',
+    '085000010652.0,"Josh Cellars, Cabernet Sauvignon",13.99',
+  ].join('\n');
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', csv));
+    // A real scanner sends the plain, correct 12-digit code - it's the
+    // export's own value that's mangled, not the scan.
+    const product = lookupUpc('085000010652');
     assert.equal(product.title, 'Josh Cellars, Cabernet Sauvignon');
   });
 });
