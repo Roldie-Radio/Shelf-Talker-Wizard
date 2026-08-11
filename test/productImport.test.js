@@ -23,7 +23,8 @@ const {
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore,
-  algoliaSearchBeerCandidates, searchUntappd, composeProducerTitle, buildUntappdSearchQuery,
+  algoliaSearchBeerCandidates, searchUntappd, matchUntappdCandidates, UntappdAmbiguousMatchError,
+  composeProducerTitle, buildUntappdSearchQuery,
   enrichBeerScanFromStore, enrichBeerFromUntappd,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
@@ -1054,6 +1055,43 @@ test('pickBestMatch still rejects a short candidate that only weakly overlaps a 
   assert.equal(match, undefined);
 });
 
+// matchUntappdCandidates - see its own comment in productImport.js for why
+// Untappd specifically needs to know about a tie rather than silently
+// keeping pickBestMatch's own "first one wins" behavior.
+test('matchUntappdCandidates returns a single confident match unambiguously, same candidate pickBestMatch would pick', () => {
+  const candidates = [
+    { url: 'https://untappd.com/b/a/1', title: 'Autodidact Beer Daylily' },
+    { url: 'https://untappd.com/b/b/2', title: 'Unrelated Brewing Company Nightshade' },
+  ];
+  const result = matchUntappdCandidates(candidates, 'Autodidact Beer Daylily');
+  assert.equal(result.match.url, 'https://untappd.com/b/a/1');
+  assert.deepEqual(result.tied, []);
+});
+
+test('matchUntappdCandidates surfaces a tie instead of silently picking one', () => {
+  // Same shape as a real miss: a query with no brewery-distinguishing word
+  // left in it (see BEER_STYLE_WORD_PATTERN's deliberate exclusion of
+  // "Light"/"Dark"/"Gold"/... in productImport.js) scores two real,
+  // separately-listed Untappd beers identically.
+  const candidates = [
+    { url: 'https://untappd.com/b/autodidact-beer-daylily/1', title: 'Autodidact Beer Daylily' },
+    { url: 'https://untappd.com/b/fox-farm-brewery-daylily/2', title: 'Fox Farm Brewery Daylily' },
+  ];
+  const result = matchUntappdCandidates(candidates, 'Daylily');
+  assert.equal(result.match, undefined);
+  assert.deepEqual(result.tied.map((c) => c.url), [
+    'https://untappd.com/b/autodidact-beer-daylily/1',
+    'https://untappd.com/b/fox-farm-brewery-daylily/2',
+  ]);
+});
+
+test('matchUntappdCandidates returns no match and no tie when nothing meaningfully overlaps', () => {
+  const candidates = [{ url: 'https://untappd.com/b/unrelated/1', title: 'Completely Unrelated Beer' }];
+  const result = matchUntappdCandidates(candidates, 'Oakflower Augury');
+  assert.equal(result.match, undefined);
+  assert.deepEqual(result.tied, []);
+});
+
 test('parseWineComSearchResults reads candidates from ItemList JSON-LD', () => {
   const html = page({
     head: `<script type="application/ld+json">${JSON.stringify({
@@ -1849,7 +1887,7 @@ function algoliaHitsResponse(hits) {
   return JSON.stringify({ results: [{ hits }] });
 }
 
-test('algoliaSearchBeerCandidates queries the "beer" index and maps hits into {url, title} candidates', async () => {
+test('algoliaSearchBeerCandidates queries the "beer" index and maps hits into {url, title, brewery, beerName} candidates', async () => {
   const hits = [
     { beer_slug: 'autodidact-beer-daylily', bid: 5251415, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
     { beer_slug: 'fox-farm-brewery-daylily', bid: 2212715, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
@@ -1867,8 +1905,18 @@ test('algoliaSearchBeerCandidates queries the "beer" index and maps hits into {u
     async () => {
       const candidates = await algoliaSearchBeerCandidates('daylily');
       assert.deepEqual(candidates, [
-        { url: 'https://untappd.com/b/autodidact-beer-daylily/5251415', title: 'Autodidact Beer Daylily' },
-        { url: 'https://untappd.com/b/fox-farm-brewery-daylily/2212715', title: 'Fox Farm Brewery Daylily' },
+        {
+          url: 'https://untappd.com/b/autodidact-beer-daylily/5251415',
+          title: 'Autodidact Beer Daylily',
+          brewery: 'Autodidact Beer',
+          beerName: 'Daylily',
+        },
+        {
+          url: 'https://untappd.com/b/fox-farm-brewery-daylily/2212715',
+          title: 'Fox Farm Brewery Daylily',
+          brewery: 'Fox Farm Brewery',
+          beerName: 'Daylily',
+        },
       ]);
     }
   );
@@ -1956,6 +2004,38 @@ test('searchUntappd surfaces a clear error when nothing matches', async () => {
   );
 });
 
+// Regression coverage for the disambiguation picker (see
+// UntappdAmbiguousMatchError/matchUntappdCandidates in productImport.js) -
+// a query with no brewery-distinguishing word left in it scores two real,
+// separately-listed Untappd beers identically. searchUntappd throws a
+// typed error carrying both, rather than silently keeping the first one
+// (or, worse, failing outright) - no beer-page fetch happens for either,
+// since which one to fetch is exactly what's unresolved.
+test('searchUntappd throws UntappdAmbiguousMatchError with the tied candidates when nothing breaks the tie', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'autodidact-beer-daylily', bid: 1, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+    { beer_slug: 'fox-farm-brewery-daylily', bid: 2, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
+  ]);
+  let beerPageFetched = false;
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
+      beerPageFetched = true;
+      return mockResponse({ status: 200, body: page({}) });
+    },
+    async () => {
+      await assert.rejects(() => searchUntappd('Daylily'), (err) => {
+        assert.ok(err instanceof UntappdAmbiguousMatchError);
+        assert.equal(err.candidates.length, 2);
+        assert.equal(err.candidates[0].brewery, 'Autodidact Beer');
+        assert.equal(err.candidates[1].brewery, 'Fox Farm Brewery');
+        return true;
+      });
+    }
+  );
+  assert.equal(beerPageFetched, false, 'neither candidate\'s own page should be fetched while the tie is unresolved');
+});
+
 // Regression test for a real Scan UPC miss: the store's own title carries
 // style words ("Dry Irish Stout") that never show up in Untappd's own
 // "<Brewery> <Beer Name>" hit title, which used to dilute the match below
@@ -2016,6 +2096,32 @@ test('enrichBeerFromUntappd strips style words from the Untappd query without to
     }
   );
   assert.match(requestedBody.requests[0].params, /query=Oakflower%20Augury(&|$)/);
+});
+
+// Regression coverage for the disambiguation picker at the level Scan UPC/
+// SKU Lookup/Search by Name actually see it: enrichBeerFromUntappd's own
+// catch block special-cases UntappdAmbiguousMatchError into
+// `untappdCandidates`, not `untappdError` - the two are meant to be
+// mutually exclusive so a caller only needs to check one to know which
+// situation it's looking at (see the comment above enrichBeerFromUntappd).
+test('enrichBeerFromUntappd surfaces untappdCandidates instead of untappdError when Untappd itself can\'t break a tie', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'autodidact-beer-daylily', bid: 1, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+    { beer_slug: 'fox-farm-brewery-daylily', bid: 2, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
+  ]);
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: algoliaBody }),
+    async () => {
+      const result = await enrichBeerFromUntappd({ title: 'Daylily', brand: '', size: '' });
+      assert.equal(result.untappdError, undefined);
+      assert.equal(result.untappdCandidates.length, 2);
+      assert.deepEqual(result.untappdCandidates.map((c) => c.brewery), ['Autodidact Beer', 'Fox Farm Brewery']);
+      // The store-sourced fields still fill in, same as an outright miss -
+      // staff aren't blocked from queuing the talker while a pick is
+      // pending, just missing the Untappd-only fields until they make one.
+      assert.equal(result.title, 'Daylily');
+    }
+  );
 });
 
 // ================================================================

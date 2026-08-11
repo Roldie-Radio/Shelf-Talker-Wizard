@@ -868,22 +868,31 @@ function tokenize(text) {
 // is *shorter* fixes that without loosening anything for a candidate at
 // least as long as the query, where min() just returns the query length
 // again - identical to the old behavior.
-function pickBestMatch(candidates, query) {
+// The token-overlap scoring core behind pickBestMatch below, split out so
+// searchUntappd's own tie-detection (matchUntappdCandidates further down -
+// see its comment for why Untappd specifically needs to know about a tie,
+// not just a winner) can reuse the exact same score/threshold math instead
+// of a second copy that could quietly drift out of sync with this one.
+// Sorted highest score first; Array.prototype.sort is a stable sort (has
+// been since Node 11/V8 7.0), so two candidates that tie keep their
+// original relative order from `candidates` - the same "first one in the
+// list wins a tie" behavior pickBestMatch's own old, pre-refactor loop had.
+function scoreCandidates(candidates, query) {
   const queryTokens = tokenize(query);
-  if (queryTokens.length === 0 || candidates.length === 0) return undefined;
+  if (queryTokens.length === 0) return [];
+  return candidates
+    .map((candidate) => {
+      const candidateTokens = new Set(tokenize(candidate.title));
+      const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
+      const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
+      return { candidate, score, passes: score >= threshold };
+    })
+    .sort((a, b) => b.score - a.score);
+}
 
-  let best;
-  let bestScore = 0;
-  for (const candidate of candidates) {
-    const candidateTokens = new Set(tokenize(candidate.title));
-    const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
-    const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
-    if (score >= threshold && score > bestScore) {
-      bestScore = score;
-      best = candidate;
-    }
-  }
-  return best;
+function pickBestMatch(candidates, query) {
+  const passing = scoreCandidates(candidates, query).filter((s) => s.passes);
+  return passing.length ? passing[0].candidate : undefined;
 }
 
 // schema.org ItemList JSON-LD, as emitted by many large e-commerce sites on
@@ -1537,11 +1546,61 @@ async function algoliaSearchBeerCandidates(query) {
   // "autodidact-beer-daylily" + bid 5251415 -> the exact URL a user
   // independently found by searching Untappd by hand). title folds the
   // brewery in, matching what composeProducerTitle already sends as the
-  // query, for pickBestMatch below to score against.
+  // query, for pickBestMatch below to score against. brewery/beerName keep
+  // those same two confirmed fields un-folded too, alongside title - not
+  // used for scoring, only so a disambiguation picker (see
+  // matchUntappdCandidates/UntappdAmbiguousMatchError below) has something
+  // cleaner to show staff than the combined string.
   return hits.map((hit) => ({
     url: `https://untappd.com/b/${hit.beer_slug}/${hit.bid}`,
     title: `${hit.brewery_name || ''} ${hit.beer_name || ''}`.trim(),
+    brewery: (hit.brewery_name || '').trim(),
+    beerName: (hit.beer_name || '').trim(),
   }));
+}
+
+// Thrown by searchUntappd below instead of a plain Error when two or more
+// candidates are genuinely tied for the best score (see
+// matchUntappdCandidates) - a distinct type so enrichBeerFromUntappd's own
+// catch block can tell "ask staff which one" apart from an ordinary miss
+// or network failure, which is treated completely differently (see its own
+// comment). `candidates` is the tied set, in Algolia's own ranked order.
+class UntappdAmbiguousMatchError extends Error {
+  constructor(query, candidates) {
+    super(`Found ${candidates.length} equally-likely matches for "${query}" on Untappd.`);
+    this.name = 'UntappdAmbiguousMatchError';
+    this.candidates = candidates;
+  }
+}
+
+// pickBestMatch (used by every catalog-site provider - wine.com, Vivino,
+// Distiller, and Untappd itself) always silently breaks a tie by taking
+// whichever candidate came first from the site's own search results. That
+// is a perfectly fine default for those other three, whose candidate
+// titles are already the site's own full, disambiguated product title -
+// two of them scoring identically is rare and, when it happens, is usually
+// a near-duplicate listing rather than two genuinely different products.
+//
+// Untappd is different in a way that makes silent tie-breaking actively
+// risky rather than just imprecise: BEER_STYLE_WORD_PATTERN above
+// deliberately leaves words like "Light"/"Dark"/"Gold"/"Amber" out of the
+// query-cleaning step specifically because, for a macro brand, that word
+// is sometimes the ONLY thing separating two real, separately-listed
+// Untappd beers from the same brewery ("Coors Light" vs. "Coors Banquet").
+// If a query ever *did* end up missing that differentiator (a store title
+// that just says "Coors" with no qualifier, say), both would score
+// identically and a silent first-wins pick has a real chance of being the
+// wrong beer - exactly the "confident-looking wrong answer" pickBestMatch's
+// own comment says is worse than finding nothing. Surfacing the tie to
+// enrichBeerFromUntappd (as UntappdAmbiguousMatchError above) instead of
+// resolving it here is what lets a human make that one call instead of the
+// scoring math guessing.
+function matchUntappdCandidates(candidates, query) {
+  const scored = scoreCandidates(candidates, query).filter((s) => s.passes);
+  if (scored.length === 0) return { match: undefined, tied: [] };
+  const topScore = scored[0].score;
+  const tied = scored.filter((s) => s.score === topScore).map((s) => s.candidate);
+  return tied.length > 1 ? { match: undefined, tied } : { match: scored[0].candidate, tied: [] };
 }
 
 async function searchUntappd(query) {
@@ -1549,7 +1608,10 @@ async function searchUntappd(query) {
   if (!trimmed) throw new Error('Enter a product title first.');
 
   const candidates = await algoliaSearchBeerCandidates(trimmed);
-  const match = pickBestMatch(candidates, trimmed);
+  const { match, tied } = matchUntappdCandidates(candidates, trimmed);
+  if (tied.length > 1) {
+    throw new UntappdAmbiguousMatchError(trimmed, tied);
+  }
   if (!match) {
     throw new Error(`Could not find "${trimmed}" on Untappd.`);
   }
@@ -1728,6 +1790,21 @@ async function enrichBeerFromUntappd(product) {
     // overrides mergeUntappdBeer's fallback rather than reusing it.
     return { ...product, title, size, ...mergeUntappdBeer(product, beer), description: beer.description || '' };
   } catch (err) {
+    // A genuine tie (see UntappdAmbiguousMatchError/matchUntappdCandidates
+    // above) is not the same kind of failure as a miss or a blocked
+    // request - there's a right answer, this code just can't safely pick
+    // it alone. `untappdCandidates` carries the tied set (each already
+    // shaped {url, title, brewery, beerName} - see algoliaSearchBeerCandidates)
+    // for a client-side picker (see the Scan UPC/SKU Lookup/Search by Name
+    // tabs in app.js) to resolve the same way the existing manual "paste an
+    // Untappd URL" fallback already does: fetch that one beer's own page
+    // via /api/untappd-lookup and merge it in. Deliberately no
+    // `untappdError` alongside this - the two are meant to be mutually
+    // exclusive so a caller can check one field to know which situation
+    // it's looking at.
+    if (err instanceof UntappdAmbiguousMatchError) {
+      return { ...product, title, size, brewery: product.brand || '', untappdCandidates: err.candidates };
+    }
     return { ...product, title, size, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
   }
 }
@@ -1923,6 +2000,8 @@ module.exports = {
   enrichWineDescriptionFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
+  matchUntappdCandidates,
+  UntappdAmbiguousMatchError,
   composeProducerTitle,
   buildUntappdSearchQuery,
   enrichBeerFromUntappd,
