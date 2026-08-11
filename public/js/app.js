@@ -44,6 +44,7 @@
       version: '3.1.4',
       items: [
         'Fixed: SKU Lookup no longer folds a short store vendor/distributor code (e.g. "AB") into the Brand field for beer - it was getting prepended onto the title and sent to Untappd as part of the search, breaking the match and showing the code as the Brewery.',
+        'Fixed: Untappd search now strips container/packaging codes ("NR", "Can"/"Cans", "CN", "KEG", "1/6", "1/4") out of the query, the same way it already strips raw sizes and style words - none of these tell Untappd anything about which beer it is.',
       ],
     },
     {
