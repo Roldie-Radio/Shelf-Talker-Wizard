@@ -43,6 +43,9 @@
     {
       version: '3.1.3',
       items: [
+        'New: Scan UPC, SKU Lookup, and Search by Name (Beer) now show a confirmation dialog for every Untappd match before applying its brewery/style/ABV/rating - not just when there\'s a genuine tie - so a wrong-but-confident match doesn\'t reach the printed talker unreviewed.',
+        'Fixed: Live Preview no longer jumps back to Current Talker mode on every lookup - Full Page preview now stays put while scanning item after item.',
+        'Fixed: Untappd search now strips a standalone "Wit" from the query, not just "Witbier" - catches more real misses for Witbier-style beers.',
         'Fixed: Scan UPC now recognizes a WinePOS export UPC that lost its leading zero and picked up a spurious trailing ".0" from being stored as a float (e.g. "88586001895.0") - a real scan of that item used to come back "not found" even though it was in the file.',
       ],
     },
