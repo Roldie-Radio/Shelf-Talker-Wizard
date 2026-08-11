@@ -2857,6 +2857,15 @@ test('buildUntappdSearchQuery strips style category words and modifiers but leav
   assert.equal(buildUntappdSearchQuery('Anheuser-Busch Michelob ULTRA'), 'Anheuser-Busch Michelob ULTRA');
 });
 
+// "Wit" (short for Witbier - a Belgian-style wheat beer) is a common enough
+// standalone style suffix in its own right ("Allagash Wit", "Hoegaarden
+// Wit") that having only the longer "witbier" form in the pattern missed
+// it entirely.
+test('buildUntappdSearchQuery strips a standalone "Wit" the same as "Witbier"', () => {
+  assert.equal(buildUntappdSearchQuery('Allagash Wit'), 'Allagash');
+  assert.equal(buildUntappdSearchQuery('Hoegaarden Belgian Wit'), 'Hoegaarden');
+});
+
 test('buildUntappdSearchQuery leaves ambiguous macro-brand words like "Light" alone', () => {
   // "Light" is often the only thing telling two real, separately-listed
   // Untappd beers from the same brewery apart (Coors Light vs. Coors
