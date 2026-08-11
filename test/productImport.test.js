@@ -317,6 +317,40 @@ test('parseBeerHtml ignores an out-of-range or non-numeric data-rating attribute
   assert.equal(nonNumeric.untappdRating, '');
 });
 
+// A beer with no computed average yet still gets a caps widget on its real
+// Untappd page, just one whose data-rating attribute is literally "0" -
+// rendered there as empty dots and "(N/A)", not a zero score, even when the
+// page also shows a nonzero "Ratings" count alongside it (confirmed via a
+// user-supplied screenshot: "NJ Born And Raised" shows "9 Ratings" next to
+// an empty, N/A-labeled widget). Importing that "0" as if it were a real
+// 4.00-style rating would misreport the beer as the worst possible score
+// instead of "not yet rated" - see the matching note on asRatingAttr.
+test('parseBeerHtml treats a "0" data-rating attribute as no rating, not a zero score', () => {
+  const result = parseBeerHtml(
+    page({
+      body: `
+        <div class="caps" data-rating="0"></div>
+        <span>9 Ratings</span>
+        <meta property="og:description" content="d" />
+      `,
+    }),
+    'https://example.com/a'
+  );
+  assert.equal(result.untappdRating, '');
+  assert.equal(result.untappdRatingCount, '9');
+});
+
+// Same rule for the plain-text fallbacks (domRating/ratingRaw), in case a
+// future page shape puts a bare "0" somewhere asRating() scans instead of
+// in the data-rating attribute.
+test('parseBeerHtml treats a bare "0" rating in visible text as no rating', () => {
+  const result = parseBeerHtml(
+    page({ body: '<p class="rating"><span class="num">0</span></p><meta property="og:description" content="d" />' }),
+    'https://example.com/a'
+  );
+  assert.equal(result.untappdRating, '');
+});
+
 // Regression fixture built from a real Untappd page (a user reported the
 // description field pulling the wrong text after the rating/IBU fixes
 // shipped - a DevTools screenshot of the actual page showed why). The
@@ -998,6 +1032,25 @@ test('pickBestMatch returns nothing when no candidate meaningfully overlaps the 
 
 test('pickBestMatch returns nothing for an empty candidate list', () => {
   assert.equal(pickBestMatch([], 'Josh Cellars Cabernet Sauvignon 2022'), undefined);
+});
+
+// Regression test for a real miss: a Scan UPC beer title carries style
+// words ("Dry Irish Stout") that Untappd's own concise "<Brewery> <Beer
+// Name>" candidate title never repeats, and that candidate title in turn
+// carries brewery-suffix words ("Brewing Company") the store title never
+// had either - so neither side's title fully contains the other's words,
+// which is exactly the shape a threshold sized only off the query
+// (5 words here) used to reject. See the comment above pickBestMatch.
+test('pickBestMatch still matches when the candidate title is shorter than the query and neither side is a subset of the other', () => {
+  const candidates = [{ url: 'https://untappd.com/b/oakflower-augury/1', title: 'Oakflower Brewing Company Augury' }];
+  const match = pickBestMatch(candidates, 'Oakflower Augury Dry Irish Stout');
+  assert.equal(match.url, 'https://untappd.com/b/oakflower-augury/1');
+});
+
+test('pickBestMatch still rejects a short candidate that only weakly overlaps a long query', () => {
+  const candidates = [{ url: 'https://untappd.com/b/unrelated/1', title: 'Riverbend Brewing Golden Ale' }];
+  const match = pickBestMatch(candidates, 'Oakflower Augury Dry Irish Stout');
+  assert.equal(match, undefined);
 });
 
 test('parseWineComSearchResults reads candidates from ItemList JSON-LD', () => {
@@ -1898,6 +1951,29 @@ test('searchUntappd surfaces a clear error when nothing matches', async () => {
     async () => mockResponse({ status: 200, body: algoliaHitsResponse([]) }),
     async () => {
       await assert.rejects(() => searchUntappd('Nonexistent Beer'), /Could not find "Nonexistent Beer" on Untappd\./);
+    }
+  );
+});
+
+// Regression test for a real Scan UPC miss: the store's own title carries
+// style words ("Dry Irish Stout") that never show up in Untappd's own
+// "<Brewery> <Beer Name>" hit title, which used to dilute the match below
+// pickBestMatch's threshold and fail the whole search - see the comment
+// above pickBestMatch for the full story.
+test('searchUntappd finds a match even when the query carries style words the Untappd title does not', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'oakflower-brewing-company-augury', bid: 4242, beer_name: 'Augury', brewery_name: 'Oakflower Brewing Company' },
+  ]);
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Augury by Oakflower Brewing Company | Untappd" />',
+    body: '<p class="brewery"><a href="#">Oakflower Brewing Company</a></p><p class="style">Stout - Irish Dry</p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
+    async () => {
+      const result = await searchUntappd('Oakflower Augury Dry Irish Stout');
+      assert.equal(result.title, 'Augury');
+      assert.equal(result.brewery, 'Oakflower Brewing Company');
     }
   );
 });

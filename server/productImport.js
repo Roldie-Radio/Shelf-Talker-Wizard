@@ -511,9 +511,19 @@ function firstMatch(text, patterns) {
 // beers with their own ratings and check-in counts; only accept it as
 // Untappd's own rating if it's actually shaped like one (0-5, one or two
 // decimal places).
+//
+// A bare "0"/"0.00" is excluded even though it's shaped like a rating: a
+// real Untappd beer page (confirmed via a user-supplied screenshot) shows
+// empty dots and "(N/A)" - not a zero score - for a beer with no computed
+// average yet, even one with check-ins/"Ratings" already counted against
+// it. No real average can land on exactly 0.00 anyway (the lowest single
+// score Untappd allows is a quarter cap), so a literal 0 here always means
+// "no rating", and importing it as "0.00" would misrepresent the beer as
+// having the worst possible score instead of none at all.
 function asRating(text) {
   const trimmed = (text || '').trim();
-  return /^[0-5](\.\d{1,2})?$/.test(trimmed) ? trimmed : undefined;
+  if (!/^[0-5](\.\d{1,2})?$/.test(trimmed)) return undefined;
+  return Number(trimmed) === 0 ? undefined : trimmed;
 }
 
 // Untappd's current beer page (confirmed via a user-supplied DevTools
@@ -531,11 +541,16 @@ function asRating(text) {
 // for a value read directly out of an attribute literally named
 // "data-rating", but its shape (more than 2 raw decimal digits) would
 // otherwise fail that check for an unrelated reason.
+// Same "0 means no rating, not a real zero" rule as asRating() above
+// applies here too - and this attribute is in fact where that 0 actually
+// comes from: Untappd's own markup sets data-rating="0" on the caps widget
+// for a beer with no computed average, which is what its page then renders
+// as empty dots and "(N/A)" rather than a score.
 function asRatingAttr(raw) {
   const trimmed = (raw || '').trim();
   if (!trimmed) return undefined;
   const num = Number(trimmed);
-  return Number.isFinite(num) && num >= 0 && num <= 5 ? num.toFixed(2) : undefined;
+  return Number.isFinite(num) && num > 0 && num <= 5 ? num.toFixed(2) : undefined;
 }
 
 // Untappd formats large counts with thousands separators ("1,382"); strip
@@ -834,22 +849,41 @@ function tokenize(text) {
 // query's own words (title + vintage) appear in their listed title, and
 // only accepted if at least half of them do - a weak or absent match
 // returns nothing rather than a confident-looking wrong answer.
+//
+// That "half of the query's words" bar is sized off the query alone, which
+// is fine for wine.com/Vivino/Distiller - a listed search-result title
+// there is always at least as long as the query it's being matched
+// against, so sizing off the query or the candidate comes to the same
+// thing. Untappd (searchUntappd below) is the one caller where that stops
+// being true: Algolia hands back a bare "<Brewery> <Beer Name>", with none
+// of a store title's own style/descriptor words folded in. Confirmed
+// against a real miss - a Scan UPC title of "Oakflower Augury Dry Irish
+// Stout" (5 query words) scored only 2 against Untappd's own "Oakflower
+// Brewing Company Augury": "Dry"/"Irish"/"Stout" have nowhere to match on
+// a beer page that never repeats its own style in the name, and
+// "Brewing"/"Company" have nowhere to match the other way - so a real,
+// correct hit still fell 1 short of a threshold sized for a 5-word query,
+// and the lookup failed until staff manually trimmed the title down to
+// "Oakflower Augury". Sizing the bar off whichever of the query/candidate
+// is *shorter* fixes that without loosening anything for a candidate at
+// least as long as the query, where min() just returns the query length
+// again - identical to the old behavior.
 function pickBestMatch(candidates, query) {
   const queryTokens = tokenize(query);
   if (queryTokens.length === 0 || candidates.length === 0) return undefined;
-  const threshold = Math.max(1, Math.ceil(queryTokens.length / 2));
 
   let best;
   let bestScore = 0;
   for (const candidate of candidates) {
     const candidateTokens = new Set(tokenize(candidate.title));
     const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
-    if (score > bestScore) {
+    const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
+    if (score >= threshold && score > bestScore) {
       bestScore = score;
       best = candidate;
     }
   }
-  return bestScore >= threshold ? best : undefined;
+  return best;
 }
 
 // schema.org ItemList JSON-LD, as emitted by many large e-commerce sites on

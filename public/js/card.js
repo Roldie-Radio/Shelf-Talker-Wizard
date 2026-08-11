@@ -87,6 +87,71 @@ function buildAwardsHtml(talker) {
   return `<div class="card__awards" style="color: ${color}">${lines.map(escapeHtml).join('<br>')}</div>`;
 }
 
+// Mash Bill grain -> proportion-bar segment color. Fixed palette, not
+// user-configurable (unlike the beer style colors below, this is a small,
+// well-known set of grains rather than open-ended free text) - matched
+// against the exact value the Mash Bill builder's <select> sends (see
+// #fMashBillGrain in index.html), case-sensitive, since that's a closed
+// list too. An unrecognized value (a saved talker from before a grain was
+// added/renamed, say) falls back to a neutral grey rather than guessing.
+const MASH_BILL_GRAIN_COLORS = {
+  Corn: '#d9a441',
+  Rye: '#8a3a2c',
+  Wheat: '#c9b464',
+  'Malted Barley': '#a67c3d',
+  'Malted Rye': '#6e2a1f',
+  Oat: '#ddd0ad',
+};
+const MASH_BILL_GRAIN_FALLBACK_COLOR = '#b8ab98';
+
+// Mash Bill - a stacked proportion bar (see .card__mashbill-bar in
+// styles.css), the closest analog on a spirits talker to a wine's varietal:
+// a shopper can read "mostly corn, sweeter" vs. "high rye, spicier" from the
+// relative widths alone, the legend underneath carrying the exact
+// percentages for anyone who stops to read. talker.mashBill is
+// [{grain, pct}, ...] (see currentMashBill/addMashBillGrain in app.js) -
+// entries with no grain or a non-positive/non-numeric percent are dropped
+// rather than rendered as a zero-width sliver.
+function buildMashBillHtml(talker) {
+  const entries = (Array.isArray(talker.mashBill) ? talker.mashBill : [])
+    .map((entry) => ({ grain: (entry && entry.grain ? String(entry.grain).trim() : ''), pct: Number(entry && entry.pct) }))
+    .filter((entry) => entry.grain && Number.isFinite(entry.pct) && entry.pct > 0);
+  if (!entries.length) return '';
+
+  const barHtml = entries.map(({ grain, pct }) => {
+    const color = MASH_BILL_GRAIN_COLORS[grain] || MASH_BILL_GRAIN_FALLBACK_COLOR;
+    return `<div class="card__mashbill-seg" style="width: ${pct}%; background: ${color};"></div>`;
+  }).join('');
+  const legendHtml = entries.map(({ grain, pct }) => {
+    const color = MASH_BILL_GRAIN_COLORS[grain] || MASH_BILL_GRAIN_FALLBACK_COLOR;
+    return `
+      <span>
+        <span class="card__mashbill-swatch" style="background: ${color};"></span>
+        ${pct}% ${escapeHtml(grain)}
+      </span>
+    `;
+  }).join('');
+
+  return `
+    <div class="card__mashbill">
+      <div class="card__mashbill-label">Mash Bill</div>
+      <div class="card__mashbill-bar">${barHtml}</div>
+      <div class="card__mashbill-legend">${legendHtml}</div>
+    </div>
+  `;
+}
+
+// Store Pick corner ribbon - a provenance claim ("we hand-picked this
+// barrel"), not a pricing state, so it's a plain boolean (talker.isStorePick,
+// see #fStorePick in index.html) independent of Talker Style rather than a
+// fourth option alongside Closeout/Chilled/Super Sale - see
+// .card__pick-ribbon in styles.css for why that separation matters (it can
+// appear alongside a Closeout badge).
+function buildStorePickRibbonHtml(talker) {
+  if (!talker.isStorePick) return '';
+  return '<div class="card__pick-ribbon">Store Pick</div>';
+}
+
 // Nose/Palate/Finish - spirits tasting notes, filled by hand or via "Find
 // Tasting Notes" (Distiller.com is the source that actually returns these
 // three pre-split; see findTastingNotes in productImport.js). Sits directly
@@ -110,6 +175,146 @@ function buildFlavorHtml(talker) {
     </div>
   `).join('');
   return `<div class="card__flavor">${rowsHtml}</div>`;
+}
+
+// Wine/Spirits varietal -> candidate food pairings, for the Food Pairing
+// Suggestions field (Settings -> Experimental Features -> Wine Food
+// Pairings). Matched by keyword against the Product Title (falling back to
+// Description) - same shape and ordering convention as BEER_STYLE_COLORS
+// right below (checked top to bottom, first/most-specific match wins), just
+// food pairings instead of a color swatch as the payload. detectWinePairings
+// is called from both here (rendering) and app.js's Suggest Pairings button
+// (a plain global, like beerStyleColor/buildFlavorHtml - card.js's script
+// tag loads before app.js's, see index.html), so the two always agree on
+// what a given talker would suggest.
+//
+// Each rule offers 4 candidates; staff picks up to 3 to actually print (see
+// buildPairingsHtml below and the 3-item cap in app.js's addPairing) - more
+// choice than the card has room for, rather than a fixed take-the-first-3.
+const WINE_PAIRING_RULES = [
+  { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
+    pairings: [
+      { icon: '🥩', food: 'Grilled Steak' },
+      { icon: '🧀', food: 'Aged Cheddar' },
+      { icon: '🍫', food: 'Dark Chocolate' },
+      { icon: '🍖', food: 'Braised Lamb' },
+    ] },
+  { id: 'malbec', label: 'Malbec', test: /malbec/i,
+    pairings: [
+      { icon: '🥩', food: 'Grilled Meats' },
+      { icon: '🌶️', food: 'BBQ Ribs' },
+      { icon: '🧀', food: 'Smoked Gouda' },
+      { icon: '🫑', food: 'Chimichurri' },
+    ] },
+  { id: 'syrah', label: 'Syrah / Shiraz', test: /syrah|shiraz/i,
+    pairings: [
+      { icon: '🥩', food: 'Peppered Steak' },
+      { icon: '🍖', food: 'Game Meats' },
+      { icon: '🧀', food: 'Aged Gouda' },
+      { icon: '🍄', food: 'Mushroom Ragout' },
+    ] },
+  { id: 'zinfandel', label: 'Zinfandel', test: /zinfandel|\bzin\b/i,
+    pairings: [
+      { icon: '🍖', food: 'BBQ Ribs' },
+      { icon: '🌭', food: 'Spicy Sausage' },
+      { icon: '🧀', food: 'Blue Cheese' },
+      { icon: '🍕', food: 'Pepperoni Pizza' },
+    ] },
+  { id: 'merlot', label: 'Merlot', test: /merlot/i,
+    pairings: [
+      { icon: '🍗', food: 'Roast Chicken' },
+      { icon: '🍄', food: 'Mushroom Risotto' },
+      { icon: '🧀', food: 'Soft Cheeses' },
+      { icon: '🍝', food: 'Tomato Pasta' },
+    ] },
+  { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir/i,
+    pairings: [
+      { icon: '🦆', food: 'Roast Duck' },
+      { icon: '🍄', food: 'Wild Mushrooms' },
+      { icon: '🐟', food: 'Grilled Salmon' },
+      { icon: '🧀', food: 'Brie' },
+    ] },
+  { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
+    pairings: [
+      { icon: '🧀', food: 'Cheese Board' },
+      { icon: '🥩', food: 'Grilled Meats' },
+      { icon: '🍫', food: 'Dark Chocolate' },
+      { icon: '🍕', food: 'Hearty Pizza' },
+    ] },
+  { id: 'chardonnay', label: 'Chardonnay', test: /chardonnay/i,
+    pairings: [
+      { icon: '🦞', food: 'Lobster' },
+      { icon: '🍗', food: 'Roast Chicken' },
+      { icon: '🍝', food: 'Creamy Pasta' },
+      { icon: '🌽', food: 'Grilled Corn' },
+    ] },
+  { id: 'sauvignon-blanc', label: 'Sauvignon Blanc', test: /sauvignon blanc/i,
+    pairings: [
+      { icon: '🥗', food: 'Fresh Salad' },
+      { icon: '🐐', food: 'Goat Cheese' },
+      { icon: '🦪', food: 'Oysters' },
+      { icon: '🌿', food: 'Herbed Fish' },
+    ] },
+  { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', test: /pinot grigio|pinot gris/i,
+    pairings: [
+      { icon: '🐟', food: 'Light Seafood' },
+      { icon: '🥗', food: 'Garden Salad' },
+      { icon: '🍋', food: 'Citrus Dishes' },
+      { icon: '🍤', food: 'Shrimp Scampi' },
+    ] },
+  { id: 'riesling', label: 'Riesling', test: /riesling/i,
+    pairings: [
+      { icon: '🌶️', food: 'Spicy Asian' },
+      { icon: '🍑', food: 'Fruit & Cheese' },
+      { icon: '🥓', food: 'Roast Pork' },
+      { icon: '🍣', food: 'Sushi' },
+    ] },
+  { id: 'moscato', label: 'Moscato', test: /moscato/i,
+    pairings: [
+      { icon: '🍰', food: 'Light Dessert' },
+      { icon: '🍑', food: 'Fresh Fruit' },
+      { icon: '🧀', food: 'Mild Cheese' },
+      { icon: '🥐', food: 'Pastries' },
+    ] },
+  { id: 'sparkling', label: 'Champagne / Sparkling', test: /champagne|sparkling|prosecco|\bcava\b/i,
+    pairings: [
+      { icon: '🍟', food: 'Fried Appetizers' },
+      { icon: '🦪', food: 'Oysters' },
+      { icon: '🍰', food: 'Light Desserts' },
+      { icon: '🍓', food: 'Fresh Berries' },
+    ] },
+  { id: 'rose', label: 'Rosé', test: /ros[eé]/i,
+    pairings: [
+      { icon: '🧺', food: 'Charcuterie' },
+      { icon: '🍤', food: 'Grilled Shrimp' },
+      { icon: '🍉', food: 'Summer Fruit' },
+      { icon: '🥗', food: 'Nicoise Salad' },
+    ] },
+];
+
+function detectWinePairings(text) {
+  const haystack = text ? String(text) : '';
+  return WINE_PAIRING_RULES.find(({ test }) => test.test(haystack)) || null;
+}
+
+// Renders whatever's in talker.pairings ([{icon, food}], set by the Food
+// Pairing Suggestions field - see addPairing in app.js), same "only ever
+// renders what's already there, no detection of its own" split
+// buildRatingsHtml/buildAwardsHtml below use. Capped at 3 even if more
+// somehow ended up on the talker (e.g. an older save from before the cap
+// existed) - that's what a Full Size talker's width comfortably fits.
+function buildPairingsHtml(talker) {
+  if (!Array.isArray(talker.pairings) || !talker.pairings.length) return '';
+  const chipsHtml = talker.pairings.slice(0, 3)
+    .map((p) => `<span class="card__pairing-chip"><span class="card__pairing-chip-icon">${escapeHtml(p.icon || '')}</span>${escapeHtml(p.food || '')}</span>`)
+    .join('');
+  if (!chipsHtml) return '';
+  return `
+    <div class="card__pairings">
+      <div class="card__pairings-label">Pairs Well With</div>
+      <div class="card__pairings-row">${chipsHtml}</div>
+    </div>
+  `;
 }
 
 // Beer style -> accent color for the pill behind the Style value below.
@@ -556,7 +761,15 @@ function buildCountryFlagHtml(talker) {
 // here) rather than baking it into every caller of this shared function.
 function buildBeerRatingHtml(talker, { includeStyle = false } = {}) {
   const ratingNum = Number(talker.untappdRating);
-  const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum);
+  // A rating of exactly 0 is treated the same as no rating at all: it's
+  // Untappd's own sentinel for "no computed average yet" (shown on the real
+  // page as empty dots and "(N/A)", even alongside a nonzero check-in
+  // count), not a real zero score - see the matching note on asRatingAttr
+  // in server/productImport.js, which is what keeps a freshly-imported beer
+  // from ever landing here with "0" in the first place. This check exists
+  // as a safety net for talkers imported before that fix, or a "0" typed
+  // straight into the rating field by hand.
+  const hasRating = talker.untappdRating != null && String(talker.untappdRating).trim() !== '' && Number.isFinite(ratingNum) && ratingNum > 0;
   const style = includeStyle && talker.style ? String(talker.style).trim() : '';
   // Untappd's own beer page always renders this widget, showing empty dots
   // and "(N/A)" in place of a score for a beer with no ratings yet rather
@@ -917,8 +1130,8 @@ function buildSignElement(talker) {
 /**
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, ratings: [{reviewer, score}],
- *   nose, palate, finish, brewery, location, style, abv, ibu, untappdRating,
- *   untappdRatingCount }
+ *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
+ *   location, style, abv, ibu, untappdRating, untappdRatingCount }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -944,10 +1157,21 @@ function buildCardElement(talker) {
   // that loads card.js without app.js), hence the defensive check rather
   // than a bare property read.
   const experimentalBourbon = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalBourbon);
+  // Same gate, same reasoning, published by applyExperimentalPairings in
+  // app.js - a talker that already has pairings picked stops printing them
+  // the instant the toggle goes off, and shows them again the instant it
+  // goes back on, same "hidden, never deleted" behavior as Bourbon above.
+  const experimentalPairings = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalPairings);
   const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
+  // Wine/Spirits-only, same experimentalBourbon/isQuarter guard as Mash
+  // Bill/Nose-Palate-Finish below - beer never sets isStorePick (the
+  // checkbox is hidden for beer, see applyFormMode in app.js), so this and
+  // rightBadgeHtml above never both apply to the same talker even though
+  // they share the badge-right corner.
+  const storePickRibbonHtml = (!isBeer && !isQuarter && experimentalBourbon) ? buildStorePickRibbonHtml(talker) : '';
   const titleClasses = ['card__title'];
-  if (rightBadgeHtml) titleClasses.push('card__title--badge-right');
+  if (rightBadgeHtml || storePickRibbonHtml) titleClasses.push('card__title--badge-right');
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
   // Quarter gets its own reference width (its own real 1.4in print width,
   // not Full/Half's shared 2.8in) - same trick .sign-small/.sign-large
@@ -976,14 +1200,17 @@ function buildCardElement(talker) {
   ` : `
       ${countryFlagHtml}
       ${rightBadgeHtml}
+      ${storePickRibbonHtml}
       ${titleHtml}
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
+      ${(isBeer || !experimentalBourbon) ? '' : buildMashBillHtml(talker)}
       ${(isBeer || !experimentalBourbon) ? '' : buildFlavorHtml(talker)}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
+      ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
       ${sizeHtml}
       ${buildPricingHtml(talker)}

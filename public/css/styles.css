@@ -29,6 +29,13 @@
   /* Secondary ink. #8a8378 was used for this and fails WCAG AA on white
      (~3.8:1); this is the same family at ~5.8:1. */
   --muted: #6b645a;
+  /* Store Pick ribbon (Bourbon Shelf Talkers, Settings -> Experimental
+     Features - see .card__pick-ribbon below) - deliberately its own colour
+     family (a deep oxblood/gold "wax seal" pair), not reused from
+     --sale-red/--chilled-blue/the CLOSEOUT!! yellow, since this badge marks
+     provenance, not a pricing state, and can appear alongside any of them. */
+  --pick-ribbon-bg: #6e1f1f;
+  --pick-ribbon-ink: #dcb968;
 
   /* --- UI palette (themed) --- */
   --ui-bg: #f4f2ee;
@@ -596,6 +603,31 @@ h1, h2, h3 { margin: 0; }
   box-shadow: inset 0 0 0 2px var(--ui-panel);
 }
 .price-choice__note { margin-top: 0.4rem; font-size: 0.72rem; color: var(--ui-muted); line-height: 1.4; }
+
+/* ---------- Food Pairing Suggestions (Settings -> Experimental Features ->
+   Wine Food Pairings) ---------- */
+
+/* Suggest Pairings' own results - a row of "+ icon food" buttons, cleared
+   once nothing's been suggested yet (see renderPairingSuggestions in
+   app.js). Distinct from .rating-chip/.ratings-list below (already-added
+   pairings, with a remove button) - these are add-only and disappear once
+   picked, since the pick itself is what populates .ratings-list here. */
+.pairing-suggestions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; }
+.pairing-suggestion-chip {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-btn);
+  color: var(--ui-accent-ink);
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pairing-suggestion-chip:hover { background: var(--ui-btn-hover); }
+
+.custom-pairing-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+.custom-pairing-row input { flex: 1; margin: 0; }
 
 /* ---------- Ratings builder ---------- */
 
@@ -1695,6 +1727,86 @@ h1, h2, h3 { margin: 0; }
   margin-top: calc(var(--w) * 0.02 * var(--price-fit, 1));
 }
 
+/* Mash Bill - grain-percentage proportion bar (see buildMashBillHtml in
+   card.js). Wine/Spirits Shelf Talkers only (not Beer, not Quarter Size -
+   same buildCardElement guards as .card__flavor below), sitting directly
+   under the description, above Nose/Palate/Finish. No divider of its own -
+   .card__flavor below already draws one for "clear separation from what's
+   above" (see its own comment), and a second line directly under this one
+   would just be noise. */
+.card__mashbill {
+  flex: 0 0 auto;
+  margin-top: calc(var(--w) * 0.018 * var(--price-fit, 1));
+}
+.card__mashbill-label {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: calc(var(--w) * 0.028 * var(--price-fit, 1));
+  color: var(--muted);
+  margin-bottom: calc(var(--w) * 0.012 * var(--price-fit, 1));
+}
+.card__mashbill-bar {
+  display: flex;
+  width: 100%;
+  height: calc(var(--w) * 0.034 * var(--price-fit, 1));
+  border-radius: calc(var(--w) * 0.006);
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.card__mashbill-seg { height: 100%; }
+/* Wraps rather than a fixed justify-content: space-between row, since a
+   real mash bill can be anywhere from two grains (corn/malted barley) to
+   four (a four-grain bourbon) - a fixed 3-column layout would misalign
+   with anything but exactly three. */
+.card__mashbill-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--w) * 0.02 * var(--price-fit, 1)) calc(var(--w) * 0.035 * var(--price-fit, 1));
+  margin-top: calc(var(--w) * 0.012 * var(--price-fit, 1));
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: calc(var(--w) * 0.028 * var(--price-fit, 1));
+  font-weight: 700;
+  color: var(--ink);
+}
+.card__mashbill-legend span { display: flex; align-items: center; gap: calc(var(--w) * 0.012); }
+.card__mashbill-swatch {
+  width: calc(var(--w) * 0.022);
+  height: calc(var(--w) * 0.022);
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+/* Store Pick ribbon (see buildStorePickRibbonHtml in card.js) - Wine/
+   Spirits Shelf Talkers only, same guards as Mash Bill/Nose-Palate-Finish
+   above. Corner banner rather than a fourth Talker Style badge (Closeout/
+   Chilled/Super Sale) - this isn't a pricing state, it's a provenance
+   claim, so it gets its own spot and can appear alongside a Closeout badge
+   if a store pick ever goes on clearance. Reuses the same top-right corner
+   .card__title--badge-right already reserves room for (see
+   buildCardElement) - beer's own state/country badges use that pairing of
+   classes too, but Store Pick is wine/spirits-only, so the two never
+   collide in practice. */
+.card__pick-ribbon {
+  position: absolute;
+  top: calc(var(--w) * 0.058);
+  right: calc(var(--w) * -0.148);
+  width: calc(var(--w) * 0.46);
+  transform: rotate(38deg);
+  background: linear-gradient(180deg, var(--pick-ribbon-bg) 0%, #4c1414 100%);
+  color: var(--pick-ribbon-ink);
+  text-align: center;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-weight: 900;
+  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  letter-spacing: 0.08em;
+  padding: calc(var(--w) * 0.008) 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  border-top: 1px solid rgba(220,185,104,0.5);
+  border-bottom: 1px solid rgba(220,185,104,0.5);
+}
+
 /* Nose/Palate/Finish - spirits tasting notes (see buildFlavorHtml in
    card.js). Wine/Spirits Shelf Talkers only (not Beer, not Quarter Size -
    see buildCardElement's isBeer/isQuarter guards), sitting directly under
@@ -1744,6 +1856,54 @@ h1, h2, h3 { margin: 0; }
   line-height: 1.3;
   color: var(--ink);
 }
+
+/* Food Pairing Suggestions - up to 3 icon+word pairings (see
+   buildPairingsHtml in card.js), Wine/Spirits Shelf Talkers only (not Beer,
+   not Quarter Size - same isBeer/isQuarter guards as Nose/Palate/Finish
+   above), gated behind Settings -> Experimental Features -> Wine Food
+   Pairings. Same divider/spacing treatment as .card__flavor above (its own
+   line, clearly separated from whatever's above it), sitting after
+   Ratings/Awards rather than replacing either. */
+.card__pairings {
+  flex: 0 0 auto;
+  margin-top: calc(var(--w) * 0.03 * var(--price-fit, 1));
+  padding-top: calc(var(--w) * 0.022 * var(--price-fit, 1));
+  border-top: 1px solid #e5ddd0;
+}
+.card__pairings-label {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  margin-bottom: calc(var(--w) * 0.014 * var(--price-fit, 1));
+}
+.card__pairings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--w) * 0.014 * var(--price-fit, 1));
+}
+/* Tinted by theme (amber/purple) rather than plain white, same "reads as
+   part of this talker's own printed copy, not a sticker slapped on top"
+   idea as the band colors elsewhere on the card - see
+   .card[data-theme="..."] below. */
+.card__pairing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--w) * 0.008 * var(--price-fit, 1));
+  border: calc(var(--w) * 0.0018) solid var(--ink);
+  border-radius: 999px;
+  padding: calc(var(--w) * 0.007 * var(--price-fit, 1)) calc(var(--w) * 0.016 * var(--price-fit, 1));
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  font-size: calc(var(--w) * 0.028 * var(--price-fit, 1));
+  color: var(--ink);
+  white-space: nowrap;
+}
+.card[data-theme="amber"] .card__pairing-chip { background: color-mix(in srgb, var(--amber-band) 14%, #fff); }
+.card[data-theme="purple"] .card__pairing-chip { background: color-mix(in srgb, var(--purple-band) 12%, #fff); }
+.card__pairing-chip-icon { font-size: calc(var(--w) * 0.032 * var(--price-fit, 1)); line-height: 1; }
 
 .card__spacer { flex: 1 1 auto; }
 

@@ -19,6 +19,13 @@
   // productImport.js), so this stays opt-in rather than showing up for
   // every store the moment it ships.
   const EXPERIMENTAL_BOURBON_KEY = 'shelfTalkerExperimentalBourbon.v1';
+  // Settings -> Experimental Features -> Wine Food Pairings: gates the Food
+  // Pairing Suggestions field (see applyExperimentalPairings below) and the
+  // "Pairs Well With" block it prints (buildPairingsHtml in card.js). Off
+  // by default, same reasoning as Bourbon above - this is a new, unreviewed
+  // suggestion engine (WINE_PAIRING_RULES in card.js), so it stays opt-in
+  // rather than showing up for every store the moment it ships.
+  const EXPERIMENTAL_PAIRINGS_KEY = 'shelfTalkerExperimentalPairings.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -33,6 +40,17 @@
   // entries are newer than what this PC last saw, so nothing here needs to
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
+    {
+      version: '3.1.0',
+      items: [
+        'New (experimental, off by default): Food Pairing Suggestions for Wine/Spirits Shelf Talkers — click Suggest Pairings next to Description to match the varietal detected in the title/description against a short list of food pairings, then pick up to 3 to print under the description. Turn it on in Settings → Experimental Features → Wine Food Pairings.',
+        'Also new under Bourbon Shelf Talkers (Settings → Experimental Features): a Mash Bill proportion bar (add each grain with its percentage) and a Store Pick corner ribbon, independent of Talker Style so it can still show up alongside Closeout.',
+        'Export File Settings gained a Sync Now button, so a client PC can pull the latest WinePOS export from the Server PC right away instead of waiting for the next auto-sync.',
+        "Fixed: beers Untappd hasn't rated yet now show no rating instead of 0.00, matching how Untappd's own page displays them.",
+        'Fixed: Untappd search for Scan UPC and Search by Name (Beer) no longer fails on longer titles just because the beer\'s own Untappd page leaves out style words (like "IPA" or "Stout") the title has.',
+        'Desktop app: swapped the Advanced and Help menu positions in the menu bar.',
+      ],
+    },
     {
       version: '3.0.0',
       items: [
@@ -395,6 +413,14 @@
   /** Ratings currently attached to whatever's in the form (not yet in queue). */
   let currentRatings = [];
 
+  /** Food pairings ([{icon, food}], up to 3) currently attached to whatever's in the form. */
+  let currentPairings = [];
+
+  /** Mash Bill grains currently attached to whatever's in the form (not yet
+      in queue) - [{grain, pct}], same "build a list, one Add click at a
+      time" pattern as currentRatings above. */
+  let currentMashBill = [];
+
   let currentSignType = 'talker'; // 'talker' | 'sign'
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
@@ -410,6 +436,15 @@
   } catch {
     // Same as reviewers/queue below - an unavailable store just means this
     // stays at its off-by-default value.
+  }
+
+  // Settings -> Experimental Features -> Wine Food Pairings - same pattern
+  // as experimentalBourbonEnabled right above.
+  let experimentalPairingsEnabled = false;
+  try {
+    experimentalPairingsEnabled = localStorage.getItem(EXPERIMENTAL_PAIRINGS_KEY) === 'true';
+  } catch {
+    // Same as above - stays at its off-by-default value.
   }
 
   let previewMode = 'single'; // 'single' | 'sheet'
@@ -522,10 +557,24 @@
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
+    storePickField: document.getElementById('storePickField'),
+    storePick: document.getElementById('fStorePick'),
+    mashBillField: document.getElementById('mashBillField'),
+    mashBillGrain: document.getElementById('fMashBillGrain'),
+    mashBillPct: document.getElementById('fMashBillPct'),
+    addMashBillBtn: document.getElementById('addMashBillBtn'),
+    mashBillList: document.getElementById('mashBillList'),
     flavorFields: document.getElementById('flavorFields'),
     nose: document.getElementById('fNose'),
     palate: document.getElementById('fPalate'),
     finish: document.getElementById('fFinish'),
+    pairingsField: document.getElementById('pairingsField'),
+    suggestPairingsBtn: document.getElementById('suggestPairingsBtn'),
+    pairingsSuggestStatus: document.getElementById('pairingsSuggestStatus'),
+    pairingsSuggestions: document.getElementById('pairingsSuggestions'),
+    pairingsList: document.getElementById('pairingsList'),
+    pairingCustomInput: document.getElementById('pairingCustomInput'),
+    addPairingBtn: document.getElementById('addPairingBtn'),
     awardsField: document.getElementById('awardsField'),
     awards: document.getElementById('fAwards'),
     awardsColor: document.getElementById('fAwardsColor'),
@@ -624,6 +673,7 @@
     exportSettingsSaveBtn: document.getElementById('exportSettingsSaveBtn'),
     exportSettingsStatus: document.getElementById('exportSettingsStatus'),
     exportSettingsAutoSyncCheckbox: document.getElementById('exportSettingsAutoSyncCheckbox'),
+    exportSettingsSyncNowBtn: document.getElementById('exportSettingsSyncNowBtn'),
     exportSettingsSyncStatus: document.getElementById('exportSettingsSyncStatus'),
 
     previewStage: document.getElementById('previewStage'),
@@ -715,6 +765,7 @@
     settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
     experimentalBourbonCheckbox: document.getElementById('experimentalBourbonCheckbox'),
+    experimentalPairingsCheckbox: document.getElementById('experimentalPairingsCheckbox'),
 
     menuBar: document.getElementById('menuBar'),
   };
@@ -878,6 +929,32 @@
     }
   });
 
+  // ---------- Experimental Features (Settings -> Wine Food Pairings) ----------
+  //
+  // Same shape as applyExperimentalBourbon right above: one switch gates
+  // the Food Pairing Suggestions field (applyFormMode's pairingsField line)
+  // and, via window.ShelfTalkerSettings, whether card.js prints the "Pairs
+  // Well With" block (buildPairingsHtml). Nothing here is ever deleted:
+  // readForm/fillForm don't check this flag, so pairings already picked on
+  // a talker round-trip through a save untouched and reappear the instant
+  // the toggle goes back on.
+  function applyExperimentalPairings(enabled) {
+    experimentalPairingsEnabled = enabled;
+    window.ShelfTalkerSettings.experimentalPairings = enabled;
+    els.experimentalPairingsCheckbox.checked = enabled;
+    applyFormMode();
+    if (previewMode === 'single') renderPreview();
+  }
+
+  els.experimentalPairingsCheckbox.addEventListener('change', () => {
+    applyExperimentalPairings(els.experimentalPairingsCheckbox.checked);
+    try {
+      localStorage.setItem(EXPERIMENTAL_PAIRINGS_KEY, String(els.experimentalPairingsCheckbox.checked));
+    } catch {
+      // Same as theme/accent above - the choice just won't survive a restart.
+    }
+  });
+
   // ---------- Tabs ----------
 
   function activateTab(tab) {
@@ -1006,14 +1083,22 @@
     // showing the field for a sign would offer input with no visible
     // effect there.
     els.awardsField.hidden = isBeer || isSign;
-    // Same rule as Awards right above, and for the same reason - Nose/
-    // Palate/Finish only ever render onto the .card printout (see
+    // Same rule as Awards right above, and for the same reason - Store
+    // Pick/Mash Bill/Nose/Palate/Finish only ever render onto the .card
+    // printout (see buildStorePickRibbonHtml/buildMashBillHtml/
     // buildFlavorHtml in card.js), so a Display Sign would offer input with
     // no visible effect. Also gated behind Settings -> Experimental
     // Features -> Bourbon Shelf Talkers (see applyExperimentalBourbon) -
     // off by default, so these fields stay out of the way until a store
     // opts in.
+    els.storePickField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
+    els.mashBillField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     els.flavorFields.hidden = isBeer || isSign || !experimentalBourbonEnabled;
+    // Same rule/reasoning as Nose/Palate/Finish right above - printed onto
+    // the .card only (see buildPairingsHtml in card.js), and gated behind
+    // its own Settings -> Experimental Features -> Wine Food Pairings
+    // toggle (see applyExperimentalPairings).
+    els.pairingsField.hidden = isBeer || isSign || !experimentalPairingsEnabled;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
     // The store never runs a Super Sale on beer, so the option isn't just
@@ -1174,9 +1259,12 @@
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
+      isStorePick: els.storePick.checked,
+      mashBill: currentMashBill.slice(),
       nose: els.nose.value.trim(),
       palate: els.palate.value.trim(),
       finish: els.finish.value.trim(),
+      pairings: currentPairings.slice(),
       sku: els.sku.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
@@ -1222,9 +1310,18 @@
     renderRatingsList();
     els.awards.value = talker.awards || '';
     els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
+    els.storePick.checked = !!talker.isStorePick;
+    currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
+    renderMashBillList();
     els.nose.value = talker.nose || '';
     els.palate.value = talker.palate || '';
     els.finish.value = talker.finish || '';
+    currentPairings = Array.isArray(talker.pairings) ? talker.pairings.slice() : [];
+    renderPairingsList();
+    // A fresh Suggest Pairings run is for the talker now loaded, not
+    // whatever the previous one left showing.
+    renderPairingSuggestions(null);
+    els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
     els.sku.value = talker.sku || '';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
@@ -1260,6 +1357,12 @@
     els.cancelEditBtn.hidden = true;
     currentRatings = [];
     renderRatingsList();
+    currentPairings = [];
+    renderPairingsList();
+    renderPairingSuggestions(null);
+    els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
+    currentMashBill = [];
+    renderMashBillList();
     hideError();
     refreshPreview();
   }
@@ -1330,6 +1433,50 @@
     refreshPreview();
   });
 
+  // ---------- Mash Bill (Bourbon Shelf Talkers) ----------
+
+  // Same "build a list, one Add click at a time" pattern as Ratings above,
+  // just grain+percent instead of reviewer+score - no "manage grains"
+  // equivalent to Manage Reviewers, since Mash Bill's grain list is a small
+  // fixed set (see #fMashBillGrain's own <option>s in index.html), not
+  // something a store customizes.
+  function renderMashBillList() {
+    if (currentMashBill.length === 0) {
+      els.mashBillList.innerHTML = '';
+      return;
+    }
+    els.mashBillList.innerHTML = currentMashBill.map((m, i) => `
+      <div class="rating-chip" data-mashbill-index="${i}">
+        <span>${escapeHtml(m.pct)}% ${escapeHtml(m.grain)}</span>
+        <button type="button" data-action="remove-mashbill" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  function addMashBillGrain() {
+    const grain = els.mashBillGrain.value;
+    const pct = els.mashBillPct.value.trim();
+    if (!grain || !pct) return;
+    currentMashBill.push({ grain, pct });
+    els.mashBillPct.value = '';
+    renderMashBillList();
+    refreshPreview();
+  }
+
+  els.addMashBillBtn.addEventListener('click', addMashBillGrain);
+  els.mashBillPct.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addMashBillGrain(); }
+  });
+
+  els.mashBillList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-mashbill"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-mashbill-index]').dataset.mashbillIndex);
+    currentMashBill.splice(idx, 1);
+    renderMashBillList();
+    refreshPreview();
+  });
+
   els.manageReviewersToggle.addEventListener('click', () => {
     els.reviewerManager.hidden = !els.reviewerManager.hidden;
     els.manageReviewersToggle.setAttribute('aria-expanded', String(!els.reviewerManager.hidden));
@@ -1356,6 +1503,107 @@
     saveReviewers();
     renderReviewerSelect();
     renderReviewerManagerList();
+  });
+
+  // ---------- Food Pairing Suggestions (Settings -> Experimental Features
+  // -> Wine Food Pairings) ----------
+  //
+  // WINE_PAIRING_RULES/detectWinePairings are plain globals defined in
+  // card.js (same convention as buildCardElement/fitCardText, which this
+  // file already calls directly - card.js's <script> tag loads before this
+  // one's, see index.html), so no import/require is needed here.
+
+  // Renders the currently-selected pairings (currentPairings) as removable
+  // chips - same markup/behavior as renderRatingsList above, just a
+  // different backing array and a 3-item cap enforced in addPairing below.
+  function renderPairingsList() {
+    if (currentPairings.length === 0) {
+      els.pairingsList.innerHTML = '';
+      return;
+    }
+    els.pairingsList.innerHTML = currentPairings.map((p, i) => `
+      <div class="rating-chip" data-pairing-index="${i}">
+        <span>${escapeHtml(p.icon || '')} ${escapeHtml(p.food)}</span>
+        <button type="button" data-action="remove-pairing" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  // The clickable "+ icon food" row offered after Suggest Pairings runs -
+  // cleared (rule === null) whenever there's nothing to suggest right now
+  // (no title typed yet, no varietal matched, or the form was just reset/
+  // loaded with a different talker - see fillForm/resetForm above).
+  function renderPairingSuggestions(rule) {
+    if (!rule) {
+      els.pairingsSuggestions.innerHTML = '';
+      return;
+    }
+    els.pairingsSuggestions.innerHTML = rule.pairings.map((p) => `
+      <button type="button" class="pairing-suggestion-chip" data-icon="${escapeHtml(p.icon)}" data-food="${escapeHtml(p.food)}">
+        + ${escapeHtml(p.icon)} ${escapeHtml(p.food)}
+      </button>
+    `).join('');
+  }
+
+  // Shared by a suggestion click and the custom-pairing Add button below.
+  // Silently no-ops on a duplicate; returns false (without an error) once
+  // the 3-item cap (what a Full Size talker's width comfortably fits - see
+  // buildPairingsHtml in card.js) is hit, so callers can decide how loudly
+  // to say so.
+  function addPairing(pairing) {
+    if (currentPairings.length >= 3) return false;
+    if (currentPairings.some((p) => p.food.toLowerCase() === pairing.food.toLowerCase())) return false;
+    currentPairings.push(pairing);
+    renderPairingsList();
+    refreshPreview();
+    return true;
+  }
+
+  function suggestPairings() {
+    const haystack = `${els.title.value} ${els.description.value}`;
+    const rule = detectWinePairings(haystack);
+    renderPairingSuggestions(rule);
+    if (rule) {
+      els.pairingsSuggestStatus.textContent = `Detected ${rule.label} - click a suggestion below to add it (up to 3).`;
+    } else if (els.title.value.trim()) {
+      els.pairingsSuggestStatus.textContent = 'No matching varietal found in the title/description - add pairings manually below.';
+    } else {
+      els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
+    }
+  }
+  els.suggestPairingsBtn.addEventListener('click', suggestPairings);
+
+  els.pairingsSuggestions.addEventListener('click', (e) => {
+    const btn = e.target.closest('.pairing-suggestion-chip');
+    if (!btn) return;
+    const added = addPairing({ icon: btn.dataset.icon, food: btn.dataset.food });
+    if (!added && currentPairings.length >= 3) {
+      els.pairingsSuggestStatus.textContent = 'Up to 3 pairings print on a talker - remove one below to add another.';
+    }
+  });
+
+  function addCustomPairing() {
+    const food = els.pairingCustomInput.value.trim();
+    if (!food) return;
+    const added = addPairing({ icon: '🍽️', food });
+    if (added) {
+      els.pairingCustomInput.value = '';
+    } else if (currentPairings.length >= 3) {
+      els.pairingsSuggestStatus.textContent = 'Up to 3 pairings print on a talker - remove one below to add another.';
+    }
+  }
+  els.addPairingBtn.addEventListener('click', addCustomPairing);
+  els.pairingCustomInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addCustomPairing(); }
+  });
+
+  els.pairingsList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-pairing"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-pairing-index]').dataset.pairingIndex);
+    currentPairings.splice(idx, 1);
+    renderPairingsList();
+    refreshPreview();
   });
 
   // ---------- Preview ----------
@@ -3988,11 +4236,15 @@
 
   // Manual path entry only makes sense while auto-sync is off - disabling
   // it (rather than hiding it) keeps the field visible so staff can still
-  // see/copy whatever it was last set to.
+  // see/copy whatever it was last set to. Sync Now is the mirror image: it
+  // only does anything while auto-sync is on (see the /api/upc-settings/
+  // sync-now route in server/index.js), so it's disabled the rest of the
+  // time rather than hidden, same reasoning.
   function updateExportSettingsManualControlsDisabled(autoSync) {
     els.exportSettingsPathInput.disabled = autoSync;
     els.exportSettingsSaveBtn.disabled = autoSync;
     els.exportSettingsBrowseBtn.disabled = autoSync;
+    els.exportSettingsSyncNowBtn.disabled = !autoSync;
   }
 
   let exportSettingsSyncPollTimer = null;
@@ -4082,6 +4334,27 @@
       els.exportSettingsSyncStatus.textContent = err.message || 'Could not save that setting.';
     } finally {
       els.exportSettingsAutoSyncCheckbox.disabled = false;
+    }
+  });
+
+  // Forces an immediate pull from the Server PC instead of waiting up to
+  // ~30s for the puller's own interval (see exportSync.js's syncOnce) -
+  // only enabled while auto-sync is on (see updateExportSettingsManualControlsDisabled
+  // above). Reuses describeExportSettings/describeSyncStatus so the result
+  // reads exactly the same as a background sync completing on its own.
+  els.exportSettingsSyncNowBtn.addEventListener('click', async () => {
+    els.exportSettingsSyncNowBtn.disabled = true;
+    els.exportSettingsSyncStatus.textContent = 'Syncing...';
+    try {
+      const resp = await fetch('/api/upc-settings/sync-now', { method: 'POST' });
+      const settings = await resp.json();
+      if (!resp.ok) throw new Error(settings.error || 'Could not sync right now.');
+      els.exportSettingsStatus.textContent = describeExportSettings(settings);
+      els.exportSettingsSyncStatus.textContent = describeSyncStatus(settings);
+    } catch (err) {
+      els.exportSettingsSyncStatus.textContent = err.message || 'Could not sync right now.';
+    } finally {
+      els.exportSettingsSyncNowBtn.disabled = !els.exportSettingsAutoSyncCheckbox.checked;
     }
   });
 
@@ -4277,6 +4550,7 @@
       applyAccent(currentAccent());
       applyMenuSize(currentMenuSize());
       els.experimentalBourbonCheckbox.checked = experimentalBourbonEnabled;
+      els.experimentalPairingsCheckbox.checked = experimentalPairingsEnabled;
     },
   });
 
@@ -4563,6 +4837,7 @@
   // Also runs applyFormMode() - see applyExperimentalBourbon's own comment
   // above for why the two need to move together.
   applyExperimentalBourbon(experimentalBourbonEnabled);
+  applyExperimentalPairings(experimentalPairingsEnabled);
   applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();
