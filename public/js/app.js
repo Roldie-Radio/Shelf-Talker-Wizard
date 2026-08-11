@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.1.4',
+      items: [
+        'Fixed: SKU Lookup no longer folds a short store vendor/distributor code (e.g. "AB") into the Brand field for beer - it was getting prepended onto the title and sent to Untappd as part of the search, breaking the match and showing the code as the Brewery.',
+      ],
+    },
+    {
       version: '3.1.3',
       items: [
         'New: Scan UPC, SKU Lookup, and Search by Name (Beer) now show a confirmation dialog for every Untappd match before applying its brewery/style/ABV/rating - not just when there\'s a genuine tie - so a wrong-but-confident match doesn\'t reach the printed talker unreviewed.',
