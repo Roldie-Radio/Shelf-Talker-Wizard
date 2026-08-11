@@ -1034,6 +1034,25 @@ test('pickBestMatch returns nothing for an empty candidate list', () => {
   assert.equal(pickBestMatch([], 'Josh Cellars Cabernet Sauvignon 2022'), undefined);
 });
 
+// Regression test for a real miss: a Scan UPC beer title carries style
+// words ("Dry Irish Stout") that Untappd's own concise "<Brewery> <Beer
+// Name>" candidate title never repeats, and that candidate title in turn
+// carries brewery-suffix words ("Brewing Company") the store title never
+// had either - so neither side's title fully contains the other's words,
+// which is exactly the shape a threshold sized only off the query
+// (5 words here) used to reject. See the comment above pickBestMatch.
+test('pickBestMatch still matches when the candidate title is shorter than the query and neither side is a subset of the other', () => {
+  const candidates = [{ url: 'https://untappd.com/b/oakflower-augury/1', title: 'Oakflower Brewing Company Augury' }];
+  const match = pickBestMatch(candidates, 'Oakflower Augury Dry Irish Stout');
+  assert.equal(match.url, 'https://untappd.com/b/oakflower-augury/1');
+});
+
+test('pickBestMatch still rejects a short candidate that only weakly overlaps a long query', () => {
+  const candidates = [{ url: 'https://untappd.com/b/unrelated/1', title: 'Riverbend Brewing Golden Ale' }];
+  const match = pickBestMatch(candidates, 'Oakflower Augury Dry Irish Stout');
+  assert.equal(match, undefined);
+});
+
 test('parseWineComSearchResults reads candidates from ItemList JSON-LD', () => {
   const html = page({
     head: `<script type="application/ld+json">${JSON.stringify({
@@ -1932,6 +1951,29 @@ test('searchUntappd surfaces a clear error when nothing matches', async () => {
     async () => mockResponse({ status: 200, body: algoliaHitsResponse([]) }),
     async () => {
       await assert.rejects(() => searchUntappd('Nonexistent Beer'), /Could not find "Nonexistent Beer" on Untappd\./);
+    }
+  );
+});
+
+// Regression test for a real Scan UPC miss: the store's own title carries
+// style words ("Dry Irish Stout") that never show up in Untappd's own
+// "<Brewery> <Beer Name>" hit title, which used to dilute the match below
+// pickBestMatch's threshold and fail the whole search - see the comment
+// above pickBestMatch for the full story.
+test('searchUntappd finds a match even when the query carries style words the Untappd title does not', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'oakflower-brewing-company-augury', bid: 4242, beer_name: 'Augury', brewery_name: 'Oakflower Brewing Company' },
+  ]);
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Augury by Oakflower Brewing Company | Untappd" />',
+    body: '<p class="brewery"><a href="#">Oakflower Brewing Company</a></p><p class="style">Stout - Irish Dry</p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
+    async () => {
+      const result = await searchUntappd('Oakflower Augury Dry Irish Stout');
+      assert.equal(result.title, 'Augury');
+      assert.equal(result.brewery, 'Oakflower Brewing Company');
     }
   );
 });
