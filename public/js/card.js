@@ -112,6 +112,146 @@ function buildFlavorHtml(talker) {
   return `<div class="card__flavor">${rowsHtml}</div>`;
 }
 
+// Wine/Spirits varietal -> candidate food pairings, for the Food Pairing
+// Suggestions field (Settings -> Experimental Features -> Wine Food
+// Pairings). Matched by keyword against the Product Title (falling back to
+// Description) - same shape and ordering convention as BEER_STYLE_COLORS
+// right below (checked top to bottom, first/most-specific match wins), just
+// food pairings instead of a color swatch as the payload. detectWinePairings
+// is called from both here (rendering) and app.js's Suggest Pairings button
+// (a plain global, like beerStyleColor/buildFlavorHtml - card.js's script
+// tag loads before app.js's, see index.html), so the two always agree on
+// what a given talker would suggest.
+//
+// Each rule offers 4 candidates; staff picks up to 3 to actually print (see
+// buildPairingsHtml below and the 3-item cap in app.js's addPairing) - more
+// choice than the card has room for, rather than a fixed take-the-first-3.
+const WINE_PAIRING_RULES = [
+  { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
+    pairings: [
+      { icon: '🥩', food: 'Grilled Steak' },
+      { icon: '🧀', food: 'Aged Cheddar' },
+      { icon: '🍫', food: 'Dark Chocolate' },
+      { icon: '🍖', food: 'Braised Lamb' },
+    ] },
+  { id: 'malbec', label: 'Malbec', test: /malbec/i,
+    pairings: [
+      { icon: '🥩', food: 'Grilled Meats' },
+      { icon: '🌶️', food: 'BBQ Ribs' },
+      { icon: '🧀', food: 'Smoked Gouda' },
+      { icon: '🫑', food: 'Chimichurri' },
+    ] },
+  { id: 'syrah', label: 'Syrah / Shiraz', test: /syrah|shiraz/i,
+    pairings: [
+      { icon: '🥩', food: 'Peppered Steak' },
+      { icon: '🍖', food: 'Game Meats' },
+      { icon: '🧀', food: 'Aged Gouda' },
+      { icon: '🍄', food: 'Mushroom Ragout' },
+    ] },
+  { id: 'zinfandel', label: 'Zinfandel', test: /zinfandel|\bzin\b/i,
+    pairings: [
+      { icon: '🍖', food: 'BBQ Ribs' },
+      { icon: '🌭', food: 'Spicy Sausage' },
+      { icon: '🧀', food: 'Blue Cheese' },
+      { icon: '🍕', food: 'Pepperoni Pizza' },
+    ] },
+  { id: 'merlot', label: 'Merlot', test: /merlot/i,
+    pairings: [
+      { icon: '🍗', food: 'Roast Chicken' },
+      { icon: '🍄', food: 'Mushroom Risotto' },
+      { icon: '🧀', food: 'Soft Cheeses' },
+      { icon: '🍝', food: 'Tomato Pasta' },
+    ] },
+  { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir/i,
+    pairings: [
+      { icon: '🦆', food: 'Roast Duck' },
+      { icon: '🍄', food: 'Wild Mushrooms' },
+      { icon: '🐟', food: 'Grilled Salmon' },
+      { icon: '🧀', food: 'Brie' },
+    ] },
+  { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
+    pairings: [
+      { icon: '🧀', food: 'Cheese Board' },
+      { icon: '🥩', food: 'Grilled Meats' },
+      { icon: '🍫', food: 'Dark Chocolate' },
+      { icon: '🍕', food: 'Hearty Pizza' },
+    ] },
+  { id: 'chardonnay', label: 'Chardonnay', test: /chardonnay/i,
+    pairings: [
+      { icon: '🦞', food: 'Lobster' },
+      { icon: '🍗', food: 'Roast Chicken' },
+      { icon: '🍝', food: 'Creamy Pasta' },
+      { icon: '🌽', food: 'Grilled Corn' },
+    ] },
+  { id: 'sauvignon-blanc', label: 'Sauvignon Blanc', test: /sauvignon blanc/i,
+    pairings: [
+      { icon: '🥗', food: 'Fresh Salad' },
+      { icon: '🐐', food: 'Goat Cheese' },
+      { icon: '🦪', food: 'Oysters' },
+      { icon: '🌿', food: 'Herbed Fish' },
+    ] },
+  { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', test: /pinot grigio|pinot gris/i,
+    pairings: [
+      { icon: '🐟', food: 'Light Seafood' },
+      { icon: '🥗', food: 'Garden Salad' },
+      { icon: '🍋', food: 'Citrus Dishes' },
+      { icon: '🍤', food: 'Shrimp Scampi' },
+    ] },
+  { id: 'riesling', label: 'Riesling', test: /riesling/i,
+    pairings: [
+      { icon: '🌶️', food: 'Spicy Asian' },
+      { icon: '🍑', food: 'Fruit & Cheese' },
+      { icon: '🥓', food: 'Roast Pork' },
+      { icon: '🍣', food: 'Sushi' },
+    ] },
+  { id: 'moscato', label: 'Moscato', test: /moscato/i,
+    pairings: [
+      { icon: '🍰', food: 'Light Dessert' },
+      { icon: '🍑', food: 'Fresh Fruit' },
+      { icon: '🧀', food: 'Mild Cheese' },
+      { icon: '🥐', food: 'Pastries' },
+    ] },
+  { id: 'sparkling', label: 'Champagne / Sparkling', test: /champagne|sparkling|prosecco|\bcava\b/i,
+    pairings: [
+      { icon: '🍟', food: 'Fried Appetizers' },
+      { icon: '🦪', food: 'Oysters' },
+      { icon: '🍰', food: 'Light Desserts' },
+      { icon: '🍓', food: 'Fresh Berries' },
+    ] },
+  { id: 'rose', label: 'Rosé', test: /ros[eé]/i,
+    pairings: [
+      { icon: '🧺', food: 'Charcuterie' },
+      { icon: '🍤', food: 'Grilled Shrimp' },
+      { icon: '🍉', food: 'Summer Fruit' },
+      { icon: '🥗', food: 'Nicoise Salad' },
+    ] },
+];
+
+function detectWinePairings(text) {
+  const haystack = text ? String(text) : '';
+  return WINE_PAIRING_RULES.find(({ test }) => test.test(haystack)) || null;
+}
+
+// Renders whatever's in talker.pairings ([{icon, food}], set by the Food
+// Pairing Suggestions field - see addPairing in app.js), same "only ever
+// renders what's already there, no detection of its own" split
+// buildRatingsHtml/buildAwardsHtml below use. Capped at 3 even if more
+// somehow ended up on the talker (e.g. an older save from before the cap
+// existed) - that's what a Full Size talker's width comfortably fits.
+function buildPairingsHtml(talker) {
+  if (!Array.isArray(talker.pairings) || !talker.pairings.length) return '';
+  const chipsHtml = talker.pairings.slice(0, 3)
+    .map((p) => `<span class="card__pairing-chip"><span class="card__pairing-chip-icon">${escapeHtml(p.icon || '')}</span>${escapeHtml(p.food || '')}</span>`)
+    .join('');
+  if (!chipsHtml) return '';
+  return `
+    <div class="card__pairings">
+      <div class="card__pairings-label">Pairs Well With</div>
+      <div class="card__pairings-row">${chipsHtml}</div>
+    </div>
+  `;
+}
+
 // Beer style -> accent color for the pill behind the Style value below.
 // Matched by keyword against the free-text Style field (typed by hand or
 // scraped from Untappd, e.g. "IPA - Imperial / Double New England / Hazy"),
@@ -944,6 +1084,11 @@ function buildCardElement(talker) {
   // that loads card.js without app.js), hence the defensive check rather
   // than a bare property read.
   const experimentalBourbon = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalBourbon);
+  // Same gate, same reasoning, published by applyExperimentalPairings in
+  // app.js - a talker that already has pairings picked stops printing them
+  // the instant the toggle goes off, and shows them again the instant it
+  // goes back on, same "hidden, never deleted" behavior as Bourbon above.
+  const experimentalPairings = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalPairings);
   const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
   const titleClasses = ['card__title'];
@@ -984,6 +1129,7 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalBourbon) ? '' : buildFlavorHtml(talker)}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
+      ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
       ${sizeHtml}
       ${buildPricingHtml(talker)}

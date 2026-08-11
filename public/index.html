@@ -249,6 +249,29 @@
             </label>
           </div>
 
+          <!-- Spirits/Wine-only, same visibility rule as Nose/Palate/Finish
+               above (Shelf Talkers only, hidden for Beer/Display Signs, and
+               gated behind Settings -> Experimental Features -> Wine Food
+               Pairings - see applyExperimentalPairings in app.js). Suggest
+               Pairings runs detectWinePairings (global, defined in card.js
+               alongside WINE_PAIRING_RULES) against the Title/Description
+               already in the form; picking a suggestion (or typing a custom
+               one) adds it to the list below, capped at 3 since that's what
+               fits on a printed talker (see buildPairingsHtml in card.js). -->
+          <div class="field" id="pairingsField">
+            <div class="field-head">
+              <span>Food Pairing Suggestions (optional) <span class="beta-badge">Experimental</span></span>
+              <button type="button" class="btn btn--small btn--ghost" id="suggestPairingsBtn">Suggest Pairings</button>
+            </div>
+            <p class="help-text" id="pairingsSuggestStatus" role="status" aria-live="polite">Type a Product Title, then click Suggest Pairings.</p>
+            <div class="pairing-suggestions" id="pairingsSuggestions"></div>
+            <div class="ratings-list" id="pairingsList"></div>
+            <div class="custom-pairing-row">
+              <input type="text" id="pairingCustomInput" maxlength="40" placeholder="Add a custom pairing (e.g. Truffle Fries)" aria-label="Custom food pairing" />
+              <button type="button" class="btn btn--small" id="addPairingBtn">Add</button>
+            </div>
+          </div>
+
           <div class="field-row">
             <label class="field">
               <span>Size / Unit *</span>
@@ -1034,6 +1057,12 @@
             Bourbon Shelf Talkers
           </label>
           <p class="help-text">Adds Nose / Palate / Finish fields to Wine/Spirits Shelf Talkers, and a Distiller.com source to "Find Tasting Notes" that fills them in automatically. Distiller's scraper hasn't been confirmed against the live site yet, so always double-check what it finds before printing. Off by default; turning it off again hides the fields and the source without deleting anything already on a talker.</p>
+
+          <label class="server-pc-checkbox">
+            <input type="checkbox" id="experimentalPairingsCheckbox" />
+            Wine Food Pairings
+          </label>
+          <p class="help-text">Adds a Food Pairing Suggestions section to Wine/Spirits Shelf Talkers: click Suggest Pairings to match the varietal detected in the Product Title/Description (e.g. Cabernet Sauvignon) against a short list of food pairings, then pick up to 3 to print under the description. Off by default; turning it off again hides the section and the printed pairings without deleting anything already on a talker.</p>
         </div>
       </div>
       <div class="modal__footer">
