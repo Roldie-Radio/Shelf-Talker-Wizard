@@ -169,7 +169,6 @@ test('upsertCachedProduct + getCachedProduct round-trips by key', () => {
     const cached = db.getCachedProduct({ keyType: 'sku', key: '09144' });
     assert.equal(cached.data.title, 'Josh Cellars');
     assert.equal(cached.source, 'sku-lookup');
-    assert.ok(db.isFresh(cached));
   });
 });
 
@@ -205,18 +204,21 @@ test('upsertCachedProduct overwrites rather than duplicating an existing key', (
   });
 });
 
-test('isFresh is false for an entry older than the freshness window', () => {
+// getCachedProduct itself has no notion of "too old to use" - every lookup
+// route in server/index.js is live now (see the comment above the product
+// cache section in db.js) and only ever reads this back as a last-resort
+// fallback after a live attempt fails, however old the cached copy is.
+test('getCachedProduct returns an entry regardless of its age', () => {
   withTempDb(() => {
     db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { price: '13.99' } });
-    // Backdate updated_at directly rather than waiting 24h - getDb() is
+    // Backdate updated_at directly rather than waiting - getDb() is
     // exported for exactly this kind of test-only direct access.
-    const old = new Date(Date.now() - db.CACHE_FRESH_MS - 1000).toISOString();
+    const old = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     db.getDb().prepare('UPDATE product_cache SET updated_at = ? WHERE key_type = ? AND key = ?').run(old, 'sku', '09144');
 
     const cached = db.getCachedProduct({ keyType: 'sku', key: '09144' });
-    assert.equal(db.isFresh(cached), false);
-    // Still returns the (stale) data - staleness is the caller's decision, not this module's.
     assert.equal(cached.data.price, '13.99');
+    assert.ok(cached.ageMs > 29 * 24 * 60 * 60 * 1000);
   });
 });
 

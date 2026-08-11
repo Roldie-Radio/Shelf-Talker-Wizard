@@ -16,7 +16,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Print-ready sheets** &mdash; queue up talkers and print; they're laid out 6-up on Letter-size paper (3 columns &times; 2 rows), the same arrangement as the original template, paginating automatically if you have more than 6.
 - Your queue is saved in the browser (localStorage) so it survives a refresh.
 - **Print History** &mdash; every talker actually printed is kept in a permanent, searchable record (a local SQLite database), separate from the queue above. Search by title or SKU and click **Reprint** to add a past talker back into the queue without re-entering it.
-- **Product cache** &mdash; SKU Lookup and Scan UPC both remember what they found for a given SKU/UPC; a repeat lookup within 24 hours skips the network/file read entirely, and a *failed* lookup falls back to whatever's cached (clearly marked, however old) rather than a hard error.
+- **Product cache** &mdash; SKU Lookup and Scan UPC both remember what they found for a given SKU/UPC and use it as a fallback: every lookup is live, but a *failed* one falls back to whatever's cached (clearly marked, however old) rather than a hard error.
 - **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, SKU lookup, importing, History, and printing, so staff aren't sent looking for this README.
 - **What's New** &mdash; a popup shows automatically the first time the app launches after an update, and the desktop app's Help menu reopens it anytime with the full history.
 
@@ -222,21 +222,15 @@ is sent anywhere or shared between PCs.
 
 ### Product cache
 
-SKU Lookup and Scan UPC both write whatever they find into the same database,
-keyed by SKU or UPC. A repeat lookup of the same SKU/UPC within 24 hours returns
-the cached copy immediately instead of hitting the network (SKU Lookup) or
-re-reading the export file (Scan UPC) again; a status line notes when this
-happened. If a *fresh* lookup fails outright (site blocked, export file missing,
-etc.), the cached copy is used as a fallback instead of a hard error, clearly
-marked as possibly stale &mdash; a review-before-you-trust-it value beats nothing.
-For both SKU Lookup and Scan UPC, a cached copy is only reused when it was cached
-under the same Wine/Spirits-vs-Beer category being looked up now &mdash; switching
-a SKU to Beer always re-runs the lookup (store site + Untappd) even if that same
-SKU was cached under Wine/Spirits moments ago, so the beer-only Untappd
-enrichment step always actually runs instead of being silently skipped. The same
-goes for switching a UPC to Wine/Spirits after it was first scanned as Beer, so
-the store-description lookup above always actually runs instead of serving back
-a Beer-only cached copy that skipped it.
+SKU Lookup, Scan UPC, and Search by Name (Beer) all write whatever they find into
+the same database, keyed by SKU or UPC &mdash; but every lookup is live; nothing
+here is ever read back just to skip a network/file read. A repeat lookup of the
+same SKU/UPC always re-runs, even seconds later, so a beer that missed on
+Untappd (or came back ambiguous &mdash; see below) always gets a fresh attempt
+instead of being stuck showing the same stale result. If a lookup fails outright
+(site blocked, export file missing, etc.), the last cached copy for that SKU/UPC
+is used as a fallback instead of a hard error, clearly marked as possibly stale
+&mdash; a review-before-you-trust-it value beats nothing.
 
 ## Advanced menu (desktop app)
 
@@ -309,7 +303,7 @@ test/
   print-css-sync.test.js  Guards the JS geometry against the print CSS
   upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence, export preview -
                           including a real WinePOS export (see fixtures/) with a BOM, CRLF, and a dropped-leading-zero UPC
-  db.test.js              Print History log + product cache: search/paginate/delete, cache keying/freshness, stats
+  db.test.js              Print History log + product cache: search/paginate/delete, cache keying, stats
   serverConfig.test.js    Server PC flag persistence
   discovery.test.js       LAN announcement wire format, staleness, self-filtering, and a real send/receive round trip
   exportSync.test.js      Export-serve HTTP server (real request/response round trip) and the auto-sync puller

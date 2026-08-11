@@ -186,14 +186,16 @@ function postJson(port, urlPath, body) {
 }
 
 // ================================================================
-// /api/sku-lookup's category-aware cache - see the comment above the route
-// in server/index.js. The cache is keyed by SKU alone, not category, so
-// these confirm a same-SKU, different-category re-lookup within the 24h
-// freshness window actually re-runs the store+Untappd lookup instead of
-// silently reusing the other category's cached copy.
+// /api/sku-lookup is always live - see the comment above the route in
+// server/index.js for why a "still fresh, skip the network" shortcut used
+// to live here and got removed: it meant a beer that missed on Untappd (or
+// came back ambiguous) stayed stuck showing that exact same stale result
+// for a full day, even after a fix that would have found it on a retry
+// shipped. The product_cache table (db.js) still gets written on every
+// success - see the stale-fallback test further down for what it's for now.
 // ================================================================
 
-test('a second SKU lookup in the same category reuses the fresh cache instead of hitting the network again', async () => {
+test('a second SKU lookup, even in the same category, still hits the network again', async () => {
   await withTempDb(() => withServer(async (port) => {
     const calls = [];
     await withMockFetch(
@@ -211,14 +213,14 @@ test('a second SKU lookup in the same category reuses the fresh cache instead of
         const callsAfterFirst = calls.length;
         const second = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
         assert.equal(second.status, 200);
-        assert.equal(second.body.fromCache, true);
-        assert.equal(calls.length, callsAfterFirst, 'a same-category repeat lookup should not hit the network again');
+        assert.equal(second.body.fromCache, undefined);
+        assert.ok(calls.length > callsAfterFirst, 'a repeat lookup should hit the network again, not reuse a cached copy');
       }
     );
   }));
 });
 
-test('switching a cached SKU to Beer re-runs the lookup (and Untappd search) instead of reusing the Wine/Spirits cache', async () => {
+test('switching a looked-up SKU to Beer re-runs the lookup and actually runs the Untappd search', async () => {
   await withTempDb(() => withServer(async (port) => {
     const calls = [];
     await withMockFetch(
@@ -236,7 +238,7 @@ test('switching a cached SKU to Beer re-runs the lookup (and Untappd search) ins
         const callsAfterWine = calls.length;
         const beerResult = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
         assert.equal(beerResult.status, 200);
-        assert.equal(beerResult.body.fromCache, undefined, 'switching category should not serve the Wine/Spirits cache hit');
+        assert.equal(beerResult.body.fromCache, undefined);
         assert.ok(calls.length > callsAfterWine, 'switching to Beer should re-hit the network for the Untappd step');
         assert.ok(
           calls.some((url) => url.includes('algolia.net')),
@@ -245,13 +247,39 @@ test('switching a cached SKU to Beer re-runs the lookup (and Untappd search) ins
         // Algolia came back with no hits, so the best-effort Untappd step
         // surfaces its miss the same way enrichBeerFromUntappd always does.
         assert.match(beerResult.body.untappdError, /Could not find/);
+      }
+    );
+  }));
+});
 
-        // A second Beer lookup right after, though, should now be served
-        // from the (freshly Beer-tagged) cache.
-        const callsAfterBeer = calls.length;
-        const secondBeerResult = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
-        assert.equal(secondBeerResult.body.fromCache, true);
-        assert.equal(calls.length, callsAfterBeer);
+// Regression coverage for the one thing the product cache still does: a
+// live attempt that fails outright (site blocked, Untappd down, a network
+// hiccup) falls back to the last thing that DID resolve, marked stale,
+// rather than a hard error over data that was fine moments ago. Unlike the
+// old "skip the network" shortcut, this only ever kicks in on an actual
+// failure - the two tests above already confirm a successful repeat lookup
+// never takes this path.
+test('a SKU lookup that fails outright falls back to the last resolved cache entry, marked stale', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    let shouldFail = false;
+    await withMockFetch(
+      async (url) => {
+        if (shouldFail) return mockResponse({ status: 403 });
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('09144') });
+        return mockResponse({ body: storeProductHtml });
+      },
+      async () => {
+        const first = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
+        assert.equal(first.status, 200);
+        assert.equal(first.body.fromCache, undefined);
+        assert.equal(first.body.title, 'Michelob ULTRA');
+
+        shouldFail = true;
+        const second = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
+        assert.equal(second.status, 200);
+        assert.equal(second.body.fromCache, true);
+        assert.equal(second.body.stale, true);
+        assert.equal(second.body.title, 'Michelob ULTRA', 'the stale fallback should still be the last thing that actually resolved');
       }
     );
   }));
@@ -384,7 +412,7 @@ test('a Beer UPC scan pulls current pricing from the store site and the remainin
   }));
 });
 
-test('switching a cached UPC from Beer to Wine/Spirits re-runs the store description lookup instead of reusing the Beer-only cache', async () => {
+test('switching a looked-up UPC from Beer to Wine/Spirits re-runs its own store description lookup', async () => {
   await withTempDb((dir) => withServer(async (port) => {
     setUpcSettings(writeUpcExport(dir, ['085000010652,Josh Cellars Cabernet Sauvignon,55555,internal note: reorder soon']));
     const storeProductHtml = page({
@@ -401,12 +429,9 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
         return mockResponse({ body: storeProductHtml });
       },
       async () => {
-        // Beer now also hits the network (store product page + Untappd),
-        // unlike before - the point of this test is the category-aware
-        // cache below, not "Beer never touches the network" (that
-        // assumption no longer holds - see the test above). The store page
-        // here has its own real description, so it wins over the export's
-        // internal note even though Untappd itself has no match.
+        // The store page here has its own real description, so it wins
+        // over the export's internal note even though Untappd itself has
+        // no match.
         const beerResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'beer' });
         assert.equal(beerResult.body.price, '13.99');
         assert.equal(beerResult.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
@@ -415,16 +440,9 @@ test('switching a cached UPC from Beer to Wine/Spirits re-runs the store descrip
         assert.ok(callsAfterBeer > 0, 'a Beer scan should hit the network for price + Untappd');
 
         const wineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
-        assert.equal(wineResult.body.fromCache, undefined, 'switching to Wine/Spirits should not serve the Beer-only cache hit');
+        assert.equal(wineResult.body.fromCache, undefined);
         assert.equal(wineResult.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
         assert.ok(calls.length > callsAfterBeer, 'switching to Wine/Spirits should run its own store description lookup');
-
-        // A second Wine/Spirits scan right after should now be served from
-        // the (freshly Wine/Spirits-tagged) cache.
-        const callsAfterWine = calls.length;
-        const secondWineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
-        assert.equal(secondWineResult.body.fromCache, true);
-        assert.equal(calls.length, callsAfterWine);
       }
     );
   }));
@@ -565,7 +583,7 @@ test('POST /api/name-search-select surfaces untappdError when Untappd has no mat
   }));
 });
 
-test('POST /api/name-search-select caches a Beer pick by SKU, same as SKU Lookup/Scan UPC', async () => {
+test('POST /api/name-search-select re-runs the Untappd search on a second pick of the same SKU, same as SKU Lookup/Scan UPC', async () => {
   await withTempDb(() => withServer(async (port) => {
     const algoliaBody = algoliaHitsResponse([
       { beer_slug: 'grupo-modelo-corona-extra', bid: 4321, beer_name: 'Corona Extra', brewery_name: 'Grupo Modelo' },
@@ -588,9 +606,9 @@ test('POST /api/name-search-select caches a Beer pick by SKU, same as SKU Lookup
         assert.ok(callsAfterFirst > 0);
 
         const second = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
-        assert.equal(second.body.fromCache, true);
+        assert.equal(second.body.fromCache, undefined);
         assert.equal(second.body.brewery, 'Grupo Modelo');
-        assert.equal(calls.length, callsAfterFirst, 'a second pick of the same SKU should be served from cache');
+        assert.ok(calls.length > callsAfterFirst, 'a second pick of the same SKU should hit the network again, not reuse a cached copy');
       }
     );
   }));

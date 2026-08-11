@@ -175,9 +175,22 @@ function deleteHistoryEntry(id) {
 // share digits can never collide. Unlike history above, this *is* an
 // upsert: only the latest known data for a product matters here, not a log
 // of every time it was looked up.
+//
+// Every lookup route in server/index.js writes the live result here on
+// success, but never reads it back to *skip* a live lookup - a "still
+// fresh, skip the network" shortcut used to live here (isFresh/
+// CACHE_FRESH_MS, since removed) until it turned out to have a real cost:
+// a beer that missed on Untappd (or, later, one that came back ambiguous)
+// got cached as "fresh" for a full day exactly like a successful lookup,
+// so a fix that would have found it on a retry never got the chance to -
+// staff just saw the exact same stale failure the next time they scanned
+// it, with only a small "(cached)" note as any clue why. Every lookup is
+// live now; this table's only remaining job is the fallback in
+// server/index.js's own catch blocks - a *failed* live attempt (site
+// blocked, Untappd down) still serves whatever's cached here, however old,
+// marked stale, rather than a hard error over data that was fine five
+// minutes ago.
 // ================================================================
-
-const CACHE_FRESH_MS = 24 * 60 * 60 * 1000; // see isFresh below
 
 function normalizeKey(key) {
   return String(key).trim().toLowerCase();
@@ -215,15 +228,6 @@ function getCachedProduct({ keyType, key }) {
   };
 }
 
-// A cached lookup is only used to *skip* a fresh network/file lookup when
-// it's under this age (prices change); past that, callers should still
-// prefer a fresh lookup, but can fall back to the stale cached entry if the
-// fresh attempt fails outright - see /api/sku-lookup and /api/upc-lookup in
-// server/index.js, both of which use it that way.
-function isFresh(cached) {
-  return !!cached && cached.ageMs < CACHE_FRESH_MS;
-}
-
 // Backs the "View Database" and "Server PC" dialogs (Advanced menu) - a
 // cheap sanity-check number for each table rather than anything about their
 // contents, so a store PC's staff/support can tell at a glance whether this
@@ -246,8 +250,6 @@ module.exports = {
   deleteHistoryEntry,
   upsertCachedProduct,
   getCachedProduct,
-  isFresh,
-  CACHE_FRESH_MS,
   getStats,
   // Exported for tests only.
   dbFilePath,
