@@ -1681,7 +1681,7 @@ function stripSize(title, size) {
 const BEER_STYLE_WORD_PATTERN = new RegExp(
   '\\b(' + [
     'ipa', 'dipa', 'neipa', 'ale', 'lager', 'stout', 'porter', 'pilsner', 'pils',
-    'saison', 'gose', 'k[oö]lsch', 'witbier', 'hefeweizen', 'weissbier', 'weizen',
+    'saison', 'gose', 'k[oö]lsch', 'wit', 'witbier', 'hefeweizen', 'weissbier', 'weizen',
     'dunkel', 'm[aä]rzen', 'helles', 'barleywine', 'lambic', 'bock', 'doppelbock',
     'schwarzbier', 'rauchbier', 'kellerbier', 'tripel', 'dubbel', 'quad', 'quadrupel',
     'esb', 'sour', 'farmhouse', 'wheat', 'hazy', 'double', 'imperial', 'triple',
