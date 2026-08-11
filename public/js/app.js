@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.1.2',
+      items: [
+        "Fixed: SKU Lookup, Scan UPC, and Search by Name no longer serve a cached result to skip a fresh check - every lookup now always pulls current data. A lookup that fails outright (site or Untappd blocked) still falls back to the last good data, clearly marked as possibly stale, instead of a hard error.",
+      ],
+    },
+    {
       version: '3.1.1',
       items: [
         'Fixed: Untappd search for Scan UPC, SKU Lookup, and Search by Name (Beer) now strips a beer\'s style words (like "IPA" or "Stout") out of the search itself, not just when matching the results - catches more real misses than 3.1.0\'s fix alone, especially for beers with a longer brewery name.',
