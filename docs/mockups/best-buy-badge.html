@@ -685,6 +685,35 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
 .bb-corner-tr .bb-ribbon-strip { right: -33%; }
 .bb-corner-tl .bb-ribbon-strip { left: -33%; transform: rotate(-45deg); }
 .sign .bb-ribbon-strip { font-size: calc(var(--w) * 0.0105); }
+
+/* --- Style 4: Inline Banner - not positioned at all, just another row in
+   the normal content flow (same idea as .card__ratings/.card__awards
+   below it), so it never touches .card__title's box and needs no
+   has-badge-left/right reservation. The one style with nothing to
+   negotiate with Beer's corner badges either. --- */
+.bb-inline-slot { display: flex; justify-content: center; flex: 0 0 auto; }
+.card .bb-inline-slot { margin: 0 0 1.5%; }
+.sign .bb-inline-slot { margin: calc(var(--w) * 0.004) 0; }
+.bb-inline-pill {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(#f6d375, #e8b53f);
+  border: 1.5px solid #8f1116;
+  border-radius: 999px;
+  color: #8f1116;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  white-space: nowrap;
+}
+.bb-inline-pill svg { flex: none; display: block; }
+.bb-inline-pill polygon { fill: #8f1116; }
+.card .bb-inline-pill { gap: calc(var(--w) * 0.012); padding: calc(var(--w) * 0.01) calc(var(--w) * 0.026); font-size: calc(var(--w) * 0.032); }
+.card .bb-inline-pill svg { width: calc(var(--w) * 0.032); height: calc(var(--w) * 0.032); }
+.sign .bb-inline-pill { gap: calc(var(--w) * 0.006); padding: calc(var(--w) * 0.005) calc(var(--w) * 0.013); font-size: calc(var(--w) * var(--sign-text) * 0.0128); border-width: calc(var(--w) * 0.0012); }
+.sign .bb-inline-pill svg { width: calc(var(--w) * var(--sign-text) * 0.0128); height: calc(var(--w) * var(--sign-text) * 0.0128); }
 </style>
 
 <div class="page">
@@ -790,10 +819,22 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
                 <span class="style-option__desc">Diagonal banner flush with the corner. Claims the whole corner - not offered on Beer.</span>
               </span>
             </button>
+            <button class="style-option" data-style="flow" type="button">
+              <span class="style-option__swatch">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <rect x="8" y="38" width="84" height="24" rx="12" fill="#f3c869" stroke="#8f1116" stroke-width="3"/>
+                  <polygon points="24,50 27.02,55.51 33.17,56.18 28.79,60.51 30.06,66.62 24,63.6 17.94,66.62 19.21,60.51 14.83,56.18 20.98,55.51" fill="#8f1116"/>
+                </svg>
+              </span>
+              <span class="style-option__text">
+                <span class="style-option__name">Inline Banner</span>
+                <span class="style-option__desc">Sits on its own centered line, under the title - no corner, so Product Title keeps its default width and centering untouched. Always available, even on Beer.</span>
+              </span>
+            </button>
           </div>
         </div>
 
-        <div class="field">
+        <div class="field" id="cornerField">
           <span>Corner</span>
           <div class="pill-group" id="cornerToggle">
             <button class="toggle-btn is-active" data-corner="tr" type="button">Top Right</button>
@@ -804,6 +845,11 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
         <div class="note-box" id="beerNote" hidden>
           <span class="note-box__icon">&#9432;</span>
           <span>This corner already carries Beer's state/country badge, so Best Buy stacks underneath it here. Ribbon isn't offered for Beer for that reason. On a long 3-line beer title like this sample, the stacked badge can still crowd the description underneath it - for a <strong>US</strong> beer both corners are taken (state badge + USA flag, as shown), but for an <strong>import</strong> beer only the top-left flag applies, leaving the top-right corner free for Best Buy with no stacking needed at all.</span>
+        </div>
+
+        <div class="note-box" id="flowNote" hidden>
+          <span class="note-box__icon">&#9432;</span>
+          <span>No corner is involved at all here, so <strong>Product Title renders exactly as it does with Best Buy off</strong> - same centering, same width, same wrap points. That also means it's the one style with nothing to work out for Beer: no stacking, no disabled Ribbon, no title reservation to double up with the state/country badges.</span>
         </div>
 
         <hr class="divider" />
@@ -832,6 +878,7 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
                 <div class="card__body" id="cardBody">
                   <div class="card__title" id="cardTitle">Chateau Ste Michelle Indian Wells Riesling Reserve</div>
                   <div class="card__vintage" id="cardVintage">2023</div>
+                  <div class="bb-inline-slot" id="cardInlineBadge" hidden></div>
                   <div class="card__beer-line" id="cardBeerLine" hidden>Sierra Nevada Brewing Co. &middot; Chico, CA</div>
                   <div class="card__description" id="cardDescription">Bright and off-dry, with notes of white peach, honeysuckle, and crisp green apple. A versatile, food-friendly white.</div>
                   <div class="card__ratings" id="cardRatings">92 Wine Spectator</div>
@@ -860,6 +907,7 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
                   <div class="sign__content">
                     <div class="sign__title" id="signTitle">Chateau Ste Michelle Indian Wells Riesling Reserve</div>
                     <div class="sign__vintage" id="signVintage">2023</div>
+                    <div class="bb-inline-slot" id="signInlineBadge" hidden></div>
                     <div class="sign__description" id="signDescription">Bright and off-dry, with notes of white peach, honeysuckle, and crisp green apple. A versatile, food-friendly white.</div>
                     <div class="sign__footer-block">
                       <div class="sign__price-row">
@@ -884,7 +932,7 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
   <div class="panel" style="max-width: 78ch;">
     <h2 style="margin-bottom:0.5rem;">Design notes</h2>
     <ul class="footnote-list" style="padding-left:1.15rem; margin:0; color:var(--ui-ink-soft); font-size:0.88rem; line-height:1.65;">
-      <li><strong>Placement</strong> reuses the same corner slot/positioning mechanic as the existing Beer-only state and country badges (<code>.card__state-badge</code>/<code>.card__country-badge</code>) and the same title-padding reservation (<code>.card__title--badge-left/right</code>) - just made available to Wine/Spirits too, which don't use that slot today.</li>
+      <li><strong>Placement</strong> for Seal/Starburst/Ribbon reuses the same corner slot/positioning mechanic as the existing Beer-only state and country badges (<code>.card__state-badge</code>/<code>.card__country-badge</code>) and the same title-padding reservation (<code>.card__title--badge-left/right</code>) - just made available to Wine/Spirits too, which don't use that slot today. <strong>Inline Banner</strong> is the exception: it's laid out as a normal flow row (same idea as <code>.card__ratings</code>/<code>.card__awards</code> right below it) rather than positioned in a corner, so it never touches <code>.card__title</code> at all - no reservation, no wrap-point changes, and nothing to work out for Beer's existing corner badges either. The tradeoff is presence over placement: it reads as "a fact about this product," not "an eye-catching seal," closer in weight to the Ratings line than to Closeout's burst.</li>
       <li><strong>Display Signs don't have the corner conflict</strong> Shelf Talker cards do: <code>buildLargeSignBodyHtml</code>/<code>buildSmallSignBodyHtml</code> never call the state/country badge builders, so a Best Buy badge on a sign always gets a clean corner regardless of product type.</li>
       <li><strong>Sizes covered:</strong> Full and Half Size Shelf Talkers, and both Small and Large Display Signs - the same set that already carries the Closeout/Chilled badges. <strong>Quarter Size is skipped</strong>, matching how Quarter already drops every badge/ratings/description field in favor of its stripped Title/Size/Price-only layout (<code>buildPricingHtml(talker, plain)</code>).</li>
       <li><strong>Font-size overrides:</strong> if this ships, it'd likely want its own user-adjustable size box the way Closeout/Super Sale/Ratings already do (<code>fRatingsFontSize</code> etc. in <code>app.js</code>), rather than a fixed size - some staff will want it more/less prominent per talker.</li>
@@ -970,6 +1018,15 @@ function ribbonHtml() {
   return `<div class="bb-ribbon-box"><div class="bb-ribbon-strip">Best Buy</div></div>`;
 }
 
+function flowPillHtml() {
+  return `
+    <div class="bb-inline-pill">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><polygon points="24.00,4.00 28.70,17.53 43.02,17.82 31.61,26.47 35.76,40.18 24.00,32.00 12.24,40.18 16.39,26.47 4.98,17.82 19.30,17.53" /></svg>
+      Best Buy
+    </div>
+  `;
+}
+
 function buildBadge(el, elId, corner, style, stacked) {
   el.className = 'bb-badge bb-corner-' + corner + ' bb-' + style + (stacked ? ' bb-stacked' : '');
   if (style === 'seal') el.innerHTML = sealSvg(elId);
@@ -1053,18 +1110,32 @@ function render() {
     btn.classList.toggle('is-active', btn.dataset.style === state.style);
   });
 
-  document.getElementById('beerNote').hidden = !p.hasCornerBadge;
+  // ---- Inline Banner uses no corner at all - hide the Corner picker and
+  // swap which note explains what's going on. ----
+  const usesCorner = state.style !== 'flow';
+  document.getElementById('cornerField').hidden = !usesCorner;
+  document.getElementById('beerNote').hidden = !(state.bestBuy && usesCorner && p.hasCornerBadge);
+  document.getElementById('flowNote').hidden = !(state.bestBuy && !usesCorner);
 
   // ---- Best Buy badge itself ----
-  cardBadgeEl.hidden = !state.bestBuy;
-  signBadgeEl.hidden = !state.bestBuy;
-  if (state.bestBuy) {
+  const cardInlineBadge = document.getElementById('cardInlineBadge');
+  const signInlineBadge = document.getElementById('signInlineBadge');
+  cardBadgeEl.hidden = !(state.bestBuy && usesCorner);
+  signBadgeEl.hidden = !(state.bestBuy && usesCorner);
+  cardInlineBadge.hidden = !(state.bestBuy && !usesCorner);
+  signInlineBadge.hidden = !(state.bestBuy && !usesCorner);
+  if (state.bestBuy && usesCorner) {
     buildBadge(cardBadgeEl, 'card', state.corner, state.style, p.hasCornerBadge);
     buildBadge(signBadgeEl, 'sign', state.corner, state.style, false);
+  } else if (state.bestBuy) {
+    cardInlineBadge.innerHTML = flowPillHtml();
+    signInlineBadge.innerHTML = flowPillHtml();
   }
 
-  // ---- title padding reservation, same corner the badge sits in ----
-  const badgeShowing = state.bestBuy;
+  // ---- title padding reservation, same corner the badge sits in - never
+  // touched by the Inline Banner (usesCorner false), which is the whole
+  // point of that style. ----
+  const badgeShowing = state.bestBuy && usesCorner;
   const cardBadgeSide = state.corner === 'tr' ? 'right' : 'left';
   cardTitle.classList.toggle('has-badge-right', badgeShowing && cardBadgeSide === 'right');
   cardTitle.classList.toggle('has-badge-left', badgeShowing && cardBadgeSide === 'left');
@@ -1075,8 +1146,9 @@ function render() {
   signTitle.classList.toggle('has-badge-right', badgeShowing && cardBadgeSide === 'right');
   signTitle.classList.toggle('has-badge-left', badgeShowing && cardBadgeSide === 'left');
 
-  // ---- description/beer-line reservation, stacked case only (see the
-  // .card__description.has-badge-* comment above) ----
+  // ---- description/beer-line reservation, stacked corner case only (see
+  // the .card__description.has-badge-* comment above) - never applies to
+  // the Inline Banner either. ----
   const stacked = badgeShowing && p.hasCornerBadge;
   [document.getElementById('cardDescription'), cardBeerLine].forEach((el) => {
     el.classList.toggle('has-badge-right', stacked && cardBadgeSide === 'right');
