@@ -41,6 +41,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.1.1',
+      items: [
+        'Fixed: Untappd search for Scan UPC, SKU Lookup, and Search by Name (Beer) now strips a beer\'s style words (like "IPA" or "Stout") out of the search itself, not just when matching the results - catches more real misses than 3.1.0\'s fix alone, especially for beers with a longer brewery name.',
+        'New: when Untappd search turns up two or more equally-likely matches for the same beer (e.g. "Coors Light" vs. "Coors Banquet"), a "Pick the Right Beer" dialog now lets you choose instead of the app guessing.',
+      ],
+    },
+    {
       version: '3.1.0',
       items: [
         'New (experimental, off by default): Food Pairing Suggestions for Wine/Spirits Shelf Talkers — click Suggest Pairings next to Description to match the varietal detected in the title/description against a short list of food pairings, then pick up to 3 to print under the description. Turn it on in Settings → Experimental Features → Wine Food Pairings.',
