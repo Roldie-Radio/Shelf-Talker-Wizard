@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.1.5',
+      items: [
+        'Fixed: Search by Name and Scan UPC no longer fold a WinePOS export\'s "Vendor" column (a short distributor code like "KOH") into the Brand field for beer - same vendor-code bug as 3.1.4\'s SKU Lookup fix, just coming from the local export file instead of the store website.',
+      ],
+    },
+    {
       version: '3.1.4',
       items: [
         'Fixed: SKU Lookup no longer folds a short store vendor/distributor code (e.g. "AB") into the Brand field for beer - it was getting prepended onto the title and sent to Untappd as part of the search, breaking the match and showing the code as the Brewery.',
