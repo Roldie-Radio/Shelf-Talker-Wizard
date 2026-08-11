@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.1.3',
+      items: [
+        'Fixed: Scan UPC now recognizes a WinePOS export UPC that lost its leading zero and picked up a spurious trailing ".0" from being stored as a float (e.g. "88586001895.0") - a real scan of that item used to come back "not found" even though it was in the file.',
+      ],
+    },
+    {
       version: '3.1.2',
       items: [
         "Fixed: SKU Lookup, Scan UPC, and Search by Name no longer serve a cached result to skip a fresh check - every lookup now always pulls current data. A lookup that fails outright (site or Untappd blocked) still falls back to the last good data, clearly marked as possibly stale, instead of a hard error.",
