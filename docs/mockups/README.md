@@ -36,3 +36,18 @@ browser.
   introduces this app's first on/off switch component (`.switch`), since
   Settings today only has the toggle-btn pill-pair pattern (Change Theme, Menu
   Bar Size) &mdash; not the right shape for a single boolean feature flag.
+- **best-buy-badge.html** &mdash; a new graphic **Best Buy** badge for Shelf
+  Talkers and Display Signs, marking a staff-picked value on the talker/sign
+  itself rather than only in the free-text Awards or Other Ratings field.
+  Three interchangeable styles &mdash; **Seal Medallion** (recommended, a
+  circular award seal with ribbon tails), **Starburst** (the same jagged-burst
+  treatment as the existing CLOSEOUT!! badge, as a graphic seal), and **Corner
+  Ribbon** (a diagonal banner flush with the corner) &mdash; toggle on/off and
+  switch live in the preview, on both a Full Size Shelf Talker card and a
+  Large Display Sign. Kept as its own on/off toggle rather than a fifth
+  Talker Style option, since Best Buy describes the product, not the price,
+  and should combine with Closeout/Chilled/Super Sale rather than replace
+  them. Switch the sample product to Beer to see the one real wrinkle: Beer
+  talkers already print a state-of-origin badge and a country flag in the top
+  corners, so Seal/Starburst stack underneath whichever corner is already
+  taken (Ribbon isn't offered there, since it claims the whole corner).
