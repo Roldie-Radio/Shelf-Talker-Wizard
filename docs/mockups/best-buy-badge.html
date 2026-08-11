@@ -240,6 +240,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.95rem; font-size: 0.85rem; font-weight: 600; min-width: 0; }
 .field span { color: var(--ui-ink-soft); }
 .field-hint { font-size: 0.76rem; color: var(--ui-muted); font-weight: 400; margin-top: -0.1rem; line-height: 1.4; }
+.checkbox-field { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--ui-ink-soft); }
+.checkbox-field input { width: auto; }
 
 .pill-group { display: flex; gap: 0.3rem; flex-wrap: wrap; }
 .toggle-btn {
@@ -842,9 +844,22 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
           </div>
         </div>
 
+        <div class="field" id="reserveField" style="margin-bottom: 0.6rem;">
+          <label class="checkbox-field" style="margin: 0;">
+            <input type="checkbox" id="reserveTitleToggle" />
+            Reserve room in the title for the badge
+          </label>
+          <p class="field-hint">Unchecked (default here): <strong>Product Title is laid out exactly as if Best Buy were off</strong> - same box, same centering, same wrap points, every time. The badge just sits on top, so a long enough title runs under it and gets covered. Checked restores the padding reservation from the other styles, so title and badge never overlap but the title's own box changes shape depending on whether Best Buy is on.</p>
+        </div>
+
         <div class="note-box" id="beerNote" hidden>
           <span class="note-box__icon">&#9432;</span>
           <span>This corner already carries Beer's state/country badge, so Best Buy stacks underneath it here. Ribbon isn't offered for Beer for that reason. On a long 3-line beer title like this sample, the stacked badge can still crowd the description underneath it - for a <strong>US</strong> beer both corners are taken (state badge + USA flag, as shown), but for an <strong>import</strong> beer only the top-left flag applies, leaving the top-right corner free for Best Buy with no stacking needed at all.</span>
+        </div>
+
+        <div class="note-box" id="overlapNote" hidden>
+          <span class="note-box__icon">&#9432;</span>
+          <span>Title reservation is off, so <strong>Product Title renders in the exact same box whether Best Buy is on or off</strong> - the badge is simply painted on top of it. On a long title like this sample, that means the badge covers part of a word instead of the layout shifting to avoid it. That's the tradeoff for this option: title placement never changes, at the cost of occasionally covering title text.</span>
         </div>
 
         <div class="note-box" id="flowNote" hidden>
@@ -933,6 +948,7 @@ hr.divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 
     <h2 style="margin-bottom:0.5rem;">Design notes</h2>
     <ul class="footnote-list" style="padding-left:1.15rem; margin:0; color:var(--ui-ink-soft); font-size:0.88rem; line-height:1.65;">
       <li><strong>Placement</strong> for Seal/Starburst/Ribbon reuses the same corner slot/positioning mechanic as the existing Beer-only state and country badges (<code>.card__state-badge</code>/<code>.card__country-badge</code>) and the same title-padding reservation (<code>.card__title--badge-left/right</code>) - just made available to Wine/Spirits too, which don't use that slot today. <strong>Inline Banner</strong> is the exception: it's laid out as a normal flow row (same idea as <code>.card__ratings</code>/<code>.card__awards</code> right below it) rather than positioned in a corner, so it never touches <code>.card__title</code> at all - no reservation, no wrap-point changes, and nothing to work out for Beer's existing corner badges either. The tradeoff is presence over placement: it reads as "a fact about this product," not "an eye-catching seal," closer in weight to the Ratings line than to Closeout's burst.</li>
+      <li><strong>Reserve room in the title</strong> (unchecked by default) is a third option for the corner styles, between the two above: keep the corner placement, but stop reserving title padding for Best Buy specifically, so <code>.card__title</code> is laid out identically whether Best Buy is on or off - the badge is simply painted on top (it's last in the DOM within <code>.card__body</code>, so it already stacks above the title) and can cover part of a long title's text. Real content varies enough in length that some titles would clip and most wouldn't; whether that's an acceptable tradeoff for a fixed, predictable title box is a real product call, not just a visual one.</li>
       <li><strong>Display Signs don't have the corner conflict</strong> Shelf Talker cards do: <code>buildLargeSignBodyHtml</code>/<code>buildSmallSignBodyHtml</code> never call the state/country badge builders, so a Best Buy badge on a sign always gets a clean corner regardless of product type.</li>
       <li><strong>Sizes covered:</strong> Full and Half Size Shelf Talkers, and both Small and Large Display Signs - the same set that already carries the Closeout/Chilled badges. <strong>Quarter Size is skipped</strong>, matching how Quarter already drops every badge/ratings/description field in favor of its stripped Title/Size/Price-only layout (<code>buildPricingHtml(talker, plain)</code>).</li>
       <li><strong>Font-size overrides:</strong> if this ships, it'd likely want its own user-adjustable size box the way Closeout/Super Sale/Ratings already do (<code>fRatingsFontSize</code> etc. in <code>app.js</code>), rather than a fixed size - some staff will want it more/less prominent per talker.</li>
@@ -947,6 +963,7 @@ const state = {
   bestBuy: true,
   style: 'seal',
   corner: 'tr',
+  reserveTitle: false,
 };
 
 const PRODUCTS = {
@@ -1111,10 +1128,13 @@ function render() {
   });
 
   // ---- Inline Banner uses no corner at all - hide the Corner picker and
-  // swap which note explains what's going on. ----
+  // Reserve-room checkbox (neither applies) and swap which note explains
+  // what's going on. ----
   const usesCorner = state.style !== 'flow';
   document.getElementById('cornerField').hidden = !usesCorner;
+  document.getElementById('reserveField').hidden = !usesCorner;
   document.getElementById('beerNote').hidden = !(state.bestBuy && usesCorner && p.hasCornerBadge);
+  document.getElementById('overlapNote').hidden = !(state.bestBuy && usesCorner && !state.reserveTitle);
   document.getElementById('flowNote').hidden = !(state.bestBuy && !usesCorner);
 
   // ---- Best Buy badge itself ----
@@ -1134,17 +1154,23 @@ function render() {
 
   // ---- title padding reservation, same corner the badge sits in - never
   // touched by the Inline Banner (usesCorner false), which is the whole
-  // point of that style. ----
+  // point of that style, and skippable on the corner styles too via the
+  // Reserve-room checkbox: unchecked, the title's box never changes
+  // shape for Best Buy at all and the badge (painted after the title in
+  // the DOM, so it's on top) just overlaps it when it doesn't fit. ----
   const badgeShowing = state.bestBuy && usesCorner;
+  const reserveTitle = badgeShowing && state.reserveTitle;
   const cardBadgeSide = state.corner === 'tr' ? 'right' : 'left';
-  cardTitle.classList.toggle('has-badge-right', badgeShowing && cardBadgeSide === 'right');
-  cardTitle.classList.toggle('has-badge-left', badgeShowing && cardBadgeSide === 'left');
-  // Beer already reserves both sides for state/country regardless of Best Buy.
+  cardTitle.classList.toggle('has-badge-right', reserveTitle && cardBadgeSide === 'right');
+  cardTitle.classList.toggle('has-badge-left', reserveTitle && cardBadgeSide === 'left');
+  // Beer already reserves both sides for state/country regardless of Best Buy -
+  // that reservation is real, existing app behavior, not part of what this
+  // checkbox is exploring, so it's untouched by it either way.
   if (p.hasCornerBadge) { cardTitle.classList.add('has-badge-right', 'has-badge-left'); }
 
   const signTitle = document.getElementById('signTitle');
-  signTitle.classList.toggle('has-badge-right', badgeShowing && cardBadgeSide === 'right');
-  signTitle.classList.toggle('has-badge-left', badgeShowing && cardBadgeSide === 'left');
+  signTitle.classList.toggle('has-badge-right', reserveTitle && cardBadgeSide === 'right');
+  signTitle.classList.toggle('has-badge-left', reserveTitle && cardBadgeSide === 'left');
 
   // ---- description/beer-line reservation, stacked corner case only (see
   // the .card__description.has-badge-* comment above) - never applies to
@@ -1187,6 +1213,11 @@ document.getElementById('cornerToggle').addEventListener('click', (e) => {
   if (!btn) return;
   state.corner = btn.dataset.corner;
   document.querySelectorAll('#cornerToggle .toggle-btn').forEach((b) => b.classList.toggle('is-active', b === btn));
+  render();
+});
+
+document.getElementById('reserveTitleToggle').addEventListener('change', (e) => {
+  state.reserveTitle = e.target.checked;
   render();
 });
 
