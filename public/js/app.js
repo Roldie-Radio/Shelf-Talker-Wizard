@@ -554,6 +554,12 @@
     tastingNotesNosePreview: document.getElementById('tastingNotesNosePreview'),
     tastingNotesPalatePreview: document.getElementById('tastingNotesPalatePreview'),
     tastingNotesFinishPreview: document.getElementById('tastingNotesFinishPreview'),
+    untappdPickerOverlay: document.getElementById('untappdPickerOverlay'),
+    untappdPickerCloseBtn: document.getElementById('untappdPickerCloseBtn'),
+    untappdPickerCancelBtn: document.getElementById('untappdPickerCancelBtn'),
+    untappdPickerQueryLabel: document.getElementById('untappdPickerQueryLabel'),
+    untappdPickerResults: document.getElementById('untappdPickerResults'),
+    untappdPickerStatus: document.getElementById('untappdPickerStatus'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
@@ -2397,6 +2403,20 @@
       }
 
       applyUpcScanProduct(data, isBeer);
+
+      // Untappd itself couldn't safely pick one of two or more real,
+      // separately-listed beers (see openUntappdPicker's own comment) -
+      // ask instead of guessing, and never auto-queue on the strength of a
+      // still-unresolved pick, whether or not staff end up making one.
+      if (data.untappdCandidates && data.untappdCandidates.length) {
+        const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
+        els.scanUpcStatus.textContent = picked
+          ? `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`
+          : `Found it${cacheNote(data)}. Untappd had more than one possible match and none was picked - `
+            + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
+        return;
+      }
+
       const problems = scanUpcProblems(data);
       if (problems) {
         // A best-effort enrichment step (store lookup, Untappd, store
@@ -2854,6 +2874,91 @@
     renderPreview();
   }
 
+  // Shown instead of auto-filling when a beer lookup's `untappdCandidates`
+  // comes back set (see enrichBeerFromUntappd/UntappdAmbiguousMatchError in
+  // productImport.js) - two or more real, separately-listed Untappd beers
+  // scored identically, so picking one automatically risks a
+  // confident-looking WRONG match rather than just a missed one. Shared by
+  // Scan UPC, SKU Lookup, and Search by Name (see each tab's own lookup
+  // handler below) rather than three copies: every path ends up with the
+  // same {url, brewery, beerName} candidate list, and resolving a pick
+  // always ends the same way - fetch that one beer's own page and merge it
+  // in, exactly what the manual "paste an Untappd URL" fallback above
+  // already does (reuses the same /api/untappd-lookup endpoint and
+  // applyUntappdFields).
+  //
+  // Returns a Promise resolving to true once a pick was applied to the
+  // form, or false if staff closed the dialog without picking one - each
+  // caller uses that to decide its own status message/whether it's safe to
+  // auto-add-to-queue.
+  let untappdPickerResolve = null;
+
+  function renderUntappdPickerResults(candidates) {
+    els.untappdPickerResults.innerHTML = candidates.map((c, i) => `
+      <button type="button" class="untappd-picker-result" data-index="${i}">
+        <span>
+          <span class="untappd-picker-result__title">${escapeHtml(c.beerName || c.title || 'Untitled')}</span>
+          <span class="untappd-picker-result__brewery">${escapeHtml(c.brewery || '')}</span>
+        </span>
+      </button>
+    `).join('');
+  }
+
+  const untappdPickerModal = createModal({
+    overlay: els.untappdPickerOverlay,
+    closeBtns: [els.untappdPickerCloseBtn, els.untappdPickerCancelBtn],
+    // Fires for every close, including the one openUntappdPicker triggers
+    // itself right after a successful pick (see below) - that path already
+    // resolves and nulls out untappdPickerResolve *before* calling
+    // .close(), so this only ever actually resolves anything for a
+    // backdrop click/Escape/Cancel, i.e. staff closing it without picking.
+    onClose: () => {
+      if (untappdPickerResolve) {
+        const resolveFn = untappdPickerResolve;
+        untappdPickerResolve = null;
+        resolveFn(false);
+      }
+    },
+  });
+
+  function openUntappdPicker(candidates, queryTitle) {
+    return new Promise((resolve) => {
+      untappdPickerResolve = resolve;
+      const count = candidates.length;
+      els.untappdPickerQueryLabel.textContent = `Untappd found ${count} equally-likely matches for `
+        + `"${queryTitle}" - pick the right one below.`;
+      els.untappdPickerStatus.textContent = '';
+      renderUntappdPickerResults(candidates);
+      untappdPickerModal.open();
+
+      els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const candidate = candidates[Number(btn.dataset.index)];
+          els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((b) => { b.disabled = true; });
+          els.untappdPickerStatus.textContent = 'Loading that beer...';
+          try {
+            const resp = await fetch('/api/untappd-lookup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ current: readForm(), untappdUrl: candidate.url }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+            applyUntappdFields(data);
+            // Resolve (and null out untappdPickerResolve) before closing -
+            // see the onClose comment above for why the ordering matters.
+            const resolveFn = untappdPickerResolve;
+            untappdPickerResolve = null;
+            untappdPickerModal.close();
+            if (resolveFn) resolveFn(true);
+          } catch (err) {
+            els.untappdPickerStatus.textContent = err.message || 'Something went wrong loading that beer.';
+            els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((b) => { b.disabled = false; });
+          }
+        });
+      });
+    });
+  }
   // Small aside appended to a lookup's status message when the server
   // served a cached copy (see the product cache note above /api/sku-lookup
   // and /api/upc-lookup in server/index.js) instead of a fresh network/file
@@ -2896,6 +3001,25 @@
       if (!resp.ok) throw new Error(data.error || 'SKU lookup failed.');
 
       applySkuLookupProduct(data, isBeer);
+
+      // Same disambiguation step Scan UPC's own handler takes above - see
+      // openUntappdPicker's comment for why this can't just auto-pick one.
+      if (data.untappdCandidates && data.untappdCandidates.length) {
+        const picked = await openUntappdPicker(data.untappdCandidates, data.title || sku);
+        if (picked) {
+          els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+        } else {
+          // None of the offered candidates were right (or staff just backed
+          // out) - reveal the same manual "paste an Untappd URL" fallback a
+          // plain miss already offers below, rather than leaving no way
+          // forward but Manual Entry.
+          els.skuUntappdSection.hidden = false;
+          els.skuStatus.textContent = 'Loaded from the store. Untappd had more than one possible match and none was picked - '
+            + 'try the Untappd URL box below, or review the fields and add it as-is.';
+        }
+        return;
+      }
+
       els.skuStatus.textContent = skuLookupLoadedMessage(data, 'the store');
     } catch (err) {
       els.skuStatus.textContent = err.message || 'Something went wrong looking up that SKU.';
@@ -2936,6 +3060,19 @@
       if (!resp.ok) throw new Error(data.error || 'Could not read product data from that HTML.');
 
       applySkuLookupProduct(data, isBeer);
+
+      if (data.untappdCandidates && data.untappdCandidates.length) {
+        const picked = await openUntappdPicker(data.untappdCandidates, data.title || 'that product');
+        if (picked) {
+          els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
+        } else {
+          els.skuUntappdSection.hidden = false;
+          els.skuStatus.textContent = 'Loaded from pasted HTML. Untappd had more than one possible match and none was picked - '
+            + 'try the Untappd URL box below, or review the fields and add it as-is.';
+        }
+        return;
+      }
+
       els.skuStatus.textContent = skuLookupLoadedMessage(data, 'pasted HTML');
     } catch (err) {
       els.skuStatus.textContent = err.message || 'Something went wrong reading that HTML.';
@@ -3325,6 +3462,22 @@
       nameSearchSelectedProduct = data;
       applyNameSearchProduct(data, true, nameSearchPriceMode);
       renderNameSearchSelected();
+
+      // Same disambiguation step Scan UPC/SKU Lookup take above - see
+      // openUntappdPicker's own comment for why this can't just auto-pick
+      // one. The modal traps focus while open, so there's no real way for
+      // staff to pick a *different* search result out from under it - the
+      // myToken check below is just the same defensive habit the rest of
+      // this function already has, not covering a reachable race.
+      if (data.untappdCandidates && data.untappdCandidates.length) {
+        const picked = await openUntappdPicker(data.untappdCandidates, data.title || product.title);
+        if (myToken !== nameSearchSelectToken) return;
+        els.nameSearchStatus.textContent = picked
+          ? 'Found it! Review the fields, then click "Add to Queue".'
+          : 'Found it! Untappd had more than one possible match and none was picked - review the fields, then click "Add to Queue".';
+        return;
+      }
+
       els.nameSearchStatus.textContent = data.untappdError
         ? `Found it! Untappd: ${data.untappdError}`
         : 'Found it! Review the fields, then click "Add to Queue".';

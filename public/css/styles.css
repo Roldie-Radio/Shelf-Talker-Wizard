@@ -886,6 +886,41 @@ h1, h2, h3 { margin: 0; }
    right above would otherwise remove entirely. */
 #tastingNotesFlavorPreview { display: flex; flex-direction: column; gap: 0.6rem; }
 
+/* ---------- Untappd disambiguation picker (#untappdPickerOverlay in
+   index.html, openUntappdPicker in app.js) ---------- */
+.untappd-picker-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.untappd-picker-results {
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+/* A row per candidate is a real <button>, not a styled div (like
+   .search-result above), so Tab/Shift+Tab cycling inside the modal (see
+   createModal's focusable() query in app.js) actually reaches every
+   option - the reset properties below just undo the browser's own default
+   button chrome so it still reads as a plain list row. */
+.untappd-picker-result {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  border: none;
+  border-bottom: 1px solid var(--ui-border);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+.untappd-picker-result:last-child { border-bottom: none; }
+.untappd-picker-result:hover:not(:disabled) { background: var(--ui-hover); }
+.untappd-picker-result:disabled { cursor: default; opacity: 0.6; }
+.untappd-picker-result__title { font-size: 0.87rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-picker-result__brewery { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
+
 /* ---------- Find Queue ---------- */
 
 /* No modal__header/modal__footer here - the search input itself is the

@@ -868,22 +868,31 @@ function tokenize(text) {
 // is *shorter* fixes that without loosening anything for a candidate at
 // least as long as the query, where min() just returns the query length
 // again - identical to the old behavior.
-function pickBestMatch(candidates, query) {
+// The token-overlap scoring core behind pickBestMatch below, split out so
+// searchUntappd's own tie-detection (matchUntappdCandidates further down -
+// see its comment for why Untappd specifically needs to know about a tie,
+// not just a winner) can reuse the exact same score/threshold math instead
+// of a second copy that could quietly drift out of sync with this one.
+// Sorted highest score first; Array.prototype.sort is a stable sort (has
+// been since Node 11/V8 7.0), so two candidates that tie keep their
+// original relative order from `candidates` - the same "first one in the
+// list wins a tie" behavior pickBestMatch's own old, pre-refactor loop had.
+function scoreCandidates(candidates, query) {
   const queryTokens = tokenize(query);
-  if (queryTokens.length === 0 || candidates.length === 0) return undefined;
+  if (queryTokens.length === 0) return [];
+  return candidates
+    .map((candidate) => {
+      const candidateTokens = new Set(tokenize(candidate.title));
+      const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
+      const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
+      return { candidate, score, passes: score >= threshold };
+    })
+    .sort((a, b) => b.score - a.score);
+}
 
-  let best;
-  let bestScore = 0;
-  for (const candidate of candidates) {
-    const candidateTokens = new Set(tokenize(candidate.title));
-    const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
-    const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
-    if (score >= threshold && score > bestScore) {
-      bestScore = score;
-      best = candidate;
-    }
-  }
-  return best;
+function pickBestMatch(candidates, query) {
+  const passing = scoreCandidates(candidates, query).filter((s) => s.passes);
+  return passing.length ? passing[0].candidate : undefined;
 }
 
 // schema.org ItemList JSON-LD, as emitted by many large e-commerce sites on
@@ -1537,11 +1546,61 @@ async function algoliaSearchBeerCandidates(query) {
   // "autodidact-beer-daylily" + bid 5251415 -> the exact URL a user
   // independently found by searching Untappd by hand). title folds the
   // brewery in, matching what composeProducerTitle already sends as the
-  // query, for pickBestMatch below to score against.
+  // query, for pickBestMatch below to score against. brewery/beerName keep
+  // those same two confirmed fields un-folded too, alongside title - not
+  // used for scoring, only so a disambiguation picker (see
+  // matchUntappdCandidates/UntappdAmbiguousMatchError below) has something
+  // cleaner to show staff than the combined string.
   return hits.map((hit) => ({
     url: `https://untappd.com/b/${hit.beer_slug}/${hit.bid}`,
     title: `${hit.brewery_name || ''} ${hit.beer_name || ''}`.trim(),
+    brewery: (hit.brewery_name || '').trim(),
+    beerName: (hit.beer_name || '').trim(),
   }));
+}
+
+// Thrown by searchUntappd below instead of a plain Error when two or more
+// candidates are genuinely tied for the best score (see
+// matchUntappdCandidates) - a distinct type so enrichBeerFromUntappd's own
+// catch block can tell "ask staff which one" apart from an ordinary miss
+// or network failure, which is treated completely differently (see its own
+// comment). `candidates` is the tied set, in Algolia's own ranked order.
+class UntappdAmbiguousMatchError extends Error {
+  constructor(query, candidates) {
+    super(`Found ${candidates.length} equally-likely matches for "${query}" on Untappd.`);
+    this.name = 'UntappdAmbiguousMatchError';
+    this.candidates = candidates;
+  }
+}
+
+// pickBestMatch (used by every catalog-site provider - wine.com, Vivino,
+// Distiller, and Untappd itself) always silently breaks a tie by taking
+// whichever candidate came first from the site's own search results. That
+// is a perfectly fine default for those other three, whose candidate
+// titles are already the site's own full, disambiguated product title -
+// two of them scoring identically is rare and, when it happens, is usually
+// a near-duplicate listing rather than two genuinely different products.
+//
+// Untappd is different in a way that makes silent tie-breaking actively
+// risky rather than just imprecise: BEER_STYLE_WORD_PATTERN above
+// deliberately leaves words like "Light"/"Dark"/"Gold"/"Amber" out of the
+// query-cleaning step specifically because, for a macro brand, that word
+// is sometimes the ONLY thing separating two real, separately-listed
+// Untappd beers from the same brewery ("Coors Light" vs. "Coors Banquet").
+// If a query ever *did* end up missing that differentiator (a store title
+// that just says "Coors" with no qualifier, say), both would score
+// identically and a silent first-wins pick has a real chance of being the
+// wrong beer - exactly the "confident-looking wrong answer" pickBestMatch's
+// own comment says is worse than finding nothing. Surfacing the tie to
+// enrichBeerFromUntappd (as UntappdAmbiguousMatchError above) instead of
+// resolving it here is what lets a human make that one call instead of the
+// scoring math guessing.
+function matchUntappdCandidates(candidates, query) {
+  const scored = scoreCandidates(candidates, query).filter((s) => s.passes);
+  if (scored.length === 0) return { match: undefined, tied: [] };
+  const topScore = scored[0].score;
+  const tied = scored.filter((s) => s.score === topScore).map((s) => s.candidate);
+  return tied.length > 1 ? { match: undefined, tied } : { match: scored[0].candidate, tied: [] };
 }
 
 async function searchUntappd(query) {
@@ -1549,7 +1608,10 @@ async function searchUntappd(query) {
   if (!trimmed) throw new Error('Enter a product title first.');
 
   const candidates = await algoliaSearchBeerCandidates(trimmed);
-  const match = pickBestMatch(candidates, trimmed);
+  const { match, tied } = matchUntappdCandidates(candidates, trimmed);
+  if (tied.length > 1) {
+    throw new UntappdAmbiguousMatchError(trimmed, tied);
+  }
   if (!match) {
     throw new Error(`Could not find "${trimmed}" on Untappd.`);
   }
@@ -1589,6 +1651,55 @@ function stripSize(title, size) {
     .trim();
 }
 
+// A WinePOS beer title routinely trails off with the beer's own style
+// ("Augury Dry Irish Stout") the same way it sometimes trails off with a
+// container size (see SIZE_PATTERN/stripSize above) - dead weight for an
+// Untappd search, since Untappd's own beer name is just "<Brewery> <Beer
+// Name>" and never repeats its own style there (confirmed against a real
+// miss - see pickBestMatch's own comment for the full story of how that
+// dead weight used to sink an otherwise-correct match's score). Stripped
+// from the search QUERY only (see buildUntappdSearchQuery below) - never
+// from composeProducerTitle's own return value, which is what actually
+// fills the Product Title field a shopper sees, and where staff expect the
+// style to stay.
+//
+// Deliberately narrow: only well-established style *category* words (IPA,
+// Stout, Porter, ...) and modifiers that are essentially never a brand's
+// own differentiator (Hazy, Double, Session, Dry, Irish, ...). Left out on
+// purpose: Light/Lite, Dark, Gold/Golden, Amber, Red, Blonde, Draft/
+// Draught - for a macro brand these are routinely the ONLY thing telling
+// two real, separately-listed Untappd beers apart ("Coors Light" vs. plain
+// "Coors Banquet", "Michelob Golden Draft" vs. "Michelob AmberBock").
+// Stripping one of those risks a confident-looking WRONG match instead of
+// no match at all - exactly what pickBestMatch's own "found nothing beats
+// a wrong answer" rule exists to prevent. A style-category word carries no
+// equivalent risk: Untappd doesn't use "Stout"/"IPA"/... to tell two beers
+// from the same brewery apart the way it uses "Light", so removing one
+// never costs real matching signal - not exhaustive (new styles keep
+// showing up), just a safe, common core; a miss still falls back to the
+// untappdError staff already review before queuing a talker.
+const BEER_STYLE_WORD_PATTERN = new RegExp(
+  '\\b(' + [
+    'ipa', 'dipa', 'neipa', 'ale', 'lager', 'stout', 'porter', 'pilsner', 'pils',
+    'saison', 'gose', 'k[oö]lsch', 'witbier', 'hefeweizen', 'weissbier', 'weizen',
+    'dunkel', 'm[aä]rzen', 'helles', 'barleywine', 'lambic', 'bock', 'doppelbock',
+    'schwarzbier', 'rauchbier', 'kellerbier', 'tripel', 'dubbel', 'quad', 'quadrupel',
+    'esb', 'sour', 'farmhouse', 'wheat', 'hazy', 'double', 'imperial', 'triple',
+    'session', 'dry', 'irish', 'belgian', 'german',
+  ].join('|') + ')\\b',
+  'gi'
+);
+
+// Cleans a beer title down to just what's worth sending Untappd as a
+// search query (see BEER_STYLE_WORD_PATTERN above). Guards against
+// stripping a title down to nothing - a rare SKU literally titled just
+// "IPA" would otherwise search Untappd with an empty string instead of the
+// original, still-noisy-but-non-empty query.
+function buildUntappdSearchQuery(title) {
+  const stripped = (title || '').replace(BEER_STYLE_WORD_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+  return stripped || (title || '').trim();
+}
+
 // Composes "Producer Product Name" (size left out) from a scraped product -
 // used two ways below: as the actual title field for wine/spirits SKU
 // lookups, and as the Untappd search query for beer. The store's own title
@@ -1626,11 +1737,14 @@ function combineBeerSize(size, packSize) {
 // what was actually asked for ("descriptions pulled from other sources,
 // such as untappd"). The displayed title is composeProducerTitle's
 // "Producer Product Name" (same helper the wine/spirits title uses, and
-// pulled from the store page only - never Untappd), which doubles as the
-// Untappd search query: a bare one- or two-word beer name like "Daylily" is
-// too weak a query on its own (confirmed against a real SKU lookup:
-// searching just "Daylily" came back "Could not find... on Untappd", where
-// the beer's own page is really titled "Daylily by Autodidact Beer").
+// pulled from the store page only - never Untappd); the Untappd search
+// query is that same title with its style words stripped (see
+// buildUntappdSearchQuery above) - a bare one- or two-word beer name like
+// "Daylily" is too weak a query on its own (confirmed against a real SKU
+// lookup: searching just "Daylily" came back "Could not find... on
+// Untappd", where the beer's own page is really titled "Daylily by
+// Autodidact Beer"), so the brand still gets prepended same as before -
+// only the style tail is gone.
 // Best-effort only, same as
 // extractBeer's own bonus brewery-location fetch above: the store lookup
 // already succeeded by this point, so a beer Untappd can't find (or that
@@ -1661,8 +1775,12 @@ function mergeUntappdBeer(current, beer) {
 async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
   const size = combineBeerSize(product.size, product.packSize);
+  // The displayed Product Title keeps its style suffix (`title` above,
+  // unchanged) - only the string actually sent to Untappd has it stripped
+  // (see buildUntappdSearchQuery's own comment for why).
+  const searchQuery = buildUntappdSearchQuery(title);
   try {
-    const beer = await searchUntappd(title);
+    const beer = await searchUntappd(searchQuery);
     // mergeUntappdBeer's own description fallback (see its comment) is meant
     // for the manual "paste the Untappd URL/HTML" path further down, where
     // `current` is whatever staff already have in the form and is never
@@ -1672,6 +1790,21 @@ async function enrichBeerFromUntappd(product) {
     // overrides mergeUntappdBeer's fallback rather than reusing it.
     return { ...product, title, size, ...mergeUntappdBeer(product, beer), description: beer.description || '' };
   } catch (err) {
+    // A genuine tie (see UntappdAmbiguousMatchError/matchUntappdCandidates
+    // above) is not the same kind of failure as a miss or a blocked
+    // request - there's a right answer, this code just can't safely pick
+    // it alone. `untappdCandidates` carries the tied set (each already
+    // shaped {url, title, brewery, beerName} - see algoliaSearchBeerCandidates)
+    // for a client-side picker (see the Scan UPC/SKU Lookup/Search by Name
+    // tabs in app.js) to resolve the same way the existing manual "paste an
+    // Untappd URL" fallback already does: fetch that one beer's own page
+    // via /api/untappd-lookup and merge it in. Deliberately no
+    // `untappdError` alongside this - the two are meant to be mutually
+    // exclusive so a caller can check one field to know which situation
+    // it's looking at.
+    if (err instanceof UntappdAmbiguousMatchError) {
+      return { ...product, title, size, brewery: product.brand || '', untappdCandidates: err.candidates };
+    }
     return { ...product, title, size, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
   }
 }
@@ -1867,7 +2000,10 @@ module.exports = {
   enrichWineDescriptionFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
+  matchUntappdCandidates,
+  UntappdAmbiguousMatchError,
   composeProducerTitle,
+  buildUntappdSearchQuery,
   enrichBeerFromUntappd,
   enrichBeerScanFromStore,
   untappdBeerFromUrl,

@@ -739,6 +739,31 @@
     </div>
   </div>
 
+  <!-- Shown instead of auto-filling when Untappd's own search comes back
+       with two or more real, separately-listed beers scoring identically
+       (see UntappdAmbiguousMatchError/matchUntappdCandidates in
+       productImport.js) - e.g. a store title with no differentiating word
+       left in it after style-word stripping. Shared by Scan UPC, SKU
+       Lookup, and Search by Name (see openUntappdPicker in app.js) rather
+       than three copies, since every path ends up with the same
+       {url, brewery, beerName} candidate list either way. -->
+  <div id="untappdPickerOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdPickerTitle">
+      <div class="modal__header">
+        <h2 id="untappdPickerTitle">Pick the Right Beer</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="untappdPickerCloseBtn">&times; Close</button>
+      </div>
+      <div class="untappd-picker-body">
+        <p class="help-text" id="untappdPickerQueryLabel"></p>
+        <div class="untappd-picker-results" id="untappdPickerResults"></div>
+        <p class="help-text" id="untappdPickerStatus" role="status" aria-live="polite"></p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="untappdPickerCancelBtn">None of these / Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div id="printPreviewOverlay" class="modal-overlay no-print" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
       <div class="modal__header">
