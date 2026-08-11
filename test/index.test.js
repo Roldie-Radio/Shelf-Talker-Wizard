@@ -719,3 +719,28 @@ test('POST /api/upc-settings/auto-sync turns auto-sync on/off without touching t
     assert.equal(off.body.exportPath, '/tmp/whatever.csv');
   }));
 });
+
+// POST /api/upc-settings/sync-now - the Export File Settings dialog's "Sync
+// Now" button, a forced call into the injected exportPuller's own syncOnce
+// (see exportSync.js) instead of waiting for its ~30s interval.
+test('POST /api/upc-settings/sync-now calls the injected exportPuller\'s syncOnce and reports its resulting status', async () => {
+  let syncOnceCalls = 0;
+  const fakePuller = {
+    syncOnce: async () => { syncOnceCalls += 1; },
+    getStatus: () => ({ lastSyncedAt: '2026-08-11T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' }),
+  };
+  await withTempDb(() => withServerAndFakes({ exportPuller: fakePuller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/upc-settings/sync-now', {});
+    assert.equal(status, 200);
+    assert.equal(syncOnceCalls, 1);
+    assert.deepEqual(body.sync, { lastSyncedAt: '2026-08-11T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' });
+  }));
+});
+
+test('POST /api/upc-settings/sync-now reports sync: null when no exportPuller is wired in (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await postJson(port, '/api/upc-settings/sync-now', {});
+    assert.equal(status, 200);
+    assert.equal(body.sync, null);
+  }));
+});

@@ -239,6 +239,22 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     res.json({ ...setAutoSync(!!autoSync), sync: exportPuller ? exportPuller.getStatus() : null });
   });
 
+  // Backs the Export File Settings dialog's "Sync Now" button - forces an
+  // immediate pull from the Server PC (see exportSync.js's syncOnce) rather
+  // than waiting up to ~30s for the puller's own interval, then reports back
+  // the same shape as GET /api/upc-settings above so the dialog can refresh
+  // its status line right away instead of waiting for its own next poll. A
+  // no-op, same as GET's own sync: null, when this PC never had a puller
+  // wired in (createApp() alone); also effectively a no-op when auto-sync
+  // itself is off, since syncOnce() already checks isAutoSyncEnabled() and
+  // leaves whatever status was already there in place rather than erasing
+  // it - the button is only shown enabled in the dialog while auto-sync is
+  // on, this is just the same belt-and-suspenders as the route above.
+  app.post('/api/upc-settings/sync-now', async (req, res) => {
+    if (exportPuller) await exportPuller.syncOnce();
+    res.json({ ...getUpcSettings(), sync: exportPuller ? exportPuller.getStatus() : null });
+  });
+
   // Backs the "Scan UPC" tab itself: staff scan a bottle's UPC (a USB/
   // Bluetooth scanner just types it, like a keyboard) into the tab's input,
   // and this looks it up in the export file configured above rather than

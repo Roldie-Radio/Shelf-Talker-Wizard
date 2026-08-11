@@ -624,6 +624,7 @@
     exportSettingsSaveBtn: document.getElementById('exportSettingsSaveBtn'),
     exportSettingsStatus: document.getElementById('exportSettingsStatus'),
     exportSettingsAutoSyncCheckbox: document.getElementById('exportSettingsAutoSyncCheckbox'),
+    exportSettingsSyncNowBtn: document.getElementById('exportSettingsSyncNowBtn'),
     exportSettingsSyncStatus: document.getElementById('exportSettingsSyncStatus'),
 
     previewStage: document.getElementById('previewStage'),
@@ -3988,11 +3989,15 @@
 
   // Manual path entry only makes sense while auto-sync is off - disabling
   // it (rather than hiding it) keeps the field visible so staff can still
-  // see/copy whatever it was last set to.
+  // see/copy whatever it was last set to. Sync Now is the mirror image: it
+  // only does anything while auto-sync is on (see the /api/upc-settings/
+  // sync-now route in server/index.js), so it's disabled the rest of the
+  // time rather than hidden, same reasoning.
   function updateExportSettingsManualControlsDisabled(autoSync) {
     els.exportSettingsPathInput.disabled = autoSync;
     els.exportSettingsSaveBtn.disabled = autoSync;
     els.exportSettingsBrowseBtn.disabled = autoSync;
+    els.exportSettingsSyncNowBtn.disabled = !autoSync;
   }
 
   let exportSettingsSyncPollTimer = null;
@@ -4082,6 +4087,27 @@
       els.exportSettingsSyncStatus.textContent = err.message || 'Could not save that setting.';
     } finally {
       els.exportSettingsAutoSyncCheckbox.disabled = false;
+    }
+  });
+
+  // Forces an immediate pull from the Server PC instead of waiting up to
+  // ~30s for the puller's own interval (see exportSync.js's syncOnce) -
+  // only enabled while auto-sync is on (see updateExportSettingsManualControlsDisabled
+  // above). Reuses describeExportSettings/describeSyncStatus so the result
+  // reads exactly the same as a background sync completing on its own.
+  els.exportSettingsSyncNowBtn.addEventListener('click', async () => {
+    els.exportSettingsSyncNowBtn.disabled = true;
+    els.exportSettingsSyncStatus.textContent = 'Syncing...';
+    try {
+      const resp = await fetch('/api/upc-settings/sync-now', { method: 'POST' });
+      const settings = await resp.json();
+      if (!resp.ok) throw new Error(settings.error || 'Could not sync right now.');
+      els.exportSettingsStatus.textContent = describeExportSettings(settings);
+      els.exportSettingsSyncStatus.textContent = describeSyncStatus(settings);
+    } catch (err) {
+      els.exportSettingsSyncStatus.textContent = err.message || 'Could not sync right now.';
+    } finally {
+      els.exportSettingsSyncNowBtn.disabled = !els.exportSettingsAutoSyncCheckbox.checked;
     }
   });
 
