@@ -44,6 +44,7 @@
       version: '3.1.0',
       items: [
         'New (experimental, off by default): Food Pairing Suggestions for Wine/Spirits Shelf Talkers — click Suggest Pairings next to Description to match the varietal detected in the title/description against a short list of food pairings, then pick up to 3 to print under the description. Turn it on in Settings → Experimental Features → Wine Food Pairings.',
+        'Also new under Bourbon Shelf Talkers (Settings → Experimental Features): a Mash Bill proportion bar (add each grain with its percentage) and a Store Pick corner ribbon, independent of Talker Style so it can still show up alongside Closeout.',
       ],
     },
     {
@@ -411,6 +412,11 @@
   /** Food pairings ([{icon, food}], up to 3) currently attached to whatever's in the form. */
   let currentPairings = [];
 
+  /** Mash Bill grains currently attached to whatever's in the form (not yet
+      in queue) - [{grain, pct}], same "build a list, one Add click at a
+      time" pattern as currentRatings above. */
+  let currentMashBill = [];
+
   let currentSignType = 'talker'; // 'talker' | 'sign'
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
@@ -547,6 +553,13 @@
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
+    storePickField: document.getElementById('storePickField'),
+    storePick: document.getElementById('fStorePick'),
+    mashBillField: document.getElementById('mashBillField'),
+    mashBillGrain: document.getElementById('fMashBillGrain'),
+    mashBillPct: document.getElementById('fMashBillPct'),
+    addMashBillBtn: document.getElementById('addMashBillBtn'),
+    mashBillList: document.getElementById('mashBillList'),
     flavorFields: document.getElementById('flavorFields'),
     nose: document.getElementById('fNose'),
     palate: document.getElementById('fPalate'),
@@ -1065,13 +1078,16 @@
     // showing the field for a sign would offer input with no visible
     // effect there.
     els.awardsField.hidden = isBeer || isSign;
-    // Same rule as Awards right above, and for the same reason - Nose/
-    // Palate/Finish only ever render onto the .card printout (see
+    // Same rule as Awards right above, and for the same reason - Store
+    // Pick/Mash Bill/Nose/Palate/Finish only ever render onto the .card
+    // printout (see buildStorePickRibbonHtml/buildMashBillHtml/
     // buildFlavorHtml in card.js), so a Display Sign would offer input with
     // no visible effect. Also gated behind Settings -> Experimental
     // Features -> Bourbon Shelf Talkers (see applyExperimentalBourbon) -
     // off by default, so these fields stay out of the way until a store
     // opts in.
+    els.storePickField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
+    els.mashBillField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     els.flavorFields.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     // Same rule/reasoning as Nose/Palate/Finish right above - printed onto
     // the .card only (see buildPairingsHtml in card.js), and gated behind
@@ -1238,6 +1254,8 @@
       ratings: currentRatings.slice(),
       awards: els.awards.value.trim(),
       awardsColor: els.awardsColor.value,
+      isStorePick: els.storePick.checked,
+      mashBill: currentMashBill.slice(),
       nose: els.nose.value.trim(),
       palate: els.palate.value.trim(),
       finish: els.finish.value.trim(),
@@ -1287,6 +1305,9 @@
     renderRatingsList();
     els.awards.value = talker.awards || '';
     els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
+    els.storePick.checked = !!talker.isStorePick;
+    currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
+    renderMashBillList();
     els.nose.value = talker.nose || '';
     els.palate.value = talker.palate || '';
     els.finish.value = talker.finish || '';
@@ -1335,6 +1356,8 @@
     renderPairingsList();
     renderPairingSuggestions(null);
     els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
+    currentMashBill = [];
+    renderMashBillList();
     hideError();
     refreshPreview();
   }
@@ -1402,6 +1425,50 @@
     const idx = Number(btn.closest('[data-rating-index]').dataset.ratingIndex);
     currentRatings.splice(idx, 1);
     renderRatingsList();
+    refreshPreview();
+  });
+
+  // ---------- Mash Bill (Bourbon Shelf Talkers) ----------
+
+  // Same "build a list, one Add click at a time" pattern as Ratings above,
+  // just grain+percent instead of reviewer+score - no "manage grains"
+  // equivalent to Manage Reviewers, since Mash Bill's grain list is a small
+  // fixed set (see #fMashBillGrain's own <option>s in index.html), not
+  // something a store customizes.
+  function renderMashBillList() {
+    if (currentMashBill.length === 0) {
+      els.mashBillList.innerHTML = '';
+      return;
+    }
+    els.mashBillList.innerHTML = currentMashBill.map((m, i) => `
+      <div class="rating-chip" data-mashbill-index="${i}">
+        <span>${escapeHtml(m.pct)}% ${escapeHtml(m.grain)}</span>
+        <button type="button" data-action="remove-mashbill" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  function addMashBillGrain() {
+    const grain = els.mashBillGrain.value;
+    const pct = els.mashBillPct.value.trim();
+    if (!grain || !pct) return;
+    currentMashBill.push({ grain, pct });
+    els.mashBillPct.value = '';
+    renderMashBillList();
+    refreshPreview();
+  }
+
+  els.addMashBillBtn.addEventListener('click', addMashBillGrain);
+  els.mashBillPct.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addMashBillGrain(); }
+  });
+
+  els.mashBillList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-mashbill"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-mashbill-index]').dataset.mashbillIndex);
+    currentMashBill.splice(idx, 1);
+    renderMashBillList();
     refreshPreview();
   });
 

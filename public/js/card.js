@@ -87,6 +87,71 @@ function buildAwardsHtml(talker) {
   return `<div class="card__awards" style="color: ${color}">${lines.map(escapeHtml).join('<br>')}</div>`;
 }
 
+// Mash Bill grain -> proportion-bar segment color. Fixed palette, not
+// user-configurable (unlike the beer style colors below, this is a small,
+// well-known set of grains rather than open-ended free text) - matched
+// against the exact value the Mash Bill builder's <select> sends (see
+// #fMashBillGrain in index.html), case-sensitive, since that's a closed
+// list too. An unrecognized value (a saved talker from before a grain was
+// added/renamed, say) falls back to a neutral grey rather than guessing.
+const MASH_BILL_GRAIN_COLORS = {
+  Corn: '#d9a441',
+  Rye: '#8a3a2c',
+  Wheat: '#c9b464',
+  'Malted Barley': '#a67c3d',
+  'Malted Rye': '#6e2a1f',
+  Oat: '#ddd0ad',
+};
+const MASH_BILL_GRAIN_FALLBACK_COLOR = '#b8ab98';
+
+// Mash Bill - a stacked proportion bar (see .card__mashbill-bar in
+// styles.css), the closest analog on a spirits talker to a wine's varietal:
+// a shopper can read "mostly corn, sweeter" vs. "high rye, spicier" from the
+// relative widths alone, the legend underneath carrying the exact
+// percentages for anyone who stops to read. talker.mashBill is
+// [{grain, pct}, ...] (see currentMashBill/addMashBillGrain in app.js) -
+// entries with no grain or a non-positive/non-numeric percent are dropped
+// rather than rendered as a zero-width sliver.
+function buildMashBillHtml(talker) {
+  const entries = (Array.isArray(talker.mashBill) ? talker.mashBill : [])
+    .map((entry) => ({ grain: (entry && entry.grain ? String(entry.grain).trim() : ''), pct: Number(entry && entry.pct) }))
+    .filter((entry) => entry.grain && Number.isFinite(entry.pct) && entry.pct > 0);
+  if (!entries.length) return '';
+
+  const barHtml = entries.map(({ grain, pct }) => {
+    const color = MASH_BILL_GRAIN_COLORS[grain] || MASH_BILL_GRAIN_FALLBACK_COLOR;
+    return `<div class="card__mashbill-seg" style="width: ${pct}%; background: ${color};"></div>`;
+  }).join('');
+  const legendHtml = entries.map(({ grain, pct }) => {
+    const color = MASH_BILL_GRAIN_COLORS[grain] || MASH_BILL_GRAIN_FALLBACK_COLOR;
+    return `
+      <span>
+        <span class="card__mashbill-swatch" style="background: ${color};"></span>
+        ${pct}% ${escapeHtml(grain)}
+      </span>
+    `;
+  }).join('');
+
+  return `
+    <div class="card__mashbill">
+      <div class="card__mashbill-label">Mash Bill</div>
+      <div class="card__mashbill-bar">${barHtml}</div>
+      <div class="card__mashbill-legend">${legendHtml}</div>
+    </div>
+  `;
+}
+
+// Store Pick corner ribbon - a provenance claim ("we hand-picked this
+// barrel"), not a pricing state, so it's a plain boolean (talker.isStorePick,
+// see #fStorePick in index.html) independent of Talker Style rather than a
+// fourth option alongside Closeout/Chilled/Super Sale - see
+// .card__pick-ribbon in styles.css for why that separation matters (it can
+// appear alongside a Closeout badge).
+function buildStorePickRibbonHtml(talker) {
+  if (!talker.isStorePick) return '';
+  return '<div class="card__pick-ribbon">Store Pick</div>';
+}
+
 // Nose/Palate/Finish - spirits tasting notes, filled by hand or via "Find
 // Tasting Notes" (Distiller.com is the source that actually returns these
 // three pre-split; see findTastingNotes in productImport.js). Sits directly
@@ -1057,8 +1122,8 @@ function buildSignElement(talker) {
 /**
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, ratings: [{reviewer, score}],
- *   nose, palate, finish, brewery, location, style, abv, ibu, untappdRating,
- *   untappdRatingCount }
+ *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
+ *   location, style, abv, ibu, untappdRating, untappdRatingCount }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -1091,8 +1156,14 @@ function buildCardElement(talker) {
   const experimentalPairings = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalPairings);
   const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
+  // Wine/Spirits-only, same experimentalBourbon/isQuarter guard as Mash
+  // Bill/Nose-Palate-Finish below - beer never sets isStorePick (the
+  // checkbox is hidden for beer, see applyFormMode in app.js), so this and
+  // rightBadgeHtml above never both apply to the same talker even though
+  // they share the badge-right corner.
+  const storePickRibbonHtml = (!isBeer && !isQuarter && experimentalBourbon) ? buildStorePickRibbonHtml(talker) : '';
   const titleClasses = ['card__title'];
-  if (rightBadgeHtml) titleClasses.push('card__title--badge-right');
+  if (rightBadgeHtml || storePickRibbonHtml) titleClasses.push('card__title--badge-right');
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
   // Quarter gets its own reference width (its own real 1.4in print width,
   // not Full/Half's shared 2.8in) - same trick .sign-small/.sign-large
@@ -1121,11 +1192,13 @@ function buildCardElement(talker) {
   ` : `
       ${countryFlagHtml}
       ${rightBadgeHtml}
+      ${storePickRibbonHtml}
       ${titleHtml}
       ${!isBeer && talker.vintage ? `<div class="card__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
+      ${(isBeer || !experimentalBourbon) ? '' : buildMashBillHtml(talker)}
       ${(isBeer || !experimentalBourbon) ? '' : buildFlavorHtml(talker)}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
