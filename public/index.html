@@ -229,11 +229,40 @@
             </div>
           </div>
 
-          <!-- Spirits-only, same visibility rule as Awards below (Shelf
-               Talkers only, hidden for Beer/Display Signs - see
-               applyFormMode in app.js). Filled by hand, or auto-filled by
-               the same "Find Tasting Notes" search above once a Source
-               (e.g. Distiller) returns them - see runTastingNotesSearch. -->
+          <!-- Store Pick, Mash Bill, and Nose/Palate/Finish are the
+               "Bourbon Shelf Talkers" experimental feature (Settings ->
+               Experimental Features) - all three share the same visibility
+               rule as Awards below (Shelf Talkers only, hidden for Beer/
+               Display Signs), plus the experimentalBourbonEnabled gate (see
+               applyFormMode in app.js). -->
+          <div class="field" id="storePickField">
+            <label class="server-pc-checkbox">
+              <input type="checkbox" id="fStorePick" />
+              Store Pick
+            </label>
+            <p class="help-text">Prints a "Store Pick" ribbon in the corner - independent of Talker Style, so it can still show up alongside a Closeout badge if a store pick goes on clearance.</p>
+          </div>
+
+          <div class="field-group" id="mashBillField">
+            <div class="field-head">
+              <span>Mash Bill (optional)</span>
+            </div>
+            <div class="ratings-builder">
+              <select id="fMashBillGrain" aria-label="Grain">
+                <option value="Corn">Corn</option>
+                <option value="Rye">Rye</option>
+                <option value="Wheat">Wheat</option>
+                <option value="Malted Barley">Malted Barley</option>
+                <option value="Malted Rye">Malted Rye</option>
+                <option value="Oat">Oat</option>
+              </select>
+              <input type="text" inputmode="numeric" id="fMashBillPct" maxlength="3" placeholder="70" aria-label="Percent" />
+              <button type="button" class="btn btn--small" id="addMashBillBtn">Add</button>
+            </div>
+            <div class="ratings-list" id="mashBillList"></div>
+            <p class="help-text">Prints as a proportion bar under the description - add each grain in the mash bill with its percentage.</p>
+          </div>
+
           <div class="field-group" id="flavorFields">
             <label class="field">
               <span>Nose (optional)</span>
@@ -1056,7 +1085,7 @@
             <input type="checkbox" id="experimentalBourbonCheckbox" />
             Bourbon Shelf Talkers
           </label>
-          <p class="help-text">Adds Nose / Palate / Finish fields to Wine/Spirits Shelf Talkers, and a Distiller.com source to "Find Tasting Notes" that fills them in automatically. Distiller's scraper hasn't been confirmed against the live site yet, so always double-check what it finds before printing. Off by default; turning it off again hides the fields and the source without deleting anything already on a talker.</p>
+          <p class="help-text">Adds Nose / Palate / Finish fields to Wine/Spirits Shelf Talkers (with a Distiller.com source in "Find Tasting Notes" that fills them in automatically - Distiller's scraper hasn't been confirmed against the live site yet, so always double-check what it finds before printing), a Mash Bill proportion bar, and a Store Pick corner ribbon. Off by default; turning it off again hides all three without deleting anything already on a talker.</p>
 
           <label class="server-pc-checkbox">
             <input type="checkbox" id="experimentalPairingsCheckbox" />
