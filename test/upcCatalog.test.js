@@ -153,6 +153,25 @@ test('buildIndex maps rows onto product fields by matched columns', () => {
   assert.equal(product.category, 'Wine');
 });
 
+// A "Vendor" column is a real WinePOS export header (see the
+// wine-pos-inventory-demo.csv-backed tests further down), but it holds a
+// short internal distributor code, not the producer's own name - so unlike
+// Brand/Supplier/Winery/Brewery/Manufacturer, it's deliberately not matched
+// to the `brand` field (see FIELD_ALIASES in upcCatalog.js). Left unguarded,
+// a code like "KOH" would get prepended onto the title by
+// composeProducerTitle ("KOH Miller Extra Light") and, for beer, sent to
+// Untappd as part of the search query.
+test('buildIndex leaves brand blank when the only vendor-ish column is "Vendor", not Brand/Supplier/Winery/Brewery/Manufacturer', () => {
+  const csv = [
+    'UPC,Description,Vendor,Size',
+    '019214600038,Miller Extra Light 30pk Cans,KOH,30pk',
+  ].join('\n');
+  const { byUpc } = buildIndex(parseDelimited(csv));
+  const product = byUpc.get('019214600038');
+  assert.equal(product.title, 'Miller Extra Light 30pk Cans');
+  assert.equal(product.brand, '');
+});
+
 test('buildIndex indexes both UPC-A and EAN-13 forms of the same row', () => {
   const { byUpc } = buildIndex(parseDelimited(SAMPLE_CSV));
   assert.equal(byUpc.get('085000010652'), byUpc.get('0085000010652'));
@@ -693,7 +712,11 @@ test('lookupUpc finds a real export row by the UPC a physical scanner would actu
     // barcode scanner reading the actual bottle would send.
     const product = lookupUpc('088586001895');
     assert.equal(product.title, '14 HANDS CABERNET');
-    assert.equal(product.brand, 'ABD');
+    // The export's only vendor-ish column is literally named "Vendor" and
+    // holds a distributor code ("ABD"), not the producer's own name - left
+    // out of `brand` entirely rather than passed through as if it were one
+    // (see the 'vendor' alias's removal from FIELD_ALIASES in upcCatalog.js).
+    assert.equal(product.brand, '');
     assert.equal(product.sku, '9415');
     assert.equal(product.size, '750ML');
     assert.equal(product.vintage, '2022');

@@ -179,7 +179,19 @@ const FIELD_ALIASES = {
   // column is literally named that, not just "UPC".
   upc: ['upc', 'upc code', 'upc a', 'upc data', 'barcode', 'bar code', 'scancode', 'scan code', 'ean', 'ean13', 'ean 13'],
   title: ['title', 'description', 'item description', 'product', 'product name', 'product title', 'item name', 'name'],
-  brand: ['brand', 'vendor', 'supplier', 'winery', 'brewery', 'manufacturer'],
+  // Deliberately no 'vendor' alias here - confirmed against a real WinePOS
+  // export (wine-pos-inventory-demo.csv) whose only vendor-ish column is
+  // literally named "Vendor" and holds a short internal distributor code
+  // ("ABD", "KOH"), not the producer's own name. Matching that column here
+  // used to feed the code straight into searchByName/lookupUpc's `brand`
+  // field, which composeProducerTitle (productImport.js) then prepends onto
+  // the title ("ABD 14 Hands Cabernet") and, for beer, sends to Untappd as
+  // part of the search query - breaking the match the same way the SKU
+  // Lookup store-page scrape's own vendor-code bug did (see dropVendorCode
+  // in productImport.js). Vendor codes aren't meant to be used for anything
+  // (yet), so a row with only a Vendor column now leaves brand blank rather
+  // than guessing it's a real brand name.
+  brand: ['brand', 'supplier', 'winery', 'brewery', 'manufacturer'],
   sku: ['sku', 'store sku', 'item number', 'item #', 'item no', 'plu'],
   size: ['size', 'unit size', 'bottle size', 'container size'],
   vintage: ['vintage', 'year'],
