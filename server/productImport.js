@@ -1589,6 +1589,55 @@ function stripSize(title, size) {
     .trim();
 }
 
+// A WinePOS beer title routinely trails off with the beer's own style
+// ("Augury Dry Irish Stout") the same way it sometimes trails off with a
+// container size (see SIZE_PATTERN/stripSize above) - dead weight for an
+// Untappd search, since Untappd's own beer name is just "<Brewery> <Beer
+// Name>" and never repeats its own style there (confirmed against a real
+// miss - see pickBestMatch's own comment for the full story of how that
+// dead weight used to sink an otherwise-correct match's score). Stripped
+// from the search QUERY only (see buildUntappdSearchQuery below) - never
+// from composeProducerTitle's own return value, which is what actually
+// fills the Product Title field a shopper sees, and where staff expect the
+// style to stay.
+//
+// Deliberately narrow: only well-established style *category* words (IPA,
+// Stout, Porter, ...) and modifiers that are essentially never a brand's
+// own differentiator (Hazy, Double, Session, Dry, Irish, ...). Left out on
+// purpose: Light/Lite, Dark, Gold/Golden, Amber, Red, Blonde, Draft/
+// Draught - for a macro brand these are routinely the ONLY thing telling
+// two real, separately-listed Untappd beers apart ("Coors Light" vs. plain
+// "Coors Banquet", "Michelob Golden Draft" vs. "Michelob AmberBock").
+// Stripping one of those risks a confident-looking WRONG match instead of
+// no match at all - exactly what pickBestMatch's own "found nothing beats
+// a wrong answer" rule exists to prevent. A style-category word carries no
+// equivalent risk: Untappd doesn't use "Stout"/"IPA"/... to tell two beers
+// from the same brewery apart the way it uses "Light", so removing one
+// never costs real matching signal - not exhaustive (new styles keep
+// showing up), just a safe, common core; a miss still falls back to the
+// untappdError staff already review before queuing a talker.
+const BEER_STYLE_WORD_PATTERN = new RegExp(
+  '\\b(' + [
+    'ipa', 'dipa', 'neipa', 'ale', 'lager', 'stout', 'porter', 'pilsner', 'pils',
+    'saison', 'gose', 'k[oö]lsch', 'witbier', 'hefeweizen', 'weissbier', 'weizen',
+    'dunkel', 'm[aä]rzen', 'helles', 'barleywine', 'lambic', 'bock', 'doppelbock',
+    'schwarzbier', 'rauchbier', 'kellerbier', 'tripel', 'dubbel', 'quad', 'quadrupel',
+    'esb', 'sour', 'farmhouse', 'wheat', 'hazy', 'double', 'imperial', 'triple',
+    'session', 'dry', 'irish', 'belgian', 'german',
+  ].join('|') + ')\\b',
+  'gi'
+);
+
+// Cleans a beer title down to just what's worth sending Untappd as a
+// search query (see BEER_STYLE_WORD_PATTERN above). Guards against
+// stripping a title down to nothing - a rare SKU literally titled just
+// "IPA" would otherwise search Untappd with an empty string instead of the
+// original, still-noisy-but-non-empty query.
+function buildUntappdSearchQuery(title) {
+  const stripped = (title || '').replace(BEER_STYLE_WORD_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+  return stripped || (title || '').trim();
+}
+
 // Composes "Producer Product Name" (size left out) from a scraped product -
 // used two ways below: as the actual title field for wine/spirits SKU
 // lookups, and as the Untappd search query for beer. The store's own title
@@ -1626,11 +1675,14 @@ function combineBeerSize(size, packSize) {
 // what was actually asked for ("descriptions pulled from other sources,
 // such as untappd"). The displayed title is composeProducerTitle's
 // "Producer Product Name" (same helper the wine/spirits title uses, and
-// pulled from the store page only - never Untappd), which doubles as the
-// Untappd search query: a bare one- or two-word beer name like "Daylily" is
-// too weak a query on its own (confirmed against a real SKU lookup:
-// searching just "Daylily" came back "Could not find... on Untappd", where
-// the beer's own page is really titled "Daylily by Autodidact Beer").
+// pulled from the store page only - never Untappd); the Untappd search
+// query is that same title with its style words stripped (see
+// buildUntappdSearchQuery above) - a bare one- or two-word beer name like
+// "Daylily" is too weak a query on its own (confirmed against a real SKU
+// lookup: searching just "Daylily" came back "Could not find... on
+// Untappd", where the beer's own page is really titled "Daylily by
+// Autodidact Beer"), so the brand still gets prepended same as before -
+// only the style tail is gone.
 // Best-effort only, same as
 // extractBeer's own bonus brewery-location fetch above: the store lookup
 // already succeeded by this point, so a beer Untappd can't find (or that
@@ -1661,8 +1713,12 @@ function mergeUntappdBeer(current, beer) {
 async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
   const size = combineBeerSize(product.size, product.packSize);
+  // The displayed Product Title keeps its style suffix (`title` above,
+  // unchanged) - only the string actually sent to Untappd has it stripped
+  // (see buildUntappdSearchQuery's own comment for why).
+  const searchQuery = buildUntappdSearchQuery(title);
   try {
-    const beer = await searchUntappd(title);
+    const beer = await searchUntappd(searchQuery);
     // mergeUntappdBeer's own description fallback (see its comment) is meant
     // for the manual "paste the Untappd URL/HTML" path further down, where
     // `current` is whatever staff already have in the form and is never
@@ -1868,6 +1924,7 @@ module.exports = {
   algoliaSearchBeerCandidates,
   searchUntappd,
   composeProducerTitle,
+  buildUntappdSearchQuery,
   enrichBeerFromUntappd,
   enrichBeerScanFromStore,
   untappdBeerFromUrl,

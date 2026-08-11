@@ -23,7 +23,8 @@ const {
   extractProduct, parseProductHtml, parsePastedProduct,
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore,
-  algoliaSearchBeerCandidates, searchUntappd, composeProducerTitle, enrichBeerScanFromStore,
+  algoliaSearchBeerCandidates, searchUntappd, composeProducerTitle, buildUntappdSearchQuery,
+  enrichBeerScanFromStore, enrichBeerFromUntappd,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
 
@@ -1978,6 +1979,45 @@ test('searchUntappd finds a match even when the query carries style words the Un
   );
 });
 
+// enrichBeerFromUntappd - end-to-end coverage that buildUntappdSearchQuery
+// is actually wired in, using a brewery legal name long enough that
+// pickBestMatch's own min(query, candidate) threshold (see its comment) is
+// no longer enough on its own: an *unstripped* 5-word query against this
+// 5-word candidate title needs 3 overlapping words, but "Oakflower"/
+// "Augury" is only ever 2 - stripping the query down to just those two
+// words is what actually gets it under a 1-word bar instead. Confirms both
+// halves at once: the request Algolia actually receives has the style
+// words gone, and the *displayed* title (what ends up on the talker) still
+// has them, unchanged.
+test('enrichBeerFromUntappd strips style words from the Untappd query without touching the displayed title', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'oakflower-craft-brewing-company-augury', bid: 4242, beer_name: 'Augury', brewery_name: 'Oakflower Craft Brewing Company' },
+  ]);
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Augury by Oakflower Craft Brewing Company | Untappd" />',
+    body: '<p class="brewery"><a href="#">Oakflower Craft Brewing Company</a></p><p class="style">Stout - Irish Dry</p>',
+  });
+  let requestedBody;
+  await withMockFetch(
+    async (url, opts) => {
+      if (url.includes('algolia.net')) {
+        requestedBody = JSON.parse(opts.body);
+        return mockResponse({ status: 200, body: algoliaBody });
+      }
+      return mockResponse({ status: 200, body: beerHtml });
+    },
+    async () => {
+      const result = await enrichBeerFromUntappd({
+        title: 'Augury Dry Irish Stout', brand: 'Oakflower', size: '', sku: '41305',
+      });
+      assert.equal(result.title, 'Oakflower Augury Dry Irish Stout', 'the Product Title field keeps its style suffix');
+      assert.equal(result.brewery, 'Oakflower Craft Brewing Company');
+      assert.equal(result.untappdError, undefined);
+    }
+  );
+  assert.match(requestedBody.requests[0].params, /query=Oakflower%20Augury(&|$)/);
+});
+
 // ================================================================
 // lookupSku / lookupSkuFromHtml - the end-to-end orchestration behind
 // /api/sku-lookup and /api/sku-lookup-html: store lookup always, plus a
@@ -2477,6 +2517,8 @@ test('enrichBeerScanFromStore searches Untappd with the store\'s title, not the 
     },
     async () => {
       const result = await enrichBeerScanFromStore(rawExportProduct);
+      // The displayed title keeps "Porter" - only the query sent to
+      // Untappd (below) has it stripped (see buildUntappdSearchQuery).
       assert.equal(result.title, 'Manskirt Brewing The Great Porter');
       assert.equal(result.brewery, 'Manskirt Brewing');
       assert.equal(result.style, 'Porter');
@@ -2484,8 +2526,13 @@ test('enrichBeerScanFromStore searches Untappd with the store\'s title, not the 
     }
   );
   // The query actually sent to Untappd came from the store's title/brand,
-  // not the export's "MSB MANSKIRT..." text.
-  assert.match(algoliaRequestBody.requests[0].params, /query=Manskirt%20Brewing%20The%20Great%20Porter/);
+  // not the export's "MSB MANSKIRT..." text - and, per
+  // buildUntappdSearchQuery, has "Porter" itself stripped out too, even
+  // though it happens to be part of this beer's own real Untappd name (see
+  // that function's own comment for why that's still safe: "Manskirt
+  // Brewing The Great" alone is plenty distinctive, so nothing here was
+  // ever at risk of *not* finding the right beer for lack of that word).
+  assert.match(algoliaRequestBody.requests[0].params, /query=Manskirt%20Brewing%20The%20Great(&|$)/);
 });
 
 test('enrichBeerScanFromStore pulls title/size/price/description from the store when the SKU matches', async () => {
@@ -2689,6 +2736,33 @@ test('composeProducerTitle strips a "Not Specified" placeholder and an abbreviat
     composeProducerTitle({ title: 'Hazy IPA 16oz 4-pk', brand: 'New Anthem Beer Project', size: '' }),
     'New Anthem Beer Project Hazy IPA'
   );
+});
+
+// buildUntappdSearchQuery - see its own comment in productImport.js for the
+// full reasoning. Regression coverage for the real Oakflower Augury miss
+// (style words diluting an otherwise-correct match), plus the deliberate
+// choice not to touch macro-brand differentiators like "Light".
+test('buildUntappdSearchQuery strips style category words and modifiers but leaves the rest of the title alone', () => {
+  assert.equal(buildUntappdSearchQuery('Oakflower Augury Dry Irish Stout'), 'Oakflower Augury');
+  assert.equal(
+    buildUntappdSearchQuery('New Anthem Beer Project Trapped In A Sunbeam Hazy Double IPA'),
+    'New Anthem Beer Project Trapped In A Sunbeam'
+  );
+  assert.equal(buildUntappdSearchQuery('Anheuser-Busch Michelob ULTRA'), 'Anheuser-Busch Michelob ULTRA');
+});
+
+test('buildUntappdSearchQuery leaves ambiguous macro-brand words like "Light" alone', () => {
+  // "Light" is often the only thing telling two real, separately-listed
+  // Untappd beers from the same brewery apart (Coors Light vs. Coors
+  // Banquet) - stripping it would risk a confident wrong match, not just a
+  // missed one, so it's deliberately not in BEER_STYLE_WORD_PATTERN.
+  assert.equal(buildUntappdSearchQuery('Coors Light'), 'Coors Light');
+  assert.equal(buildUntappdSearchQuery('Michelob Golden Draft'), 'Michelob Golden Draft');
+});
+
+test('buildUntappdSearchQuery falls back to the original title rather than searching an empty string', () => {
+  assert.equal(buildUntappdSearchQuery('IPA'), 'IPA');
+  assert.equal(buildUntappdSearchQuery(''), '');
 });
 
 test('lookupSkuFromHtml parses pasted store HTML and still runs Untappd enrichment for beer', async () => {
