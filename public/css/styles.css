@@ -921,6 +921,27 @@ h1, h2, h3 { margin: 0; }
 .untappd-picker-result__title { font-size: 0.87rem; font-weight: 700; color: var(--ui-ink); }
 .untappd-picker-result__brewery { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
 
+/* ---------- Confirm Untappd Match (#untappdConfirmOverlay in index.html) -
+   a single card, not a list of rows like the picker above, since there's
+   only ever one match here to look over before signing off on it. ---------- */
+.untappd-confirm-card {
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 0.8rem 0.9rem;
+}
+.untappd-confirm-card__brewery { font-size: 1rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-confirm-card__meta { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.2rem; }
+.untappd-confirm-card__description {
+  font-size: 0.82rem;
+  color: var(--ui-ink-soft);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+  /* A real Untappd description can run long - this is a sanity check
+     before applying the match, not a place to read the whole thing. */
+  max-height: 4.5em;
+  overflow-y: auto;
+}
+
 /* ---------- Find Queue ---------- */
 
 /* No modal__header/modal__footer here - the search input itself is the

@@ -764,6 +764,35 @@
     </div>
   </div>
 
+  <!-- Shown after EVERY beer lookup that resolves a single, confident
+       Untappd match (Scan UPC, SKU Lookup, Search by Name - see
+       confirmBeerUntappdMatch/openUntappdConfirm in app.js) - a genuine
+       tie between two candidates still goes to untappdPickerOverlay above
+       instead, since there's more than one option to choose between there.
+       Staff sign off on the single match Untappd itself is confident
+       about too, since a wrong-but-confident pick used to be able to reach
+       the printed talker with no review step at all. -->
+  <div id="untappdConfirmOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdConfirmTitle">
+      <div class="modal__header">
+        <h2 id="untappdConfirmTitle">Confirm Untappd Match</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="untappdConfirmCloseBtn">&times; Close</button>
+      </div>
+      <div class="untappd-picker-body">
+        <p class="help-text">Untappd matched this to:</p>
+        <div class="untappd-confirm-card">
+          <div class="untappd-confirm-card__brewery" id="untappdConfirmBrewery"></div>
+          <div class="untappd-confirm-card__meta" id="untappdConfirmMeta"></div>
+          <p class="untappd-confirm-card__description" id="untappdConfirmDescription"></p>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="untappdConfirmRejectBtn">Not the Right Beer</button>
+        <button type="button" class="btn btn--primary" id="untappdConfirmAcceptBtn">Use This Match</button>
+      </div>
+    </div>
+  </div>
+
   <div id="printPreviewOverlay" class="modal-overlay no-print" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
       <div class="modal__header">
