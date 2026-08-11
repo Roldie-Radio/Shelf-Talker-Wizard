@@ -45,6 +45,10 @@
       items: [
         'New (experimental, off by default): Food Pairing Suggestions for Wine/Spirits Shelf Talkers — click Suggest Pairings next to Description to match the varietal detected in the title/description against a short list of food pairings, then pick up to 3 to print under the description. Turn it on in Settings → Experimental Features → Wine Food Pairings.',
         'Also new under Bourbon Shelf Talkers (Settings → Experimental Features): a Mash Bill proportion bar (add each grain with its percentage) and a Store Pick corner ribbon, independent of Talker Style so it can still show up alongside Closeout.',
+        'Export File Settings gained a Sync Now button, so a client PC can pull the latest WinePOS export from the Server PC right away instead of waiting for the next auto-sync.',
+        "Fixed: beers Untappd hasn't rated yet now show no rating instead of 0.00, matching how Untappd's own page displays them.",
+        'Fixed: Untappd search for Scan UPC and Search by Name (Beer) no longer fails on longer titles just because the beer\'s own Untappd page leaves out style words (like "IPA" or "Stout") the title has.',
+        'Desktop app: swapped the Advanced and Help menu positions in the menu bar.',
       ],
     },
     {
