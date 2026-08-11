@@ -2969,6 +2969,18 @@ test('buildUntappdSearchQuery falls back to the original title rather than searc
   assert.equal(buildUntappdSearchQuery(''), '');
 });
 
+// Container/packaging codes (see CONTAINER_WORD_PATTERN's own comment in
+// productImport.js) - none of these carry any Untappd search signal, so
+// they're stripped the same way style words are, but left in the displayed
+// Product Title (composeProducerTitle never touches them).
+test('buildUntappdSearchQuery strips container/packaging codes (NR, Can/CN, KEG, 1/6, 1/4)', () => {
+  assert.equal(buildUntappdSearchQuery('Downtown Brown NR'), 'Downtown Brown');
+  assert.equal(buildUntappdSearchQuery('Downtown Brown 12pk CN'), 'Downtown Brown 12pk');
+  assert.equal(buildUntappdSearchQuery('Oakflower Augury Cans'), 'Oakflower Augury');
+  assert.equal(buildUntappdSearchQuery('Fest Beer KEG 1/6'), 'Fest Beer');
+  assert.equal(buildUntappdSearchQuery('Fest Beer KEG 1/4'), 'Fest Beer');
+});
+
 test('lookupSkuFromHtml parses pasted store HTML and still runs Untappd enrichment for beer', async () => {
   const storeProductHtml = page({
     body: '<h1 itemprop="name">Michelob ULTRA</h1><div class="pricingDetails"><span class="priceFull">$8.99</span></div>',
