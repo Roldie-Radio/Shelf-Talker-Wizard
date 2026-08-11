@@ -579,6 +579,13 @@
     untappdPickerQueryLabel: document.getElementById('untappdPickerQueryLabel'),
     untappdPickerResults: document.getElementById('untappdPickerResults'),
     untappdPickerStatus: document.getElementById('untappdPickerStatus'),
+    untappdConfirmOverlay: document.getElementById('untappdConfirmOverlay'),
+    untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
+    untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
+    untappdConfirmAcceptBtn: document.getElementById('untappdConfirmAcceptBtn'),
+    untappdConfirmBrewery: document.getElementById('untappdConfirmBrewery'),
+    untappdConfirmMeta: document.getElementById('untappdConfirmMeta'),
+    untappdConfirmDescription: document.getElementById('untappdConfirmDescription'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
@@ -2347,9 +2354,13 @@
       fields.vintage = data.vintage;
     }
     fillForm(fields);
-    previewMode = 'single';
-    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-    renderPreview();
+    // Whichever preview mode staff already had selected (Current Talker or
+    // Full Page) stays selected - a scan-and-add workflow with Full Page up
+    // to watch the sheet fill in used to get yanked back to Current Talker
+    // on every single scan, which is exactly the opposite of what that view
+    // is for. refreshPreview() re-renders whichever mode is actually active
+    // instead of forcing single like a bare renderPreview() call would.
+    refreshPreview();
   }
 
   // Collects whichever best-effort enrichment step didn't pan out, so staff
@@ -2421,13 +2432,12 @@
         throw err;
       }
 
-      applyUpcScanProduct(data, isBeer);
-
       // Untappd itself couldn't safely pick one of two or more real,
       // separately-listed beers (see openUntappdPicker's own comment) -
       // ask instead of guessing, and never auto-queue on the strength of a
       // still-unresolved pick, whether or not staff end up making one.
-      if (data.untappdCandidates && data.untappdCandidates.length) {
+      if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
+        applyUpcScanProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
         els.scanUpcStatus.textContent = picked
           ? `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`
@@ -2436,6 +2446,24 @@
         return;
       }
 
+      // A single, confident Untappd match still needs a staff sign-off
+      // before its brewery/style/ABV/rating reach the printed talker - see
+      // confirmBeerUntappdMatch's own comment for why this isn't optional
+      // just because Untappd itself wasn't torn between two candidates.
+      if (isBeer && !data.untappdError) {
+        const confirmed = await confirmBeerUntappdMatch(data, (d) => applyUpcScanProduct(d, isBeer));
+        // untappdError is falsy in this branch already - only a
+        // store/description error could still show up here.
+        const otherProblems = scanUpcProblems(data);
+        const suffix = otherProblems ? ` ${otherProblems}` : '';
+        els.scanUpcStatus.textContent = confirmed
+          ? `Found it${cacheNote(data)}!${suffix} Review the fields, then click "Add to Queue".`
+          : `Found it${cacheNote(data)}. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
+            + 'Review the fields, then click "Add to Queue".';
+        return;
+      }
+
+      applyUpcScanProduct(data, isBeer);
       const problems = scanUpcProblems(data);
       if (problems) {
         // A best-effort enrichment step (store lookup, Untappd, store
@@ -2704,9 +2732,9 @@
         theme: els.theme.value,
       });
     }
-    previewMode = 'single';
-    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-    renderPreview();
+    // Preserves whichever preview mode staff already had selected - see the
+    // comment above applyUpcScanProduct's own refreshPreview() call.
+    refreshPreview();
     // Deliberately stays on the Website tab instead of switching to Edit
     // Talker - same reasoning as applySkuLookupProduct's own note below: the
     // Live Preview panel already updates live regardless of which tab is
@@ -2859,9 +2887,9 @@
       fields.vintage = data.vintage;
     }
     fillForm(fields);
-    previewMode = 'single';
-    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-    renderPreview();
+    // Preserves whichever preview mode staff already had selected - see the
+    // comment above applyUpcScanProduct's own refreshPreview() call.
+    refreshPreview();
     // Unlike applyImportedProduct, deliberately stays on the SKU Lookup tab
     // instead of switching to Manual Entry - the Live Preview panel already
     // updates live regardless of which tab is active, and for beer, staying
@@ -2888,9 +2916,9 @@
   // tab, same reasoning as applySkuLookupProduct above.
   function applyUntappdFields(fields) {
     fillForm({ ...readForm(), ...fields });
-    previewMode = 'single';
-    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-    renderPreview();
+    // Preserves whichever preview mode staff already had selected - see the
+    // comment above applyUpcScanProduct's own refreshPreview() call.
+    refreshPreview();
   }
 
   // Shown instead of auto-filling when a beer lookup's `untappdCandidates`
@@ -2978,6 +3006,97 @@
       });
     });
   }
+
+  // Client-side mirror of enrichBeerFromUntappd's own untappdError fallback
+  // shape (productImport.js: brewery falls back to `brand`, everything else
+  // blank) - what the form shows while a confirm dialog is up (see
+  // openUntappdConfirm below) or after staff reject the match, without
+  // needing a second round trip to ask the server for it.
+  function stripUntappdFields(data) {
+    return {
+      ...data,
+      brewery: data.brand || '',
+      location: '',
+      style: '',
+      abv: '',
+      ibu: '',
+      untappdRating: '',
+      untappdRatingCount: '',
+      description: '',
+    };
+  }
+
+  // Shown after EVERY beer lookup that resolves a single, confident Untappd
+  // match - not just a genuine tie (openUntappdPicker above already covers
+  // that). Before this existed, a wrong-but-confident match had no review
+  // step at all: Scan UPC's own "problems" check (scanUpcProblems) only
+  // ever flagged an outright miss, so a beer Untappd matched to the wrong
+  // listing would sail straight through to the printed talker unnoticed.
+  // `data` already carries everything needed to show staff what would be
+  // applied (brewery/style/ABV/rating/description) - unlike
+  // openUntappdPicker's candidates, there's no second fetch needed here,
+  // since a confident single match already came back with full details.
+  let untappdConfirmResolve = null;
+
+  const untappdConfirmModal = createModal({
+    overlay: els.untappdConfirmOverlay,
+    closeBtns: [els.untappdConfirmCloseBtn, els.untappdConfirmRejectBtn],
+    // Same ordering rule as untappdPickerModal's own onClose above: the
+    // Accept handler below nulls out untappdConfirmResolve and resolves
+    // *before* calling .close(), so this only ever actually resolves
+    // anything for a genuine reject (Reject button, backdrop click, Escape).
+    onClose: () => {
+      if (untappdConfirmResolve) {
+        const resolveFn = untappdConfirmResolve;
+        untappdConfirmResolve = null;
+        resolveFn(false);
+      }
+    },
+  });
+
+  // Returns a Promise resolving to true if staff confirmed the match
+  // (Use This Match), false if they rejected it (Not the Right Beer, or
+  // closed the dialog any other way).
+  function openUntappdConfirm(data) {
+    return new Promise((resolve) => {
+      untappdConfirmResolve = resolve;
+      els.untappdConfirmBrewery.textContent = data.brewery || 'Unknown brewery';
+      const metaParts = [];
+      if (data.style) metaParts.push(data.style);
+      if (data.abv) metaParts.push(`${data.abv} ABV`);
+      if (data.untappdRating) {
+        metaParts.push(`${data.untappdRating} ★${data.untappdRatingCount ? ` (${data.untappdRatingCount} ratings)` : ''}`);
+      }
+      els.untappdConfirmMeta.textContent = metaParts.join(' · ');
+      els.untappdConfirmDescription.textContent = data.description || '';
+      els.untappdConfirmDescription.hidden = !data.description;
+      untappdConfirmModal.open();
+    });
+  }
+
+  els.untappdConfirmAcceptBtn.addEventListener('click', () => {
+    // Null out (and grab) untappdConfirmResolve before closing - same
+    // ordering rule as everywhere else this pattern shows up in this file.
+    const resolveFn = untappdConfirmResolve;
+    untappdConfirmResolve = null;
+    untappdConfirmModal.close();
+    if (resolveFn) resolveFn(true);
+  });
+
+  // Shared strip-apply-confirm-merge sequence behind every beer lookup that
+  // resolves a single confident Untappd match (Scan UPC, SKU Lookup + its
+  // pasted-HTML fallback, Search by Name) - each of those four call sites
+  // has its own tab-specific `applyFn` (already applies non-Untappd fields
+  // the same way it always has) and its own status-message wording, but the
+  // strip/confirm/merge sequence itself is identical, so it lives here once
+  // instead of four times. Returns whether staff confirmed the match.
+  async function confirmBeerUntappdMatch(data, applyFn) {
+    applyFn(stripUntappdFields(data));
+    const confirmed = await openUntappdConfirm(data);
+    if (confirmed) applyUntappdFields(data);
+    return confirmed;
+  }
+
   // Small aside appended to a lookup's status message when the server
   // served a cached copy (see the product cache note above /api/sku-lookup
   // and /api/upc-lookup in server/index.js) - every lookup is live now, so
@@ -3019,11 +3138,10 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'SKU lookup failed.');
 
-      applySkuLookupProduct(data, isBeer);
-
       // Same disambiguation step Scan UPC's own handler takes above - see
       // openUntappdPicker's comment for why this can't just auto-pick one.
-      if (data.untappdCandidates && data.untappdCandidates.length) {
+      if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
+        applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || sku);
         if (picked) {
           els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
@@ -3039,6 +3157,21 @@
         return;
       }
 
+      // A single, confident Untappd match still needs a staff sign-off -
+      // see confirmBeerUntappdMatch's own comment.
+      if (isBeer && !data.untappdError) {
+        const confirmed = await confirmBeerUntappdMatch(data, (d) => applySkuLookupProduct(d, isBeer));
+        if (confirmed) {
+          els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+        } else {
+          els.skuUntappdSection.hidden = false;
+          els.skuStatus.textContent = 'Loaded from the store. Not the right beer - brewery/style/ABV/rating left blank. '
+            + 'Try the Untappd URL box below, or review the fields and add it as-is.';
+        }
+        return;
+      }
+
+      applySkuLookupProduct(data, isBeer);
       els.skuStatus.textContent = skuLookupLoadedMessage(data, 'the store');
     } catch (err) {
       els.skuStatus.textContent = err.message || 'Something went wrong looking up that SKU.';
@@ -3078,9 +3211,8 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not read product data from that HTML.');
 
-      applySkuLookupProduct(data, isBeer);
-
-      if (data.untappdCandidates && data.untappdCandidates.length) {
+      if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
+        applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || 'that product');
         if (picked) {
           els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
@@ -3092,6 +3224,19 @@
         return;
       }
 
+      if (isBeer && !data.untappdError) {
+        const confirmed = await confirmBeerUntappdMatch(data, (d) => applySkuLookupProduct(d, isBeer));
+        if (confirmed) {
+          els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
+        } else {
+          els.skuUntappdSection.hidden = false;
+          els.skuStatus.textContent = 'Loaded from pasted HTML. Not the right beer - brewery/style/ABV/rating left blank. '
+            + 'Try the Untappd URL box below, or review the fields and add it as-is.';
+        }
+        return;
+      }
+
+      applySkuLookupProduct(data, isBeer);
       els.skuStatus.textContent = skuLookupLoadedMessage(data, 'pasted HTML');
     } catch (err) {
       els.skuStatus.textContent = err.message || 'Something went wrong reading that HTML.';
@@ -3349,9 +3494,9 @@
       fields.vintage = product.vintage;
     }
     fillForm(fields);
-    previewMode = 'single';
-    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-    renderPreview();
+    // Preserves whichever preview mode staff already had selected - see the
+    // comment above applyUpcScanProduct's own refreshPreview() call.
+    refreshPreview();
   }
 
   // The Unit/Pack price-choice control shown on a beer's selected-product
@@ -3479,8 +3624,6 @@
       if (myToken !== nameSearchSelectToken) return;
       if (!resp.ok) throw new Error(data.error || 'Could not search Untappd for that beer.');
       nameSearchSelectedProduct = data;
-      applyNameSearchProduct(data, true, nameSearchPriceMode);
-      renderNameSearchSelected();
 
       // Same disambiguation step Scan UPC/SKU Lookup take above - see
       // openUntappdPicker's own comment for why this can't just auto-pick
@@ -3489,6 +3632,8 @@
       // myToken check below is just the same defensive habit the rest of
       // this function already has, not covering a reachable race.
       if (data.untappdCandidates && data.untappdCandidates.length) {
+        applyNameSearchProduct(data, true, nameSearchPriceMode);
+        renderNameSearchSelected();
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || product.title);
         if (myToken !== nameSearchSelectToken) return;
         els.nameSearchStatus.textContent = picked
@@ -3497,9 +3642,24 @@
         return;
       }
 
-      els.nameSearchStatus.textContent = data.untappdError
-        ? `Found it! Untappd: ${data.untappdError}`
-        : 'Found it! Review the fields, then click "Add to Queue".';
+      // A single, confident Untappd match still needs a staff sign-off -
+      // see confirmBeerUntappdMatch's own comment. `isBeer` is already
+      // guaranteed true past the `if (!isBeer)` early return above.
+      if (!data.untappdError) {
+        const confirmed = await confirmBeerUntappdMatch(data, (d) => {
+          applyNameSearchProduct(d, true, nameSearchPriceMode);
+          renderNameSearchSelected();
+        });
+        if (myToken !== nameSearchSelectToken) return;
+        els.nameSearchStatus.textContent = confirmed
+          ? 'Found it! Review the fields, then click "Add to Queue".'
+          : 'Found it! Not the right beer - brewery/style/ABV/rating left blank. Review the fields, then click "Add to Queue".';
+        return;
+      }
+
+      applyNameSearchProduct(data, true, nameSearchPriceMode);
+      renderNameSearchSelected();
+      els.nameSearchStatus.textContent = `Found it! Untappd: ${data.untappdError}`;
     } catch (err) {
       if (myToken !== nameSearchSelectToken) return;
       els.nameSearchStatus.textContent = `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`;
