@@ -597,6 +597,31 @@ h1, h2, h3 { margin: 0; }
 }
 .price-choice__note { margin-top: 0.4rem; font-size: 0.72rem; color: var(--ui-muted); line-height: 1.4; }
 
+/* ---------- Food Pairing Suggestions (Settings -> Experimental Features ->
+   Wine Food Pairings) ---------- */
+
+/* Suggest Pairings' own results - a row of "+ icon food" buttons, cleared
+   once nothing's been suggested yet (see renderPairingSuggestions in
+   app.js). Distinct from .rating-chip/.ratings-list below (already-added
+   pairings, with a remove button) - these are add-only and disappear once
+   picked, since the pick itself is what populates .ratings-list here. */
+.pairing-suggestions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; }
+.pairing-suggestion-chip {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-btn);
+  color: var(--ui-accent-ink);
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pairing-suggestion-chip:hover { background: var(--ui-btn-hover); }
+
+.custom-pairing-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+.custom-pairing-row input { flex: 1; margin: 0; }
+
 /* ---------- Ratings builder ---------- */
 
 .ratings-field { margin-bottom: 0.85rem; }
@@ -1744,6 +1769,54 @@ h1, h2, h3 { margin: 0; }
   line-height: 1.3;
   color: var(--ink);
 }
+
+/* Food Pairing Suggestions - up to 3 icon+word pairings (see
+   buildPairingsHtml in card.js), Wine/Spirits Shelf Talkers only (not Beer,
+   not Quarter Size - same isBeer/isQuarter guards as Nose/Palate/Finish
+   above), gated behind Settings -> Experimental Features -> Wine Food
+   Pairings. Same divider/spacing treatment as .card__flavor above (its own
+   line, clearly separated from whatever's above it), sitting after
+   Ratings/Awards rather than replacing either. */
+.card__pairings {
+  flex: 0 0 auto;
+  margin-top: calc(var(--w) * 0.03 * var(--price-fit, 1));
+  padding-top: calc(var(--w) * 0.022 * var(--price-fit, 1));
+  border-top: 1px solid #e5ddd0;
+}
+.card__pairings-label {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  margin-bottom: calc(var(--w) * 0.014 * var(--price-fit, 1));
+}
+.card__pairings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--w) * 0.014 * var(--price-fit, 1));
+}
+/* Tinted by theme (amber/purple) rather than plain white, same "reads as
+   part of this talker's own printed copy, not a sticker slapped on top"
+   idea as the band colors elsewhere on the card - see
+   .card[data-theme="..."] below. */
+.card__pairing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--w) * 0.008 * var(--price-fit, 1));
+  border: calc(var(--w) * 0.0018) solid var(--ink);
+  border-radius: 999px;
+  padding: calc(var(--w) * 0.007 * var(--price-fit, 1)) calc(var(--w) * 0.016 * var(--price-fit, 1));
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  font-size: calc(var(--w) * 0.028 * var(--price-fit, 1));
+  color: var(--ink);
+  white-space: nowrap;
+}
+.card[data-theme="amber"] .card__pairing-chip { background: color-mix(in srgb, var(--amber-band) 14%, #fff); }
+.card[data-theme="purple"] .card__pairing-chip { background: color-mix(in srgb, var(--purple-band) 12%, #fff); }
+.card__pairing-chip-icon { font-size: calc(var(--w) * 0.032 * var(--price-fit, 1)); line-height: 1; }
 
 .card__spacer { flex: 1 1 auto; }
 
