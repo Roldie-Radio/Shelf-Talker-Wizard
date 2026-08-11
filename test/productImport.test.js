@@ -1716,6 +1716,40 @@ test('parseStoreProductHtml falls back to a real og:brand when the store\'s Bran
   assert.equal(result.brand, 'New Anthem Beer Project');
 });
 
+// A real miss (SKU 36211): the store's Brand link reads "AB" - a short
+// internal vendor/distributor code, not the actual producer ("Autodidact") -
+// which used to get prepended onto the title by composeProducerTitle ("AB
+// Autodidact Abaddon") and sent to Untappd as part of the search query,
+// breaking the match entirely.
+test('parseStoreProductHtml leaves brand blank when the store\'s Brand link reads a short vendor code', () => {
+  const html = page({
+    body: `
+      <h1 itemprop="name">Autodidact Abaddon</h1>
+      <h6><a href="/brand/ab">AB</a></h6>
+      <table>
+        <tr><th>Size</th><td>16oz</td></tr>
+      </table>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Autodidact-Abaddon-36211-1036211/');
+  assert.equal(result.brand, '');
+});
+
+// Same vendor-code handling, but on the og:brand meta fallback - dropped
+// from each source individually, same as the "Not Specified" placeholder
+// above.
+test('parseStoreProductHtml falls back to a real og:brand when the store\'s Brand link reads a short vendor code', () => {
+  const html = page({
+    head: '<meta property="og:brand" content="Autodidact" />',
+    body: `
+      <h1 itemprop="name">Autodidact Abaddon</h1>
+      <h6><a href="/brand/ab">AB</a></h6>
+    `,
+  });
+  const result = parseStoreProductHtml(html, 'https://www.liquoroutletwinecellars.com/Autodidact-Abaddon-36211-1036211/');
+  assert.equal(result.brand, 'Autodidact');
+});
+
 test('parseStoreProductHtml reads a vintage year from the spec table\'s Year row', () => {
   const html = page({
     body: `
@@ -2349,6 +2383,61 @@ test('lookupSku prepends the producer to a beer title, strips the size, and sear
   const query = algoliaRequestBody.requests[0].params;
   assert.ok(!query.includes('16OZ') && !query.includes('16oz'), `Untappd search query should not include the size, got: ${query}`);
   assert.match(query, /query=Autodidact%20Daylily/);
+});
+
+// The real miss that motivated dropVendorCode (SKU 36211): the store's
+// Brand link reads "AB" - a short vendor code, not the actual producer
+// ("Autodidact") - and the store's own title already includes the real
+// producer name. Confirms the vendor code is never folded into the title or
+// the Untappd search query, so the search still succeeds instead of
+// searching for "AB Autodidact Abaddon" (which Untappd can't find).
+test('lookupSku does not prepend a vendor code onto a beer title or Untappd search query', async () => {
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="36211" />
+        <a class="product-link" href="/Autodidact-Abaddon-36211-1036211/">
+          <span class="productnameTitle">Autodidact Abaddon 16OZ</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: `
+      <h1 itemprop="name">Autodidact Abaddon 16OZ</h1>
+      <h6><a href="/brand/ab">AB</a></h6>
+      <div class="pricingDetails"><span class="priceFull">$4.99</span></div>
+    `,
+  });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'autodidact-abaddon', bid: 8888, beer_name: 'Abaddon', brewery_name: 'Autodidact' },
+  ]);
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Abaddon by Autodidact | Untappd" />'
+      + '<meta property="og:description" content="An imperial stout." />',
+    body: '<p class="brewery"><a href="#">Autodidact</a></p><p class="style">Stout - Imperial / Double</p>'
+      + '<div class="details"><p class="abv">10.00% ABV</p></div>',
+  });
+  let algoliaRequestBody;
+  await withMockFetch(
+    async (url, opts) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Autodidact')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('algolia.net')) {
+        algoliaRequestBody = JSON.parse(opts.body);
+        return mockResponse({ status: 200, body: algoliaBody });
+      }
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      const result = await lookupSku({ sku: '36211', category: 'beer' });
+      assert.equal(result.title, 'Autodidact Abaddon');
+      assert.equal(result.brewery, 'Autodidact');
+      assert.equal(result.untappdError, undefined);
+    }
+  );
+  const query = algoliaRequestBody.requests[0].params;
+  assert.ok(!query.includes('AB'), `Untappd search query should not include the vendor code, got: ${query}`);
 });
 
 test('lookupSku searches Untappd with a bare beer name when the store page has no brand to fold in', async () => {
