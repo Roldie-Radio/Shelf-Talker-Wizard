@@ -164,7 +164,7 @@ The file can be comma- or tab-delimited (CSV or TSV), and its columns don't need
 | --- | --- |
 | UPC *(required)* | UPC, UPC Code, Barcode, Bar Code, Scancode, EAN, EAN13, UPC Data |
 | Title | Title, Description, Item Description, Product, Product Name, Item Name, Name |
-| Brand | Brand, Vendor, Supplier, Winery, Brewery, Manufacturer |
+| Brand | Brand, Supplier, Winery, Brewery, Manufacturer |
 | Store SKU | SKU, Store SKU, Item Number, Item #, PLU |
 | Size | Size, Unit Size, Bottle Size, Container Size |
 | Vintage | Vintage, Year |
