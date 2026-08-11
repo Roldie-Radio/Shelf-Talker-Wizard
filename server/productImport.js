@@ -120,6 +120,23 @@ function dropNotSpecified(value) {
   return /^not specified$/i.test((value || '').trim()) ? undefined : value;
 }
 
+// The store's Brand link/og:brand occasionally carries a short internal
+// vendor/distributor code (e.g. "AB") instead of the producer's own name -
+// confirmed against a real SKU lookup (SKU 36211, "AB Autodidact Abaddon",
+// where the beer is actually by "Autodidact") - matching the same class of
+// shorthand already called out in enrichBeerFromUntappd's own comment
+// ("MSB MANSKIRT..."). Vendor codes aren't meant to be used for anything
+// (yet), so this keeps one out of the brand field entirely rather than
+// letting composeProducerTitle prepend it onto a title (breaking the
+// Untappd search, see buildUntappdSearchQuery) or enrichBeerFromUntappd
+// fall back to showing it as the Brewery. A vendor code reads as a short,
+// all-caps/digits token with no spaces - every real brand seen on this
+// site ("Josh Cellars", "Anheuser-Busch", "Autodidact", "New Anthem Beer
+// Project", "Manskirt Brewing") is longer and/or mixed-case.
+function dropVendorCode(value) {
+  return /^[A-Z0-9]{1,4}$/.test((value || '').trim()) ? undefined : value;
+}
+
 // Pull every JSON-LD block, flattening @graph arrays, and return the first node
 // whose @type is (or includes) "Product".
 function findJsonLdProduct($) {
@@ -1330,10 +1347,11 @@ function parseStoreProductHtml(html, url) {
   // composeProducerTitle only skips prepending the brand when the title
   // already starts with it - so left unguarded here it would get prepended
   // straight onto the title ("Not Specified Hazy IPA") and sent to Untappd
-  // as part of the search query too.
+  // as part of the search query too. Same reasoning applies to
+  // dropVendorCode right below it - see that function's own comment.
   const brand = firstNonEmpty(
-    dropNotSpecified($('h6 a').first().text()),
-    dropNotSpecified($('meta[property="og:brand"]').attr('content'))
+    dropVendorCode(dropNotSpecified($('h6 a').first().text())),
+    dropVendorCode(dropNotSpecified($('meta[property="og:brand"]').attr('content')))
   );
   const sku = firstNonEmpty(
     $('meta[property="og:upc"]').attr('content'),
