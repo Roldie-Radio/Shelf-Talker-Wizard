@@ -1311,6 +1311,11 @@
     // (editId set) must not silently overwrite an already-saved item's
     // deliberately-chosen theme just because someone toggled the label.
     if (!els.editId.value) els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
+    // Beer Name tends to run longer than a wine/spirits Product Title
+    // (brewery + beer + container all crammed in), so it clips more often -
+    // default its Auto-size toggle on for beer the same way, and only while
+    // composing new (same guard as Theme above).
+    if (!els.editId.value) els.titleAutoSize.checked = currentCategory === 'beer';
     applyFormMode();
   }
 
@@ -1459,6 +1464,10 @@
     // reset the same way currentTalkerSize does, so re-derive the default
     // from it here too.
     els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
+    // And again for the title's Auto-size toggle (see setCategory) -
+    // form.reset() always snaps it back to unchecked, which would silently
+    // turn Auto off for every beer after the first one in a batch.
+    els.titleAutoSize.checked = currentCategory === 'beer';
     applyFontSizeDefaults();
     els.editId.value = '';
     els.saveBtn.textContent = 'Add to Queue';
