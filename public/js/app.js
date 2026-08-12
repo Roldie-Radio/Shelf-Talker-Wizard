@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.1',
+      items: [
+        'New: on the Full Page Live Preview, you can now click any talker or sign right on the sheet to jump straight into editing it - hover to see the edit badge, then click (or Tab + Enter). Same as choosing Edit from that item\'s Queue row menu, just without having to find the matching row first.',
+      ],
+    },
+    {
       version: '3.3.0',
       items: [
         'Removed the product cache and the Advanced > View Database dialog (a broken duplicate of History that never actually showed the cached-product counts it claimed to) - SKU Lookup, Scan UPC, and Search by Name (Beer) are now live-only, with a real error on a failed lookup instead of a stale cached fallback. Print History is unaffected.',
@@ -1812,6 +1818,7 @@
     const layout = SIGN_LAYOUTS[sheet.layoutKey];
 
     const sheetDiv = buildSheetPreviewElement(sheet);
+    makeSheetPreviewEditable(sheetDiv, sheet.items);
     els.previewStage.appendChild(makeScaler(sheetDiv));
     requestAnimationFrame(() => {
       sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
@@ -1840,6 +1847,39 @@
       sheetDiv.appendChild(el);
     });
     return sheetDiv;
+  }
+
+  // Turns a freshly-built sheet's cards/signs into click-to-edit targets, so
+  // staff can jump straight into editing whatever they spot on the Full Page
+  // preview instead of hunting for the matching row in the Queue list below.
+  // Deliberately applied here in renderSheetPreview's caller rather than
+  // inside buildSheetPreviewElement itself, which the Print Preview modal
+  // also calls (see the comment there) - that dialog is judged purely by
+  // what will print, so it stays inert. items must be in the same order as
+  // sheetDiv's children (buildSheetPreviewElement appends exactly one
+  // element per item, in order).
+  function makeSheetPreviewEditable(sheetDiv, items) {
+    items.forEach((talker, i) => {
+      const el = sheetDiv.children[i];
+      if (!el) return;
+      el.classList.add('is-editable');
+      el.tabIndex = 0;
+      el.setAttribute('role', 'button');
+      const label = `Edit ${talker.title || 'this talker'}`;
+      el.setAttribute('aria-label', label);
+      el.title = label;
+      const badge = document.createElement('span');
+      badge.className = 'card__edit-badge';
+      badge.textContent = '✎ Edit';
+      badge.setAttribute('aria-hidden', 'true');
+      el.appendChild(badge);
+      el.addEventListener('click', () => startEdit(talker.id));
+      el.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        startEdit(talker.id);
+      });
+    });
   }
 
   // The auto-arrange equivalent: a vertical stack of rows that can each mix

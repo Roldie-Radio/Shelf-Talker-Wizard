@@ -888,6 +888,56 @@ h1, h2, h3 { margin: 0; }
 }
 .sheet-preview .card, .sheet-preview .sign { box-shadow: none; }
 
+/* Click-to-edit affordance for a card/sign on the Full Page Live Preview
+   (see makeSheetPreviewEditable in app.js) - never applied to the Print
+   Preview modal's own sheets, which reuse the same .card/.sign markup but
+   are judged purely by what will print. A thin ring drawn via box-shadow
+   (added, not replacing the card's own border) so hovering/selecting never
+   changes the card's own box - what staff are judging for print accuracy
+   stays exactly the size it always was. */
+.card.is-editable, .sign.is-editable {
+  cursor: pointer;
+  transition: box-shadow 0.12s ease, transform 0.12s ease;
+}
+.card.is-editable:hover,
+.card.is-editable:focus-visible,
+.sign.is-editable:hover,
+.sign.is-editable:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.22), 0 0 0 3px var(--ui-accent);
+}
+.card.is-editable:focus-visible,
+.sign.is-editable:focus-visible {
+  outline: none;
+}
+.card__edit-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 999px;
+  padding: 3px 7px 3px 6px;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  white-space: nowrap;
+  z-index: 1;
+}
+.card.is-editable:hover .card__edit-badge,
+.card.is-editable:focus-visible .card__edit-badge,
+.sign.is-editable:hover .card__edit-badge,
+.sign.is-editable:focus-visible .card__edit-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
 /* Auto-arrange (beta) preview: unlike the grid above (one uniform card/sign
    size and grid shape per sheet), an auto-arranged sheet is a vertical
    stack of rows that can each be a different sign type/size, so it's laid
