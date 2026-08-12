@@ -354,10 +354,13 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // Backs the desktop app's "View Export File" dialog (Advanced menu) - a
   // read-only look at the raw WinePOS export configured in Scan UPC ->
   // Settings, for confirming it's actually hooked up right without staff
-  // needing to go find and open the file themselves.
+  // needing to go find and open the file themselves. `q` is the dialog's
+  // search box (see previewExport's own note on why that's a plain
+  // substring match run server-side over every row, not just the ones
+  // already sent down).
   app.get('/api/export-preview', (req, res) => {
     try {
-      res.json(previewExport({ limit: req.query.limit }));
+      res.json(previewExport({ limit: req.query.limit, query: req.query.q }));
     } catch (err) {
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not read the export file.', code: err.code });

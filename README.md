@@ -244,17 +244,20 @@ The desktop app's **Advanced** menu has three troubleshooting/admin dialogs, bel
   on, the copy last pulled from the Server PC &mdash; shown exactly as written
   (real column headers, not run through Scan UPC's alias matching) so you can
   confirm it's actually hooked up right without leaving the app to go find and
-  open the file yourself. If nothing's configured yet, **Open Export File
-  Settings** jumps straight there.
+  open the file yourself. A search box filters to rows containing whatever you
+  type, anywhere in the row, across the *whole* file &mdash; not just the rows
+  already on screen &mdash; so you can check whether a specific item is
+  actually in the export without opening it elsewhere. If nothing's configured
+  yet, **Open Export File Settings** jumps straight there.
 - **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. Marking
   one makes it broadcast a small announcement on the local network every few
   seconds, so *other* PCs running the app can see which one it is (the dialog
   shows "Main store PC on this network" &mdash; its hostname and address &mdash;
   alongside this PC's own LAN IP address and database counts), and starts
   serving its own configured export file to other PCs' auto-sync (see "Sharing
-  the export file across registers" above). Print History and the product
-  cache still aren't shared between PCs &mdash; each keeps its own, and the
-  main app itself still isn't reachable from the network; only the small
+  the export file across registers" above). Print History still isn't shared
+  between PCs &mdash; each PC keeps its own, and the main app itself still
+  isn't reachable from the network; only the small
   discovery broadcast and the export file's own small, read-only network port
   leave the PC. Unmarking a PC (or closing the app) stops both; other PCs stop
   showing it within about 15 seconds, and their next auto-sync attempt just

@@ -440,12 +440,117 @@ h1, h2, h3 { margin: 0; }
 }
 .type-product-row .field > span { font-size: 0.92rem; font-weight: 700; color: var(--ui-ink); }
 .type-product-row .field select { border-color: var(--ui-accent); border-width: 1.5px; }
+.type-product-row .field-select__trigger { border-color: var(--ui-accent); border-width: 1.5px; }
 .type-product-divider {
   height: 1px;
   background: linear-gradient(to right, var(--ui-accent), var(--ui-border) 55%);
   margin: 1rem 0 1.05rem;
   opacity: 0.8;
 }
+
+/* ---------- Field select (Type / Product Type dropdowns) ---------- */
+
+/* A custom button+listbox that stands in for the hidden .type-select/
+   .product-type-select <select> it's built next to (see initFieldSelects
+   in app.js and the note above .type-product-row in index.html) -
+   deliberately styled and operated like the menu bar's own dropdowns
+   above (.menubar__item/.menubar__dropdown/.menubar__dropdown-item) so
+   these two feel like the same control instead of a native OS popup
+   sitting next to a custom-drawn one. The underlying <select> stays the
+   real source of truth (initFieldSelects only ever reads/writes its
+   .value and dispatches 'change' on it), so nothing here needs to know
+   about currentSignType/currentSignSize/currentCategory. */
+.field-select { position: relative; }
+.field-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  width: 100%;
+  font: inherit;
+  font-weight: 400;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-field);
+  color: var(--ui-ink);
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.field-select__trigger:hover { background: var(--ui-panel-alt); }
+.field-select__trigger:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+.field-select.is-open .field-select__trigger {
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+/* .field span (line ~368) is a class+type selector that would otherwise
+   win over these spans' inherited color (a direct rule match always beats
+   inheritance, regardless of specificity) and flatten them to
+   --ui-ink-soft in every state - same conflict, same fix, as
+   .font-size-control__icon/__unit above. color: inherit hands it back to
+   .field-select__trigger/__option, which already carry the right color
+   for hover/open/selected. */
+.field .field-select__value,
+.field .field-select__option-label,
+.field .field-select__option-check { color: inherit; }
+.field-select__value { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-select__chevron {
+  flex: none;
+  width: 0.8em;
+  height: 0.8em;
+  color: inherit;
+  opacity: 0.7;
+  transition: transform 0.15s ease;
+}
+.field-select.is-open .field-select__chevron { transform: rotate(180deg); }
+
+/* Same floating-panel treatment as .menubar__dropdown - see the note
+   there on why .menubar (and, here, .panel/.field-row) can't set
+   overflow, since that's what lets this escape its field and float over
+   whatever's below it. */
+.field-select__dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+  padding: 0.35rem;
+  z-index: 25;
+  font-size: 0.93em;
+}
+.field-select.is-open .field-select__dropdown { display: block; }
+
+.field-select__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  padding: 0.45em 0.7em;
+  border-radius: 6px;
+  color: var(--ui-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.field-select__option:hover,
+.field-select__option:focus,
+.field-select__option.is-active { background: var(--ui-accent); color: var(--ui-on-accent); outline: none; }
+/* Reserves the checkmark's width on every row (rather than only on the
+   selected one) so the labels all line up instead of the selected row's
+   text jumping right by one glyph. */
+.field-select__option-check { width: 1em; flex: none; opacity: 0; }
+.field-select__option[aria-selected="true"] { font-weight: 700; }
+.field-select__option[aria-selected="true"] .field-select__option-check { opacity: 1; }
 
 .tasting-notes-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .tasting-notes-row .help-text { margin: 0; }
@@ -887,39 +992,104 @@ h1, h2, h3 { margin: 0; }
 #tastingNotesFlavorPreview { display: flex; flex-direction: column; gap: 0.6rem; }
 
 /* ---------- Untappd disambiguation picker (#untappdPickerOverlay in
-   index.html, openUntappdPicker in app.js) ---------- */
-.untappd-picker-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
-.untappd-picker-results {
-  border: 1px solid var(--ui-border);
+   index.html, openUntappdPicker in app.js) - one candidate highlighted as a
+   Recommended pick (.untappd-rec-card), up to 2 others below it
+   (.alt-row), and any further tie folded behind a "+N more" toggle
+   (.untappd-more-toggle). No new custom properties here - the tint/border
+   on the recommended card is color-mix()'d from the existing --ui-accent/
+   --ui-panel tokens so it stays correct in dark mode and under the Purple
+   accent choice for free, the same way .card__pairing-chip below already
+   does for the print preview. ---------- */
+.untappd-picker-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+
+/* A real <button>, not a styled div, so Tab/Shift+Tab cycling inside the
+   modal (see createModal's focusable() query in app.js) actually reaches
+   it - the reset properties below just undo the browser's own default
+   button chrome. */
+.untappd-rec-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1.5px solid var(--ui-accent);
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-panel));
   border-radius: 8px;
-  max-height: 320px;
-  overflow-y: auto;
+  padding: 0.75rem 0.85rem;
 }
-/* A row per candidate is a real <button>, not a styled div (like
-   .search-result above), so Tab/Shift+Tab cycling inside the modal (see
-   createModal's focusable() query in app.js) actually reaches every
-   option - the reset properties below just undo the browser's own default
-   button chrome so it still reads as a plain list row. */
-.untappd-picker-result {
+.untappd-rec-card:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-panel)); }
+.untappd-rec-card:disabled { cursor: default; opacity: 0.6; }
+.untappd-rec-card__badge {
+  align-self: flex-start;
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+.untappd-rec-card__title { display: block; font-size: 0.98rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-rec-card__brewery { display: block; font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.untappd-rec-card__meta { display: block; font-size: 0.8rem; color: var(--ui-ink-soft); font-variant-numeric: tabular-nums; }
+/* Placeholder text shown in the same slot while this candidate's preview
+   fetch (openUntappdPicker's fetchPreview) is still in flight - italic is
+   enough to read as provisional without a shimmer/skeleton animation this
+   admin tool doesn't use anywhere else. */
+.untappd-rec-card__meta--loading { color: var(--ui-muted); font-style: italic; }
+.untappd-rec-card__why { display: block; font-size: 0.73rem; color: var(--ui-muted); margin-top: 0.05rem; }
+.untappd-rec-card__desc { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--ui-ink-soft); line-height: 1.4; max-height: 4.5em; overflow-y: auto; }
+
+.untappd-others-divider { display: flex; align-items: center; gap: 0.5rem; margin: 0.1rem 0 0.05rem; }
+.untappd-others-divider::before,
+.untappd-others-divider::after { content: ""; flex: 1; height: 1px; background: var(--ui-border); }
+.untappd-others-divider span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+
+.alt-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.alt-row {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.5rem 0.7rem;
   cursor: pointer;
-  border: none;
-  border-bottom: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
   background: transparent;
   font: inherit;
   text-align: left;
   color: inherit;
 }
-.untappd-picker-result:last-child { border-bottom: none; }
-.untappd-picker-result:hover:not(:disabled) { background: var(--ui-hover); }
-.untappd-picker-result:disabled { cursor: default; opacity: 0.6; }
-.untappd-picker-result__title { font-size: 0.87rem; font-weight: 700; color: var(--ui-ink); }
-.untappd-picker-result__brewery { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.alt-row:hover:not(:disabled) { background: var(--ui-hover); }
+.alt-row:disabled { cursor: default; opacity: 0.6; }
+.alt-row__title { display: block; font-size: 0.85rem; font-weight: 700; color: var(--ui-ink); }
+.alt-row__meta { display: block; font-size: 0.76rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.alt-row__stat { font-size: 0.76rem; color: var(--ui-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.untappd-more-toggle {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--ui-accent-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.1rem;
+}
+.untappd-more-toggle:hover { text-decoration: underline; }
 
 /* ---------- Confirm Untappd Match (#untappdConfirmOverlay in index.html) -
    a single card, not a list of rows like the picker above, since there's
@@ -929,7 +1099,8 @@ h1, h2, h3 { margin: 0; }
   border-radius: 8px;
   padding: 0.8rem 0.9rem;
 }
-.untappd-confirm-card__brewery { font-size: 1rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-confirm-card__title { font-size: 1rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-confirm-card__brewery { font-size: 0.86rem; color: var(--ui-muted); margin-top: 0.1rem; }
 .untappd-confirm-card__meta { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.2rem; }
 .untappd-confirm-card__description {
   font-size: 0.82rem;
@@ -1333,6 +1504,16 @@ h1, h2, h3 { margin: 0; }
   flex-direction: column;
   gap: 0.5rem;
 }
+.data-preview__search {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-field);
+  color: var(--ui-ink);
+  width: 100%;
+}
+.data-preview__search::placeholder { color: var(--ui-muted); }
 .preview-table-wrap {
   flex: 1;
   overflow: auto;
@@ -1608,26 +1789,24 @@ h1, h2, h3 { margin: 0; }
 
 /* Brewery's home country, top-left corner of .card__body - mirrors
    .card__state-badge above (same size/inset math, opposite corner, same
-   --price-fit scaling and why). See buildCountryFlagHtml in card.js. Flags
-   get a thin border since several (Japan, Poland, Finland...) have
-   white/light bands that would otherwise blend into the card's own white
-   background. */
+   --price-fit scaling and why). See buildCountryFlagHtml in card.js. No
+   country-letter label under the flag (e.g. "US") - the flag graphic
+   already identifies the country on its own. Flags get a thin border since
+   several (Japan, Poland, Finland...) have white/light bands that would
+   otherwise blend into the card's own white background. */
 .card__country-badge {
   position: absolute;
   top: calc(var(--w) * 0.012 * var(--price-fit, 1));
   left: calc(var(--w) * 0.012 * var(--price-fit, 1));
   width: calc(var(--w) * 0.11 * var(--price-fit, 1));
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(var(--w) * 0.003 * var(--price-fit, 1));
   line-height: 1;
 }
 /* Flags are drawn on a 3:2 viewBox, shorter than the state silhouette's
-   square one - without this wrapper the flag (and its label below) would
-   sit noticeably higher than the state badge's label on the opposite
-   corner. Squaring off the slot to match and centering the flag inside it
-   lines up both labels at the same height. */
+   square one - without this wrapper the flag would sit noticeably higher
+   than the state badge's own square slot on the opposite corner. Squaring
+   off the slot to match and centering the flag inside it lines both up at
+   the same height. */
 .card__country-badge-image {
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -1641,12 +1820,6 @@ h1, h2, h3 { margin: 0; }
   height: auto;
   border: 1px solid rgba(23, 23, 23, 0.18);
   box-sizing: border-box;
-}
-.card__country-badge-label {
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  font-size: calc(var(--w) * 0.024 * var(--price-fit, 1));
 }
 
 /* Reserves room so the title (which spans nearly the full card width via

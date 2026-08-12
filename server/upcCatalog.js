@@ -592,7 +592,19 @@ function searchByName(query, { limit = 8 } = {}) {
 // auto-sync on this previews the synced copy - what Scan UPC/Search by Name
 // are actually reading - not the (possibly blank, possibly stale) manually
 // configured path.
-function previewExport({ limit = 50 } = {}) {
+//
+// `query`, if given, filters to data rows containing it (plain case-
+// insensitive substring, any column) *before* `limit` is applied - unlike
+// searchByName, this is deliberately not fuzzy/scored/alias-matched: the
+// point of this dialog is to answer "is this literal text in the file
+// somewhere, in whatever column", which is exactly what a scored/aliased
+// search would obscure. That also means it has to run over every data row
+// server-side rather than the client filtering whatever page it already
+// has - a filter over just the displayed rows would silently miss matches
+// past `limit` and report a false "not found" for a row that's actually
+// there. Matching against the parsed rows already in memory rather than
+// re-reading anything, so this stays cheap even as staff type.
+function previewExport({ limit = 50, query = '' } = {}) {
   const { autoSync } = readConfig();
   const exportPath = effectiveExportPath();
   if (!exportPath) {
@@ -624,12 +636,20 @@ function previewExport({ limit = 50 } = {}) {
   const dataRows = rows.slice(1);
   const lim = Math.min(Math.max(Number(limit) || 50, 1), 500);
 
+  const trimmedQuery = String(query || '').trim();
+  const needle = trimmedQuery.toLowerCase();
+  const matchedRows = needle
+    ? dataRows.filter((row) => row.some((cell) => String(cell).toLowerCase().includes(needle)))
+    : dataRows;
+
   return {
     exportPath,
     autoSync,
     headers,
-    rows: dataRows.slice(0, lim),
+    rows: matchedRows.slice(0, lim),
     totalRows: dataRows.length,
+    matchedRows: matchedRows.length,
+    query: trimmedQuery,
   };
 }
 

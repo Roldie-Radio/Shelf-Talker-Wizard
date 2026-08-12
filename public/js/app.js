@@ -41,6 +41,48 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.2.6',
+      items: [
+        'Fixed: Scan UPC (Beer) no longer stops for a manual "Add to Queue" click after picking a beer from the "Pick the Right Beer" dialog (Recommended or one of the alternates) - a pick made there is now treated the same as any other confirmed scan and goes straight to the queue, so scanning can keep going item to item.',
+      ],
+    },
+    {
+      version: '3.2.5',
+      items: [
+        'New: Advanced menu → View Export File now has a search box that filters to rows containing whatever you type, anywhere in the row, across the whole file - not just the ones already on screen - so you can check whether a specific item is actually in the export.',
+      ],
+    },
+    {
+      version: '3.2.4',
+      items: [
+        'The Confirm Untappd Match popup (Scan UPC, SKU Lookup, Search by Name) now shows the matched beer\'s own name as its heading, with brewery demoted to a secondary line underneath - previously it only showed the brewery, which read like a generic label when the brewery\'s own name happened to look like a beer name (e.g. "Autodidact Beer").',
+      ],
+    },
+    {
+      version: '3.2.3',
+      items: [
+        'Fixed: after clicking Clear All in the Queue and confirming, the form could become unclickable until switching windows, minimizing/restoring, or restarting the app. The Clear Queue confirmation no longer uses the native dialog that caused it.',
+      ],
+    },
+    {
+      version: '3.2.2',
+      items: [
+        'New: the "Pick the Right Beer" dialog (Scan UPC, SKU Lookup, Search by Name) now highlights a Recommended pick, with up to 2 other options below it and any further tie folded behind a "+N more" toggle - instead of a flat, undifferentiated list. The recommendation starts as Untappd\'s own top-ranked candidate and re-ranks itself by check-in count as each candidate\'s own page loads in the background.',
+      ],
+    },
+    {
+      version: '3.2.1',
+      items: [
+        'The Type and Product Type dropdowns (Edit Talker, Website, and Search tabs) now open as a floating panel styled like the menu bar\'s own dropdowns, instead of the browser\'s plain native list.',
+      ],
+    },
+    {
+      version: '3.2.0',
+      items: [
+        'Beer shelf talkers: dropped the country-letter caption ("US", "MX", "UK"...) under both the brewery-country flag and the country silhouette badge - the graphic already identifies the country, so the label was redundant. The US-state badge (e.g. "NC") is unaffected.',
+      ],
+    },
+    {
       version: '3.1.5',
       items: [
         'Fixed: Search by Name and Scan UPC no longer fold a WinePOS export\'s "Vendor" column (a short distributor code like "KOH") into the Brand field for beer - same vendor-code bug as 3.1.4\'s SKU Lookup fix, just coming from the local export file instead of the store website.',
@@ -593,12 +635,15 @@
     untappdPickerCloseBtn: document.getElementById('untappdPickerCloseBtn'),
     untappdPickerCancelBtn: document.getElementById('untappdPickerCancelBtn'),
     untappdPickerQueryLabel: document.getElementById('untappdPickerQueryLabel'),
-    untappdPickerResults: document.getElementById('untappdPickerResults'),
+    untappdPickerRecCard: document.getElementById('untappdPickerRecCard'),
+    untappdPickerOthersBlock: document.getElementById('untappdPickerOthersBlock'),
+    untappdPickerUseRecBtn: document.getElementById('untappdPickerUseRecBtn'),
     untappdPickerStatus: document.getElementById('untappdPickerStatus'),
     untappdConfirmOverlay: document.getElementById('untappdConfirmOverlay'),
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
     untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
     untappdConfirmAcceptBtn: document.getElementById('untappdConfirmAcceptBtn'),
+    untappdConfirmTitleText: document.getElementById('untappdConfirmTitleText'),
     untappdConfirmBrewery: document.getElementById('untappdConfirmBrewery'),
     untappdConfirmMeta: document.getElementById('untappdConfirmMeta'),
     untappdConfirmDescription: document.getElementById('untappdConfirmDescription'),
@@ -736,6 +781,11 @@
     saveQueueBtn: document.getElementById('saveQueueBtn'),
     queueItemMenu: document.getElementById('queueItemMenu'),
 
+    clearQueueConfirmOverlay: document.getElementById('clearQueueConfirmOverlay'),
+    clearQueueConfirmCloseBtn: document.getElementById('clearQueueConfirmCloseBtn'),
+    clearQueueConfirmCancelBtn: document.getElementById('clearQueueConfirmCancelBtn'),
+    clearQueueConfirmAcceptBtn: document.getElementById('clearQueueConfirmAcceptBtn'),
+
     findQueueOverlay: document.getElementById('findQueueOverlay'),
     findQueueInput: document.getElementById('findQueueInput'),
     findQueueCount: document.getElementById('findQueueCount'),
@@ -787,6 +837,7 @@
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
     exportPreviewCloseFooterBtn: document.getElementById('exportPreviewCloseFooterBtn'),
     exportPreviewSettingsBtn: document.getElementById('exportPreviewSettingsBtn'),
+    exportPreviewSearchInput: document.getElementById('exportPreviewSearchInput'),
     exportPreviewStatus: document.getElementById('exportPreviewStatus'),
     exportPreviewTableWrap: document.getElementById('exportPreviewTableWrap'),
 
@@ -1084,9 +1135,16 @@
   // see the shared .type-select/.product-type-select note in index.html)
   // showing the same value, since they're all views onto the same
   // currentSignType/currentSignSize/currentCategory rather than independent
-  // per-tab settings.
+  // per-tab settings. Setting .value directly here (rather than going
+  // through a user gesture) doesn't fire 'change', so each select's own
+  // custom dropdown (see initFieldSelects below) wouldn't otherwise know
+  // its displayed label just went stale - _fieldSelectRefresh is that
+  // dropdown's own re-render, stashed on the select by initFieldSelects.
   function syncSelects(selects, value) {
-    selects.forEach((s) => { s.value = value; });
+    selects.forEach((s) => {
+      s.value = value;
+      if (s._fieldSelectRefresh) s._fieldSelectRefresh();
+    });
   }
 
   // The Type dropdown's three options fold two separate pieces of state
@@ -2012,9 +2070,22 @@
     refreshPreview();
   }
 
+  // Uses an in-app modal instead of window.confirm() - see the note on
+  // clearQueueConfirmOverlay in index.html for why: the native dialog can
+  // leave clicks (including picking a form to fill) unresponsive until the
+  // window regains OS focus.
+  const clearQueueConfirmModal = createModal({
+    overlay: els.clearQueueConfirmOverlay,
+    closeBtns: [els.clearQueueConfirmCloseBtn, els.clearQueueConfirmCancelBtn],
+  });
+
   els.clearQueueBtn.addEventListener('click', () => {
     if (queue.length === 0) return;
-    if (!confirm('Remove all shelf talkers from the queue?')) return;
+    clearQueueConfirmModal.open();
+  });
+
+  els.clearQueueConfirmAcceptBtn.addEventListener('click', () => {
+    clearQueueConfirmModal.close();
     queue = [];
     expandedQueueItemIds.clear();
     saveQueue();
@@ -2443,15 +2514,23 @@
 
       // Untappd itself couldn't safely pick one of two or more real,
       // separately-listed beers (see openUntappdPicker's own comment) -
-      // ask instead of guessing, and never auto-queue on the strength of a
-      // still-unresolved pick, whether or not staff end up making one.
+      // ask instead of guessing. Once staff actually make a pick (Recommended
+      // or one of the alternates), that's the same explicit sign-off
+      // confirmBeerUntappdMatch's "Use This Match" would give, so it rejoins
+      // the hands-free auto-queue flow below rather than stopping to wait for
+      // a manual "Add to Queue" click - the whole point of this tab is
+      // scanning one item after another. Backing out of the dialog without
+      // picking anything is the only case left unresolved, so that one still
+      // stops for a manual review/click.
       if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
         applyUpcScanProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
-        els.scanUpcStatus.textContent = picked
-          ? 'Found it! Review the fields, then click "Add to Queue".'
-          : 'Found it. Untappd had more than one possible match and none was picked - '
+        if (picked) {
+          addScannedUpcToQueue('Added to queue! Scan the next one.');
+        } else {
+          els.scanUpcStatus.textContent = 'Found it. Untappd had more than one possible match and none was picked - '
             + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
+        }
         return;
       }
 
@@ -2943,21 +3022,41 @@
   // already does (reuses the same /api/untappd-lookup endpoint and
   // applyUntappdFields).
   //
+  // One candidate is put forward as a Recommended pick, with up to 2 others
+  // shown below it - staff shouldn't have to read every tied row just to
+  // find the one actually on the shelf. matchUntappdCandidates on the
+  // server deliberately does NOT fetch any candidate's own page before
+  // throwing the tie (a real regression test pins that down), so there's no
+  // ABV/style/rating to rank by yet when this dialog first opens - it
+  // starts with the Recommended slot as whichever candidate Untappd's own
+  // search ranked first, then fires a preview-only fetch (same
+  // /api/untappd-lookup endpoint the final pick below uses, just with an
+  // empty `current` so nothing gets merged/applied) for each of the up-to-3
+  // candidates actually on screen. As those come back, the visible set
+  // re-ranks itself by Untappd's own check-in count ("N ratings") - the
+  // widely-distributed core-lineup beer in a tie is almost always logged
+  // far more than a seasonal/regional one tied with it on name alone. A
+  // candidate folded behind "+N more" is never fetched unless staff expand
+  // it - no point spending a request on a row they may never look at.
+  //
   // Returns a Promise resolving to true once a pick was applied to the
   // form, or false if staff closed the dialog without picking one - each
   // caller uses that to decide its own status message/whether it's safe to
   // auto-add-to-queue.
   let untappdPickerResolve = null;
 
-  function renderUntappdPickerResults(candidates) {
-    els.untappdPickerResults.innerHTML = candidates.map((c, i) => `
-      <button type="button" class="untappd-picker-result" data-index="${i}">
-        <span>
-          <span class="untappd-picker-result__title">${escapeHtml(c.beerName || c.title || 'Untitled')}</span>
-          <span class="untappd-picker-result__brewery">${escapeHtml(c.brewery || '')}</span>
-        </span>
-      </button>
-    `).join('');
+  // Max candidates shown before "+N more" - the request behind this dialog
+  // asked for a recommended pick plus up to 2 other options.
+  const UNTAPPD_PICKER_VISIBLE = 3;
+
+  function untappdMetaParts(c) {
+    const parts = [];
+    if (c.style) parts.push(escapeHtml(c.style));
+    if (c.abv) parts.push(`${escapeHtml(c.abv)} ABV`);
+    if (c.untappdRating) {
+      parts.push(`${escapeHtml(c.untappdRating)} &#9733;${c.untappdRatingCount ? ` (${escapeHtml(c.untappdRatingCount)} ratings)` : ''}`);
+    }
+    return parts;
   }
 
   const untappdPickerModal = createModal({
@@ -2981,38 +3080,174 @@
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
       const count = candidates.length;
+      const otherCount = count - 1;
       els.untappdPickerQueryLabel.textContent = `Untappd found ${count} equally-likely matches for `
-        + `"${queryTitle}" - pick the right one below.`;
+        + `"${queryTitle}" - review the recommended pick below, or ${otherCount} other option${otherCount === 1 ? '' : 's'}.`;
       els.untappdPickerStatus.textContent = '';
-      renderUntappdPickerResults(candidates);
-      untappdPickerModal.open();
 
-      els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const candidate = candidates[Number(btn.dataset.index)];
-          els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((b) => { b.disabled = true; });
-          els.untappdPickerStatus.textContent = 'Loading that beer...';
-          try {
-            const resp = await fetch('/api/untappd-lookup', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ current: readForm(), untappdUrl: candidate.url }),
-            });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
-            applyUntappdFields(data);
-            // Resolve (and null out untappdPickerResolve) before closing -
-            // see the onClose comment above for why the ordering matters.
-            const resolveFn = untappdPickerResolve;
-            untappdPickerResolve = null;
-            untappdPickerModal.close();
-            if (resolveFn) resolveFn(true);
-          } catch (err) {
-            els.untappdPickerStatus.textContent = err.message || 'Something went wrong loading that beer.';
-            els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((b) => { b.disabled = false; });
-          }
+      // `order` starts as Untappd's own tie order and only ever reshuffles
+      // within the visible window as preview fetches resolve (see
+      // reorderByPopularity below) - the hidden tail behind "+N more" stays
+      // in that original order until/unless it's expanded.
+      let order = candidates.slice();
+      let visibleCount = Math.min(UNTAPPD_PICKER_VISIBLE, order.length);
+      // url -> { loading } | { error: true } | full /api/untappd-lookup fields.
+      const details = new Map();
+      // True while a candidate's real (apply-to-form) fetch is in flight -
+      // freezes re-rendering/reordering so the dialog doesn't shuffle out
+      // from under a click staff already made.
+      let selecting = false;
+
+      function reorderByPopularity() {
+        const shown = order.slice(0, visibleCount);
+        const rest = order.slice(visibleCount);
+        const ratingCountOf = (c) => {
+          const d = details.get(c.url);
+          if (!d || d.loading || d.error) return -1;
+          const n = Number(String(d.untappdRatingCount || '').replace(/,/g, ''));
+          return Number.isFinite(n) && n > 0 ? n : -1;
+        };
+        // Stable sort (Array.prototype.sort) - a candidate whose preview
+        // hasn't resolved yet (ratingCountOf -1) keeps its original
+        // position relative to other still-loading ones.
+        const rankedShown = shown
+          .map((c, i) => ({ c, i }))
+          .sort((a, b) => ratingCountOf(b.c) - ratingCountOf(a.c) || a.i - b.i)
+          .map((x) => x.c);
+        order = [...rankedShown, ...rest];
+      }
+
+      function fetchPreview(candidate) {
+        if (details.has(candidate.url)) return;
+        details.set(candidate.url, { loading: true });
+        fetch('/api/untappd-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Empty `current` (nothing to merge/apply) - this is a read-only
+          // preview fetch for the card, not the "staff picked this one"
+          // fetch selectCandidate below does with the real form contents.
+          body: JSON.stringify({ current: {}, untappdUrl: candidate.url }),
+        })
+          .then((resp) => resp.json().then((data) => ({ ok: resp.ok, data })))
+          .then(({ ok, data }) => details.set(candidate.url, ok ? { loading: false, ...data } : { loading: false, error: true }))
+          .catch(() => details.set(candidate.url, { loading: false, error: true }))
+          .then(() => {
+            if (selecting) return;
+            reorderByPopularity();
+            render();
+          });
+      }
+
+      function setAllDisabled(disabled) {
+        els.untappdPickerRecCard.disabled = disabled;
+        els.untappdPickerUseRecBtn.disabled = disabled;
+        els.untappdPickerOthersBlock.querySelectorAll('.alt-row').forEach((b) => { b.disabled = disabled; });
+      }
+
+      async function selectCandidate(candidate) {
+        selecting = true;
+        setAllDisabled(true);
+        els.untappdPickerStatus.textContent = 'Loading that beer...';
+        try {
+          const resp = await fetch('/api/untappd-lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ current: readForm(), untappdUrl: candidate.url }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+          applyUntappdFields(data);
+          // Resolve (and null out untappdPickerResolve) before closing -
+          // see the onClose comment above for why the ordering matters.
+          const resolveFn = untappdPickerResolve;
+          untappdPickerResolve = null;
+          untappdPickerModal.close();
+          if (resolveFn) resolveFn(true);
+        } catch (err) {
+          selecting = false;
+          els.untappdPickerStatus.textContent = err.message || 'Something went wrong loading that beer.';
+          setAllDisabled(false);
+        }
+      }
+
+      function render() {
+        const [rec, ...rest] = order;
+        const shownOthers = rest.slice(0, visibleCount - 1);
+        const hiddenCount = order.length - visibleCount;
+        const recDetails = details.get(rec.url);
+
+        const recMeta = untappdMetaParts(recDetails || {});
+        // reorderByPopularity only ever promotes `rec` to this slot once its
+        // own check-in count is the highest among the *currently resolved*
+        // shown candidates - so once recDetails itself has a positive count,
+        // that promotion is a real, checkable fact worth telling staff, not
+        // just a guess. A candidate still stays Recommended (Untappd's own
+        // tie order) before that's known; this line just doesn't claim
+        // anything until it's true.
+        const recCount = recDetails && !recDetails.loading && !recDetails.error
+          ? Number(String(recDetails.untappdRatingCount || '').replace(/,/g, ''))
+          : 0;
+        els.untappdPickerRecCard.innerHTML = `
+          <span class="untappd-rec-card__badge">&#9733; Recommended</span>
+          <span>
+            <span class="untappd-rec-card__title">${escapeHtml(rec.beerName || rec.title || 'Untitled')}</span>
+            <span class="untappd-rec-card__brewery">${escapeHtml(rec.brewery || '')}</span>
+          </span>
+          ${recDetails && !recDetails.loading
+            ? (recMeta.length ? `<span class="untappd-rec-card__meta">${recMeta.join(' &middot; ')}</span>` : '')
+              + (recCount > 0 ? '<span class="untappd-rec-card__why">Most checked-in match on Untappd</span>' : '')
+              + (recDetails.description ? `<p class="untappd-rec-card__desc">${escapeHtml(recDetails.description)}</p>` : '')
+            : '<span class="untappd-rec-card__meta untappd-rec-card__meta--loading">Loading Untappd details&hellip;</span>'}
+        `;
+        els.untappdPickerRecCard.onclick = () => selectCandidate(rec);
+
+        const rows = shownOthers.map((c) => {
+          const d = details.get(c.url);
+          const meta = [escapeHtml(c.brewery || '')];
+          if (d && !d.loading && d.style) meta.push(escapeHtml(d.style));
+          if (d && !d.loading && d.abv) meta.push(`${escapeHtml(d.abv)} ABV`);
+          const stat = d && !d.loading && d.untappdRating
+            ? `<span class="alt-row__stat">${escapeHtml(d.untappdRating)}&#9733;${d.untappdRatingCount ? ` (${escapeHtml(d.untappdRatingCount)})` : ''}</span>`
+            : '';
+          return `
+            <button type="button" class="alt-row" data-url="${escapeHtml(c.url)}">
+              <span>
+                <span class="alt-row__title">${escapeHtml(c.beerName || c.title || 'Untitled')}</span>
+                <span class="alt-row__meta">${meta.filter(Boolean).join(' &middot; ')}</span>
+              </span>
+              ${stat}
+            </button>
+          `;
+        }).join('');
+
+        els.untappdPickerOthersBlock.innerHTML = shownOthers.length ? `
+          <div class="untappd-others-divider"><span>Other match${shownOthers.length === 1 && !hiddenCount ? '' : 'es'} Untappd found</span></div>
+          <div class="alt-list">${rows}</div>
+          ${hiddenCount > 0 ? `<button type="button" class="untappd-more-toggle" id="untappdMoreToggle">+${hiddenCount} more match${hiddenCount === 1 ? '' : 'es'}</button>` : ''}
+        ` : '';
+
+        els.untappdPickerOthersBlock.querySelectorAll('.alt-row').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const candidate = order.find((c) => c.url === btn.dataset.url);
+            if (candidate) selectCandidate(candidate);
+          });
         });
-      });
+        const moreToggle = document.getElementById('untappdMoreToggle');
+        if (moreToggle) {
+          moreToggle.addEventListener('click', () => {
+            const newlyShown = order.slice(visibleCount);
+            visibleCount = order.length;
+            render();
+            newlyShown.forEach(fetchPreview);
+          });
+        }
+      }
+
+      els.untappdPickerUseRecBtn.onclick = () => selectCandidate(order[0]);
+
+      render();
+      untappdPickerModal.open();
+      order.slice(0, visibleCount).forEach(fetchPreview);
     });
   }
 
@@ -3069,6 +3304,12 @@
   function openUntappdConfirm(data) {
     return new Promise((resolve) => {
       untappdConfirmResolve = resolve;
+      // data.beerName is Untappd's own name for the matched beer (see
+      // mergeUntappdBeer's comment) - shown here instead of data.title
+      // (the store-sourced Product Title, already visible on the form/
+      // preview behind this dialog) so staff can actually see what beer
+      // Untappd matched to, not just its brewery.
+      els.untappdConfirmTitleText.textContent = data.beerName || data.title || 'Unknown beer';
       els.untappdConfirmBrewery.textContent = data.brewery || 'Unknown brewery';
       const metaParts = [];
       if (data.style) metaParts.push(data.style);
@@ -4709,15 +4950,32 @@
   const exportPreviewModal = createModal({
     overlay: els.exportPreviewOverlay,
     closeBtns: [els.exportPreviewCloseBtn, els.exportPreviewCloseFooterBtn],
-    onOpen: loadExportPreview,
+    // Starts from a blank search every time the dialog is opened, rather
+    // than whatever was typed the last time it was open - "reopen this
+    // dialog" should mean "look at the file fresh", not "still filtered
+    // from ten minutes ago".
+    onOpen: () => {
+      els.exportPreviewSearchInput.value = '';
+      loadExportPreview('');
+    },
   });
 
-  async function loadExportPreview() {
+  // Bumped on every call so a slow response to an old keystroke can't land
+  // after a faster response to a newer one and clobber it with stale
+  // results - same "newest wins" guard as Search by Name's own
+  // nameSearchSelectToken.
+  let exportPreviewToken = 0;
+
+  async function loadExportPreview(query) {
     els.exportPreviewStatus.textContent = 'Loading...';
     els.exportPreviewTableWrap.innerHTML = '';
+    const token = (exportPreviewToken += 1);
     try {
-      const resp = await fetch('/api/export-preview?limit=200');
+      const q = (query || '').trim();
+      const url = q ? `/api/export-preview?limit=200&q=${encodeURIComponent(q)}` : '/api/export-preview?limit=200';
+      const resp = await fetch(url);
       const data = await resp.json();
+      if (token !== exportPreviewToken) return; // superseded by a newer search
       if (!resp.ok) {
         const err = new Error(data.error || 'Could not read the export file.');
         err.code = data.code;
@@ -4728,12 +4986,26 @@
       // something staff would recognize, so name the source they'd actually
       // expect instead.
       const source = data.autoSync ? 'the file synced from the Server PC' : data.exportPath;
-      els.exportPreviewStatus.textContent = `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${source}`;
+      els.exportPreviewStatus.textContent = q
+        ? `Showing ${data.rows.length} of ${data.matchedRows.toLocaleString('en-US')} row${data.matchedRows === 1 ? '' : 's'} matching “${q}” (${data.totalRows.toLocaleString('en-US')} total) from ${source}`
+        : `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${source}`;
       renderPreviewTable(els.exportPreviewTableWrap, data.headers, data.rows);
     } catch (err) {
+      if (token !== exportPreviewToken) return;
       els.exportPreviewStatus.textContent = err.message || 'Could not read the export file.';
     }
   }
+
+  // Filters the table above to rows containing this text anywhere in the
+  // row - a plain substring match run server-side over the *whole* file
+  // (see previewExport's own note on why), debounced the same 200ms as
+  // Search by Name so a fast typist doesn't fire a request per keystroke.
+  let exportPreviewSearchDebounce;
+  els.exportPreviewSearchInput.addEventListener('input', () => {
+    clearTimeout(exportPreviewSearchDebounce);
+    const { value } = els.exportPreviewSearchInput;
+    exportPreviewSearchDebounce = setTimeout(() => loadExportPreview(value), 200);
+  });
 
   // Closes this dialog and opens Export File Settings directly - lets
   // someone go straight from "the export file isn't set up" to fixing it,
@@ -4925,6 +5197,184 @@
         break;
     }
   }
+
+  // Progressively enhances every Type/Product Type <select> (see the
+  // shared .type-select/.product-type-select note in index.html) into a
+  // custom button+listbox dropdown that looks and behaves like the menu
+  // bar's own dropdowns below (initMenuBar), instead of the browser's
+  // native select popup. The <select> itself stays in the DOM - just
+  // hidden - and remains the single source of truth: this widget only
+  // ever reads its .options/.value and, on a pick, sets .value and
+  // dispatches 'change' on it, so every existing change listener,
+  // applyFormMode, and syncSelects call elsewhere in this file (which is
+  // what keeps every tab's copy of these two dropdowns showing the same
+  // value) keeps working untouched. syncSelects calls back into this via
+  // select._fieldSelectRefresh after it sets .value programmatically,
+  // since that doesn't fire 'change' on its own.
+  (function initFieldSelects() {
+    const selects = [...document.querySelectorAll('.type-select, .product-type-select')];
+    if (!selects.length) return;
+
+    const instances = [];
+
+    function closeAll({ except } = {}) {
+      instances.forEach((inst) => {
+        if (inst === except || !inst.root.classList.contains('is-open')) return;
+        inst.root.classList.remove('is-open');
+        inst.trigger.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    selects.forEach((select) => {
+      // The <span> caption next to the select (see the div.field note
+      // above .type-product-row in index.html) - its id becomes the
+      // custom trigger/listbox's accessible name in place of the
+      // <select>'s own aria-label, which goes along for the ride once
+      // hidden but is otherwise unused now that nothing points a <label>
+      // at the select anymore.
+      const labelEl = select.closest('.field')?.querySelector('span[id]');
+
+      const root = document.createElement('div');
+      root.className = 'field-select';
+
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.className = 'field-select__trigger';
+      trigger.setAttribute('aria-haspopup', 'listbox');
+      trigger.setAttribute('aria-expanded', 'false');
+
+      const valueEl = document.createElement('span');
+      valueEl.className = 'field-select__value';
+      if (labelEl) {
+        // Combines the field's own caption ("Type") with the currently
+        // picked value's id, so the accessible name reads like "Type,
+        // Shelf Talker" - close to what a native select announces -
+        // and stays current on its own since it's the same element
+        // refresh() below re-labels on every change.
+        valueEl.id = `${labelEl.id}-value`;
+        trigger.setAttribute('aria-labelledby', `${labelEl.id} ${valueEl.id}`);
+      }
+      trigger.appendChild(valueEl);
+
+      const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      chevron.setAttribute('class', 'field-select__chevron');
+      chevron.setAttribute('viewBox', '0 0 12 8');
+      chevron.setAttribute('aria-hidden', 'true');
+      chevron.innerHTML = '<path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+      trigger.appendChild(chevron);
+
+      const listbox = document.createElement('div');
+      listbox.className = 'field-select__dropdown';
+      listbox.setAttribute('role', 'listbox');
+      if (labelEl) listbox.setAttribute('aria-labelledby', labelEl.id);
+
+      const options = [...select.options].map((opt) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'field-select__option';
+        item.setAttribute('role', 'option');
+        item.dataset.value = opt.value;
+        const check = document.createElement('span');
+        check.className = 'field-select__option-check';
+        check.setAttribute('aria-hidden', 'true');
+        check.textContent = '✓';
+        const label = document.createElement('span');
+        label.className = 'field-select__option-label';
+        label.textContent = opt.textContent;
+        item.append(check, label);
+        listbox.appendChild(item);
+        return item;
+      });
+
+      root.append(trigger, listbox);
+      select.insertAdjacentElement('afterend', root);
+      // Stays in the DOM (so .value/dispatchEvent keep working exactly as
+      // before) but out of the layout and off the a11y tree - the custom
+      // trigger/listbox above is the only thing anyone actually sees,
+      // clicks, or tabs to now.
+      select.hidden = true;
+
+      function refresh() {
+        const opt = select.options[select.selectedIndex];
+        valueEl.textContent = opt ? opt.textContent : '';
+        options.forEach((item) => {
+          item.setAttribute('aria-selected', String(item.dataset.value === select.value));
+        });
+      }
+      select._fieldSelectRefresh = refresh;
+      refresh();
+
+      const inst = { root, trigger };
+      instances.push(inst);
+
+      function open({ focusSelected = false } = {}) {
+        closeAll({ except: inst });
+        root.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+        if (focusSelected) {
+          (options.find((o) => o.getAttribute('aria-selected') === 'true') || options[0])?.focus();
+        }
+      }
+      function close({ refocus = false } = {}) {
+        if (!root.classList.contains('is-open')) return;
+        root.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        if (refocus) trigger.focus();
+      }
+      function pick(item) {
+        if (select.value !== item.dataset.value) {
+          select.value = item.dataset.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        refresh();
+        close({ refocus: true });
+      }
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (root.classList.contains('is-open')) close({ refocus: true });
+        else open({ focusSelected: true });
+      });
+      trigger.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open({ focusSelected: true });
+        } else if (e.key === 'Escape' && root.classList.contains('is-open')) {
+          e.preventDefault();
+          close({ refocus: true });
+        }
+      });
+
+      options.forEach((item) => {
+        item.addEventListener('click', (e) => { e.stopPropagation(); pick(item); });
+        item.addEventListener('mouseenter', () => item.focus());
+        item.addEventListener('keydown', (e) => {
+          // Same reasoning as the equivalent stopPropagation in
+          // initMenuBar below - without it this would also reach the
+          // trigger's own keydown listener above and immediately re-open
+          // on top of whatever this handler just did.
+          e.stopPropagation();
+          const idx = options.indexOf(item);
+          if (e.key === 'ArrowDown') { e.preventDefault(); (options[idx + 1] || options[0]).focus(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); (options[idx - 1] || options[options.length - 1]).focus(); }
+          else if (e.key === 'Home') { e.preventDefault(); options[0].focus(); }
+          else if (e.key === 'End') { e.preventDefault(); options[options.length - 1].focus(); }
+          else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(item); }
+          else if (e.key === 'Escape') { e.preventDefault(); close({ refocus: true }); }
+        });
+      });
+    });
+
+    document.addEventListener('click', () => closeAll());
+    // A dropdown left open shouldn't trap Tab - once focus actually leaves
+    // its own root for good, close it, same as initMenuBar's identical
+    // guard below.
+    instances.forEach((inst) => {
+      inst.root.addEventListener('focusout', (e) => {
+        if (!inst.root.contains(e.relatedTarget)) closeAll();
+      });
+    });
+  })();
 
   // Open/close, hover-to-switch, and full keyboard navigation for the menu
   // bar - the same behavior Windows' native menu used to give for free

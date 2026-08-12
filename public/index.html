@@ -155,31 +155,39 @@
              the top of every tab (see Import and Search below), driving one
              shared currentSignType/currentSignSize/currentCategory in
              app.js regardless of which tab set them - so switching tabs
-             never loses the choice. A real select element rather than the
-             tap/toggle-btn rows this used to be (three settings - sign
-             type, sign size, category - collapsed into two dropdowns, Type
-             folding sign type and size into one flat list of three). The
-             eyebrow caption + divider below (shared across all three tabs -
-             see .type-product-eyebrow/.type-product-divider in styles.css)
+             never loses the choice. Backed by a real <select> (three
+             settings - sign type, sign size, category - collapsed into two
+             dropdowns, Type folding sign type and size into one flat list
+             of three), but the select itself stays hidden and is only ever
+             driven programmatically - initFieldSelects in app.js builds a
+             custom button+listbox next to it, styled and operated like the
+             menu bar's own dropdowns (see .menubar__dropdown in
+             styles.css) instead of the browser's native select popup. The
+             div.field (not <label>) below is deliberate: with the select
+             hidden, a <label> would still try to forward clicks on the
+             span to it; aria-labelledby on the custom button (see
+             initFieldSelects) takes over that job instead. The eyebrow
+             caption + divider below (shared across all three tabs - see
+             .type-product-eyebrow/.type-product-divider in styles.css)
              calls this out as the form's first decision, not just another
              field-row. -->
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
-          <label class="field">
-            <span>Type</span>
+          <div class="field">
+            <span id="typeFieldLabelManual">Type</span>
             <select class="type-select" aria-label="Sign type">
               <option value="talker">Shelf Talker</option>
               <option value="small">Small Display</option>
               <option value="large">Large Display</option>
             </select>
-          </label>
-          <label class="field">
-            <span>Product Type</span>
+          </div>
+          <div class="field">
+            <span id="productTypeFieldLabelManual">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
               <option value="beer">Beer</option>
             </select>
-          </label>
+          </div>
         </div>
         <div class="type-product-divider"></div>
         <form id="talkerForm" novalidate>
@@ -456,29 +464,30 @@
 
       <div class="tab-panel" data-panel="import" id="panelImport" role="tabpanel" aria-labelledby="tabImport" tabindex="0">
         <!-- Shares .type-select/.product-type-select with Manual Entry's own
-             pair (see the note there) so the existing wiring in app.js -
-             change handling, keeping every instance in sync, aria - covers
-             every tab automatically; these are views onto the same
-             currentSignType/currentSignSize/currentCategory, not
-             independent settings. Eyebrow + divider match Manual Entry's
-             copy of this row - see the note there. -->
+             pair (see the note there, including why these are div.field
+             rather than <label> now) so the existing wiring in app.js -
+             change handling, keeping every instance in sync, the custom
+             dropdown itself - covers every tab automatically; these are
+             views onto the same currentSignType/currentSignSize/
+             currentCategory, not independent settings. Eyebrow + divider
+             match Manual Entry's copy of this row - see the note there. -->
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
-          <label class="field">
-            <span>Type</span>
+          <div class="field">
+            <span id="typeFieldLabelImport">Type</span>
             <select class="type-select" aria-label="Sign type">
               <option value="talker">Shelf Talker</option>
               <option value="small">Small Display</option>
               <option value="large">Large Display</option>
             </select>
-          </label>
-          <label class="field">
-            <span>Product Type</span>
+          </div>
+          <div class="field">
+            <span id="productTypeFieldLabelImport">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
               <option value="beer">Beer</option>
             </select>
-          </label>
+          </div>
         </div>
         <div class="type-product-divider"></div>
         <p class="help-text" id="importHelpText">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
@@ -512,25 +521,26 @@
            fallbacks exactly as before, just nested one level deeper; none
            of the three has its own Type/Product Type control anymore, since
            the pair above now covers all three. Eyebrow + divider match
-           Manual Entry's copy of this row - see the note there. -->
+           Manual Entry's copy of this row - see the note there, including
+           why these are div.field rather than <label> now. -->
       <div class="tab-panel" data-panel="search" id="panelSearch" role="tabpanel" aria-labelledby="tabSearch" tabindex="0">
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
-          <label class="field">
-            <span>Type</span>
+          <div class="field">
+            <span id="typeFieldLabelSearch">Type</span>
             <select class="type-select" aria-label="Sign type">
               <option value="talker">Shelf Talker</option>
               <option value="small">Small Display</option>
               <option value="large">Large Display</option>
             </select>
-          </label>
-          <label class="field">
-            <span>Product Type</span>
+          </div>
+          <div class="field">
+            <span id="productTypeFieldLabelSearch">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
               <option value="beer">Beer</option>
             </select>
-          </label>
+          </div>
         </div>
         <div class="type-product-divider"></div>
 
@@ -743,7 +753,14 @@
        left in it after style-word stripping. Shared by Scan UPC, SKU
        Lookup, and Search by Name (see openUntappdPicker in app.js) rather
        than three copies, since every path ends up with the same
-       {url, brewery, beerName} candidate list either way. -->
+       {url, brewery, beerName} candidate list either way.
+
+       One candidate is put forward as a Recommended pick (#untappdPickerRecCard),
+       with up to 2 others shown below it (#untappdPickerOthersBlock) and any
+       remainder folded behind a "+N more" toggle - see openUntappdPicker's
+       own comment for how the recommendation is chosen and why none of this
+       needs server changes (it reuses /api/untappd-lookup, just with an
+       empty `current` for a side-effect-free preview fetch). -->
   <div id="untappdPickerOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdPickerTitle">
       <div class="modal__header">
@@ -752,11 +769,13 @@
       </div>
       <div class="untappd-picker-body">
         <p class="help-text" id="untappdPickerQueryLabel"></p>
-        <div class="untappd-picker-results" id="untappdPickerResults"></div>
+        <button type="button" class="untappd-rec-card" id="untappdPickerRecCard"></button>
+        <div id="untappdPickerOthersBlock"></div>
         <p class="help-text" id="untappdPickerStatus" role="status" aria-live="polite"></p>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn" id="untappdPickerCancelBtn">None of these / Cancel</button>
+        <button type="button" class="btn btn--primary" id="untappdPickerUseRecBtn">Use Recommended Pick</button>
       </div>
     </div>
   </div>
@@ -769,6 +788,27 @@
        Staff sign off on the single match Untappd itself is confident
        about too, since a wrong-but-confident pick used to be able to reach
        the printed talker with no review step at all. -->
+  <!-- In-app confirm dialog for "Clear All" (see els.clearQueueBtn in app.js).
+       Deliberately not window.confirm(): Electron/Chromium's native
+       alert/confirm/prompt can leave the renderer's click handling stuck
+       until the window regains OS focus (switch windows, minimize/restore,
+       or restart) - see the confirmQueueClear() note in app.js. Routing
+       this through the same createModal() plumbing as the other dialogs
+       below avoids that entirely. -->
+  <div id="clearQueueConfirmOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="clearQueueConfirmTitle">
+      <div class="modal__header">
+        <h2 id="clearQueueConfirmTitle">Clear Queue</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="clearQueueConfirmCloseBtn">&times; Close</button>
+      </div>
+      <p class="help-text">Remove all shelf talkers from the queue?</p>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="clearQueueConfirmCancelBtn">Cancel</button>
+        <button type="button" class="btn btn--primary" id="clearQueueConfirmAcceptBtn">Clear All</button>
+      </div>
+    </div>
+  </div>
+
   <div id="untappdConfirmOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdConfirmTitle">
       <div class="modal__header">
@@ -778,6 +818,7 @@
       <div class="untappd-picker-body">
         <p class="help-text">Untappd matched this to:</p>
         <div class="untappd-confirm-card">
+          <div class="untappd-confirm-card__title" id="untappdConfirmTitleText"></div>
           <div class="untappd-confirm-card__brewery" id="untappdConfirmBrewery"></div>
           <div class="untappd-confirm-card__meta" id="untappdConfirmMeta"></div>
           <p class="untappd-confirm-card__description" id="untappdConfirmDescription"></p>
@@ -1037,6 +1078,19 @@
         <button type="button" class="btn btn--ghost btn--small" id="exportPreviewCloseBtn">&times; Close</button>
       </div>
       <div class="data-preview">
+        <!-- Filters to rows containing this text, anywhere in the row -
+             plain substring match run over the whole file server-side (see
+             previewExport()'s note on why), not just whatever page of rows
+             is already showing. For confirming a specific item is (or
+             isn't) actually in the file, without opening it elsewhere. -->
+        <input
+          type="search"
+          id="exportPreviewSearchInput"
+          class="data-preview__search"
+          placeholder="Search this file&hellip;"
+          aria-label="Search export file"
+          autocomplete="off"
+        />
         <p class="help-text" id="exportPreviewStatus" role="status" aria-live="polite"></p>
         <div class="preview-table-wrap" id="exportPreviewTableWrap"></div>
       </div>
