@@ -41,6 +41,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.2',
+      items: [
+        'Fixed: Scan UPC (and SKU Lookup/Search by Name) for beer could double the brewery name in the Beer Name field (e.g. "Slack Tide Brewing Company Slack Tide Flounder Pounder Can") when the store\'s own product title only used the brewery\'s shorter, everyday name instead of its full legal one.',
+        'Fixed: a trailing container word like "Can" left over in the composed Beer Name is now dropped once Untappd confirms the beer\'s real name doesn\'t include it.',
+      ],
+    },
+    {
       version: '3.3.1',
       items: [
         'New: on the Full Page Live Preview, you can now click any talker or sign right on the sheet to jump straight into editing it - hover to see the edit badge, then click (or Tab + Enter). Same as choosing Edit from that item\'s Queue row menu, just without having to find the matching row first.',
