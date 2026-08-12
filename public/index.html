@@ -1051,8 +1051,8 @@
        store PC. Marking one broadcasts a small UDP announcement on the LAN
        (see server/discovery.js) so *other* PCs can see which one it is, and
        starts serving this PC's WinePOS export file to other PCs' Export File
-       Settings -> auto-sync (see server/exportSync.js). Print History and
-       the product cache still aren't shared - each PC keeps its own. -->
+       Settings -> auto-sync (see server/exportSync.js). Print History still
+       isn't shared - each PC keeps its own. -->
   <div id="serverPcOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="serverPcTitle">
       <div class="modal__header">
@@ -1060,11 +1060,10 @@
         <button type="button" class="btn btn--ghost btn--small" id="serverPcCloseBtn">&times; Close</button>
       </div>
       <div class="server-pc-body">
-        <p class="help-text">Marking a PC as the main store PC lets other PCs on the same network see which one it is, and lets them automatically pull its WinePOS export file (Export File Settings &rarr; auto-sync on each of those PCs) instead of that file being copied around by hand. Print History and the product cache still aren't shared &mdash; each PC keeps its own.</p>
+        <p class="help-text">Marking a PC as the main store PC lets other PCs on the same network see which one it is, and lets them automatically pull its WinePOS export file (Export File Settings &rarr; auto-sync on each of those PCs) instead of that file being copied around by hand. Print History still isn't shared &mdash; each PC keeps its own.</p>
         <dl class="server-pc-facts">
           <div><dt>This PC's network address</dt><dd id="serverPcAddresses">&ndash;</dd></div>
           <div><dt>Print History</dt><dd id="serverPcHistoryCount">&ndash;</dd></div>
-          <div><dt>Product cache</dt><dd id="serverPcCacheCount">&ndash;</dd></div>
           <div><dt>Main store PC on this network</dt><dd id="serverPcDiscovered">&ndash;</dd></div>
         </dl>
         <label class="server-pc-checkbox">

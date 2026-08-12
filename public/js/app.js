@@ -795,7 +795,6 @@
     serverPcCloseFooterBtn: document.getElementById('serverPcCloseFooterBtn'),
     serverPcAddresses: document.getElementById('serverPcAddresses'),
     serverPcHistoryCount: document.getElementById('serverPcHistoryCount'),
-    serverPcCacheCount: document.getElementById('serverPcCacheCount'),
     serverPcDiscovered: document.getElementById('serverPcDiscovered'),
     serverPcCheckbox: document.getElementById('serverPcCheckbox'),
     serverPcStatus: document.getElementById('serverPcStatus'),
@@ -2450,8 +2449,8 @@
         applyUpcScanProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
         els.scanUpcStatus.textContent = picked
-          ? `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`
-          : `Found it${cacheNote(data)}. Untappd had more than one possible match and none was picked - `
+          ? 'Found it! Review the fields, then click "Add to Queue".'
+          : 'Found it. Untappd had more than one possible match and none was picked - '
             + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
         return;
       }
@@ -2467,8 +2466,8 @@
         const otherProblems = scanUpcProblems(data);
         const suffix = otherProblems ? ` ${otherProblems}` : '';
         els.scanUpcStatus.textContent = confirmed
-          ? `Found it${cacheNote(data)}!${suffix} Review the fields, then click "Add to Queue".`
-          : `Found it${cacheNote(data)}. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
+          ? `Found it!${suffix} Review the fields, then click "Add to Queue".`
+          : `Found it. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
             + 'Review the fields, then click "Add to Queue".';
         return;
       }
@@ -2481,12 +2480,12 @@
         // silently queue a result staff haven't had a chance to see was
         // incomplete. The fields stay filled in with whatever did resolve;
         // Add to Queue below still works once they've been reviewed.
-        els.scanUpcStatus.textContent = `Found it${cacheNote(data)}. ${problems} Review the fields, then click "Add to Queue".`;
+        els.scanUpcStatus.textContent = `Found it. ${problems} Review the fields, then click "Add to Queue".`;
       } else {
         // Every field the lookup needed is filled, with nothing left
         // unresolved - add it straight to the queue instead of waiting for
         // a manual click.
-        addScannedUpcToQueue(`Added to queue${cacheNote(data)}! Scan the next one.`);
+        addScannedUpcToQueue('Added to queue! Scan the next one.');
       }
     } catch (err) {
       els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
@@ -3107,16 +3106,6 @@
     return confirmed;
   }
 
-  // Small aside appended to a lookup's status message when the server
-  // served a cached copy (see the product cache note above /api/sku-lookup
-  // and /api/upc-lookup in server/index.js) - every lookup is live now, so
-  // this only ever comes up when that live attempt itself failed and
-  // `stale` comes back set alongside it.
-  function cacheNote(data) {
-    if (!data.fromCache) return '';
-    return ` (cached${data.stale ? ', may be stale' : ''})`;
-  }
-
   // data.untappdError is only ever set for a beer lookup whose Untappd step
   // failed (blocked, no match, etc) - see enrichBeerFromUntappd in
   // productImport.js. The store lookup itself still succeeded, so the form
@@ -3126,7 +3115,7 @@
     if (data.untappdError) {
       return `Loaded from ${loadedFrom}. Untappd: ${data.untappdError}`;
     }
-    return `Loaded from ${loadedFrom}${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+    return `Loaded from ${loadedFrom}! Review the fields, then click "Add to Queue".`;
   }
 
   els.skuLookupBtn.addEventListener('click', async () => {
@@ -3154,7 +3143,7 @@
         applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || sku);
         if (picked) {
-          els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+          els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
         } else {
           // None of the offered candidates were right (or staff just backed
           // out) - reveal the same manual "paste an Untappd URL" fallback a
@@ -3172,7 +3161,7 @@
       if (isBeer && !data.untappdError) {
         const confirmed = await confirmBeerUntappdMatch(data, (d) => applySkuLookupProduct(d, isBeer));
         if (confirmed) {
-          els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+          els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
         } else {
           els.skuUntappdSection.hidden = false;
           els.skuStatus.textContent = 'Loaded from the store. Not the right beer - brewery/style/ABV/rating left blank. '
@@ -4796,7 +4785,6 @@
 
       els.serverPcAddresses.textContent = data.addresses.length ? data.addresses.join(', ') : 'Not connected to a network';
       els.serverPcHistoryCount.textContent = data.stats.printedTalkers.toLocaleString('en-US');
-      els.serverPcCacheCount.textContent = data.stats.cachedProducts.toLocaleString('en-US');
       els.serverPcDiscovered.textContent = describeDiscoveredServer(data);
       els.serverPcCheckbox.checked = data.isServer;
       els.serverPcStatus.textContent = data.isServer && data.confirmedAt
