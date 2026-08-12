@@ -41,6 +41,14 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.4',
+      items: [
+        'New: Full Page Live Preview is now the print preview, too - the separate Print Preview dialog is gone. Auto-arrange and the sheet summary sit right above the sheets, and the same button that jumps you to Full Page relabels to Print Now once you\'re looking at it.',
+        'New: Auto-arrange is out of Beta, now that it lives on the Full Page panel instead of being buried in a dialog.',
+        'New: Live Preview now opens on Full Page by default instead of Current Talker, so you land on the print-accurate view of the queue right away.',
+      ],
+    },
+    {
       version: '3.3.3',
       items: [
         'New: Full Page Live Preview now shows the whole queue at once, stacked in a scrollable list like Print Preview - Shelf Talkers, Half/Quarter Size, and Large/Small Display Signs all together, instead of one sheet at a time filtered to whichever type/size the form happened to be set to. Cards/signs stay click-to-edit.',
