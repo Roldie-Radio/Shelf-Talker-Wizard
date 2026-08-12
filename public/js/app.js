@@ -41,6 +41,14 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.3',
+      items: [
+        'New: Full Page Live Preview now shows the whole queue at once, stacked in a scrollable list like Print Preview - Shelf Talkers, Half/Quarter Size, and Large/Small Display Signs all together, instead of one sheet at a time filtered to whichever type/size the form happened to be set to. Cards/signs stay click-to-edit.',
+        'New: Beer Name\'s Auto-size toggle now defaults on when composing a new beer entry, since beer titles (brewery + beer + container) tend to run longer and clip more often than wine/spirits titles - mirrors how the Theme select already defaults to purple for beer.',
+        'Fixed: Scan UPC, SKU Lookup, and Search by Name now recognize beer/wine titles written in a non-Latin script (Cyrillic, etc.) - a title like "Львівське 1715" previously produced zero match tokens, so the lookup failed with "Could not find..." even though the real Untappd match was sitting right there in the results.',
+      ],
+    },
+    {
       version: '3.3.2',
       items: [
         'Fixed: Scan UPC (and SKU Lookup/Search by Name) for beer could double the brewery name in the Beer Name field (e.g. "Slack Tide Brewing Company Slack Tide Flounder Pounder Can") when the store\'s own product title only used the brewery\'s shorter, everyday name instead of its full legal one.',
