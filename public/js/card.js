@@ -500,11 +500,11 @@ function buildRightBadgeHtml(talker) {
   const code = countryCodeFromLocation(talker.location);
   const countryShape = code && COUNTRY_SHAPES[code];
   if (!countryShape) return '';
-  const label = (COUNTRY_FLAGS[code] && COUNTRY_FLAGS[code].label) || code;
+  // No country-letter label here either (see buildCountryFlagHtml's own
+  // comment) - just the silhouette.
   return `
     <div class="card__state-badge card__state-badge--country">
       <svg viewBox="0 0 100 100" aria-hidden="true"><path d="${countryShape}"/></svg>
-      <span class="card__state-badge-label">${label}</span>
     </div>
   `;
 }
@@ -579,49 +579,44 @@ function flagUnionJackInner() {
 
 const COUNTRY_FLAGS = {
   US: {
-    label: 'US',
     svg: flagStripesH(['#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234', '#fff', '#B22234'])
       + '<rect x="0" y="0" width="26" height="21.54" fill="#3C3B6E"/>'
       + flagStarField(26, 21.54, 5, 5, 4, 1.05),
   },
-  MX: { label: 'MX', svg: flagStripesV(['#006847', '#fff', '#CE1126']) + '<circle cx="30" cy="20" r="6" fill="#8B5A2B"/><circle cx="30" cy="20" r="3" fill="#2E7D32"/>' },
+  MX: { svg: flagStripesV(['#006847', '#fff', '#CE1126']) + '<circle cx="30" cy="20" r="6" fill="#8B5A2B"/><circle cx="30" cy="20" r="3" fill="#2E7D32"/>' },
   CA: {
-    label: 'CA',
     svg: '<rect x="0" y="0" width="15" height="40" fill="#FF0000"/><rect x="15" y="0" width="30" height="40" fill="#fff"/><rect x="45" y="0" width="15" height="40" fill="#FF0000"/>'
       + '<path d="M30,8 L33,15 L40,13 L36,20 L42,24 L34,23 L35,31 L30,26 L25,31 L26,23 L18,24 L24,20 L20,13 L27,15 Z" fill="#FF0000"/>',
   },
-  GB: { label: 'UK', svg: flagUnionJackInner() },
-  IE: { label: 'IE', svg: flagStripesV(['#169B62', '#fff', '#FF883E']) },
-  DE: { label: 'DE', svg: flagStripesH(['#000000', '#DD0000', '#FFCE00']) },
-  BE: { label: 'BE', svg: flagStripesV(['#000000', '#FDDA24', '#EF3340']) },
-  NL: { label: 'NL', svg: flagStripesH(['#AE1C28', '#fff', '#21468B']) },
-  FR: { label: 'FR', svg: flagStripesV(['#0055A4', '#fff', '#EF4135']) },
-  IT: { label: 'IT', svg: flagStripesV(['#009246', '#fff', '#CE2B37']) },
-  ES: { label: 'ES', svg: '<rect x="0" y="0" width="60" height="40" fill="#AA151B"/><rect x="0" y="10" width="60" height="20" fill="#F1BF00"/>' },
-  PT: { label: 'PT', svg: '<rect x="0" y="0" width="24" height="40" fill="#046A38"/><rect x="24" y="0" width="36" height="40" fill="#DA291C"/><circle cx="24" cy="20" r="7" fill="#FFCC00" stroke="#046A38" stroke-width="1"/>' },
-  CZ: { label: 'CZ', svg: '<rect x="0" y="0" width="60" height="40" fill="#fff"/><rect x="0" y="20" width="60" height="20" fill="#D7141A"/><polygon points="0,0 0,40 26,20" fill="#11457E"/>' },
-  PL: { label: 'PL', svg: flagStripesH(['#fff', '#DC143C']) },
-  AT: { label: 'AT', svg: flagStripesH(['#ED2939', '#fff', '#ED2939']) },
-  CH: { label: 'CH', svg: flagBase('#D52B1E') + '<rect x="24" y="10" width="12" height="20" fill="#fff"/><rect x="16" y="16" width="28" height="8" fill="#fff"/>' },
-  DK: { label: 'DK', svg: flagNordicCross('#C60C30', '#fff') },
-  SE: { label: 'SE', svg: flagNordicCross('#006AA7', '#FECC00') },
+  GB: { svg: flagUnionJackInner() },
+  IE: { svg: flagStripesV(['#169B62', '#fff', '#FF883E']) },
+  DE: { svg: flagStripesH(['#000000', '#DD0000', '#FFCE00']) },
+  BE: { svg: flagStripesV(['#000000', '#FDDA24', '#EF3340']) },
+  NL: { svg: flagStripesH(['#AE1C28', '#fff', '#21468B']) },
+  FR: { svg: flagStripesV(['#0055A4', '#fff', '#EF4135']) },
+  IT: { svg: flagStripesV(['#009246', '#fff', '#CE2B37']) },
+  ES: { svg: '<rect x="0" y="0" width="60" height="40" fill="#AA151B"/><rect x="0" y="10" width="60" height="20" fill="#F1BF00"/>' },
+  PT: { svg: '<rect x="0" y="0" width="24" height="40" fill="#046A38"/><rect x="24" y="0" width="36" height="40" fill="#DA291C"/><circle cx="24" cy="20" r="7" fill="#FFCC00" stroke="#046A38" stroke-width="1"/>' },
+  CZ: { svg: '<rect x="0" y="0" width="60" height="40" fill="#fff"/><rect x="0" y="20" width="60" height="20" fill="#D7141A"/><polygon points="0,0 0,40 26,20" fill="#11457E"/>' },
+  PL: { svg: flagStripesH(['#fff', '#DC143C']) },
+  AT: { svg: flagStripesH(['#ED2939', '#fff', '#ED2939']) },
+  CH: { svg: flagBase('#D52B1E') + '<rect x="24" y="10" width="12" height="20" fill="#fff"/><rect x="16" y="16" width="28" height="8" fill="#fff"/>' },
+  DK: { svg: flagNordicCross('#C60C30', '#fff') },
+  SE: { svg: flagNordicCross('#006AA7', '#FECC00') },
   NO: {
-    label: 'NO',
     svg: flagNordicCross('#EF2B2D', '#fff', { barX: 17, barW: 10, barY: 15, barH: 10 })
       + '<rect x="19" y="0" width="6" height="40" fill="#002868"/><rect x="0" y="17" width="60" height="6" fill="#002868"/>',
   },
-  FI: { label: 'FI', svg: flagNordicCross('#fff', '#003580') },
-  JP: { label: 'JP', svg: '<rect x="0" y="0" width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="12" fill="#BC002D"/>' },
+  FI: { svg: flagNordicCross('#fff', '#003580') },
+  JP: { svg: '<rect x="0" y="0" width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="12" fill="#BC002D"/>' },
   CN: {
-    label: 'CN',
     svg: flagBase('#DE2910') + flagStar(13, 10, 6, '#FFDE00') + flagStar(22, 5, 2, '#FFDE00') + flagStar(26, 9, 2, '#FFDE00') + flagStar(26, 15, 2, '#FFDE00') + flagStar(22, 19, 2, '#FFDE00'),
   },
   AU: {
-    label: 'AU',
     svg: flagBase('#00247D') + `<g transform="scale(0.5)">${flagUnionJackInner()}</g>`
       + flagStar(48, 10, 3, '#fff') + flagStar(44, 20, 2, '#fff') + flagStar(50, 26, 3, '#fff') + flagStar(40, 30, 2, '#fff') + flagStar(17, 30, 4.5, '#fff'),
   },
-  BR: { label: 'BR', svg: flagBase('#009639') + '<polygon points="30,4 56,20 30,36 4,20" fill="#FEDF00"/><circle cx="30" cy="20" r="9" fill="#002776"/>' },
+  BR: { svg: flagBase('#009639') + '<polygon points="30,4 56,20 30,36 4,20" fill="#FEDF00"/><circle cx="30" cy="20" r="9" fill="#002776"/>' },
 };
 
 // Small solid-color silhouette of the brewery's home country, in the same
@@ -745,10 +740,13 @@ function buildCountryFlagHtml(talker) {
   const code = countryCodeFromLocation(talker.location);
   const flag = code && COUNTRY_FLAGS[code];
   if (!flag) return '';
+  // No country-letter label under the flag (e.g. "US") - just the flag
+  // itself. Unlike the state badge's silhouette (which needs its own "NJ"
+  // label to be legible as a specific state), the flag graphic already
+  // identifies the country on its own.
   return `
     <div class="card__country-badge">
       <div class="card__country-badge-image"><svg viewBox="0 0 60 40" aria-hidden="true">${flag.svg}</svg></div>
-      <span class="card__country-badge-label">${flag.label}</span>
     </div>
   `;
 }
