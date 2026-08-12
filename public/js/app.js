@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.1.6',
+      items: [
+        'New: the "Pick the Right Beer" dialog (Scan UPC, SKU Lookup, Search by Name) now highlights a Recommended pick, with up to 2 other options below it and any further tie folded behind a "+N more" toggle - instead of a flat, undifferentiated list. The recommendation starts as Untappd\'s own top-ranked candidate and re-ranks itself by check-in count as each candidate\'s own page loads in the background.',
+      ],
+    },
+    {
       version: '3.1.5',
       items: [
         'Fixed: Search by Name and Scan UPC no longer fold a WinePOS export\'s "Vendor" column (a short distributor code like "KOH") into the Brand field for beer - same vendor-code bug as 3.1.4\'s SKU Lookup fix, just coming from the local export file instead of the store website.',
@@ -593,7 +599,9 @@
     untappdPickerCloseBtn: document.getElementById('untappdPickerCloseBtn'),
     untappdPickerCancelBtn: document.getElementById('untappdPickerCancelBtn'),
     untappdPickerQueryLabel: document.getElementById('untappdPickerQueryLabel'),
-    untappdPickerResults: document.getElementById('untappdPickerResults'),
+    untappdPickerRecCard: document.getElementById('untappdPickerRecCard'),
+    untappdPickerOthersBlock: document.getElementById('untappdPickerOthersBlock'),
+    untappdPickerUseRecBtn: document.getElementById('untappdPickerUseRecBtn'),
     untappdPickerStatus: document.getElementById('untappdPickerStatus'),
     untappdConfirmOverlay: document.getElementById('untappdConfirmOverlay'),
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
@@ -2950,21 +2958,41 @@
   // already does (reuses the same /api/untappd-lookup endpoint and
   // applyUntappdFields).
   //
+  // One candidate is put forward as a Recommended pick, with up to 2 others
+  // shown below it - staff shouldn't have to read every tied row just to
+  // find the one actually on the shelf. matchUntappdCandidates on the
+  // server deliberately does NOT fetch any candidate's own page before
+  // throwing the tie (a real regression test pins that down), so there's no
+  // ABV/style/rating to rank by yet when this dialog first opens - it
+  // starts with the Recommended slot as whichever candidate Untappd's own
+  // search ranked first, then fires a preview-only fetch (same
+  // /api/untappd-lookup endpoint the final pick below uses, just with an
+  // empty `current` so nothing gets merged/applied) for each of the up-to-3
+  // candidates actually on screen. As those come back, the visible set
+  // re-ranks itself by Untappd's own check-in count ("N ratings") - the
+  // widely-distributed core-lineup beer in a tie is almost always logged
+  // far more than a seasonal/regional one tied with it on name alone. A
+  // candidate folded behind "+N more" is never fetched unless staff expand
+  // it - no point spending a request on a row they may never look at.
+  //
   // Returns a Promise resolving to true once a pick was applied to the
   // form, or false if staff closed the dialog without picking one - each
   // caller uses that to decide its own status message/whether it's safe to
   // auto-add-to-queue.
   let untappdPickerResolve = null;
 
-  function renderUntappdPickerResults(candidates) {
-    els.untappdPickerResults.innerHTML = candidates.map((c, i) => `
-      <button type="button" class="untappd-picker-result" data-index="${i}">
-        <span>
-          <span class="untappd-picker-result__title">${escapeHtml(c.beerName || c.title || 'Untitled')}</span>
-          <span class="untappd-picker-result__brewery">${escapeHtml(c.brewery || '')}</span>
-        </span>
-      </button>
-    `).join('');
+  // Max candidates shown before "+N more" - the request behind this dialog
+  // asked for a recommended pick plus up to 2 other options.
+  const UNTAPPD_PICKER_VISIBLE = 3;
+
+  function untappdMetaParts(c) {
+    const parts = [];
+    if (c.style) parts.push(escapeHtml(c.style));
+    if (c.abv) parts.push(`${escapeHtml(c.abv)} ABV`);
+    if (c.untappdRating) {
+      parts.push(`${escapeHtml(c.untappdRating)} &#9733;${c.untappdRatingCount ? ` (${escapeHtml(c.untappdRatingCount)} ratings)` : ''}`);
+    }
+    return parts;
   }
 
   const untappdPickerModal = createModal({
@@ -2988,38 +3016,174 @@
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
       const count = candidates.length;
+      const otherCount = count - 1;
       els.untappdPickerQueryLabel.textContent = `Untappd found ${count} equally-likely matches for `
-        + `"${queryTitle}" - pick the right one below.`;
+        + `"${queryTitle}" - review the recommended pick below, or ${otherCount} other option${otherCount === 1 ? '' : 's'}.`;
       els.untappdPickerStatus.textContent = '';
-      renderUntappdPickerResults(candidates);
-      untappdPickerModal.open();
 
-      els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const candidate = candidates[Number(btn.dataset.index)];
-          els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((b) => { b.disabled = true; });
-          els.untappdPickerStatus.textContent = 'Loading that beer...';
-          try {
-            const resp = await fetch('/api/untappd-lookup', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ current: readForm(), untappdUrl: candidate.url }),
-            });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
-            applyUntappdFields(data);
-            // Resolve (and null out untappdPickerResolve) before closing -
-            // see the onClose comment above for why the ordering matters.
-            const resolveFn = untappdPickerResolve;
-            untappdPickerResolve = null;
-            untappdPickerModal.close();
-            if (resolveFn) resolveFn(true);
-          } catch (err) {
-            els.untappdPickerStatus.textContent = err.message || 'Something went wrong loading that beer.';
-            els.untappdPickerResults.querySelectorAll('.untappd-picker-result').forEach((b) => { b.disabled = false; });
-          }
+      // `order` starts as Untappd's own tie order and only ever reshuffles
+      // within the visible window as preview fetches resolve (see
+      // reorderByPopularity below) - the hidden tail behind "+N more" stays
+      // in that original order until/unless it's expanded.
+      let order = candidates.slice();
+      let visibleCount = Math.min(UNTAPPD_PICKER_VISIBLE, order.length);
+      // url -> { loading } | { error: true } | full /api/untappd-lookup fields.
+      const details = new Map();
+      // True while a candidate's real (apply-to-form) fetch is in flight -
+      // freezes re-rendering/reordering so the dialog doesn't shuffle out
+      // from under a click staff already made.
+      let selecting = false;
+
+      function reorderByPopularity() {
+        const shown = order.slice(0, visibleCount);
+        const rest = order.slice(visibleCount);
+        const ratingCountOf = (c) => {
+          const d = details.get(c.url);
+          if (!d || d.loading || d.error) return -1;
+          const n = Number(String(d.untappdRatingCount || '').replace(/,/g, ''));
+          return Number.isFinite(n) && n > 0 ? n : -1;
+        };
+        // Stable sort (Array.prototype.sort) - a candidate whose preview
+        // hasn't resolved yet (ratingCountOf -1) keeps its original
+        // position relative to other still-loading ones.
+        const rankedShown = shown
+          .map((c, i) => ({ c, i }))
+          .sort((a, b) => ratingCountOf(b.c) - ratingCountOf(a.c) || a.i - b.i)
+          .map((x) => x.c);
+        order = [...rankedShown, ...rest];
+      }
+
+      function fetchPreview(candidate) {
+        if (details.has(candidate.url)) return;
+        details.set(candidate.url, { loading: true });
+        fetch('/api/untappd-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Empty `current` (nothing to merge/apply) - this is a read-only
+          // preview fetch for the card, not the "staff picked this one"
+          // fetch selectCandidate below does with the real form contents.
+          body: JSON.stringify({ current: {}, untappdUrl: candidate.url }),
+        })
+          .then((resp) => resp.json().then((data) => ({ ok: resp.ok, data })))
+          .then(({ ok, data }) => details.set(candidate.url, ok ? { loading: false, ...data } : { loading: false, error: true }))
+          .catch(() => details.set(candidate.url, { loading: false, error: true }))
+          .then(() => {
+            if (selecting) return;
+            reorderByPopularity();
+            render();
+          });
+      }
+
+      function setAllDisabled(disabled) {
+        els.untappdPickerRecCard.disabled = disabled;
+        els.untappdPickerUseRecBtn.disabled = disabled;
+        els.untappdPickerOthersBlock.querySelectorAll('.alt-row').forEach((b) => { b.disabled = disabled; });
+      }
+
+      async function selectCandidate(candidate) {
+        selecting = true;
+        setAllDisabled(true);
+        els.untappdPickerStatus.textContent = 'Loading that beer...';
+        try {
+          const resp = await fetch('/api/untappd-lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ current: readForm(), untappdUrl: candidate.url }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+          applyUntappdFields(data);
+          // Resolve (and null out untappdPickerResolve) before closing -
+          // see the onClose comment above for why the ordering matters.
+          const resolveFn = untappdPickerResolve;
+          untappdPickerResolve = null;
+          untappdPickerModal.close();
+          if (resolveFn) resolveFn(true);
+        } catch (err) {
+          selecting = false;
+          els.untappdPickerStatus.textContent = err.message || 'Something went wrong loading that beer.';
+          setAllDisabled(false);
+        }
+      }
+
+      function render() {
+        const [rec, ...rest] = order;
+        const shownOthers = rest.slice(0, visibleCount - 1);
+        const hiddenCount = order.length - visibleCount;
+        const recDetails = details.get(rec.url);
+
+        const recMeta = untappdMetaParts(recDetails || {});
+        // reorderByPopularity only ever promotes `rec` to this slot once its
+        // own check-in count is the highest among the *currently resolved*
+        // shown candidates - so once recDetails itself has a positive count,
+        // that promotion is a real, checkable fact worth telling staff, not
+        // just a guess. A candidate still stays Recommended (Untappd's own
+        // tie order) before that's known; this line just doesn't claim
+        // anything until it's true.
+        const recCount = recDetails && !recDetails.loading && !recDetails.error
+          ? Number(String(recDetails.untappdRatingCount || '').replace(/,/g, ''))
+          : 0;
+        els.untappdPickerRecCard.innerHTML = `
+          <span class="untappd-rec-card__badge">&#9733; Recommended</span>
+          <span>
+            <span class="untappd-rec-card__title">${escapeHtml(rec.beerName || rec.title || 'Untitled')}</span>
+            <span class="untappd-rec-card__brewery">${escapeHtml(rec.brewery || '')}</span>
+          </span>
+          ${recDetails && !recDetails.loading
+            ? (recMeta.length ? `<span class="untappd-rec-card__meta">${recMeta.join(' &middot; ')}</span>` : '')
+              + (recCount > 0 ? '<span class="untappd-rec-card__why">Most checked-in match on Untappd</span>' : '')
+              + (recDetails.description ? `<p class="untappd-rec-card__desc">${escapeHtml(recDetails.description)}</p>` : '')
+            : '<span class="untappd-rec-card__meta untappd-rec-card__meta--loading">Loading Untappd details&hellip;</span>'}
+        `;
+        els.untappdPickerRecCard.onclick = () => selectCandidate(rec);
+
+        const rows = shownOthers.map((c) => {
+          const d = details.get(c.url);
+          const meta = [escapeHtml(c.brewery || '')];
+          if (d && !d.loading && d.style) meta.push(escapeHtml(d.style));
+          if (d && !d.loading && d.abv) meta.push(`${escapeHtml(d.abv)} ABV`);
+          const stat = d && !d.loading && d.untappdRating
+            ? `<span class="alt-row__stat">${escapeHtml(d.untappdRating)}&#9733;${d.untappdRatingCount ? ` (${escapeHtml(d.untappdRatingCount)})` : ''}</span>`
+            : '';
+          return `
+            <button type="button" class="alt-row" data-url="${escapeHtml(c.url)}">
+              <span>
+                <span class="alt-row__title">${escapeHtml(c.beerName || c.title || 'Untitled')}</span>
+                <span class="alt-row__meta">${meta.filter(Boolean).join(' &middot; ')}</span>
+              </span>
+              ${stat}
+            </button>
+          `;
+        }).join('');
+
+        els.untappdPickerOthersBlock.innerHTML = shownOthers.length ? `
+          <div class="untappd-others-divider"><span>Other match${shownOthers.length === 1 && !hiddenCount ? '' : 'es'} Untappd found</span></div>
+          <div class="alt-list">${rows}</div>
+          ${hiddenCount > 0 ? `<button type="button" class="untappd-more-toggle" id="untappdMoreToggle">+${hiddenCount} more match${hiddenCount === 1 ? '' : 'es'}</button>` : ''}
+        ` : '';
+
+        els.untappdPickerOthersBlock.querySelectorAll('.alt-row').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const candidate = order.find((c) => c.url === btn.dataset.url);
+            if (candidate) selectCandidate(candidate);
+          });
         });
-      });
+        const moreToggle = document.getElementById('untappdMoreToggle');
+        if (moreToggle) {
+          moreToggle.addEventListener('click', () => {
+            const newlyShown = order.slice(visibleCount);
+            visibleCount = order.length;
+            render();
+            newlyShown.forEach(fetchPreview);
+          });
+        }
+      }
+
+      els.untappdPickerUseRecBtn.onclick = () => selectCandidate(order[0]);
+
+      render();
+      untappdPickerModal.open();
+      order.slice(0, visibleCount).forEach(fetchPreview);
     });
   }
 
