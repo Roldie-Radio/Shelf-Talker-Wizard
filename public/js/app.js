@@ -552,7 +552,11 @@
     // Same as above - stays at its off-by-default value.
   }
 
-  let previewMode = 'single'; // 'single' | 'sheet'
+  // Full Page is the default so staff land on the print-accurate view of
+  // the queue rather than a single blank/sample card - see the
+  // setPreviewMode('sheet') call in init below, which also keeps this in
+  // sync with the toggle buttons, sheet controls, and Print button label.
+  let previewMode = 'sheet'; // 'single' | 'sheet'
 
   // Auto-arrange, opt-in from the Full Page Live Preview's controls (see
   // previewSheetControls/renderSheetPreview) - off by default. Affects both
@@ -5628,6 +5632,8 @@
   applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();
-  renderPreview();
+  // Syncs the toggle buttons/sheet controls/Print button label to
+  // previewMode's default ('sheet') and renders it - see setPreviewMode.
+  setPreviewMode(previewMode);
   checkWhatsNew();
 })();

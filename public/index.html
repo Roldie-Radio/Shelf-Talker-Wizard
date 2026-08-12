@@ -137,7 +137,7 @@
         <span class="theme-toggle__icon" aria-hidden="true">&#9789;</span>
         <span class="theme-toggle__label">Dark</span>
       </button>
-      <button id="printBtn" class="btn btn--primary" disabled>Print Sheet(s)&hellip;</button>
+      <button id="printBtn" class="btn btn--primary" disabled>Print Now</button>
     </div>
   </header>
 
@@ -663,15 +663,18 @@
       <div class="panel__header">
         <h2>Live Preview</h2>
         <div class="preview-toggle" role="radiogroup" aria-label="Preview mode">
-          <button type="button" class="toggle-btn is-active" data-preview="single" role="radio" aria-checked="true">Current Talker</button>
-          <button type="button" class="toggle-btn" data-preview="sheet" role="radio" aria-checked="false">Full Page</button>
+          <button type="button" class="toggle-btn" data-preview="single" role="radio" aria-checked="false">Current Talker</button>
+          <button type="button" class="toggle-btn is-active" data-preview="sheet" role="radio" aria-checked="true">Full Page</button>
         </div>
       </div>
       <!-- Full Page mode doubles as the print preview (see setPreviewMode /
            renderSheetPreview in app.js) - this row holds the controls that
            used to live in the separate Print Preview modal, so they only
-           make sense, and only show, once Full Page is active. -->
-      <div class="preview-sheet-controls" id="previewSheetControls" hidden>
+           make sense, and only show, once Full Page is active. Full Page is
+           also the default preview mode (see the setPreviewMode('sheet')
+           call in app.js's init) - not hidden here so there's no flash of
+           the wrong state before that runs. -->
+      <div class="preview-sheet-controls" id="previewSheetControls">
         <label class="auto-arrange-toggle">
           <input type="checkbox" id="autoArrangeToggle" />
           <span>Auto-arrange mixed sheets to save paper</span>
