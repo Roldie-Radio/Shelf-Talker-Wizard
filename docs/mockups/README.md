@@ -36,3 +36,13 @@ browser.
   introduces this app's first on/off switch component (`.switch`), since
   Settings today only has the toggle-btn pill-pair pattern (Change Theme, Menu
   Bar Size) &mdash; not the right shape for a single boolean feature flag.
+- **live-preview-talker-selection.html** &mdash; lets staff click a talker
+  directly on the **Full Page** Live Preview to edit it, instead of having to
+  find the matching row in the Queue list below and open its &#8942; menu.
+  Hovering a talker on the sheet lifts it slightly and shows a small
+  **&#9998; Edit** badge; clicking it (or Tab + Enter, since each talker is a
+  real `<button>`) does exactly what the Queue row's existing Edit action
+  already does &mdash; fills the Edit Talker form, switches Live Preview back
+  to **Current Talker**, and scrolls to the top &mdash; just via a second,
+  more visual entry point. Single-target click-to-edit only, not multi-select/
+  bulk actions; Move/Duplicate/Delete stay in the Queue row's menu.
