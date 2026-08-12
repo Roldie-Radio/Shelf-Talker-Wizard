@@ -791,6 +791,27 @@
        Staff sign off on the single match Untappd itself is confident
        about too, since a wrong-but-confident pick used to be able to reach
        the printed talker with no review step at all. -->
+  <!-- In-app confirm dialog for "Clear All" (see els.clearQueueBtn in app.js).
+       Deliberately not window.confirm(): Electron/Chromium's native
+       alert/confirm/prompt can leave the renderer's click handling stuck
+       until the window regains OS focus (switch windows, minimize/restore,
+       or restart) - see the confirmQueueClear() note in app.js. Routing
+       this through the same createModal() plumbing as the other dialogs
+       below avoids that entirely. -->
+  <div id="clearQueueConfirmOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="clearQueueConfirmTitle">
+      <div class="modal__header">
+        <h2 id="clearQueueConfirmTitle">Clear Queue</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="clearQueueConfirmCloseBtn">&times; Close</button>
+      </div>
+      <p class="help-text">Remove all shelf talkers from the queue?</p>
+      <div class="modal__footer">
+        <button type="button" class="btn" id="clearQueueConfirmCancelBtn">Cancel</button>
+        <button type="button" class="btn btn--primary" id="clearQueueConfirmAcceptBtn">Clear All</button>
+      </div>
+    </div>
+  </div>
+
   <div id="untappdConfirmOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdConfirmTitle">
       <div class="modal__header">
