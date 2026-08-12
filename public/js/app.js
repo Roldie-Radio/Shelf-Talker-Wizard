@@ -554,10 +554,11 @@
 
   let previewMode = 'single'; // 'single' | 'sheet'
 
-  // Auto-arrange (beta), opt-in from the Print Preview modal - off by
-  // default. Only affects the Print Preview modal and the actual print
-  // output (see buildAutoArrangedPages); the Full Page live preview always
-  // uses grouped sheets.
+  // Auto-arrange (beta), opt-in from the Full Page Live Preview's controls
+  // (see previewSheetControls/renderSheetPreview) - off by default. Affects
+  // both that preview and the actual print output (see
+  // buildAutoArrangedPages / buildPrintDom), which stay in sync since both
+  // read this same flag.
   let autoArrangeEnabled = false;
 
   // Queue item ids whose title is expanded to show the full text instead
@@ -819,12 +820,8 @@
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
 
-    printPreviewOverlay: document.getElementById('printPreviewOverlay'),
-    printPreviewSummary: document.getElementById('printPreviewSummary'),
-    printPreviewSheets: document.getElementById('printPreviewSheets'),
-    printPreviewCloseBtn: document.getElementById('printPreviewCloseBtn'),
-    printPreviewCancelBtn: document.getElementById('printPreviewCancelBtn'),
-    printPreviewConfirmBtn: document.getElementById('printPreviewConfirmBtn'),
+    previewSheetControls: document.getElementById('previewSheetControls'),
+    previewSheetSummary: document.getElementById('previewSheetSummary'),
     autoArrangeToggle: document.getElementById('autoArrangeToggle'),
 
     guidePreviewOverlay: document.getElementById('guidePreviewOverlay'),
@@ -1778,10 +1775,8 @@
 
   // Scales every sheet inside a vertical stack of full printed sheets to
   // fit the container's width - height is deliberately left generous
-  // (the container itself scrolls, see .preview-stage--sheets /
-  // .print-preview-sheets) rather than being divided up between sheets.
-  // Shared by the Full Page Live Preview and the Print Preview modal so
-  // their scaling can't drift apart from each other.
+  // (the container itself scrolls, see .preview-stage--sheets) rather than
+  // being divided up between sheets.
   function rescaleStackedSheets(container) {
     const width = container.clientWidth
       - parseFloat(getComputedStyle(container).paddingLeft || 0)
@@ -1817,24 +1812,37 @@
   }
 
   // A scaled-down stand-in for every sheet the current queue will print,
-  // stacked top to bottom exactly like the Print Preview modal's own
-  // renderGroupedPreview - same grouping (buildSheets, one sheet per
-  // uniform layout: Shelf Talkers, Half/Quarter Size, Large/Small Display
-  // Signs never share a sheet), same per-sheet label, and both call
-  // buildSheetPreviewElement for the actual markup, so the Full Page Live
-  // Preview can't drift from what "Print Sheet(s)" will produce. The one
-  // difference is editability - see makeSheetPreviewEditable below, applied
-  // here and not in the modal.
+  // stacked top to bottom - this *is* the print preview now (see
+  // setPreviewMode below, which is how the app bar's Print button gets
+  // here), so it branches on autoArrangeEnabled exactly like the actual
+  // print DOM does (see buildPrintDom) rather than only ever showing the
+  // grouped layout. Both branches share buildSheetPreviewElement /
+  // buildAutoSheetPreviewElement with buildPrintDom so this can't drift
+  // from what "Print Now" produces.
   function renderSheetPreview() {
     els.previewStage.classList.add('preview-stage--sheets');
     els.previewStage.innerHTML = '';
 
     if (queue.length === 0) {
       els.previewStage.innerHTML = '<p class="empty-hint">No shelf talkers queued yet. Add one using the form to see the full page here.</p>';
+      els.previewSheetSummary.textContent = '';
       return;
     }
 
+    if (autoArrangeEnabled) renderAutoArrangeSheetPreview();
+    else renderGroupedSheetPreview();
+  }
+
+  // Default (non-Auto-arrange) mode: one sheet per uniform layout - Shelf
+  // Talkers, Half/Quarter Size, and Large/Small Display Signs never share a
+  // sheet (see buildSheets).
+  function renderGroupedSheetPreview() {
     const sheets = buildSheets(queue);
+    const partialCount = sheets.filter((s) => s.items.length < SIGN_LAYOUTS[s.layoutKey].perSheet).length;
+
+    els.previewSheetSummary.textContent = `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} will print.`
+      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, try Auto-arrange (beta) above, or print as-is.` : '');
+
     const sheetGrids = sheets.map((sheet, i) => {
       const layout = SIGN_LAYOUTS[sheet.layoutKey];
       const isPartial = sheet.items.length < layout.perSheet;
@@ -1861,10 +1869,44 @@
     });
   }
 
+  // Auto-arrange (beta) mode: pages of mixed-size rows that can save paper
+  // by stacking different sign types on shared sheets (see
+  // buildAutoArrangedPages).
+  function renderAutoArrangeSheetPreview() {
+    const groupedSheets = buildSheets(queue);
+    const pages = buildAutoArrangedPages(queue);
+    const savedSheets = groupedSheets.length - pages.length;
+
+    els.previewSheetSummary.textContent = `${pages.length} sheet${pages.length === 1 ? '' : 's'} will print with Auto-arrange.`
+      + (savedSheets > 0
+        ? ` That's ${savedSheets} fewer sheet${savedSheets === 1 ? '' : 's'} than printing each type separately.`
+        : ' Sign types are stacked onto shared sheets where they fit.');
+
+    const pageGrids = pages.map((page, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'print-preview-sheet';
+      wrap.innerHTML = `
+        <div class="print-preview-sheet__label">
+          <span>Sheet ${i + 1} of ${pages.length} &mdash; Auto-arranged</span>
+        </div>
+      `;
+      const sheetDiv = buildAutoSheetPreviewElement(page);
+      makeSheetPreviewEditable(sheetDiv, page.rows.flatMap((row) => row.items));
+      sheetDiv.classList.add('print-preview-sheet__grid');
+      wrap.appendChild(makeScaler(sheetDiv));
+      els.previewStage.appendChild(wrap);
+      return sheetDiv;
+    });
+
+    requestAnimationFrame(() => {
+      pageGrids.forEach((grid) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
+      rescalePreviewStage();
+    });
+  }
+
   // One 11in x 8.5in sheet, built at its literal printed size with each item
-  // at its own printed width. Shared by the Full Page preview and the Print
-  // Preview modal so the two can't drift apart from each other or from the
-  // real print DOM (see buildPrintDom, which builds the same shapes).
+  // at its own printed width. Shared with buildPrintDom so the preview can't
+  // drift from the real print DOM.
   function buildSheetPreviewElement(sheet) {
     const layout = SIGN_LAYOUTS[sheet.layoutKey];
     const sheetDiv = document.createElement('div');
@@ -1880,17 +1922,17 @@
   }
 
   // Turns a freshly-built sheet's cards/signs into click-to-edit targets, so
-  // staff can jump straight into editing whatever they spot on the Full Page
-  // preview instead of hunting for the matching row in the Queue list below.
-  // Deliberately applied here in renderSheetPreview's caller rather than
-  // inside buildSheetPreviewElement itself, which the Print Preview modal
-  // also calls (see the comment there) - that dialog is judged purely by
-  // what will print, so it stays inert. items must be in the same order as
-  // sheetDiv's children (buildSheetPreviewElement appends exactly one
-  // element per item, in order).
+  // staff can jump straight into editing whatever they spot on the preview
+  // instead of hunting for the matching row in the Queue list below. items
+  // must be in the same order sheetDiv's .card/.sign descendants appear in
+  // the DOM - true for both buildSheetPreviewElement (cards/signs are direct
+  // children) and buildAutoSheetPreviewElement (cards/signs nested one level
+  // down inside .sheet-preview__row), since querySelectorAll walks the DOM
+  // in document order either way.
   function makeSheetPreviewEditable(sheetDiv, items) {
+    const targets = sheetDiv.querySelectorAll('.card, .sign');
     items.forEach((talker, i) => {
-      const el = sheetDiv.children[i];
+      const el = targets[i];
       if (!el) return;
       el.classList.add('is-editable');
       el.tabIndex = 0;
@@ -1944,7 +1986,6 @@
     clearTimeout(resizeDebounce);
     resizeDebounce = setTimeout(() => {
       rescalePreviewStage();
-      rescalePrintPreviewSheets();
       rescaleGuidePreview();
     }, 100);
   });
@@ -1959,12 +2000,23 @@
   els.form.addEventListener('input', schedulePreview);
   els.theme.addEventListener('change', () => { if (previewMode === 'single') renderPreview(); });
 
+  // Switches Live Preview between Current Talker and Full Page, keeping the
+  // toggle buttons, the Full Page-only controls (Auto-arrange toggle + sheet
+  // summary), and the app bar's Print button all in sync with it. Full Page
+  // is also the print preview (see renderSheetPreview) - see printBtn's own
+  // click handler below, which uses this to jump here before printing.
+  function setPreviewMode(mode) {
+    previewMode = mode;
+    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === mode);
+    els.previewSheetControls.hidden = mode !== 'sheet';
+    els.printBtn.textContent = mode === 'sheet' ? 'Print Now' : 'Print Sheet(s)…';
+    refreshPreview();
+  }
+
   els.previewToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.preview === previewMode) return;
-      previewMode = btn.dataset.preview;
-      setToggleState(els.previewToggleBtns, (b) => b === btn);
-      refreshPreview();
+      setPreviewMode(btn.dataset.preview);
     });
   });
 
@@ -2101,9 +2153,7 @@
     els.saveBtn.textContent = 'Save Changes';
     els.cancelEditBtn.hidden = false;
     document.querySelector('.tab[data-tab="manual"]').click();
-    previewMode = 'single';
-    setToggleState(els.previewToggleBtns, (b) => b.dataset.preview === 'single');
-    renderPreview();
+    setPreviewMode('single');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -4380,27 +4430,11 @@
     return { open, close };
   }
 
-  // Shows every sheet that will be printed - grouped and shaped exactly
-  // like the real print output - so staff can see how full each sheet is
-  // (and whether it's worth queuing more items first) before committing to
-  // the system print dialog. Also offers an opt-in "Auto-arrange (beta)"
-  // mode that can stack different sign types on the same sheet to save
-  // paper (see buildAutoArrangedPages) - off by default since it's new.
-  const printPreviewModal = createModal({
-    overlay: els.printPreviewOverlay,
-    closeBtns: [els.printPreviewCloseBtn, els.printPreviewCancelBtn],
-    onOpen: renderPrintPreviewContents,
-    onClose: () => { els.printPreviewSheets.innerHTML = ''; },
-  });
-
-  function openPrintPreview() {
-    if (queue.length === 0) return;
-    printPreviewModal.open();
-  }
-
-  // Same preview-before-printing pattern as the shelf-talker Print Preview
-  // above, for the one-page guide - see renderGuidePreviewContents/
-  // printGuide.
+  // Same preview-before-printing pattern the shelf-talker/sign flow used to
+  // use its own modal for (see renderSheetPreview above, which now folds
+  // that flow into the Live Preview panel's Full Page mode instead) - kept
+  // as an actual modal here since the one-page guide has no equivalent
+  // always-on panel to live in.
   const guidePreviewModal = createModal({
     overlay: els.guidePreviewOverlay,
     closeBtns: [els.guidePreviewCloseBtn, els.guidePreviewCancelBtn],
@@ -4408,95 +4442,23 @@
     onClose: () => { els.guidePreviewStage.innerHTML = ''; },
   });
 
-  function renderPrintPreviewContents() {
-    els.printPreviewSheets.innerHTML = '';
-    if (autoArrangeEnabled) renderAutoArrangePreview();
-    else renderGroupedPreview();
-  }
-
-  function renderGroupedPreview() {
-    const sheets = buildSheets(queue);
-    const partialCount = sheets.filter((s) => s.items.length < SIGN_LAYOUTS[s.layoutKey].perSheet).length;
-
-    els.printPreviewSummary.textContent = `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} will print.`
-      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, try Auto-arrange (beta) above, or print as-is.` : '');
-
-    const sheetEls = sheets.map((sheet, i) => {
-      const layout = SIGN_LAYOUTS[sheet.layoutKey];
-      const isPartial = sheet.items.length < layout.perSheet;
-
-      const wrap = document.createElement('div');
-      wrap.className = 'print-preview-sheet';
-      wrap.innerHTML = `
-        <div class="print-preview-sheet__label">
-          <span>Sheet ${i + 1} of ${sheets.length} &mdash; ${layout.label}</span>
-          <span class="print-preview-sheet__fill ${isPartial ? 'is-partial' : ''}">${sheet.items.length} of ${layout.perSheet} slots used</span>
-        </div>
-      `;
-      const grid = buildSheetPreviewElement(sheet);
-      grid.classList.add('print-preview-sheet__grid');
-      const scaler = makeScaler(grid);
-      wrap.appendChild(scaler);
-      els.printPreviewSheets.appendChild(wrap);
-      return grid;
-    });
-
-    requestAnimationFrame(() => {
-      sheetEls.forEach((grid) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
-      rescalePrintPreviewSheets();
-    });
-  }
-
-  // The modal's sheets are laid out at full 11in width and scaled to whatever
-  // the dialog can give them, same as the Full Page preview (see
-  // rescaleStackedSheets, which this shares).
-  function rescalePrintPreviewSheets() {
-    rescaleStackedSheets(els.printPreviewSheets);
-  }
-
-  // Renders auto-arranged pages: each page is a vertical stack of full-width
-  // shelves (see buildAutoArrangedPages), and a shelf can mix item
-  // types/sizes.
-  function renderAutoArrangePreview() {
-    const groupedSheets = buildSheets(queue);
-    const pages = buildAutoArrangedPages(queue);
-    const savedSheets = groupedSheets.length - pages.length;
-
-    els.printPreviewSummary.textContent = `${pages.length} sheet${pages.length === 1 ? '' : 's'} will print with Auto-arrange.`
-      + (savedSheets > 0
-        ? ` That's ${savedSheets} fewer sheet${savedSheets === 1 ? '' : 's'} than printing each type separately.`
-        : ' Sign types are stacked onto shared sheets where they fit.');
-
-    const pageEls = [];
-    pages.forEach((page, i) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'print-preview-sheet';
-      wrap.innerHTML = `
-        <div class="print-preview-sheet__label">
-          <span>Sheet ${i + 1} of ${pages.length} &mdash; Auto-arranged</span>
-        </div>
-      `;
-      const sheetDiv = buildAutoSheetPreviewElement(page);
-      sheetDiv.classList.add('print-preview-sheet__grid');
-      wrap.appendChild(makeScaler(sheetDiv));
-      els.printPreviewSheets.appendChild(wrap);
-      pageEls.push(sheetDiv);
-    });
-
-    requestAnimationFrame(() => {
-      pageEls.forEach((sheetDiv) => sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
-      rescalePrintPreviewSheets();
-    });
-  }
-
-  els.printBtn.addEventListener('click', openPrintPreview);
+  // First click jumps to the print preview (Full Page mode - see
+  // setPreviewMode); once it's showing, the button relabels itself "Print
+  // Now" (also set in setPreviewMode) and this same click prints. No
+  // separate confirm step beyond that: Full Page already renders exactly
+  // what buildPrintDom will send to the printer.
+  els.printBtn.addEventListener('click', () => {
+    if (queue.length === 0) return;
+    if (previewMode !== 'sheet') {
+      setPreviewMode('sheet');
+      els.previewStage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    printNow();
+  });
   els.autoArrangeToggle.addEventListener('change', () => {
     autoArrangeEnabled = els.autoArrangeToggle.checked;
-    renderPrintPreviewContents();
-  });
-  els.printPreviewConfirmBtn.addEventListener('click', () => {
-    printPreviewModal.close();
-    printNow();
+    if (previewMode === 'sheet') renderSheetPreview();
   });
   els.guidePreviewConfirmBtn.addEventListener('click', () => {
     guidePreviewModal.close();
