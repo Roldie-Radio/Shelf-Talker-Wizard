@@ -1036,6 +1036,20 @@ test('pickBestMatch returns nothing for an empty candidate list', () => {
   assert.equal(pickBestMatch([], 'Josh Cellars Cabernet Sauvignon 2022'), undefined);
 });
 
+// Regression test for a real miss: tokenize's word pattern used to be
+// [a-z0-9], which drops every character of a non-Latin word (Cyrillic,
+// here) rather than matching it - a Ukrainian import's query tokenized to
+// nothing at all, so scoreCandidates bailed out before it ever compared
+// the real Untappd hit sitting right there in the candidate list. See the
+// comment above tokenize in productImport.js.
+test('pickBestMatch still matches a query written in a non-Latin script (Cyrillic)', () => {
+  const candidates = [
+    { url: 'https://untappd.com/b/carlsberg-ukraine-lvivske-1715/1', title: 'Carlsberg Ukraine Львівське 1715' },
+  ];
+  const match = pickBestMatch(candidates, 'Carlsberg Ukraine Львівське 1715');
+  assert.equal(match.url, 'https://untappd.com/b/carlsberg-ukraine-lvivske-1715/1');
+});
+
 // Regression test for a real miss: a Scan UPC beer title carries style
 // words ("Dry Irish Stout") that Untappd's own concise "<Brewery> <Beer
 // Name>" candidate title never repeats, and that candidate title in turn
