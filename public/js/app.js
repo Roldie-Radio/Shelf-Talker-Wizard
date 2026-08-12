@@ -41,8 +41,9 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
-      version: '3.2.7',
+      version: '3.3.0',
       items: [
+        'Removed the product cache and the Advanced > View Database dialog (a broken duplicate of History that never actually showed the cached-product counts it claimed to) - SKU Lookup, Scan UPC, and Search by Name (Beer) are now live-only, with a real error on a failed lookup instead of a stale cached fallback. Print History is unaffected.',
         'Fixed: the "Pick the Right Beer" dialog could open with the recommended pick\'s card, "Use Recommended Pick" button, and other-match rows already greyed out and unclickable. That happened if a previous pick was cancelled (Cancel/Escape/backdrop) while its own lookup was still in flight - the leftover disabled state stuck around on the next, unrelated tie. Every open now starts from a clean, clickable state, and a cancelled pick\'s in-flight lookup no longer applies its fields after the fact.',
       ],
     },
