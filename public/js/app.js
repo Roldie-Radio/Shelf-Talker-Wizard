@@ -554,11 +554,10 @@
 
   let previewMode = 'single'; // 'single' | 'sheet'
 
-  // Auto-arrange (beta), opt-in from the Full Page Live Preview's controls
-  // (see previewSheetControls/renderSheetPreview) - off by default. Affects
-  // both that preview and the actual print output (see
-  // buildAutoArrangedPages / buildPrintDom), which stay in sync since both
-  // read this same flag.
+  // Auto-arrange, opt-in from the Full Page Live Preview's controls (see
+  // previewSheetControls/renderSheetPreview) - off by default. Affects both
+  // that preview and the actual print output (see buildAutoArrangedPages /
+  // buildPrintDom), which stay in sync since both read this same flag.
   let autoArrangeEnabled = false;
 
   // Queue item ids whose title is expanded to show the full text instead
@@ -1841,7 +1840,7 @@
     const partialCount = sheets.filter((s) => s.items.length < SIGN_LAYOUTS[s.layoutKey].perSheet).length;
 
     els.previewSheetSummary.textContent = `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} will print.`
-      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, try Auto-arrange (beta) above, or print as-is.` : '');
+      + (partialCount ? ` ${partialCount} of them ${partialCount === 1 ? 'is' : 'are'} only partially filled - add more items first to use less paper, try Auto-arrange above, or print as-is.` : '');
 
     const sheetGrids = sheets.map((sheet, i) => {
       const layout = SIGN_LAYOUTS[sheet.layoutKey];
@@ -1869,7 +1868,7 @@
     });
   }
 
-  // Auto-arrange (beta) mode: pages of mixed-size rows that can save paper
+  // Auto-arrange mode: pages of mixed-size rows that can save paper
   // by stacking different sign types on shared sheets (see
   // buildAutoArrangedPages).
   function renderAutoArrangeSheetPreview() {

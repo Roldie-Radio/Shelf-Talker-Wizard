@@ -968,7 +968,7 @@ h1, h2, h3 { margin: 0; }
   transform: scale(1);
 }
 
-/* Auto-arrange (beta) preview: unlike the grid above (one uniform card/sign
+/* Auto-arrange preview: unlike the grid above (one uniform card/sign
    size and grid shape per sheet), an auto-arranged sheet is a vertical
    stack of rows that can each be a different sign type/size, so it's laid
    out with flex instead of a shared CSS grid - see .sheet--auto below for
@@ -3066,7 +3066,7 @@ h1, h2, h3 { margin: 0; }
   .sheet .card,
   .sheet .sign { box-shadow: none; }
 
-  /* Auto-arrange (beta): a page is a vertical stack of full-width rows
+  /* Auto-arrange: a page is a vertical stack of full-width rows
      (see buildAutoArrangedPages in app.js) instead of a uniform grid, since
      a page can mix different sign types/sizes. --print-w is set per row
      rather than per sheet; the .sheet .card/.sign rule above still applies
