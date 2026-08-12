@@ -440,12 +440,117 @@ h1, h2, h3 { margin: 0; }
 }
 .type-product-row .field > span { font-size: 0.92rem; font-weight: 700; color: var(--ui-ink); }
 .type-product-row .field select { border-color: var(--ui-accent); border-width: 1.5px; }
+.type-product-row .field-select__trigger { border-color: var(--ui-accent); border-width: 1.5px; }
 .type-product-divider {
   height: 1px;
   background: linear-gradient(to right, var(--ui-accent), var(--ui-border) 55%);
   margin: 1rem 0 1.05rem;
   opacity: 0.8;
 }
+
+/* ---------- Field select (Type / Product Type dropdowns) ---------- */
+
+/* A custom button+listbox that stands in for the hidden .type-select/
+   .product-type-select <select> it's built next to (see initFieldSelects
+   in app.js and the note above .type-product-row in index.html) -
+   deliberately styled and operated like the menu bar's own dropdowns
+   above (.menubar__item/.menubar__dropdown/.menubar__dropdown-item) so
+   these two feel like the same control instead of a native OS popup
+   sitting next to a custom-drawn one. The underlying <select> stays the
+   real source of truth (initFieldSelects only ever reads/writes its
+   .value and dispatches 'change' on it), so nothing here needs to know
+   about currentSignType/currentSignSize/currentCategory. */
+.field-select { position: relative; }
+.field-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  width: 100%;
+  font: inherit;
+  font-weight: 400;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-field);
+  color: var(--ui-ink);
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.field-select__trigger:hover { background: var(--ui-panel-alt); }
+.field-select__trigger:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+.field-select.is-open .field-select__trigger {
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+/* .field span (line ~368) is a class+type selector that would otherwise
+   win over these spans' inherited color (a direct rule match always beats
+   inheritance, regardless of specificity) and flatten them to
+   --ui-ink-soft in every state - same conflict, same fix, as
+   .font-size-control__icon/__unit above. color: inherit hands it back to
+   .field-select__trigger/__option, which already carry the right color
+   for hover/open/selected. */
+.field .field-select__value,
+.field .field-select__option-label,
+.field .field-select__option-check { color: inherit; }
+.field-select__value { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-select__chevron {
+  flex: none;
+  width: 0.8em;
+  height: 0.8em;
+  color: inherit;
+  opacity: 0.7;
+  transition: transform 0.15s ease;
+}
+.field-select.is-open .field-select__chevron { transform: rotate(180deg); }
+
+/* Same floating-panel treatment as .menubar__dropdown - see the note
+   there on why .menubar (and, here, .panel/.field-row) can't set
+   overflow, since that's what lets this escape its field and float over
+   whatever's below it. */
+.field-select__dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+  padding: 0.35rem;
+  z-index: 25;
+  font-size: 0.93em;
+}
+.field-select.is-open .field-select__dropdown { display: block; }
+
+.field-select__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  padding: 0.45em 0.7em;
+  border-radius: 6px;
+  color: var(--ui-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.field-select__option:hover,
+.field-select__option:focus,
+.field-select__option.is-active { background: var(--ui-accent); color: var(--ui-on-accent); outline: none; }
+/* Reserves the checkmark's width on every row (rather than only on the
+   selected one) so the labels all line up instead of the selected row's
+   text jumping right by one glyph. */
+.field-select__option-check { width: 1em; flex: none; opacity: 0; }
+.field-select__option[aria-selected="true"] { font-weight: 700; }
+.field-select__option[aria-selected="true"] .field-select__option-check { opacity: 1; }
 
 .tasting-notes-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .tasting-notes-row .help-text { margin: 0; }
