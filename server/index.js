@@ -11,8 +11,7 @@ const {
   getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, searchByName, previewExport,
 } = require('./upcCatalog');
 const {
-  recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry,
-  upsertCachedProduct, getCachedProduct, getStats,
+  recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
@@ -143,15 +142,12 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // description/brewery/style/ABV/IBU/rating a retail page wouldn't have.
   //
   // Every lookup here is live - a "still fresh, skip the network" shortcut
-  // used to live here, keyed by SKU, but it had a real cost: a beer that
-  // missed on Untappd (or came back ambiguous) got cached as "fresh" for a
-  // full day exactly like a successful lookup, so a fix that would have
-  // found it on a retry never got the chance to - staff just saw the exact
-  // same stale result the next time they looked it up. `cached` below is
-  // read only as a fallback (see db.js) - a *failed* live attempt still
-  // falls back to whatever's cached, however old (fromCache + stale: true),
-  // rather than a hard error, since a stale price beats no data at all when
-  // the site is temporarily blocking requests.
+  // (and, later, a stale-cache fallback on a failed lookup) used to live
+  // here, but both got removed: a beer that missed on Untappd (or came back
+  // ambiguous) got cached as "fresh" for a full day exactly like a
+  // successful lookup, so a fix that would have found it on a retry never
+  // got the chance to - staff just saw the exact same stale result the next
+  // time they looked it up. A failed lookup is now a real error instead.
   app.post('/api/sku-lookup', async (req, res) => {
     const { sku, category } = req.body || {};
 
@@ -160,17 +156,11 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     }
     const trimmedSku = sku.trim();
     const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
-    const cached = getCachedProduct({ keyType: 'sku', key: trimmedSku });
 
     try {
       const product = await lookupSku({ sku: trimmedSku, category });
-      const data = { ...product, category: normalizedCategory };
-      upsertCachedProduct({ keyType: 'sku', key: trimmedSku, source: 'sku-lookup', data });
-      res.json(data);
+      res.json({ ...product, category: normalizedCategory });
     } catch (err) {
-      if (cached) {
-        return res.json({ ...cached.data, fromCache: true, stale: true });
-      }
       res.status(502).json({ error: err.message || 'Could not look up that SKU.' });
     }
   });
@@ -274,16 +264,13 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // store-SKU column instead of a typed-in one. Both steps are
   // independently best-effort, same as the Wine/Spirits description above.
   //
-  // Also layered with the same product cache /api/sku-lookup uses (see its
-  // note above), keyed by UPC instead of SKU: every lookup is live,
-  // `cached` below is read only as a fallback for a failed live attempt -
-  // stale data (clearly marked) beats sending staff to Manual Entry.
-  // `lookupCategory` still gets folded into what's written to the cache
-  // (kept separate from `category`, the WinePOS export's own department/
-  // class column - Wine/Spirits' own enrichment never overwrites it, though
-  // a successful Beer store lookup does, the same as it replaces every
-  // other export-only field with the store's own) purely as a record of
-  // what a stale fallback actually contains, not to gate anything here.
+  // Every lookup here is live, same as SKU Lookup above - a failed lookup
+  // (store site blocked, export file unreadable) is a real error, not a
+  // stale fallback. `lookupCategory` is kept separate from `category` (the
+  // WinePOS export's own department/class column) since Wine/Spirits' own
+  // enrichment never overwrites it, though a successful Beer store lookup
+  // does, the same as it replaces every other export-only field with the
+  // store's own.
   app.post('/api/upc-lookup', async (req, res) => {
     const { upc, category } = req.body || {};
     if (!upc || typeof upc !== 'string' || !upc.trim()) {
@@ -291,20 +278,14 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     }
     const trimmedUpc = upc.trim();
     const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
-    const cached = getCachedProduct({ keyType: 'upc', key: trimmedUpc });
 
     try {
       const rawProduct = lookupUpc(trimmedUpc);
       const product = normalizedCategory === 'beer'
         ? await enrichBeerScanFromStore(rawProduct)
         : await enrichWineDescriptionFromStore(rawProduct);
-      const data = { ...product, lookupCategory: normalizedCategory };
-      upsertCachedProduct({ keyType: 'upc', key: trimmedUpc, source: 'scan-upc', data });
-      res.json(data);
+      res.json({ ...product, lookupCategory: normalizedCategory });
     } catch (err) {
-      if (cached) {
-        return res.json({ ...cached.data, fromCache: true, stale: true });
-      }
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not look up that UPC.', code: err.code });
     }
@@ -314,12 +295,10 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // this ranks matches out of the same local WinePOS export file Scan UPC
   // reads above (see searchByName in upcCatalog.js) - no network request,
   // same as UPC lookup's own local-file path, and the same NO_EXPORT_PATH/
-  // EXPORT_NOT_FOUND/EXPORT_UNREADABLE error codes. Unlike SKU/UPC lookup
-  // there's no single canonical match to cache here - this hands back a
-  // short list of candidates for staff to choose from, and nothing gets
-  // written to the product cache (db.js) until a specific one is picked, at
-  // which point picking it just fills the form the same way the other
-  // lookup tabs' results do.
+  // EXPORT_NOT_FOUND/EXPORT_UNREADABLE error codes. This hands back a short
+  // list of candidates for staff to choose from; picking one (see
+  // /api/name-search-select below) just fills the form the same way the
+  // other lookup tabs' results do.
   //
   // A blank/missing query returns an empty result list rather than a 400 -
   // the client only calls this once someone's actually typed something, but
@@ -352,11 +331,8 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
   // rather than failing the pick outright - the export's own fields are
   // still good enough to queue a talker from.
   //
-  // Shares the SKU-keyed product cache /api/sku-lookup and /api/upc-lookup
-  // use, same as those two: every pick runs a live Untappd search, `cached`
-  // below is read only as a fallback if that search fails outright - and a
-  // Search by Name pick with no SKU in the export just skips caching
-  // rather than failing.
+  // Every pick runs a live Untappd search, same as SKU Lookup/Scan UPC - a
+  // search that fails outright is a real error, not a stale fallback.
   app.post('/api/name-search-select', async (req, res) => {
     const { product, category } = req.body || {};
     if (!product || typeof product !== 'object' || !product.title) {
@@ -367,15 +343,10 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
       return res.json({ ...product, category: normalizedCategory });
     }
 
-    const sku = typeof product.sku === 'string' ? product.sku.trim() : '';
-    const cached = sku ? getCachedProduct({ keyType: 'sku', key: sku }) : null;
-
     try {
       const data = { ...(await enrichBeerFromUntappd(product)), category: 'beer' };
-      if (sku) upsertCachedProduct({ keyType: 'sku', key: sku, source: 'name-search', data });
       res.json(data);
     } catch (err) {
-      if (cached) return res.json({ ...cached.data, fromCache: true, stale: true });
       res.status(502).json({ error: err.message || 'Could not search Untappd for that beer.' });
     }
   });
@@ -434,15 +405,6 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     const deleted = deleteHistoryEntry(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'No history entry with that id.' });
     res.json({ success: true });
-  });
-
-  // Backs the desktop app's "View Database" dialog (Advanced menu) - counts
-  // plus a page of the most recent Print History rows, reusing searchHistory
-  // with no query rather than a separate query, so this list is guaranteed
-  // to stay in sync with whatever the History panel itself would show.
-  app.get('/api/db-preview', (req, res) => {
-    const { rows, total } = searchHistory({ limit: req.query.limit });
-    res.json({ history: rows, historyTotal: total, stats: getStats() });
   });
 
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's

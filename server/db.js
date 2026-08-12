@@ -1,11 +1,9 @@
 // Local SQLite storage, layered on top of the browser localStorage queue
 // (public/js/app.js) rather than replacing it - localStorage stays exactly
 // what it's always been, the *live, editable, in-progress* queue. This adds
-// two things localStorage can't: a permanent record of what was actually
-// printed (talkers vanish from the queue once removed, but the History
-// panel keeps every print), and a product cache keyed by SKU/UPC so a
-// second lookup of the same product doesn't have to hit the network (SKU
-// Lookup) or re-read the export file (Scan UPC) again.
+// what localStorage can't: a permanent record of what was actually printed
+// (talkers vanish from the queue once removed, but the History panel keeps
+// every print).
 //
 // One SQLite file (data.db) in the same per-PC directory upcCatalog.js's
 // config.json lives in (see appData.js) - a single file on disk, no server
@@ -39,14 +37,12 @@ function applySchema(db) {
     CREATE INDEX IF NOT EXISTS idx_printed_talkers_title ON printed_talkers(title);
     CREATE INDEX IF NOT EXISTS idx_printed_talkers_sku ON printed_talkers(sku);
 
-    CREATE TABLE IF NOT EXISTS product_cache (
-      key_type TEXT NOT NULL,
-      key TEXT NOT NULL,
-      source TEXT,
-      updated_at TEXT NOT NULL,
-      data TEXT NOT NULL,
-      PRIMARY KEY (key_type, key)
-    );
+    -- The product cache (SKU/UPC lookups) is gone - every lookup is a
+    -- straight live fetch now, with a real error instead of a stale
+    -- fallback on failure. Dropped here (not just left uncreated) so a PC
+    -- that already has one from before this change actually loses the
+    -- stored data on its next launch, rather than it sitting around unused.
+    DROP TABLE IF EXISTS product_cache;
   `);
 }
 
@@ -170,74 +166,15 @@ function deleteHistoryEntry(id) {
   return db.prepare('DELETE FROM printed_talkers WHERE id = ?').run(id).changes > 0;
 }
 
-// ================================================================
-// Product cache - keyed by (keyType, key) so a SKU and a UPC that happen to
-// share digits can never collide. Unlike history above, this *is* an
-// upsert: only the latest known data for a product matters here, not a log
-// of every time it was looked up.
-//
-// Every lookup route in server/index.js writes the live result here on
-// success, but never reads it back to *skip* a live lookup - a "still
-// fresh, skip the network" shortcut used to live here (isFresh/
-// CACHE_FRESH_MS, since removed) until it turned out to have a real cost:
-// a beer that missed on Untappd (or, later, one that came back ambiguous)
-// got cached as "fresh" for a full day exactly like a successful lookup,
-// so a fix that would have found it on a retry never got the chance to -
-// staff just saw the exact same stale failure the next time they scanned
-// it, with only a small "(cached)" note as any clue why. Every lookup is
-// live now; this table's only remaining job is the fallback in
-// server/index.js's own catch blocks - a *failed* live attempt (site
-// blocked, Untappd down) still serves whatever's cached here, however old,
-// marked stale, rather than a hard error over data that was fine five
-// minutes ago.
-// ================================================================
-
-function normalizeKey(key) {
-  return String(key).trim().toLowerCase();
-}
-
-function upsertCachedProduct({ keyType, key, source, data }) {
-  if (!keyType || !key) return;
-  const db = getDb();
-  db.prepare(`
-    INSERT INTO product_cache (key_type, key, source, updated_at, data)
-    VALUES (@keyType, @key, @source, @updatedAt, @data)
-    ON CONFLICT(key_type, key) DO UPDATE SET
-      source = excluded.source,
-      updated_at = excluded.updated_at,
-      data = excluded.data
-  `).run({
-    keyType,
-    key: normalizeKey(key),
-    source: source || '',
-    updatedAt: nowIso(),
-    data: JSON.stringify(data || {}),
-  });
-}
-
-function getCachedProduct({ keyType, key }) {
-  if (!keyType || !key) return null;
-  const db = getDb();
-  const row = db.prepare('SELECT * FROM product_cache WHERE key_type = ? AND key = ?').get(keyType, normalizeKey(key));
-  if (!row) return null;
-  return {
-    data: JSON.parse(row.data),
-    source: row.source,
-    updatedAt: row.updated_at,
-    ageMs: Date.now() - new Date(row.updated_at).getTime(),
-  };
-}
-
-// Backs the "View Database" and "Server PC" dialogs (Advanced menu) - a
-// cheap sanity-check number for each table rather than anything about their
-// contents, so a store PC's staff/support can tell at a glance whether this
-// PC actually has real accumulated data (a healthy, long-used PC) versus a
-// fresh install with nothing in it yet.
+// Backs the "Server PC" dialog (Advanced menu) - a cheap sanity-check
+// number rather than anything about the data's contents, so a store PC's
+// staff/support can tell at a glance whether this PC actually has real
+// accumulated data (a healthy, long-used PC) versus a fresh install with
+// nothing in it yet.
 function getStats() {
   const db = getDb();
   return {
     printedTalkers: db.prepare('SELECT COUNT(*) AS n FROM printed_talkers').get().n,
-    cachedProducts: db.prepare('SELECT COUNT(*) AS n FROM product_cache').get().n,
   };
 }
 
@@ -248,8 +185,6 @@ module.exports = {
   searchHistory,
   getHistoryEntry,
   deleteHistoryEntry,
-  upsertCachedProduct,
-  getCachedProduct,
   getStats,
   // Exported for tests only.
   dbFilePath,

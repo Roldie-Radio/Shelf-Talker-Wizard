@@ -16,7 +16,6 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 - **Print-ready sheets** &mdash; queue up talkers and print; they're laid out 6-up on Letter-size paper (3 columns &times; 2 rows), the same arrangement as the original template, paginating automatically if you have more than 6.
 - Your queue is saved in the browser (localStorage) so it survives a refresh.
 - **Print History** &mdash; every talker actually printed is kept in a permanent, searchable record (a local SQLite database), separate from the queue above. Search by title or SKU and click **Reprint** to add a past talker back into the queue without re-entering it.
-- **Product cache** &mdash; SKU Lookup and Scan UPC both remember what they found for a given SKU/UPC and use it as a fallback: every lookup is live, but a *failed* one falls back to whatever's cached (clearly marked, however old) rather than a hard error.
 - **In-app Help** &mdash; the Help button in the top right (and the desktop app's Help menu) opens a quick-reference panel covering every tab, SKU lookup, importing, History, and printing, so staff aren't sent looking for this README.
 - **What's New** &mdash; a popup shows automatically the first time the app launches after an update, and the desktop app's Help menu reopens it anytime with the full history.
 
@@ -96,7 +95,7 @@ The installer is written to `dist/`.
 - The `build` section of `package.json` configures `electron-builder` to produce an NSIS
   installer with Desktop/Start Menu shortcuts.
 
-`better-sqlite3` (Print History/product cache, see below) is a native module, which needs
+`better-sqlite3` (Print History, see below) is a native module, which needs
 to be compiled against whichever runtime loads it. `npm install` builds it for plain
 Node.js, which is all `npm start`/`npm test`/`npm run dev` ever need. `npm run dist:win`
 (and CI's Windows installer build) handles rebuilding it for Electron's own Node version
@@ -188,7 +187,7 @@ From then on, each of those other registers fetches the Server PC's export file 
 
 The dialog always shows a status line under the checkbox with the timestamp and source of the most recent successful sync (e.g. "Last synced from SERVER-PC at 2:14 PM"), so it's easy to confirm a register is actually staying current, plus whatever error is currently blocking a sync, if any. A **Sync Now** button next to the checkbox forces an immediate pull instead of waiting up to ~30 seconds for the next automatic one &mdash; handy right after changing the export on the Server PC, or when a register just came back on the network.
 
-This only ever moves the export file itself &mdash; Print History and the product cache still aren't shared between PCs, and nothing on the Server PC's main app (its own web UI) becomes reachable from the network; only the export file itself is served, over its own small, read-only, single-purpose network port (41235 by default), the same spirit as the Server PC discovery beacon (41234/UDP) that's been there since the Server PC flag was introduced. Both may need a one-time "Allow" click in Windows Firewall the first time the app runs on a network profile that prompts for it.
+This only ever moves the export file itself &mdash; Print History still isn't shared between PCs, and nothing on the Server PC's main app (its own web UI) becomes reachable from the network; only the export file itself is served, over its own small, read-only, single-purpose network port (41235 by default), the same spirit as the Server PC discovery beacon (41234/UDP) that's been there since the Server PC flag was introduced. Both may need a one-time "Allow" click in Windows Firewall the first time the app runs on a network profile that prompts for it.
 
 ## Printing
 
@@ -220,21 +219,16 @@ This is backed by a small local SQLite database (`data.db`), stored in the same
 per-PC folder as the Scan UPC export-file setting (see below) &mdash; nothing here
 is sent anywhere or shared between PCs.
 
-### Product cache
-
-SKU Lookup, Scan UPC, and Search by Name (Beer) all write whatever they find into
-the same database, keyed by SKU or UPC &mdash; but every lookup is live; nothing
-here is ever read back just to skip a network/file read. A repeat lookup of the
-same SKU/UPC always re-runs, even seconds later, so a beer that missed on
-Untappd (or came back ambiguous &mdash; see below) always gets a fresh attempt
-instead of being stuck showing the same stale result. If a lookup fails outright
-(site blocked, export file missing, etc.), the last cached copy for that SKU/UPC
-is used as a fallback instead of a hard error, clearly marked as possibly stale
-&mdash; a review-before-you-trust-it value beats nothing.
+Every SKU Lookup, Scan UPC, and Search by Name (Beer) lookup is live &mdash; a repeat
+lookup of the same SKU/UPC always re-runs, even seconds later, so a beer that
+missed on Untappd (or came back ambiguous &mdash; see below) always gets a fresh
+attempt instead of being stuck showing the same result. If a lookup fails outright
+(site blocked, export file missing, etc.), it's a real error rather than a stale
+fallback.
 
 ## Advanced menu (desktop app)
 
-The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, below
+The desktop app's **Advanced** menu has three troubleshooting/admin dialogs, below
 **Toggle Developer Tools**:
 
 - **Export File Settings&hellip;** &mdash; where the Scan UPC method's export file path
@@ -255,18 +249,15 @@ The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, belo
   already on screen &mdash; so you can check whether a specific item is
   actually in the export without opening it elsewhere. If nothing's configured
   yet, **Open Export File Settings** jumps straight there.
-- **View Database&hellip;** &mdash; counts for Print History and the product cache,
-  plus a table of the most recently printed talkers, confirming this PC has real
-  accumulated data.
 - **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. Marking
   one makes it broadcast a small announcement on the local network every few
   seconds, so *other* PCs running the app can see which one it is (the dialog
   shows "Main store PC on this network" &mdash; its hostname and address &mdash;
   alongside this PC's own LAN IP address and database counts), and starts
   serving its own configured export file to other PCs' auto-sync (see "Sharing
-  the export file across registers" above). Print History and the product
-  cache still aren't shared between PCs &mdash; each keeps its own, and the
-  main app itself still isn't reachable from the network; only the small
+  the export file across registers" above). Print History still isn't shared
+  between PCs &mdash; each PC keeps its own, and the main app itself still
+  isn't reachable from the network; only the small
   discovery broadcast and the export file's own small, read-only network port
   leave the PC. Unmarking a PC (or closing the app) stops both; other PCs stop
   showing it within about 15 seconds, and their next auto-sync attempt just
@@ -276,14 +267,14 @@ The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, belo
 
 ```
 server/
-  index.js            Express app: serves the frontend and the URL-import/History/product-cache APIs
+  index.js            Express app: serves the frontend and the URL-import/History APIs
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
                       plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
                       the Find Tasting Notes button and SKU Lookup method
   upcCatalog.js       Reads a local WinePOS product export file (or, with auto-sync on, the local copy
                       exportSync.js's puller last wrote) and looks products up by UPC (Scan UPC method)/name
                       (Search by Name method) - no network request itself, unlike everything else in server/
-  db.js               Local SQLite (better-sqlite3): the Print History log, the SKU/UPC product cache, and stats
+  db.js               Local SQLite (better-sqlite3): the Print History log and stats
   appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by
                       upcCatalog.js's config.json, db.js's data.db, and serverConfig.js's server-config.json,
                       so they all agree on where it lives
@@ -306,7 +297,7 @@ test/
   print-css-sync.test.js  Guards the JS geometry against the print CSS
   upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence, export preview -
                           including a real WinePOS export (see fixtures/) with a BOM, CRLF, and a dropped-leading-zero UPC
-  db.test.js              Print History log + product cache: search/paginate/delete, cache keying, stats
+  db.test.js              Print History log: search/paginate/delete, stats
   serverConfig.test.js    Server PC flag persistence
   discovery.test.js       LAN announcement wire format, staleness, self-filtering, and a real send/receive round trip
   exportSync.test.js      Export-serve HTTP server (real request/response round trip) and the auto-sync puller

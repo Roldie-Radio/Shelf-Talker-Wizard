@@ -161,92 +161,35 @@ test('deleteHistoryEntry removes the row and returns true, false if already gone
   });
 });
 
-// ---------- product cache ----------
-
-test('upsertCachedProduct + getCachedProduct round-trips by key', () => {
-  withTempDb(() => {
-    db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { title: 'Josh Cellars', price: '13.99' } });
-    const cached = db.getCachedProduct({ keyType: 'sku', key: '09144' });
-    assert.equal(cached.data.title, 'Josh Cellars');
-    assert.equal(cached.source, 'sku-lookup');
-  });
-});
-
-test('getCachedProduct returns null on a miss', () => {
-  withTempDb(() => {
-    assert.equal(db.getCachedProduct({ keyType: 'sku', key: 'nope' }), null);
-  });
-});
-
-test('product cache key lookup is case/whitespace-insensitive', () => {
-  withTempDb(() => {
-    db.upsertCachedProduct({ keyType: 'upc', key: '  085000010652  ', source: 'scan-upc', data: { title: 'Josh Cellars' } });
-    const cached = db.getCachedProduct({ keyType: 'upc', key: '085000010652' });
-    assert.ok(cached);
-    assert.equal(cached.data.title, 'Josh Cellars');
-  });
-});
-
-test('a SKU and UPC that share the same digits do not collide', () => {
-  withTempDb(() => {
-    db.upsertCachedProduct({ keyType: 'sku', key: '12345', source: 'sku-lookup', data: { title: 'From SKU Lookup' } });
-    db.upsertCachedProduct({ keyType: 'upc', key: '12345', source: 'scan-upc', data: { title: 'From Scan UPC' } });
-    assert.equal(db.getCachedProduct({ keyType: 'sku', key: '12345' }).data.title, 'From SKU Lookup');
-    assert.equal(db.getCachedProduct({ keyType: 'upc', key: '12345' }).data.title, 'From Scan UPC');
-  });
-});
-
-test('upsertCachedProduct overwrites rather than duplicating an existing key', () => {
-  withTempDb(() => {
-    db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { price: '13.99' } });
-    db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { price: '11.99' } });
-    assert.equal(db.getCachedProduct({ keyType: 'sku', key: '09144' }).data.price, '11.99');
-  });
-});
-
-// getCachedProduct itself has no notion of "too old to use" - every lookup
-// route in server/index.js is live now (see the comment above the product
-// cache section in db.js) and only ever reads this back as a last-resort
-// fallback after a live attempt fails, however old the cached copy is.
-test('getCachedProduct returns an entry regardless of its age', () => {
-  withTempDb(() => {
-    db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { price: '13.99' } });
-    // Backdate updated_at directly rather than waiting - getDb() is
-    // exported for exactly this kind of test-only direct access.
-    const old = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    db.getDb().prepare('UPDATE product_cache SET updated_at = ? WHERE key_type = ? AND key = ?').run(old, 'sku', '09144');
-
-    const cached = db.getCachedProduct({ keyType: 'sku', key: '09144' });
-    assert.equal(cached.data.price, '13.99');
-    assert.ok(cached.ageMs > 29 * 24 * 60 * 60 * 1000);
-  });
-});
-
 // ---------- getStats ----------
 
 test('getStats reports zero counts on a fresh database', () => {
   withTempDb(() => {
-    assert.deepEqual(db.getStats(), { printedTalkers: 0, cachedProducts: 0 });
+    assert.deepEqual(db.getStats(), { printedTalkers: 0 });
   });
 });
 
-test('getStats counts printed talkers and cached products independently', () => {
+test('getStats counts printed talkers', () => {
   withTempDb(() => {
     db.recordPrintedTalkers([sampleTalker({ id: 'a' }), sampleTalker({ id: 'b' })]);
-    db.upsertCachedProduct({ keyType: 'sku', key: '09144', source: 'sku-lookup', data: { title: 'Josh Cellars' } });
-    assert.deepEqual(db.getStats(), { printedTalkers: 2, cachedProducts: 1 });
+    assert.deepEqual(db.getStats(), { printedTalkers: 2 });
   });
 });
 
-test('getStats counts each product-cache row once even with multiple UPC-variant keys', () => {
+// The product cache (SKU/UPC lookups) was removed along with its
+// product_cache table - applySchema now drops it outright on startup so a
+// PC that already had one loses the stored data too, not just stops adding
+// to it.
+test('applySchema drops a pre-existing product_cache table', () => {
   withTempDb(() => {
-    // Distinct from upcCatalog.js's own UPC-A/EAN-13 variant indexing (which
-    // stores the same product under two Map keys in memory) - here each
-    // upsert is a single row keyed by (key_type, key), so two different
-    // *keys* for the same conceptual product genuinely are two rows; this
-    // just confirms getStats reflects row count, not some deduped notion.
-    db.upsertCachedProduct({ keyType: 'upc', key: '085000010652', source: 'scan-upc', data: {} });
-    db.upsertCachedProduct({ keyType: 'upc', key: '0085000010652', source: 'scan-upc', data: {} });
-    assert.equal(db.getStats().cachedProducts, 2);
+    const conn = db.getDb();
+    conn.exec('CREATE TABLE product_cache (key_type TEXT, key TEXT, data TEXT)');
+    conn.prepare('INSERT INTO product_cache (key_type, key, data) VALUES (?, ?, ?)').run('sku', '09144', '{}');
+    db.closeDb();
+
+    // Reopening re-runs applySchema, which should drop the table this time.
+    const reopened = db.getDb();
+    const table = reopened.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'product_cache'").get();
+    assert.equal(table, undefined);
   });
 });
