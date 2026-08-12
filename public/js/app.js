@@ -41,9 +41,21 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
-      version: '3.1.6',
+      version: '3.2.2',
       items: [
         'New: the "Pick the Right Beer" dialog (Scan UPC, SKU Lookup, Search by Name) now highlights a Recommended pick, with up to 2 other options below it and any further tie folded behind a "+N more" toggle - instead of a flat, undifferentiated list. The recommendation starts as Untappd\'s own top-ranked candidate and re-ranks itself by check-in count as each candidate\'s own page loads in the background.',
+      ],
+    },
+    {
+      version: '3.2.1',
+      items: [
+        'The Type and Product Type dropdowns (Edit Talker, Website, and Search tabs) now open as a floating panel styled like the menu bar\'s own dropdowns, instead of the browser\'s plain native list.',
+      ],
+    },
+    {
+      version: '3.2.0',
+      items: [
+        'Beer shelf talkers: dropped the country-letter caption ("US", "MX", "UK"...) under both the brewery-country flag and the country silhouette badge - the graphic already identifies the country, so the label was redundant. The US-state badge (e.g. "NC") is unaffected.',
       ],
     },
     {
@@ -1099,9 +1111,16 @@
   // see the shared .type-select/.product-type-select note in index.html)
   // showing the same value, since they're all views onto the same
   // currentSignType/currentSignSize/currentCategory rather than independent
-  // per-tab settings.
+  // per-tab settings. Setting .value directly here (rather than going
+  // through a user gesture) doesn't fire 'change', so each select's own
+  // custom dropdown (see initFieldSelects below) wouldn't otherwise know
+  // its displayed label just went stale - _fieldSelectRefresh is that
+  // dropdown's own re-render, stashed on the select by initFieldSelects.
   function syncSelects(selects, value) {
-    selects.forEach((s) => { s.value = value; });
+    selects.forEach((s) => {
+      s.value = value;
+      if (s._fieldSelectRefresh) s._fieldSelectRefresh();
+    });
   }
 
   // The Type dropdown's three options fold two separate pieces of state
@@ -5143,6 +5162,184 @@
         break;
     }
   }
+
+  // Progressively enhances every Type/Product Type <select> (see the
+  // shared .type-select/.product-type-select note in index.html) into a
+  // custom button+listbox dropdown that looks and behaves like the menu
+  // bar's own dropdowns below (initMenuBar), instead of the browser's
+  // native select popup. The <select> itself stays in the DOM - just
+  // hidden - and remains the single source of truth: this widget only
+  // ever reads its .options/.value and, on a pick, sets .value and
+  // dispatches 'change' on it, so every existing change listener,
+  // applyFormMode, and syncSelects call elsewhere in this file (which is
+  // what keeps every tab's copy of these two dropdowns showing the same
+  // value) keeps working untouched. syncSelects calls back into this via
+  // select._fieldSelectRefresh after it sets .value programmatically,
+  // since that doesn't fire 'change' on its own.
+  (function initFieldSelects() {
+    const selects = [...document.querySelectorAll('.type-select, .product-type-select')];
+    if (!selects.length) return;
+
+    const instances = [];
+
+    function closeAll({ except } = {}) {
+      instances.forEach((inst) => {
+        if (inst === except || !inst.root.classList.contains('is-open')) return;
+        inst.root.classList.remove('is-open');
+        inst.trigger.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    selects.forEach((select) => {
+      // The <span> caption next to the select (see the div.field note
+      // above .type-product-row in index.html) - its id becomes the
+      // custom trigger/listbox's accessible name in place of the
+      // <select>'s own aria-label, which goes along for the ride once
+      // hidden but is otherwise unused now that nothing points a <label>
+      // at the select anymore.
+      const labelEl = select.closest('.field')?.querySelector('span[id]');
+
+      const root = document.createElement('div');
+      root.className = 'field-select';
+
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.className = 'field-select__trigger';
+      trigger.setAttribute('aria-haspopup', 'listbox');
+      trigger.setAttribute('aria-expanded', 'false');
+
+      const valueEl = document.createElement('span');
+      valueEl.className = 'field-select__value';
+      if (labelEl) {
+        // Combines the field's own caption ("Type") with the currently
+        // picked value's id, so the accessible name reads like "Type,
+        // Shelf Talker" - close to what a native select announces -
+        // and stays current on its own since it's the same element
+        // refresh() below re-labels on every change.
+        valueEl.id = `${labelEl.id}-value`;
+        trigger.setAttribute('aria-labelledby', `${labelEl.id} ${valueEl.id}`);
+      }
+      trigger.appendChild(valueEl);
+
+      const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      chevron.setAttribute('class', 'field-select__chevron');
+      chevron.setAttribute('viewBox', '0 0 12 8');
+      chevron.setAttribute('aria-hidden', 'true');
+      chevron.innerHTML = '<path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+      trigger.appendChild(chevron);
+
+      const listbox = document.createElement('div');
+      listbox.className = 'field-select__dropdown';
+      listbox.setAttribute('role', 'listbox');
+      if (labelEl) listbox.setAttribute('aria-labelledby', labelEl.id);
+
+      const options = [...select.options].map((opt) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'field-select__option';
+        item.setAttribute('role', 'option');
+        item.dataset.value = opt.value;
+        const check = document.createElement('span');
+        check.className = 'field-select__option-check';
+        check.setAttribute('aria-hidden', 'true');
+        check.textContent = '✓';
+        const label = document.createElement('span');
+        label.className = 'field-select__option-label';
+        label.textContent = opt.textContent;
+        item.append(check, label);
+        listbox.appendChild(item);
+        return item;
+      });
+
+      root.append(trigger, listbox);
+      select.insertAdjacentElement('afterend', root);
+      // Stays in the DOM (so .value/dispatchEvent keep working exactly as
+      // before) but out of the layout and off the a11y tree - the custom
+      // trigger/listbox above is the only thing anyone actually sees,
+      // clicks, or tabs to now.
+      select.hidden = true;
+
+      function refresh() {
+        const opt = select.options[select.selectedIndex];
+        valueEl.textContent = opt ? opt.textContent : '';
+        options.forEach((item) => {
+          item.setAttribute('aria-selected', String(item.dataset.value === select.value));
+        });
+      }
+      select._fieldSelectRefresh = refresh;
+      refresh();
+
+      const inst = { root, trigger };
+      instances.push(inst);
+
+      function open({ focusSelected = false } = {}) {
+        closeAll({ except: inst });
+        root.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+        if (focusSelected) {
+          (options.find((o) => o.getAttribute('aria-selected') === 'true') || options[0])?.focus();
+        }
+      }
+      function close({ refocus = false } = {}) {
+        if (!root.classList.contains('is-open')) return;
+        root.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        if (refocus) trigger.focus();
+      }
+      function pick(item) {
+        if (select.value !== item.dataset.value) {
+          select.value = item.dataset.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        refresh();
+        close({ refocus: true });
+      }
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (root.classList.contains('is-open')) close({ refocus: true });
+        else open({ focusSelected: true });
+      });
+      trigger.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open({ focusSelected: true });
+        } else if (e.key === 'Escape' && root.classList.contains('is-open')) {
+          e.preventDefault();
+          close({ refocus: true });
+        }
+      });
+
+      options.forEach((item) => {
+        item.addEventListener('click', (e) => { e.stopPropagation(); pick(item); });
+        item.addEventListener('mouseenter', () => item.focus());
+        item.addEventListener('keydown', (e) => {
+          // Same reasoning as the equivalent stopPropagation in
+          // initMenuBar below - without it this would also reach the
+          // trigger's own keydown listener above and immediately re-open
+          // on top of whatever this handler just did.
+          e.stopPropagation();
+          const idx = options.indexOf(item);
+          if (e.key === 'ArrowDown') { e.preventDefault(); (options[idx + 1] || options[0]).focus(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); (options[idx - 1] || options[options.length - 1]).focus(); }
+          else if (e.key === 'Home') { e.preventDefault(); options[0].focus(); }
+          else if (e.key === 'End') { e.preventDefault(); options[options.length - 1].focus(); }
+          else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(item); }
+          else if (e.key === 'Escape') { e.preventDefault(); close({ refocus: true }); }
+        });
+      });
+    });
+
+    document.addEventListener('click', () => closeAll());
+    // A dropdown left open shouldn't trap Tab - once focus actually leaves
+    // its own root for good, close it, same as initMenuBar's identical
+    // guard below.
+    instances.forEach((inst) => {
+      inst.root.addEventListener('focusout', (e) => {
+        if (!inst.root.contains(e.relatedTarget)) closeAll();
+      });
+    });
+  })();
 
   // Open/close, hover-to-switch, and full keyboard navigation for the menu
   // bar - the same behavior Windows' native menu used to give for free
