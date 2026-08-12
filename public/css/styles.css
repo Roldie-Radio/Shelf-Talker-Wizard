@@ -825,16 +825,21 @@ h1, h2, h3 { margin: 0; }
 
 .preview-stage { display: flex; justify-content: center; padding: 1rem 0; }
 
+/* Full Page-only controls (Auto-arrange toggle + sheet summary) shown above
+   the stage - see the hidden attribute toggled by setPreviewMode in app.js.
+   These used to live in a separate Print Preview modal; that modal is gone
+   and Full Page mode is now the print preview, so its controls moved here. */
+.preview-sheet-controls { margin-bottom: 0.4rem; }
+
 /* Full Page mode: instead of the single centered scaler above, the stage
    holds one .print-preview-sheet per printed sheet (see renderSheetPreview
-   in app.js), stacked top to bottom exactly like the Print Preview modal's
-   .print-preview-sheets below - reusing its classes on purpose so the two
-   can't drift apart visually. Bounded and independently scrollable rather
-   than left to grow the whole page, since a queue with several sheet types
-   (Shelf Talkers, Display Signs, ...) can easily run taller than the
-   viewport - see .panel--preview's sticky positioning above, which would
-   otherwise pin an oversized stage in place with no way to reach its lower
-   sheets. */
+   in app.js), stacked top to bottom - this is also literally the print
+   preview now, so what's on screen here is exactly what "Print Now" sends
+   to the printer. Bounded and independently scrollable rather than left to
+   grow the whole page, since a queue with several sheet types (Shelf
+   Talkers, Display Signs, ...) can easily run taller than the viewport -
+   see .panel--preview's sticky positioning above, which would otherwise pin
+   an oversized stage in place with no way to reach its lower sheets. */
 .preview-stage--sheets {
   flex-direction: column;
   align-items: stretch;
@@ -963,7 +968,7 @@ h1, h2, h3 { margin: 0; }
   transform: scale(1);
 }
 
-/* Auto-arrange (beta) preview: unlike the grid above (one uniform card/sign
+/* Auto-arrange preview: unlike the grid above (one uniform card/sign
    size and grid shape per sheet), an auto-arranged sheet is a vertical
    stack of rows that can each be a different sign type/size, so it's laid
    out with flex instead of a shared CSS grid - see .sheet--auto below for
@@ -1295,14 +1300,15 @@ h1, h2, h3 { margin: 0; }
   100% { background: var(--ui-panel); box-shadow: inset 0 0 0 1px transparent; }
 }
 
-/* ---------- Print preview ---------- */
+/* ---------- Print preview (folded into the Live Preview panel's Full Page
+   mode - see .preview-sheet-controls below and setPreviewMode in app.js;
+   there's no separate print-preview surface anymore) ---------- */
 
 .auto-arrange-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 1.2rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
   font-size: 0.85rem;
   color: var(--ui-ink-soft);
   cursor: pointer;
@@ -1331,16 +1337,7 @@ h1, h2, h3 { margin: 0; }
    light mode. */
 .field .beta-badge { color: var(--ui-on-accent); }
 
-#printPreviewSummary { padding: 0 1.2rem; margin-bottom: 0.75rem; }
-
-.print-preview-sheets {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 1.2rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
+#previewSheetSummary { margin: 0 0 0.6rem; }
 
 .print-preview-sheet__label {
   display: flex;
@@ -3069,7 +3066,7 @@ h1, h2, h3 { margin: 0; }
   .sheet .card,
   .sheet .sign { box-shadow: none; }
 
-  /* Auto-arrange (beta): a page is a vertical stack of full-width rows
+  /* Auto-arrange: a page is a vertical stack of full-width rows
      (see buildAutoArrangedPages in app.js) instead of a uniform grid, since
      a page can mix different sign types/sizes. --print-w is set per row
      rather than per sheet; the .sheet .card/.sign rule above still applies
