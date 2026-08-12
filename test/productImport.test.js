@@ -2933,6 +2933,32 @@ test('composeProducerTitle strips a "Not Specified" placeholder and an abbreviat
   );
 });
 
+// Real Scan UPC miss: the store's own product title already opens with the
+// brewery's everyday name ("Slack Tide"), just not its full legal one
+// ("Slack Tide Brewing Company") - a plain startsWith check never catches
+// that, so the brand used to get prepended anyway and doubled "Slack Tide"
+// in both the Beer Name field and the Untappd search query built from it.
+test('composeProducerTitle does not double the brewery name when the title already opens with its everyday (non-legal) name', () => {
+  assert.equal(
+    composeProducerTitle({
+      title: 'Slack Tide Flounder Pounder Can 12OZ 6pk',
+      brand: 'Slack Tide Brewing Company',
+      size: '12OZ',
+    }),
+    'Slack Tide Flounder Pounder Can'
+  );
+  assert.equal(
+    composeProducerTitle({ title: 'New Anthem Trapped In A Sunbeam', brand: 'New Anthem Brewery', size: '' }),
+    'New Anthem Trapped In A Sunbeam'
+  );
+  // A title with no real overlap with the brand's everyday name still gets
+  // the full brand prepended, same as before.
+  assert.equal(
+    composeProducerTitle({ title: 'Hazy IPA', brand: 'New Anthem Beer Project', size: '' }),
+    'New Anthem Beer Project Hazy IPA'
+  );
+});
+
 // buildUntappdSearchQuery - see its own comment in productImport.js for the
 // full reasoning. Regression coverage for the real Oakflower Augury miss
 // (style words diluting an otherwise-correct match), plus the deliberate

@@ -1736,6 +1736,36 @@ function buildUntappdSearchQuery(title) {
   return stripped || (title || '').trim();
 }
 
+// Legal/descriptor suffixes a brewery (or, less commonly, a winery/
+// distillery) name routinely carries that a store's own product title never
+// repeats - the title just uses the shorter, everyday name a shopper
+// actually recognizes ("Slack Tide", not "Slack Tide Brewing Company").
+// Matched at the end of the brand string, repeatedly, by
+// stripProducerLegalSuffix below.
+const PRODUCER_LEGAL_SUFFIX_PATTERN = new RegExp(
+  '\\s+(' + [
+    'brewing company', 'brewing co\\.?', 'brewing', 'brewery',
+    'beer company', 'beer co\\.?', 'brew(?:ing)? works', 'ale works',
+    'company', 'co\\.?',
+  ].join('|') + ')$',
+  'i'
+);
+
+// Peels a trailing legal/descriptor suffix (see the pattern above) off a
+// brand name, repeatedly - "Slack Tide Brewing Company" -> "Slack Tide
+// Brewing" -> "Slack Tide" - so composeProducerTitle can recognize a title
+// that already opens with the brewery's everyday name even though it never
+// spells out the full legal one.
+function stripProducerLegalSuffix(brand) {
+  let core = (brand || '').trim();
+  let next = core.replace(PRODUCER_LEGAL_SUFFIX_PATTERN, '').trim();
+  while (next && next !== core) {
+    core = next;
+    next = core.replace(PRODUCER_LEGAL_SUFFIX_PATTERN, '').trim();
+  }
+  return core;
+}
+
 // Composes "Producer Product Name" (size left out) from a scraped product -
 // used two ways below: as the actual title field for wine/spirits SKU
 // lookups, and as the Untappd search query for beer. The store's own title
@@ -1745,9 +1775,27 @@ function buildUntappdSearchQuery(title) {
 function composeProducerTitle({ title, brand, size }) {
   const name = stripSize(title, size);
   const trimmedBrand = (brand || '').trim();
-  if (!trimmedBrand || name.toLowerCase().startsWith(trimmedBrand.toLowerCase())) {
+  if (!trimmedBrand) return name;
+
+  const lowerName = name.toLowerCase();
+  const lowerBrand = trimmedBrand.toLowerCase();
+  if (lowerName.startsWith(lowerBrand)) {
     return name;
   }
+
+  // The title doesn't spell out the brand's full legal name, but may still
+  // already open with its shorter, everyday form (e.g. "Slack Tide" out of
+  // "Slack Tide Brewing Company") - prepending the full brand in that case
+  // would double it: "Slack Tide Brewing Company Slack Tide Flounder
+  // Pounder Can".
+  const core = stripProducerLegalSuffix(trimmedBrand);
+  if (core && core.toLowerCase() !== lowerBrand) {
+    const lowerCore = core.toLowerCase();
+    if (lowerName === lowerCore || lowerName.startsWith(`${lowerCore} `)) {
+      return name;
+    }
+  }
+
   return `${trimmedBrand} ${name}`.trim();
 }
 
