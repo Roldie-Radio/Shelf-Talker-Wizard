@@ -158,31 +158,39 @@
              the top of every tab (see Import and Search below), driving one
              shared currentSignType/currentSignSize/currentCategory in
              app.js regardless of which tab set them - so switching tabs
-             never loses the choice. A real select element rather than the
-             tap/toggle-btn rows this used to be (three settings - sign
-             type, sign size, category - collapsed into two dropdowns, Type
-             folding sign type and size into one flat list of three). The
-             eyebrow caption + divider below (shared across all three tabs -
-             see .type-product-eyebrow/.type-product-divider in styles.css)
+             never loses the choice. Backed by a real <select> (three
+             settings - sign type, sign size, category - collapsed into two
+             dropdowns, Type folding sign type and size into one flat list
+             of three), but the select itself stays hidden and is only ever
+             driven programmatically - initFieldSelects in app.js builds a
+             custom button+listbox next to it, styled and operated like the
+             menu bar's own dropdowns (see .menubar__dropdown in
+             styles.css) instead of the browser's native select popup. The
+             div.field (not <label>) below is deliberate: with the select
+             hidden, a <label> would still try to forward clicks on the
+             span to it; aria-labelledby on the custom button (see
+             initFieldSelects) takes over that job instead. The eyebrow
+             caption + divider below (shared across all three tabs - see
+             .type-product-eyebrow/.type-product-divider in styles.css)
              calls this out as the form's first decision, not just another
              field-row. -->
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
-          <label class="field">
-            <span>Type</span>
+          <div class="field">
+            <span id="typeFieldLabelManual">Type</span>
             <select class="type-select" aria-label="Sign type">
               <option value="talker">Shelf Talker</option>
               <option value="small">Small Display</option>
               <option value="large">Large Display</option>
             </select>
-          </label>
-          <label class="field">
-            <span>Product Type</span>
+          </div>
+          <div class="field">
+            <span id="productTypeFieldLabelManual">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
               <option value="beer">Beer</option>
             </select>
-          </label>
+          </div>
         </div>
         <div class="type-product-divider"></div>
         <form id="talkerForm" novalidate>
@@ -459,29 +467,30 @@
 
       <div class="tab-panel" data-panel="import" id="panelImport" role="tabpanel" aria-labelledby="tabImport" tabindex="0">
         <!-- Shares .type-select/.product-type-select with Manual Entry's own
-             pair (see the note there) so the existing wiring in app.js -
-             change handling, keeping every instance in sync, aria - covers
-             every tab automatically; these are views onto the same
-             currentSignType/currentSignSize/currentCategory, not
-             independent settings. Eyebrow + divider match Manual Entry's
-             copy of this row - see the note there. -->
+             pair (see the note there, including why these are div.field
+             rather than <label> now) so the existing wiring in app.js -
+             change handling, keeping every instance in sync, the custom
+             dropdown itself - covers every tab automatically; these are
+             views onto the same currentSignType/currentSignSize/
+             currentCategory, not independent settings. Eyebrow + divider
+             match Manual Entry's copy of this row - see the note there. -->
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
-          <label class="field">
-            <span>Type</span>
+          <div class="field">
+            <span id="typeFieldLabelImport">Type</span>
             <select class="type-select" aria-label="Sign type">
               <option value="talker">Shelf Talker</option>
               <option value="small">Small Display</option>
               <option value="large">Large Display</option>
             </select>
-          </label>
-          <label class="field">
-            <span>Product Type</span>
+          </div>
+          <div class="field">
+            <span id="productTypeFieldLabelImport">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
               <option value="beer">Beer</option>
             </select>
-          </label>
+          </div>
         </div>
         <div class="type-product-divider"></div>
         <p class="help-text" id="importHelpText">Paste a product page URL from your website. We'll try to pull the title, description, and price automatically &mdash; review the fields before adding it to your queue.</p>
@@ -515,25 +524,26 @@
            fallbacks exactly as before, just nested one level deeper; none
            of the three has its own Type/Product Type control anymore, since
            the pair above now covers all three. Eyebrow + divider match
-           Manual Entry's copy of this row - see the note there. -->
+           Manual Entry's copy of this row - see the note there, including
+           why these are div.field rather than <label> now. -->
       <div class="tab-panel" data-panel="search" id="panelSearch" role="tabpanel" aria-labelledby="tabSearch" tabindex="0">
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
-          <label class="field">
-            <span>Type</span>
+          <div class="field">
+            <span id="typeFieldLabelSearch">Type</span>
             <select class="type-select" aria-label="Sign type">
               <option value="talker">Shelf Talker</option>
               <option value="small">Small Display</option>
               <option value="large">Large Display</option>
             </select>
-          </label>
-          <label class="field">
-            <span>Product Type</span>
+          </div>
+          <div class="field">
+            <span id="productTypeFieldLabelSearch">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
               <option value="beer">Beer</option>
             </select>
-          </label>
+          </div>
         </div>
         <div class="type-product-divider"></div>
 
