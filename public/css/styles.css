@@ -1504,6 +1504,16 @@ h1, h2, h3 { margin: 0; }
   flex-direction: column;
   gap: 0.5rem;
 }
+.data-preview__search {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-field);
+  color: var(--ui-ink);
+  width: 100%;
+}
+.data-preview__search::placeholder { color: var(--ui-muted); }
 .preview-table-wrap {
   flex: 1;
   overflow: auto;

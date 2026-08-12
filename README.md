@@ -250,8 +250,11 @@ The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, belo
   on, the copy last pulled from the Server PC &mdash; shown exactly as written
   (real column headers, not run through Scan UPC's alias matching) so you can
   confirm it's actually hooked up right without leaving the app to go find and
-  open the file yourself. If nothing's configured yet, **Open Export File
-  Settings** jumps straight there.
+  open the file yourself. A search box filters to rows containing whatever you
+  type, anywhere in the row, across the *whole* file &mdash; not just the rows
+  already on screen &mdash; so you can check whether a specific item is
+  actually in the export without opening it elsewhere. If nothing's configured
+  yet, **Open Export File Settings** jumps straight there.
 - **View Database&hellip;** &mdash; counts for Print History and the product cache,
   plus a table of the most recently printed talkers, confirming this PC has real
   accumulated data.
