@@ -992,39 +992,104 @@ h1, h2, h3 { margin: 0; }
 #tastingNotesFlavorPreview { display: flex; flex-direction: column; gap: 0.6rem; }
 
 /* ---------- Untappd disambiguation picker (#untappdPickerOverlay in
-   index.html, openUntappdPicker in app.js) ---------- */
-.untappd-picker-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
-.untappd-picker-results {
-  border: 1px solid var(--ui-border);
+   index.html, openUntappdPicker in app.js) - one candidate highlighted as a
+   Recommended pick (.untappd-rec-card), up to 2 others below it
+   (.alt-row), and any further tie folded behind a "+N more" toggle
+   (.untappd-more-toggle). No new custom properties here - the tint/border
+   on the recommended card is color-mix()'d from the existing --ui-accent/
+   --ui-panel tokens so it stays correct in dark mode and under the Purple
+   accent choice for free, the same way .card__pairing-chip below already
+   does for the print preview. ---------- */
+.untappd-picker-body { padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+
+/* A real <button>, not a styled div, so Tab/Shift+Tab cycling inside the
+   modal (see createModal's focusable() query in app.js) actually reaches
+   it - the reset properties below just undo the browser's own default
+   button chrome. */
+.untappd-rec-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1.5px solid var(--ui-accent);
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-panel));
   border-radius: 8px;
-  max-height: 320px;
-  overflow-y: auto;
+  padding: 0.75rem 0.85rem;
 }
-/* A row per candidate is a real <button>, not a styled div (like
-   .search-result above), so Tab/Shift+Tab cycling inside the modal (see
-   createModal's focusable() query in app.js) actually reaches every
-   option - the reset properties below just undo the browser's own default
-   button chrome so it still reads as a plain list row. */
-.untappd-picker-result {
+.untappd-rec-card:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-panel)); }
+.untappd-rec-card:disabled { cursor: default; opacity: 0.6; }
+.untappd-rec-card__badge {
+  align-self: flex-start;
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+.untappd-rec-card__title { display: block; font-size: 0.98rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-rec-card__brewery { display: block; font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.untappd-rec-card__meta { display: block; font-size: 0.8rem; color: var(--ui-ink-soft); font-variant-numeric: tabular-nums; }
+/* Placeholder text shown in the same slot while this candidate's preview
+   fetch (openUntappdPicker's fetchPreview) is still in flight - italic is
+   enough to read as provisional without a shimmer/skeleton animation this
+   admin tool doesn't use anywhere else. */
+.untappd-rec-card__meta--loading { color: var(--ui-muted); font-style: italic; }
+.untappd-rec-card__why { display: block; font-size: 0.73rem; color: var(--ui-muted); margin-top: 0.05rem; }
+.untappd-rec-card__desc { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--ui-ink-soft); line-height: 1.4; max-height: 4.5em; overflow-y: auto; }
+
+.untappd-others-divider { display: flex; align-items: center; gap: 0.5rem; margin: 0.1rem 0 0.05rem; }
+.untappd-others-divider::before,
+.untappd-others-divider::after { content: ""; flex: 1; height: 1px; background: var(--ui-border); }
+.untappd-others-divider span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+
+.alt-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.alt-row {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.5rem 0.7rem;
   cursor: pointer;
-  border: none;
-  border-bottom: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
   background: transparent;
   font: inherit;
   text-align: left;
   color: inherit;
 }
-.untappd-picker-result:last-child { border-bottom: none; }
-.untappd-picker-result:hover:not(:disabled) { background: var(--ui-hover); }
-.untappd-picker-result:disabled { cursor: default; opacity: 0.6; }
-.untappd-picker-result__title { font-size: 0.87rem; font-weight: 700; color: var(--ui-ink); }
-.untappd-picker-result__brewery { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.alt-row:hover:not(:disabled) { background: var(--ui-hover); }
+.alt-row:disabled { cursor: default; opacity: 0.6; }
+.alt-row__title { display: block; font-size: 0.85rem; font-weight: 700; color: var(--ui-ink); }
+.alt-row__meta { display: block; font-size: 0.76rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.alt-row__stat { font-size: 0.76rem; color: var(--ui-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.untappd-more-toggle {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--ui-accent-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.1rem;
+}
+.untappd-more-toggle:hover { text-decoration: underline; }
 
 /* ---------- Confirm Untappd Match (#untappdConfirmOverlay in index.html) -
    a single card, not a list of rows like the picker above, since there's

@@ -756,7 +756,14 @@
        left in it after style-word stripping. Shared by Scan UPC, SKU
        Lookup, and Search by Name (see openUntappdPicker in app.js) rather
        than three copies, since every path ends up with the same
-       {url, brewery, beerName} candidate list either way. -->
+       {url, brewery, beerName} candidate list either way.
+
+       One candidate is put forward as a Recommended pick (#untappdPickerRecCard),
+       with up to 2 others shown below it (#untappdPickerOthersBlock) and any
+       remainder folded behind a "+N more" toggle - see openUntappdPicker's
+       own comment for how the recommendation is chosen and why none of this
+       needs server changes (it reuses /api/untappd-lookup, just with an
+       empty `current` for a side-effect-free preview fetch). -->
   <div id="untappdPickerOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdPickerTitle">
       <div class="modal__header">
@@ -765,11 +772,13 @@
       </div>
       <div class="untappd-picker-body">
         <p class="help-text" id="untappdPickerQueryLabel"></p>
-        <div class="untappd-picker-results" id="untappdPickerResults"></div>
+        <button type="button" class="untappd-rec-card" id="untappdPickerRecCard"></button>
+        <div id="untappdPickerOthersBlock"></div>
         <p class="help-text" id="untappdPickerStatus" role="status" aria-live="polite"></p>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn" id="untappdPickerCancelBtn">None of these / Cancel</button>
+        <button type="button" class="btn btn--primary" id="untappdPickerUseRecBtn">Use Recommended Pick</button>
       </div>
     </div>
   </div>
