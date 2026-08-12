@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.2.0',
+      items: [
+        'Beer shelf talkers: dropped the country-letter caption ("US", "MX", "UK"...) under both the brewery-country flag and the country silhouette badge - the graphic already identifies the country, so the label was redundant. The US-state badge (e.g. "NC") is unaffected.',
+      ],
+    },
+    {
       version: '3.1.5',
       items: [
         'Fixed: Search by Name and Scan UPC no longer fold a WinePOS export\'s "Vendor" column (a short distributor code like "KOH") into the Brand field for beer - same vendor-code bug as 3.1.4\'s SKU Lookup fix, just coming from the local export file instead of the store website.',
