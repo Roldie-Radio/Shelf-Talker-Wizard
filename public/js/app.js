@@ -1812,6 +1812,7 @@
     const layout = SIGN_LAYOUTS[sheet.layoutKey];
 
     const sheetDiv = buildSheetPreviewElement(sheet);
+    makeSheetPreviewEditable(sheetDiv, sheet.items);
     els.previewStage.appendChild(makeScaler(sheetDiv));
     requestAnimationFrame(() => {
       sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
@@ -1840,6 +1841,39 @@
       sheetDiv.appendChild(el);
     });
     return sheetDiv;
+  }
+
+  // Turns a freshly-built sheet's cards/signs into click-to-edit targets, so
+  // staff can jump straight into editing whatever they spot on the Full Page
+  // preview instead of hunting for the matching row in the Queue list below.
+  // Deliberately applied here in renderSheetPreview's caller rather than
+  // inside buildSheetPreviewElement itself, which the Print Preview modal
+  // also calls (see the comment there) - that dialog is judged purely by
+  // what will print, so it stays inert. items must be in the same order as
+  // sheetDiv's children (buildSheetPreviewElement appends exactly one
+  // element per item, in order).
+  function makeSheetPreviewEditable(sheetDiv, items) {
+    items.forEach((talker, i) => {
+      const el = sheetDiv.children[i];
+      if (!el) return;
+      el.classList.add('is-editable');
+      el.tabIndex = 0;
+      el.setAttribute('role', 'button');
+      const label = `Edit ${talker.title || 'this talker'}`;
+      el.setAttribute('aria-label', label);
+      el.title = label;
+      const badge = document.createElement('span');
+      badge.className = 'card__edit-badge';
+      badge.textContent = '✎ Edit';
+      badge.setAttribute('aria-hidden', 'true');
+      el.appendChild(badge);
+      el.addEventListener('click', () => startEdit(talker.id));
+      el.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        startEdit(talker.id);
+      });
+    });
   }
 
   // The auto-arrange equivalent: a vertical stack of rows that can each mix
