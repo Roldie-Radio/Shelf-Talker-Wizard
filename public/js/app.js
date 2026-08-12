@@ -538,7 +538,6 @@
   }
 
   let previewMode = 'single'; // 'single' | 'sheet'
-  let sheetPage = 0;
 
   // Auto-arrange (beta), opt-in from the Print Preview modal - off by
   // default. Only affects the Print Preview modal and the actual print
@@ -784,10 +783,6 @@
 
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
-    sheetPagination: document.getElementById('sheetPagination'),
-    prevPageBtn: document.getElementById('prevPageBtn'),
-    nextPageBtn: document.getElementById('nextPageBtn'),
-    pageIndicator: document.getElementById('pageIndicator'),
     queueGrid: document.getElementById('queueGrid'),
     queueCount: document.getElementById('queueCount'),
     clearQueueBtn: document.getElementById('clearQueueBtn'),
@@ -1293,18 +1288,12 @@
     const signTypeChanged = nextSignType !== currentSignType;
     currentSignType = nextSignType;
     currentSignSize = nextSignSize;
-    // The Full Page preview is scoped to this selection (see
-    // renderSheetPreview), so switching it should land back on its first
-    // page rather than keeping whatever page number the previous
-    // selection's sheets happened to be on.
-    sheetPage = 0;
     if (signTypeChanged && !els.editId.value) applyFontSizeDefaults();
     applyFormMode();
   }
 
   function setTalkerSize(talkerSize) {
     currentTalkerSize = ['half', 'quarter'].includes(talkerSize) ? talkerSize : 'full';
-    sheetPage = 0;
     applyFormMode();
   }
 
@@ -1763,13 +1752,32 @@
     return Math.max(240, window.innerHeight - headroom - 40);
   }
 
+  // Scales every sheet inside a vertical stack of full printed sheets to
+  // fit the container's width - height is deliberately left generous
+  // (the container itself scrolls, see .preview-stage--sheets /
+  // .print-preview-sheets) rather than being divided up between sheets.
+  // Shared by the Full Page Live Preview and the Print Preview modal so
+  // their scaling can't drift apart from each other.
+  function rescaleStackedSheets(container) {
+    const width = container.clientWidth
+      - parseFloat(getComputedStyle(container).paddingLeft || 0)
+      - parseFloat(getComputedStyle(container).paddingRight || 0);
+    container.querySelectorAll('.preview-scaler').forEach((scaler) => {
+      scalePreview(scaler, width, window.innerHeight);
+    });
+  }
+
   function rescalePreviewStage() {
+    if (previewMode === 'sheet') {
+      rescaleStackedSheets(els.previewStage);
+      return;
+    }
     const scaler = els.previewStage.querySelector('.preview-scaler');
     if (scaler) scalePreview(scaler, els.previewStage.clientWidth, previewAvailableHeight());
   }
 
   function renderPreview() {
-    els.sheetPagination.hidden = true;
+    els.previewStage.classList.remove('preview-stage--sheets');
     const talker = readForm();
     els.previewStage.innerHTML = '';
     const card = buildPrintableElement(talker);
@@ -1784,51 +1792,49 @@
     });
   }
 
-  // A scaled-down stand-in for a printed Letter-landscape sheet. Paginates
-  // by *sheet* (see buildSheets) rather than by raw item count, since each
-  // sheet is one uniform layout (grid shape + card size) - Shelf Talkers,
-  // Large Display Signs and Small Display Signs never share a sheet.
-  //
-  // Scoped to whichever sign type/size is currently selected in the form,
-  // the same way "Current Talker" mode already only shows the current
-  // form's entry rather than the whole queue - otherwise, since Shelf
-  // Talker sheets always sort first, switching the form to Display Signs
-  // and adding one would still show existing Shelf Talker sheets here
-  // instead of the sign just added. The Print Preview modal (opened from
-  // "Print Sheet(s)") is what shows every sheet together.
+  // A scaled-down stand-in for every sheet the current queue will print,
+  // stacked top to bottom exactly like the Print Preview modal's own
+  // renderGroupedPreview - same grouping (buildSheets, one sheet per
+  // uniform layout: Shelf Talkers, Half/Quarter Size, Large/Small Display
+  // Signs never share a sheet), same per-sheet label, and both call
+  // buildSheetPreviewElement for the actual markup, so the Full Page Live
+  // Preview can't drift from what "Print Sheet(s)" will produce. The one
+  // difference is editability - see makeSheetPreviewEditable below, applied
+  // here and not in the modal.
   function renderSheetPreview() {
-    const currentLayoutKey = layoutKeyFor({ signType: currentSignType, signSize: currentSignSize, talkerSize: currentTalkerSize });
-    const relevantItems = queue.filter((t) => layoutKeyFor(t) === currentLayoutKey);
-    const sheets = buildSheets(relevantItems);
-    const totalPages = Math.max(1, sheets.length);
-    sheetPage = Math.min(Math.max(sheetPage, 0), totalPages - 1);
-
+    els.previewStage.classList.add('preview-stage--sheets');
     els.previewStage.innerHTML = '';
 
-    if (relevantItems.length === 0) {
-      const label = SIGN_LAYOUTS[currentLayoutKey].label;
-      els.previewStage.innerHTML = queue.length === 0
-        ? '<p class="empty-hint">No shelf talkers queued yet. Add one using the form to see the full page here.</p>'
-        : `<p class="empty-hint">No ${label} queued yet. Add one using the form, or switch Shelf Talkers/Display Signs above to see what else is queued.</p>`;
-      els.sheetPagination.hidden = true;
+    if (queue.length === 0) {
+      els.previewStage.innerHTML = '<p class="empty-hint">No shelf talkers queued yet. Add one using the form to see the full page here.</p>';
       return;
     }
 
-    const sheet = sheets[sheetPage];
-    const layout = SIGN_LAYOUTS[sheet.layoutKey];
+    const sheets = buildSheets(queue);
+    const sheetGrids = sheets.map((sheet, i) => {
+      const layout = SIGN_LAYOUTS[sheet.layoutKey];
+      const isPartial = sheet.items.length < layout.perSheet;
 
-    const sheetDiv = buildSheetPreviewElement(sheet);
-    makeSheetPreviewEditable(sheetDiv, sheet.items);
-    els.previewStage.appendChild(makeScaler(sheetDiv));
-    requestAnimationFrame(() => {
-      sheetDiv.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el));
-      rescalePreviewStage();
+      const wrap = document.createElement('div');
+      wrap.className = 'print-preview-sheet';
+      wrap.innerHTML = `
+        <div class="print-preview-sheet__label">
+          <span>Sheet ${i + 1} of ${sheets.length} &mdash; ${layout.label}</span>
+          <span class="print-preview-sheet__fill ${isPartial ? 'is-partial' : ''}">${sheet.items.length} of ${layout.perSheet} slots used</span>
+        </div>
+      `;
+      const sheetDiv = buildSheetPreviewElement(sheet);
+      makeSheetPreviewEditable(sheetDiv, sheet.items);
+      sheetDiv.classList.add('print-preview-sheet__grid');
+      wrap.appendChild(makeScaler(sheetDiv));
+      els.previewStage.appendChild(wrap);
+      return sheetDiv;
     });
 
-    els.sheetPagination.hidden = totalPages <= 1;
-    els.pageIndicator.textContent = `Page ${sheetPage + 1} of ${totalPages}`;
-    els.prevPageBtn.disabled = sheetPage === 0;
-    els.nextPageBtn.disabled = sheetPage >= totalPages - 1;
+    requestAnimationFrame(() => {
+      sheetGrids.forEach((grid) => grid.querySelectorAll('.card, .sign').forEach((el) => fitCardText(el)));
+      rescalePreviewStage();
+    });
   }
 
   // One 11in x 8.5in sheet, built at its literal printed size with each item
@@ -1936,15 +1942,6 @@
       setToggleState(els.previewToggleBtns, (b) => b === btn);
       refreshPreview();
     });
-  });
-
-  els.prevPageBtn.addEventListener('click', () => {
-    sheetPage = Math.max(0, sheetPage - 1);
-    renderSheetPreview();
-  });
-  els.nextPageBtn.addEventListener('click', () => {
-    sheetPage += 1;
-    renderSheetPreview();
   });
 
   // ---------- Queue rendering ----------
@@ -4427,14 +4424,10 @@
   }
 
   // The modal's sheets are laid out at full 11in width and scaled to whatever
-  // the dialog can give them, same as the Full Page preview.
+  // the dialog can give them, same as the Full Page preview (see
+  // rescaleStackedSheets, which this shares).
   function rescalePrintPreviewSheets() {
-    const width = els.printPreviewSheets.clientWidth
-      - parseFloat(getComputedStyle(els.printPreviewSheets).paddingLeft || 0)
-      - parseFloat(getComputedStyle(els.printPreviewSheets).paddingRight || 0);
-    els.printPreviewSheets.querySelectorAll('.preview-scaler').forEach((scaler) => {
-      scalePreview(scaler, width, window.innerHeight);
-    });
+    rescaleStackedSheets(els.printPreviewSheets);
   }
 
   // Renders auto-arranged pages: each page is a vertical stack of full-width

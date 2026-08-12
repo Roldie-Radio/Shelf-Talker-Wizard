@@ -825,6 +825,31 @@ h1, h2, h3 { margin: 0; }
 
 .preview-stage { display: flex; justify-content: center; padding: 1rem 0; }
 
+/* Full Page mode: instead of the single centered scaler above, the stage
+   holds one .print-preview-sheet per printed sheet (see renderSheetPreview
+   in app.js), stacked top to bottom exactly like the Print Preview modal's
+   .print-preview-sheets below - reusing its classes on purpose so the two
+   can't drift apart visually. Bounded and independently scrollable rather
+   than left to grow the whole page, since a queue with several sheet types
+   (Shelf Talkers, Display Signs, ...) can easily run taller than the
+   viewport - see .panel--preview's sticky positioning above, which would
+   otherwise pin an oversized stage in place with no way to reach its lower
+   sheets. */
+.preview-stage--sheets {
+  flex-direction: column;
+  align-items: stretch;
+  /* Overrides .preview-stage's own justify-content: center - centering an
+     overflowing flex column centers the overflow too, pushing earlier
+     sheets out above the visible box (and out of scroll range at
+     scrollTop 0) instead of starting the stack, and the scrollbar, at
+     sheet 1 like a reader would expect. */
+  justify-content: flex-start;
+  gap: 1.5rem;
+  max-height: calc(100vh - 5.5rem - 2rem);
+  overflow-y: auto;
+  padding: 1rem 0.25rem;
+}
+
 /* Every preview is laid out at TRUE PRINT SIZE and then shrunk to fit with a
    CSS transform, rather than being re-laid-out at whatever pixel size the
    panel happens to be. A transform is purely visual: line breaks, the
@@ -956,16 +981,6 @@ h1, h2, h3 { margin: 0; }
   gap: 0.3in;
   width: 100%;
   flex: 0 0 auto;
-}
-
-.sheet-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.9rem;
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--ui-ink-soft);
 }
 
 /* ---------- Modal shell ----------
