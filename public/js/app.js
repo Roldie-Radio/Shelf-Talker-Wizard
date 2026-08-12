@@ -625,6 +625,7 @@
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
     untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
     untappdConfirmAcceptBtn: document.getElementById('untappdConfirmAcceptBtn'),
+    untappdConfirmTitleText: document.getElementById('untappdConfirmTitleText'),
     untappdConfirmBrewery: document.getElementById('untappdConfirmBrewery'),
     untappdConfirmMeta: document.getElementById('untappdConfirmMeta'),
     untappdConfirmDescription: document.getElementById('untappdConfirmDescription'),
@@ -3283,6 +3284,12 @@
   function openUntappdConfirm(data) {
     return new Promise((resolve) => {
       untappdConfirmResolve = resolve;
+      // data.beerName is Untappd's own name for the matched beer (see
+      // mergeUntappdBeer's comment) - shown here instead of data.title
+      // (the store-sourced Product Title, already visible on the form/
+      // preview behind this dialog) so staff can actually see what beer
+      // Untappd matched to, not just its brewery.
+      els.untappdConfirmTitleText.textContent = data.beerName || data.title || 'Unknown beer';
       els.untappdConfirmBrewery.textContent = data.brewery || 'Unknown brewery';
       const metaParts = [];
       if (data.style) metaParts.push(data.style);

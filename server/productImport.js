@@ -1797,6 +1797,13 @@ function combineBeerSize(size, packSize) {
 // end up with a parsed beer object that needs merging the same way.
 function mergeUntappdBeer(current, beer) {
   return {
+    // Untappd's own name for the matched beer, distinct from `title`
+    // (the store-sourced Product Title, never overwritten by this merge -
+    // see enrichBeerFromUntappd's own comment). Kept as a separate field
+    // so a caller can show staff exactly what Untappd matched to (see the
+    // "Confirm Untappd Match" popup in app.js) without that clobbering the
+    // Product Title field the store's own title already fills in.
+    beerName: beer.title || beer.beerName || current.beerName || '',
     description: firstNonEmpty(beer.description, current.description) || '',
     brewery: beer.brewery || current.brewery || '',
     location: beer.location || current.location || '',

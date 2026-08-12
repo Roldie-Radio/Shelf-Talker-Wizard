@@ -1099,7 +1099,8 @@ h1, h2, h3 { margin: 0; }
   border-radius: 8px;
   padding: 0.8rem 0.9rem;
 }
-.untappd-confirm-card__brewery { font-size: 1rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-confirm-card__title { font-size: 1rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-confirm-card__brewery { font-size: 0.86rem; color: var(--ui-muted); margin-top: 0.1rem; }
 .untappd-confirm-card__meta { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.2rem; }
 .untappd-confirm-card__description {
   font-size: 0.82rem;
