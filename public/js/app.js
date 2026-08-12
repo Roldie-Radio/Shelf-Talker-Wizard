@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.2.7',
+      items: [
+        'Fixed: the "Pick the Right Beer" dialog could open with the recommended pick\'s card, "Use Recommended Pick" button, and other-match rows already greyed out and unclickable. That happened if a previous pick was cancelled (Cancel/Escape/backdrop) while its own lookup was still in flight - the leftover disabled state stuck around on the next, unrelated tie. Every open now starts from a clean, clickable state, and a cancelled pick\'s in-flight lookup no longer applies its fields after the fact.',
+      ],
+    },
+    {
       version: '3.2.6',
       items: [
         'Fixed: Scan UPC (Beer) no longer stops for a manual "Add to Queue" click after picking a beer from the "Pick the Right Beer" dialog (Recommended or one of the alternates) - a pick made there is now treated the same as any other confirmed scan and goes straight to the queue, so scanning can keep going item to item.',
@@ -3079,6 +3085,16 @@
   function openUntappdPicker(candidates, queryTitle) {
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
+      // Defensive reset: if the *previous* dialog was closed (Cancel/Escape/
+      // backdrop, or the close-btn/backdrop path in general - see onClose
+      // above) while a selectCandidate fetch it kicked off was still in
+      // flight, that fetch's own success path leaves the rec
+      // card/button/alt-rows disabled forever, since it assumes the dialog
+      // is still open and about to be closed by itself (see selectCandidate
+      // below). Those are shared, reused DOM nodes, so without this reset a
+      // brand-new tie for a completely unrelated scan would open already
+      // greyed-out and unclickable, with no error message explaining why.
+      setAllDisabled(false);
       const count = candidates.length;
       const otherCount = count - 1;
       els.untappdPickerQueryLabel.textContent = `Untappd found ${count} equally-likely matches for `
@@ -3156,14 +3172,22 @@
           });
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+          // Close/Cancel/backdrop/Escape aren't covered by setAllDisabled
+          // above, so staff can back out of the dialog while this fetch is
+          // still in flight - that already resolved openUntappdPicker's
+          // promise with false via onClose, which reassigns
+          // untappdPickerResolve (see below) or nulls it out. If it no
+          // longer points at *this* invocation's own resolve fn, staff
+          // already backed out: applying these fields now would silently
+          // overwrite the form after the fact, and closing/resolving would
+          // step on whatever opened next. Bail out quietly instead.
+          if (untappdPickerResolve !== resolve) return;
           applyUntappdFields(data);
-          // Resolve (and null out untappdPickerResolve) before closing -
-          // see the onClose comment above for why the ordering matters.
-          const resolveFn = untappdPickerResolve;
           untappdPickerResolve = null;
           untappdPickerModal.close();
-          if (resolveFn) resolveFn(true);
+          resolve(true);
         } catch (err) {
+          if (untappdPickerResolve !== resolve) return;
           selecting = false;
           els.untappdPickerStatus.textContent = err.message || 'Something went wrong loading that beer.';
           setAllDisabled(false);
