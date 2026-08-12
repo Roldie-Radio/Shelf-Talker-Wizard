@@ -756,6 +756,11 @@
     saveQueueBtn: document.getElementById('saveQueueBtn'),
     queueItemMenu: document.getElementById('queueItemMenu'),
 
+    clearQueueConfirmOverlay: document.getElementById('clearQueueConfirmOverlay'),
+    clearQueueConfirmCloseBtn: document.getElementById('clearQueueConfirmCloseBtn'),
+    clearQueueConfirmCancelBtn: document.getElementById('clearQueueConfirmCancelBtn'),
+    clearQueueConfirmAcceptBtn: document.getElementById('clearQueueConfirmAcceptBtn'),
+
     findQueueOverlay: document.getElementById('findQueueOverlay'),
     findQueueInput: document.getElementById('findQueueInput'),
     findQueueCount: document.getElementById('findQueueCount'),
@@ -2046,9 +2051,22 @@
     refreshPreview();
   }
 
+  // Uses an in-app modal instead of window.confirm() - see the note on
+  // clearQueueConfirmOverlay in index.html for why: the native dialog can
+  // leave clicks (including picking a form to fill) unresponsive until the
+  // window regains OS focus.
+  const clearQueueConfirmModal = createModal({
+    overlay: els.clearQueueConfirmOverlay,
+    closeBtns: [els.clearQueueConfirmCloseBtn, els.clearQueueConfirmCancelBtn],
+  });
+
   els.clearQueueBtn.addEventListener('click', () => {
     if (queue.length === 0) return;
-    if (!confirm('Remove all shelf talkers from the queue?')) return;
+    clearQueueConfirmModal.open();
+  });
+
+  els.clearQueueConfirmAcceptBtn.addEventListener('click', () => {
+    clearQueueConfirmModal.close();
     queue = [];
     expandedQueueItemIds.clear();
     saveQueue();
