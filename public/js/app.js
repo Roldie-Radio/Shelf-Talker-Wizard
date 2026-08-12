@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.2.6',
+      items: [
+        'Fixed: Scan UPC (Beer) no longer stops for a manual "Add to Queue" click after picking a beer from the "Pick the Right Beer" dialog (Recommended or one of the alternates) - a pick made there is now treated the same as any other confirmed scan and goes straight to the queue, so scanning can keep going item to item.',
+      ],
+    },
+    {
       version: '3.2.5',
       items: [
         'New: Advanced menu → View Export File now has a search box that filters to rows containing whatever you type, anywhere in the row, across the whole file - not just the ones already on screen - so you can check whether a specific item is actually in the export.',
@@ -2515,15 +2521,23 @@
 
       // Untappd itself couldn't safely pick one of two or more real,
       // separately-listed beers (see openUntappdPicker's own comment) -
-      // ask instead of guessing, and never auto-queue on the strength of a
-      // still-unresolved pick, whether or not staff end up making one.
+      // ask instead of guessing. Once staff actually make a pick (Recommended
+      // or one of the alternates), that's the same explicit sign-off
+      // confirmBeerUntappdMatch's "Use This Match" would give, so it rejoins
+      // the hands-free auto-queue flow below rather than stopping to wait for
+      // a manual "Add to Queue" click - the whole point of this tab is
+      // scanning one item after another. Backing out of the dialog without
+      // picking anything is the only case left unresolved, so that one still
+      // stops for a manual review/click.
       if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
         applyUpcScanProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
-        els.scanUpcStatus.textContent = picked
-          ? `Found it${cacheNote(data)}! Review the fields, then click "Add to Queue".`
-          : `Found it${cacheNote(data)}. Untappd had more than one possible match and none was picked - `
+        if (picked) {
+          addScannedUpcToQueue(`Added to queue${cacheNote(data)}! Scan the next one.`);
+        } else {
+          els.scanUpcStatus.textContent = `Found it${cacheNote(data)}. Untappd had more than one possible match and none was picked - `
             + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
+        }
         return;
       }
 
