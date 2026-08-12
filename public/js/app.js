@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.1',
+      items: [
+        'New: on the Full Page Live Preview, you can now click any talker or sign right on the sheet to jump straight into editing it - hover to see the edit badge, then click (or Tab + Enter). Same as choosing Edit from that item\'s Queue row menu, just without having to find the matching row first.',
+      ],
+    },
+    {
       version: '3.3.0',
       items: [
         'Removed the product cache and the Advanced > View Database dialog (a broken duplicate of History that never actually showed the cached-product counts it claimed to) - SKU Lookup, Scan UPC, and Search by Name (Beer) are now live-only, with a real error on a failed lookup instead of a stale cached fallback. Print History is unaffected.',
