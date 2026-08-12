@@ -1081,6 +1081,19 @@
         <button type="button" class="btn btn--ghost btn--small" id="exportPreviewCloseBtn">&times; Close</button>
       </div>
       <div class="data-preview">
+        <!-- Filters to rows containing this text, anywhere in the row -
+             plain substring match run over the whole file server-side (see
+             previewExport()'s note on why), not just whatever page of rows
+             is already showing. For confirming a specific item is (or
+             isn't) actually in the file, without opening it elsewhere. -->
+        <input
+          type="search"
+          id="exportPreviewSearchInput"
+          class="data-preview__search"
+          placeholder="Search this file&hellip;"
+          aria-label="Search export file"
+          autocomplete="off"
+        />
         <p class="help-text" id="exportPreviewStatus" role="status" aria-live="polite"></p>
         <div class="preview-table-wrap" id="exportPreviewTableWrap"></div>
       </div>

@@ -656,6 +656,65 @@ test('previewExport respects the limit without changing totalRows', () => {
   });
 });
 
+test('previewExport with a query filters to rows containing it anywhere, case-insensitively', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    const preview = previewExport({ limit: 10, query: 'corona' });
+    assert.equal(preview.rows.length, 1);
+    assert.equal(preview.matchedRows, 1);
+    assert.equal(preview.rows[0][0], '019214600037');
+    // totalRows stays the whole file's count, not the filtered count - the
+    // status line needs both ("3 of 40 rows matching… (400 total)").
+    assert.equal(preview.totalRows, 2);
+  });
+});
+
+test('previewExport query matches any column, not just the ones lookupUpc/searchByName use', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    // "Wine" only appears in the Department column.
+    const preview = previewExport({ limit: 10, query: 'Wine' });
+    assert.equal(preview.matchedRows, 1);
+    assert.equal(preview.rows[0][0], '085000010652');
+  });
+});
+
+test('previewExport query applies before limit, and reports matchedRows separately from totalRows', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    // Matches both rows (every row has a price with a decimal point).
+    const preview = previewExport({ limit: 1, query: '.99' });
+    assert.equal(preview.rows.length, 1); // capped by limit
+    assert.equal(preview.matchedRows, 2); // but both actually matched
+    assert.equal(preview.totalRows, 2);
+  });
+});
+
+test('previewExport with a query that matches nothing returns zero rows without erroring', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    const preview = previewExport({ limit: 10, query: 'nonexistent-vendor-xyz' });
+    assert.equal(preview.rows.length, 0);
+    assert.equal(preview.matchedRows, 0);
+    assert.equal(preview.totalRows, 2);
+  });
+});
+
+test('previewExport with no query (or blank/whitespace) behaves exactly as before - matchedRows equals totalRows', () => {
+  withTempConfigDir((dir) => {
+    const filePath = writeExport(dir, 'items.csv', SAMPLE_CSV);
+    setUpcSettings(filePath);
+    const preview = previewExport({ limit: 10, query: '   ' });
+    assert.equal(preview.query, '');
+    assert.equal(preview.matchedRows, preview.totalRows);
+    assert.equal(preview.rows.length, 2);
+  });
+});
+
 test('previewExport does not require a UPC column - unlike lookupUpc, a raw preview should work on any export', () => {
   withTempConfigDir((dir) => {
     const filePath = writeExport(dir, 'items.csv', 'Title,Price\nJosh Cellars,13.99\n');

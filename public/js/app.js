@@ -41,6 +41,18 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.2.5',
+      items: [
+        'New: Advanced menu → View Export File now has a search box that filters to rows containing whatever you type, anywhere in the row, across the whole file - not just the ones already on screen - so you can check whether a specific item is actually in the export.',
+      ],
+    },
+    {
+      version: '3.2.4',
+      items: [
+        'The Confirm Untappd Match popup (Scan UPC, SKU Lookup, Search by Name) now shows the matched beer\'s own name as its heading, with brewery demoted to a secondary line underneath - previously it only showed the brewery, which read like a generic label when the brewery\'s own name happened to look like a beer name (e.g. "Autodidact Beer").',
+      ],
+    },
+    {
       version: '3.2.3',
       items: [
         'Fixed: after clicking Clear All in the Queue and confirming, the form could become unclickable until switching windows, minimizing/restoring, or restarting the app. The Clear Queue confirmation no longer uses the native dialog that caused it.',
@@ -819,6 +831,7 @@
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
     exportPreviewCloseFooterBtn: document.getElementById('exportPreviewCloseFooterBtn'),
     exportPreviewSettingsBtn: document.getElementById('exportPreviewSettingsBtn'),
+    exportPreviewSearchInput: document.getElementById('exportPreviewSearchInput'),
     exportPreviewStatus: document.getElementById('exportPreviewStatus'),
     exportPreviewTableWrap: document.getElementById('exportPreviewTableWrap'),
 
@@ -4940,15 +4953,32 @@
   const exportPreviewModal = createModal({
     overlay: els.exportPreviewOverlay,
     closeBtns: [els.exportPreviewCloseBtn, els.exportPreviewCloseFooterBtn],
-    onOpen: loadExportPreview,
+    // Starts from a blank search every time the dialog is opened, rather
+    // than whatever was typed the last time it was open - "reopen this
+    // dialog" should mean "look at the file fresh", not "still filtered
+    // from ten minutes ago".
+    onOpen: () => {
+      els.exportPreviewSearchInput.value = '';
+      loadExportPreview('');
+    },
   });
 
-  async function loadExportPreview() {
+  // Bumped on every call so a slow response to an old keystroke can't land
+  // after a faster response to a newer one and clobber it with stale
+  // results - same "newest wins" guard as Search by Name's own
+  // nameSearchSelectToken.
+  let exportPreviewToken = 0;
+
+  async function loadExportPreview(query) {
     els.exportPreviewStatus.textContent = 'Loading...';
     els.exportPreviewTableWrap.innerHTML = '';
+    const token = (exportPreviewToken += 1);
     try {
-      const resp = await fetch('/api/export-preview?limit=200');
+      const q = (query || '').trim();
+      const url = q ? `/api/export-preview?limit=200&q=${encodeURIComponent(q)}` : '/api/export-preview?limit=200';
+      const resp = await fetch(url);
       const data = await resp.json();
+      if (token !== exportPreviewToken) return; // superseded by a newer search
       if (!resp.ok) {
         const err = new Error(data.error || 'Could not read the export file.');
         err.code = data.code;
@@ -4959,12 +4989,26 @@
       // something staff would recognize, so name the source they'd actually
       // expect instead.
       const source = data.autoSync ? 'the file synced from the Server PC' : data.exportPath;
-      els.exportPreviewStatus.textContent = `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${source}`;
+      els.exportPreviewStatus.textContent = q
+        ? `Showing ${data.rows.length} of ${data.matchedRows.toLocaleString('en-US')} row${data.matchedRows === 1 ? '' : 's'} matching “${q}” (${data.totalRows.toLocaleString('en-US')} total) from ${source}`
+        : `Showing ${data.rows.length} of ${data.totalRows.toLocaleString('en-US')} row${data.totalRows === 1 ? '' : 's'} from ${source}`;
       renderPreviewTable(els.exportPreviewTableWrap, data.headers, data.rows);
     } catch (err) {
+      if (token !== exportPreviewToken) return;
       els.exportPreviewStatus.textContent = err.message || 'Could not read the export file.';
     }
   }
+
+  // Filters the table above to rows containing this text anywhere in the
+  // row - a plain substring match run server-side over the *whole* file
+  // (see previewExport's own note on why), debounced the same 200ms as
+  // Search by Name so a fast typist doesn't fire a request per keystroke.
+  let exportPreviewSearchDebounce;
+  els.exportPreviewSearchInput.addEventListener('input', () => {
+    clearTimeout(exportPreviewSearchDebounce);
+    const { value } = els.exportPreviewSearchInput;
+    exportPreviewSearchDebounce = setTimeout(() => loadExportPreview(value), 200);
+  });
 
   // Closes this dialog and opens Export File Settings directly - lets
   // someone go straight from "the export file isn't set up" to fixing it,
