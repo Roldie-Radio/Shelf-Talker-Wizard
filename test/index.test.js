@@ -11,7 +11,7 @@ const { setUpcSettings } = require('../server/upcCatalog');
 
 // Same per-test throwaway directory pattern as test/db.test.js - db.js's
 // getDb() re-derives its connection whenever SHELF_TALKER_CONFIG_DIR
-// changes, so each test gets its own isolated SQLite file/cache.
+// changes, so each test gets its own isolated SQLite file.
 //
 // `fn` is always async here (every caller passes withServer(...), whose
 // request/response round trip needs real event-loop ticks) - this has to
@@ -191,8 +191,8 @@ function postJson(port, urlPath, body) {
 // to live here and got removed: it meant a beer that missed on Untappd (or
 // came back ambiguous) stayed stuck showing that exact same stale result
 // for a full day, even after a fix that would have found it on a retry
-// shipped. The product_cache table (db.js) still gets written on every
-// success - see the stale-fallback test further down for what it's for now.
+// shipped. There's no product cache to fall back to anymore either - a
+// live attempt that fails outright is a real error (see below).
 // ================================================================
 
 test('a second SKU lookup, even in the same category, still hits the network again', async () => {
@@ -207,13 +207,11 @@ test('a second SKU lookup, even in the same category, still hits the network aga
       async () => {
         const first = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
         assert.equal(first.status, 200);
-        assert.equal(first.body.fromCache, undefined);
         assert.equal(first.body.title, 'Michelob ULTRA');
 
         const callsAfterFirst = calls.length;
         const second = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
         assert.equal(second.status, 200);
-        assert.equal(second.body.fromCache, undefined);
         assert.ok(calls.length > callsAfterFirst, 'a repeat lookup should hit the network again, not reuse a cached copy');
       }
     );
@@ -238,7 +236,6 @@ test('switching a looked-up SKU to Beer re-runs the lookup and actually runs the
         const callsAfterWine = calls.length;
         const beerResult = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
         assert.equal(beerResult.status, 200);
-        assert.equal(beerResult.body.fromCache, undefined);
         assert.ok(calls.length > callsAfterWine, 'switching to Beer should re-hit the network for the Untappd step');
         assert.ok(
           calls.some((url) => url.includes('algolia.net')),
@@ -252,14 +249,12 @@ test('switching a looked-up SKU to Beer re-runs the lookup and actually runs the
   }));
 });
 
-// Regression coverage for the one thing the product cache still does: a
-// live attempt that fails outright (site blocked, Untappd down, a network
-// hiccup) falls back to the last thing that DID resolve, marked stale,
-// rather than a hard error over data that was fine moments ago. Unlike the
-// old "skip the network" shortcut, this only ever kicks in on an actual
-// failure - the two tests above already confirm a successful repeat lookup
-// never takes this path.
-test('a SKU lookup that fails outright falls back to the last resolved cache entry, marked stale', async () => {
+// Regression coverage for the product cache's removal: a live attempt that
+// fails outright (site blocked, Untappd down, a network hiccup) used to
+// fall back to the last thing that DID resolve, marked stale - now it's
+// just a hard error, even immediately after a successful lookup of the
+// exact same SKU.
+test('a SKU lookup that fails outright is a hard error, not a stale fallback', async () => {
   await withTempDb(() => withServer(async (port) => {
     let shouldFail = false;
     await withMockFetch(
@@ -271,15 +266,12 @@ test('a SKU lookup that fails outright falls back to the last resolved cache ent
       async () => {
         const first = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
         assert.equal(first.status, 200);
-        assert.equal(first.body.fromCache, undefined);
         assert.equal(first.body.title, 'Michelob ULTRA');
 
         shouldFail = true;
         const second = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'wine' });
-        assert.equal(second.status, 200);
-        assert.equal(second.body.fromCache, true);
-        assert.equal(second.body.stale, true);
-        assert.equal(second.body.title, 'Michelob ULTRA', 'the stale fallback should still be the last thing that actually resolved');
+        assert.equal(second.status, 502);
+        assert.ok(second.body.error, 'a failed live attempt should surface a real error message');
       }
     );
   }));
@@ -343,8 +335,8 @@ test('/api/import-url strips the container size out of the title for a liquorout
 
 // ================================================================
 // /api/upc-lookup's Wine/Spirits store-description enrichment (see the
-// comment above the route in server/index.js) and its own category-aware
-// cache, mirroring the /api/sku-lookup tests above.
+// comment above the route in server/index.js), mirroring the
+// /api/sku-lookup tests above.
 // ================================================================
 
 function writeUpcExport(dir, rows) {
@@ -440,7 +432,6 @@ test('switching a looked-up UPC from Beer to Wine/Spirits re-runs its own store 
         assert.ok(callsAfterBeer > 0, 'a Beer scan should hit the network for price + Untappd');
 
         const wineResult = await postJson(port, '/api/upc-lookup', { upc: '085000010652', category: 'wine' });
-        assert.equal(wineResult.body.fromCache, undefined);
         assert.equal(wineResult.body.description, 'Rich, full-bodied with notes of dark fruit and oak.');
         assert.ok(calls.length > callsAfterBeer, 'switching to Wine/Spirits should run its own store description lookup');
       }
@@ -601,12 +592,11 @@ test('POST /api/name-search-select re-runs the Untappd search on a second pick o
       async () => {
         const product = { title: 'Corona Extra 12pk Cans', sku: '55555', price: '14.99' };
         const first = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
-        assert.equal(first.body.fromCache, undefined);
+        assert.equal(first.status, 200);
         const callsAfterFirst = calls.length;
         assert.ok(callsAfterFirst > 0);
 
         const second = await postJson(port, '/api/name-search-select', { product, category: 'beer' });
-        assert.equal(second.body.fromCache, undefined);
         assert.equal(second.body.brewery, 'Grupo Modelo');
         assert.ok(calls.length > callsAfterFirst, 'a second pick of the same SKU should hit the network again, not reuse a cached copy');
       }

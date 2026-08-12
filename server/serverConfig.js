@@ -4,10 +4,10 @@
 // PCs can see which one it is, and starts serving this PC's own configured
 // export file to other PCs' auto-sync (see exportSync.js) - but that's the
 // extent of it so far: the main HTTP server still only binds to 127.0.0.1
-// (see server/index.js), so Print History and the product cache still don't
-// cross PCs. It exists so a store with multiple registers can start
-// agreeing *now* on which PC would eventually host a shared Print History/
-// product cache database, ahead of that networking actually being built -
+// (see server/index.js), so Print History still doesn't cross PCs. It
+// exists so a store with multiple registers can start agreeing *now* on
+// which PC would eventually host a shared Print History database, ahead
+// of that networking actually being built -
 // a deliberately small, honest first step (export-file sharing being the
 // second) rather than a feature that pretends to already share everything
 // across PCs.

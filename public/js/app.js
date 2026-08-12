@@ -841,18 +841,11 @@
     exportPreviewStatus: document.getElementById('exportPreviewStatus'),
     exportPreviewTableWrap: document.getElementById('exportPreviewTableWrap'),
 
-    databasePreviewOverlay: document.getElementById('databasePreviewOverlay'),
-    databasePreviewCloseBtn: document.getElementById('databasePreviewCloseBtn'),
-    databasePreviewCloseFooterBtn: document.getElementById('databasePreviewCloseFooterBtn'),
-    databasePreviewStatus: document.getElementById('databasePreviewStatus'),
-    databasePreviewTableWrap: document.getElementById('databasePreviewTableWrap'),
-
     serverPcOverlay: document.getElementById('serverPcOverlay'),
     serverPcCloseBtn: document.getElementById('serverPcCloseBtn'),
     serverPcCloseFooterBtn: document.getElementById('serverPcCloseFooterBtn'),
     serverPcAddresses: document.getElementById('serverPcAddresses'),
     serverPcHistoryCount: document.getElementById('serverPcHistoryCount'),
-    serverPcCacheCount: document.getElementById('serverPcCacheCount'),
     serverPcDiscovered: document.getElementById('serverPcDiscovered'),
     serverPcCheckbox: document.getElementById('serverPcCheckbox'),
     serverPcStatus: document.getElementById('serverPcStatus'),
@@ -2533,9 +2526,9 @@
         applyUpcScanProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
         if (picked) {
-          addScannedUpcToQueue(`Added to queue${cacheNote(data)}! Scan the next one.`);
+          addScannedUpcToQueue('Added to queue! Scan the next one.');
         } else {
-          els.scanUpcStatus.textContent = `Found it${cacheNote(data)}. Untappd had more than one possible match and none was picked - `
+          els.scanUpcStatus.textContent = 'Found it. Untappd had more than one possible match and none was picked - '
             + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
         }
         return;
@@ -2552,8 +2545,8 @@
         const otherProblems = scanUpcProblems(data);
         const suffix = otherProblems ? ` ${otherProblems}` : '';
         els.scanUpcStatus.textContent = confirmed
-          ? `Found it${cacheNote(data)}!${suffix} Review the fields, then click "Add to Queue".`
-          : `Found it${cacheNote(data)}. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
+          ? `Found it!${suffix} Review the fields, then click "Add to Queue".`
+          : `Found it. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
             + 'Review the fields, then click "Add to Queue".';
         return;
       }
@@ -2566,12 +2559,12 @@
         // silently queue a result staff haven't had a chance to see was
         // incomplete. The fields stay filled in with whatever did resolve;
         // Add to Queue below still works once they've been reviewed.
-        els.scanUpcStatus.textContent = `Found it${cacheNote(data)}. ${problems} Review the fields, then click "Add to Queue".`;
+        els.scanUpcStatus.textContent = `Found it. ${problems} Review the fields, then click "Add to Queue".`;
       } else {
         // Every field the lookup needed is filled, with nothing left
         // unresolved - add it straight to the queue instead of waiting for
         // a manual click.
-        addScannedUpcToQueue(`Added to queue${cacheNote(data)}! Scan the next one.`);
+        addScannedUpcToQueue('Added to queue! Scan the next one.');
       }
     } catch (err) {
       els.scanUpcStatus.textContent = err.message || 'Something went wrong looking up that UPC.';
@@ -3354,16 +3347,6 @@
     return confirmed;
   }
 
-  // Small aside appended to a lookup's status message when the server
-  // served a cached copy (see the product cache note above /api/sku-lookup
-  // and /api/upc-lookup in server/index.js) - every lookup is live now, so
-  // this only ever comes up when that live attempt itself failed and
-  // `stale` comes back set alongside it.
-  function cacheNote(data) {
-    if (!data.fromCache) return '';
-    return ` (cached${data.stale ? ', may be stale' : ''})`;
-  }
-
   // data.untappdError is only ever set for a beer lookup whose Untappd step
   // failed (blocked, no match, etc) - see enrichBeerFromUntappd in
   // productImport.js. The store lookup itself still succeeded, so the form
@@ -3373,7 +3356,7 @@
     if (data.untappdError) {
       return `Loaded from ${loadedFrom}. Untappd: ${data.untappdError}`;
     }
-    return `Loaded from ${loadedFrom}${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+    return `Loaded from ${loadedFrom}! Review the fields, then click "Add to Queue".`;
   }
 
   els.skuLookupBtn.addEventListener('click', async () => {
@@ -3401,7 +3384,7 @@
         applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || sku);
         if (picked) {
-          els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+          els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
         } else {
           // None of the offered candidates were right (or staff just backed
           // out) - reveal the same manual "paste an Untappd URL" fallback a
@@ -3419,7 +3402,7 @@
       if (isBeer && !data.untappdError) {
         const confirmed = await confirmBeerUntappdMatch(data, (d) => applySkuLookupProduct(d, isBeer));
         if (confirmed) {
-          els.skuStatus.textContent = `Loaded from the store${cacheNote(data)}! Review the fields, then click "Add to Queue".`;
+          els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
         } else {
           els.skuUntappdSection.hidden = false;
           els.skuStatus.textContent = 'Loaded from the store. Not the right beer - brewery/style/ABV/rating left blank. '
@@ -4756,10 +4739,10 @@
 
   // ---------- Advanced menu dialogs (Electron only) ----------
 
-  // Shared by the Export File and Database preview dialogs below - builds a
-  // plain HTML table from a header row + array-of-arrays data rows. Used
-  // instead of a fancier grid component since a read-only troubleshooting
-  // preview doesn't need sorting/filtering/etc., just to show what's there.
+  // Used by the Export File preview dialog below - builds a plain HTML
+  // table from a header row + array-of-arrays data rows. Used instead of a
+  // fancier grid component since a read-only troubleshooting preview
+  // doesn't need sorting/filtering/etc., just to show what's there.
   function renderPreviewTable(container, headers, rows) {
     if (!headers.length) {
       container.innerHTML = '<p class="empty-hint">Nothing to show.</p>';
@@ -5032,39 +5015,6 @@
     exportSettingsModal.open();
   });
 
-  const databasePreviewModal = createModal({
-    overlay: els.databasePreviewOverlay,
-    closeBtns: [els.databasePreviewCloseBtn, els.databasePreviewCloseFooterBtn],
-    onOpen: loadDatabasePreview,
-  });
-
-  async function loadDatabasePreview() {
-    els.databasePreviewStatus.textContent = 'Loading...';
-    els.databasePreviewTableWrap.innerHTML = '';
-    try {
-      const resp = await fetch('/api/db-preview?limit=100');
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Could not read the database.');
-
-      const { stats } = data;
-      els.databasePreviewStatus.textContent = `${stats.printedTalkers.toLocaleString('en-US')} printed talker${stats.printedTalkers === 1 ? '' : 's'}, `
-        + `${stats.cachedProducts.toLocaleString('en-US')} cached product${stats.cachedProducts === 1 ? '' : 's'}. `
-        + `Showing the ${data.history.length} most recently printed.`;
-
-      const headers = ['Title', 'Category', 'Size', 'Price', 'Printed'];
-      const rows = data.history.map((row) => [
-        row.title || '',
-        row.category === 'beer' ? 'Beer' : 'Wine / Spirits',
-        row.size || '',
-        formatMoney(row.price),
-        formatHistoryTimestamp(row.printedAt),
-      ]);
-      renderPreviewTable(els.databasePreviewTableWrap, headers, rows);
-    } catch (err) {
-      els.databasePreviewStatus.textContent = err.message || 'Could not read the database.';
-    }
-  }
-
   let serverPcPollTimer = null;
 
   const serverPcModal = createModal({
@@ -5107,7 +5057,6 @@
 
       els.serverPcAddresses.textContent = data.addresses.length ? data.addresses.join(', ') : 'Not connected to a network';
       els.serverPcHistoryCount.textContent = data.stats.printedTalkers.toLocaleString('en-US');
-      els.serverPcCacheCount.textContent = data.stats.cachedProducts.toLocaleString('en-US');
       els.serverPcDiscovered.textContent = describeDiscoveredServer(data);
       els.serverPcCheckbox.checked = data.isServer;
       els.serverPcStatus.textContent = data.isServer && data.confirmedAt
@@ -5154,9 +5103,9 @@
     }
   });
 
-  // These three, and Settings below, are reachable via the menu bar's
-  // Advanced/Tools items (see runMenuAction's 'view-export'/'view-database'/
-  // 'server-pc'/'settings' cases) in both Electron and a plain browser tab -
+  // These two, and Settings below, are reachable via the menu bar's
+  // Advanced/Tools items (see runMenuAction's 'view-export'/'server-pc'/
+  // 'settings' cases) in both Electron and a plain browser tab -
   // each panel's own content comes from the same-origin API either way.
 
   // onOpen re-syncs the toggle buttons rather than relying on applyAccent's
@@ -5240,9 +5189,6 @@
         break;
       case 'view-export':
         exportPreviewModal.open();
-        break;
-      case 'view-database':
-        databasePreviewModal.open();
         break;
       case 'server-pc':
         serverPcModal.open();

@@ -2,8 +2,8 @@
 // currently marked as the main store PC periodically broadcasts a small UDP
 // announcement so *other* PCs on the same network can see which one it is.
 // This is visibility only, same spirit as serverConfig.js itself - no Print
-// History or product cache data crosses PCs, and neither PC's main HTTP
-// server becomes reachable from the network (that's still 127.0.0.1-only,
+// History data crosses PCs, and neither PC's main HTTP server becomes
+// reachable from the network (that's still 127.0.0.1-only,
 // see index.js's start()). The UDP announcement is a separate, much smaller
 // surface than the HTTP API - so is exportSync.js's own export-serve port,
 // the only other thing that leaves the PC (see that file), which reuses
