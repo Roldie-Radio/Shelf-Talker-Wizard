@@ -94,9 +94,6 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="view-export">
           <span>View Export File&hellip;</span>
         </button>
-        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="view-database">
-          <span>View Database&hellip;</span>
-        </button>
         <div class="menubar__sep" role="separator"></div>
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="server-pc">
           <span>Server PC&hellip;</span>
@@ -1046,26 +1043,6 @@
       <div class="modal__footer">
         <button type="button" class="btn" id="exportPreviewSettingsBtn">Open Export File Settings</button>
         <button type="button" class="btn btn--primary" id="exportPreviewCloseFooterBtn">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Advanced > View Database… - a read-only look at what's actually
-       stored in the local database (see server/db.js): Print History and
-       product cache counts, plus a page of the most recent printed talkers,
-       for confirming this PC has real accumulated data. -->
-  <div id="databasePreviewOverlay" class="modal-overlay no-print" hidden>
-    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="databasePreviewTitle">
-      <div class="modal__header">
-        <h2 id="databasePreviewTitle">Database</h2>
-        <button type="button" class="btn btn--ghost btn--small" id="databasePreviewCloseBtn">&times; Close</button>
-      </div>
-      <div class="data-preview">
-        <p class="help-text" id="databasePreviewStatus" role="status" aria-live="polite"></p>
-        <div class="preview-table-wrap" id="databasePreviewTableWrap"></div>
-      </div>
-      <div class="modal__footer">
-        <button type="button" class="btn btn--primary" id="databasePreviewCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

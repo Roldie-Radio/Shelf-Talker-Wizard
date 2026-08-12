@@ -790,12 +790,6 @@
     exportPreviewStatus: document.getElementById('exportPreviewStatus'),
     exportPreviewTableWrap: document.getElementById('exportPreviewTableWrap'),
 
-    databasePreviewOverlay: document.getElementById('databasePreviewOverlay'),
-    databasePreviewCloseBtn: document.getElementById('databasePreviewCloseBtn'),
-    databasePreviewCloseFooterBtn: document.getElementById('databasePreviewCloseFooterBtn'),
-    databasePreviewStatus: document.getElementById('databasePreviewStatus'),
-    databasePreviewTableWrap: document.getElementById('databasePreviewTableWrap'),
-
     serverPcOverlay: document.getElementById('serverPcOverlay'),
     serverPcCloseBtn: document.getElementById('serverPcCloseBtn'),
     serverPcCloseFooterBtn: document.getElementById('serverPcCloseFooterBtn'),
@@ -4515,10 +4509,10 @@
 
   // ---------- Advanced menu dialogs (Electron only) ----------
 
-  // Shared by the Export File and Database preview dialogs below - builds a
-  // plain HTML table from a header row + array-of-arrays data rows. Used
-  // instead of a fancier grid component since a read-only troubleshooting
-  // preview doesn't need sorting/filtering/etc., just to show what's there.
+  // Used by the Export File preview dialog below - builds a plain HTML
+  // table from a header row + array-of-arrays data rows. Used instead of a
+  // fancier grid component since a read-only troubleshooting preview
+  // doesn't need sorting/filtering/etc., just to show what's there.
   function renderPreviewTable(container, headers, rows) {
     if (!headers.length) {
       container.innerHTML = '<p class="empty-hint">Nothing to show.</p>';
@@ -4760,39 +4754,6 @@
     exportSettingsModal.open();
   });
 
-  const databasePreviewModal = createModal({
-    overlay: els.databasePreviewOverlay,
-    closeBtns: [els.databasePreviewCloseBtn, els.databasePreviewCloseFooterBtn],
-    onOpen: loadDatabasePreview,
-  });
-
-  async function loadDatabasePreview() {
-    els.databasePreviewStatus.textContent = 'Loading...';
-    els.databasePreviewTableWrap.innerHTML = '';
-    try {
-      const resp = await fetch('/api/db-preview?limit=100');
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Could not read the database.');
-
-      const { stats } = data;
-      els.databasePreviewStatus.textContent = `${stats.printedTalkers.toLocaleString('en-US')} printed talker${stats.printedTalkers === 1 ? '' : 's'}, `
-        + `${stats.cachedProducts.toLocaleString('en-US')} cached product${stats.cachedProducts === 1 ? '' : 's'}. `
-        + `Showing the ${data.history.length} most recently printed.`;
-
-      const headers = ['Title', 'Category', 'Size', 'Price', 'Printed'];
-      const rows = data.history.map((row) => [
-        row.title || '',
-        row.category === 'beer' ? 'Beer' : 'Wine / Spirits',
-        row.size || '',
-        formatMoney(row.price),
-        formatHistoryTimestamp(row.printedAt),
-      ]);
-      renderPreviewTable(els.databasePreviewTableWrap, headers, rows);
-    } catch (err) {
-      els.databasePreviewStatus.textContent = err.message || 'Could not read the database.';
-    }
-  }
-
   let serverPcPollTimer = null;
 
   const serverPcModal = createModal({
@@ -4882,9 +4843,9 @@
     }
   });
 
-  // These three, and Settings below, are reachable via the menu bar's
-  // Advanced/Tools items (see runMenuAction's 'view-export'/'view-database'/
-  // 'server-pc'/'settings' cases) in both Electron and a plain browser tab -
+  // These two, and Settings below, are reachable via the menu bar's
+  // Advanced/Tools items (see runMenuAction's 'view-export'/'server-pc'/
+  // 'settings' cases) in both Electron and a plain browser tab -
   // each panel's own content comes from the same-origin API either way.
 
   // onOpen re-syncs the toggle buttons rather than relying on applyAccent's
@@ -4968,9 +4929,6 @@
         break;
       case 'view-export':
         exportPreviewModal.open();
-        break;
-      case 'view-database':
-        databasePreviewModal.open();
         break;
       case 'server-pc':
         serverPcModal.open();

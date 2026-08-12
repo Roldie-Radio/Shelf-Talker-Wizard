@@ -433,15 +433,6 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     res.json({ success: true });
   });
 
-  // Backs the desktop app's "View Database" dialog (Advanced menu) - counts
-  // plus a page of the most recent Print History rows, reusing searchHistory
-  // with no query rather than a separate query, so this list is guaranteed
-  // to stay in sync with whatever the History panel itself would show.
-  app.get('/api/db-preview', (req, res) => {
-    const { rows, total } = searchHistory({ limit: req.query.limit });
-    res.json({ history: rows, historyTotal: total, stats: getStats() });
-  });
-
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
   // LAN-visible IPv4 addresses, the current isServer flag/db stats (so
   // staff can tell whether this looks like the PC with real accumulated

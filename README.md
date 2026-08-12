@@ -234,7 +234,7 @@ is used as a fallback instead of a hard error, clearly marked as possibly stale
 
 ## Advanced menu (desktop app)
 
-The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, below
+The desktop app's **Advanced** menu has three troubleshooting/admin dialogs, below
 **Toggle Developer Tools**:
 
 - **Export File Settings&hellip;** &mdash; where the Scan UPC method's export file path
@@ -252,9 +252,6 @@ The desktop app's **Advanced** menu has four troubleshooting/admin dialogs, belo
   confirm it's actually hooked up right without leaving the app to go find and
   open the file yourself. If nothing's configured yet, **Open Export File
   Settings** jumps straight there.
-- **View Database&hellip;** &mdash; counts for Print History and the product cache,
-  plus a table of the most recently printed talkers, confirming this PC has real
-  accumulated data.
 - **Server PC&hellip;** &mdash; lets you mark a PC as the main store PC. Marking
   one makes it broadcast a small announcement on the local network every few
   seconds, so *other* PCs running the app can see which one it is (the dialog
