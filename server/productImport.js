@@ -855,8 +855,21 @@ function buildTastingNotesQuery(title, vintage) {
   return trimmedTitle;
 }
 
+// [a-z0-9] used to be the whole pattern here, which is fine for an
+// English-language query/title but silently drops every word of a
+// non-Latin one - a Ukrainian import like "Львівське 1715" tokenized to
+// nothing at all. That's not just a weaker match: scoreCandidates below
+// treats a zero-token query as "nothing to score" and bails out entirely
+// (queryTokens.length === 0), so a real Untappd hit for the beer never
+// even got compared - the lookup failed outright ("Could not find...")
+// instead of just scoring low, and staff had to fill in the whole talker
+// by hand. \p{L}/\p{N} (Unicode property escapes, hence the required `u`
+// flag) match a "letter"/"number" in any script - Cyrillic, accented
+// Latin ("Kölsch", "José"), Greek, CJK, etc. - the same way [a-z0-9]
+// always matched one in ASCII, so this is a strict widening: every query
+// that tokenized before still tokenizes the same way now.
 function tokenize(text) {
-  return (text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+  return (text || '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
 }
 
 // Search results pages routinely list several unrelated products (other
