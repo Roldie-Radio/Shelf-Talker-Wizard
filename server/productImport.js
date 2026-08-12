@@ -1714,8 +1714,11 @@ const BEER_STYLE_WORD_PATTERN = new RegExp(
 // "Session IPA 12pk CN", "Downtown Brown KEG 1/6", "Porter NR". None of
 // these carry any signal for an Untappd search (Untappd doesn't list a beer
 // differently by container), so - like BEER_STYLE_WORD_PATTERN above -
-// they're stripped from the search QUERY only, never from
-// composeProducerTitle's own return value:
+// they're always stripped from the search QUERY (buildUntappdSearchQuery
+// below). They're left in composeProducerTitle's own return value, since
+// that's meant to be the store's title verbatim - except for one case,
+// once a confirmed Untappd match exists: see stripUnmatchedContainerWords
+// further down.
 //   - "KEG", "1/6", "1/4": a keg, or its fractional-barrel size (a sixth-
 //     or quarter-barrel keg)
 //   - "Can"/"Cans", "CN": a can, spelled out or abbreviated
@@ -1734,6 +1737,26 @@ function buildUntappdSearchQuery(title) {
     .replace(/\s+/g, ' ')
     .trim();
   return stripped || (title || '').trim();
+}
+
+// Once enrichBeerFromUntappd below has a confirmed Untappd match, its own
+// beer.title is the real source of truth for what the beer is actually
+// called - unlike the search query (buildUntappdSearchQuery above), a
+// container word sitting in the *displayed* title ("Slack Tide Flounder
+// Pounder Can") is confirmed noise, not just unhelpful for matching, the
+// moment Untappd's own name for the same beer doesn't contain it too
+// ("Flounder Pounder"). Only stripped when that's true, word by word - a
+// beer whose real Untappd name genuinely includes one of these words (rare,
+// but not impossible - Untappd doesn't forbid it) keeps it. Never called
+// without a real Untappd match in hand (see enrichBeerFromUntappd), so
+// there's no equivalent risk of a container word being wrongly stripped off
+// a title Untappd never actually confirmed anything about.
+function stripUnmatchedContainerWords(title, untappdTitle) {
+  const reference = (untappdTitle || '').toLowerCase();
+  return (title || '')
+    .replace(CONTAINER_WORD_PATTERN, (match) => (reference.includes(match.toLowerCase()) ? match : ''))
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Legal/descriptor suffixes a brewery (or, less commonly, a winery/
@@ -1872,6 +1895,11 @@ async function enrichBeerFromUntappd(product) {
   const searchQuery = buildUntappdSearchQuery(title);
   try {
     const beer = await searchUntappd(searchQuery);
+    // A confirmed match means beer.title is the real name for this beer -
+    // see stripUnmatchedContainerWords's own comment for why a container
+    // word ("Can") only gets dropped from the displayed title here, once
+    // that confirmation exists, rather than unconditionally.
+    const displayTitle = stripUnmatchedContainerWords(title, beer.title);
     // mergeUntappdBeer's own description fallback (see its comment) is meant
     // for the manual "paste the Untappd URL/HTML" path further down, where
     // `current` is whatever staff already have in the form and is never
@@ -1879,7 +1907,13 @@ async function enrichBeerFromUntappd(product) {
     // manufacturer blurb - once Untappd is found, its own (possibly blank)
     // description is what staff want to see, not that blurb, so this
     // overrides mergeUntappdBeer's fallback rather than reusing it.
-    return { ...product, title, size, ...mergeUntappdBeer(product, beer), description: beer.description || '' };
+    return {
+      ...product,
+      title: displayTitle,
+      size,
+      ...mergeUntappdBeer(product, beer),
+      description: beer.description || '',
+    };
   } catch (err) {
     // A genuine tie (see UntappdAmbiguousMatchError/matchUntappdCandidates
     // above) is not the same kind of failure as a miss or a blocked
@@ -2095,6 +2129,7 @@ module.exports = {
   UntappdAmbiguousMatchError,
   composeProducerTitle,
   buildUntappdSearchQuery,
+  stripUnmatchedContainerWords,
   enrichBeerFromUntappd,
   enrichBeerScanFromStore,
   untappdBeerFromUrl,

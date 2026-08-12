@@ -24,7 +24,7 @@ const {
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore,
   algoliaSearchBeerCandidates, searchUntappd, matchUntappdCandidates, UntappdAmbiguousMatchError,
-  composeProducerTitle, buildUntappdSearchQuery,
+  composeProducerTitle, buildUntappdSearchQuery, stripUnmatchedContainerWords,
   enrichBeerScanFromStore, enrichBeerFromUntappd,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
@@ -2130,6 +2130,69 @@ test('enrichBeerFromUntappd strips style words from the Untappd query without to
     }
   );
   assert.match(requestedBody.requests[0].params, /query=Oakflower%20Augury(&|$)/);
+});
+
+// stripUnmatchedContainerWords - the unit-level piece behind the two
+// enrichBeerFromUntappd tests below. See its own comment in
+// productImport.js for why this only ever drops a word once a confirmed
+// Untappd name is in hand to check it against.
+test('stripUnmatchedContainerWords drops a container word only when the confirmed Untappd name does not have it', () => {
+  assert.equal(
+    stripUnmatchedContainerWords('Slack Tide Flounder Pounder Can', 'Flounder Pounder'),
+    'Slack Tide Flounder Pounder'
+  );
+  // A beer whose real Untappd name happens to include the same word is left
+  // alone rather than assumed to be packaging noise.
+  assert.equal(stripUnmatchedContainerWords('Party Cans', 'Party Cans'), 'Party Cans');
+  assert.equal(stripUnmatchedContainerWords('', 'Flounder Pounder'), '');
+});
+
+// Real Scan UPC case (the same "Slack Tide" SKU as composeProducerTitle's
+// own brewery-suffix regression test above): the store's product title
+// carries a trailing "Can" that Untappd's own name for the beer
+// ("Flounder Pounder") never had - once the search confirms that, the
+// displayed title drops it too, not just the Untappd search query
+// (buildUntappdSearchQuery already stripped it from that half).
+test('enrichBeerFromUntappd drops a trailing container word from the displayed title once Untappd confirms the beer\'s real name does not have it', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    {
+      beer_slug: 'slack-tide-brewing-company-flounder-pounder',
+      bid: 5150,
+      beer_name: 'Flounder Pounder',
+      brewery_name: 'Slack Tide Brewing Company',
+    },
+  ]);
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Flounder Pounder by Slack Tide Brewing Company | Untappd" />',
+    body: '<p class="brewery"><a href="#">Slack Tide Brewing Company</a></p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
+    async () => {
+      const result = await enrichBeerFromUntappd({
+        title: 'Slack Tide Flounder Pounder Can', brand: 'Slack Tide Brewing Company', size: '12OZ', sku: '41784',
+      });
+      assert.equal(result.title, 'Slack Tide Flounder Pounder');
+      assert.equal(result.brewery, 'Slack Tide Brewing Company');
+      assert.equal(result.untappdError, undefined);
+    }
+  );
+});
+
+// Without a confirmed match, there's nothing to check a container word
+// against - the displayed title (including "Can") is left exactly as
+// composeProducerTitle built it, same as an untouched style word.
+test('enrichBeerFromUntappd leaves a container word in the displayed title when Untappd search fails outright', async () => {
+  await withMockFetch(
+    async () => mockResponse({ status: 200, body: algoliaHitsResponse([]) }),
+    async () => {
+      const result = await enrichBeerFromUntappd({
+        title: 'Slack Tide Flounder Pounder Can', brand: 'Slack Tide Brewing Company', size: '12OZ',
+      });
+      assert.equal(result.title, 'Slack Tide Flounder Pounder Can');
+      assert.ok(result.untappdError);
+    }
+  );
 });
 
 // Regression coverage for the disambiguation picker at the level Scan UPC/
