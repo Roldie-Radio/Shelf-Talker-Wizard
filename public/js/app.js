@@ -782,6 +782,7 @@
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
     talkerTypeSupersaleOption: document.getElementById('talkerTypeSupersaleOption'),
+    chilledField: document.getElementById('chilledField'),
     chilled: document.getElementById('fChilled'),
     closeoutFontSizeField: document.getElementById('closeoutFontSizeField'),
     closeoutFontSize: document.getElementById('fCloseoutFontSize'),
@@ -1330,6 +1331,13 @@
     els.talkerTypeSupersaleOption.hidden = isBeer;
     if (isBeer && els.talkerType.value === 'supersale') els.talkerType.value = 'standard';
 
+    // Also Available Chilled doesn't apply to beer (already sold cold out
+    // of a cooler, not a special case worth calling out) - same
+    // hide-and-clear treatment as Super Sale right above, so a checked box
+    // left over from switching category doesn't stay invisibly on.
+    els.chilledField.hidden = isBeer;
+    if (isBeer && els.chilled.checked) els.chilled.checked = false;
+
     // The "Super Sale Price!!!" callout only renders on the Shelf Talker
     // card and the Small Display Sign (see buildPricingHtml/
     // buildSmallSignBodyHtml in card.js) - Large Display Signs fold the
@@ -1542,6 +1550,11 @@
     // a talker saved before this became its own field still prints its
     // badge after being reloaded/edited.
     els.chilled.checked = !!talker.isChilled || talker.talkerType === 'chilled';
+    // applyFormMode's own beer clamp ran above, before this line existed to
+    // overwrite it - re-check here so loading an older beer item saved
+    // with isChilled/talkerType 'chilled' (from before beer was excluded)
+    // doesn't restore a checkbox the form no longer shows for beer.
+    if (currentCategory === 'beer') els.chilled.checked = false;
     currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
     renderMashBillList();
     // Same reasoning as resetForm() above - "Save to Library" is per-
