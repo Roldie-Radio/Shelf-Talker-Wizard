@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.11',
+      items: [
+        'Fixed: Scan UPC and SKU Lookup could silently switch Product Type from Beer to Wine/Spirits after clicking "Use This Match" on the Confirm Untappd Match popup - the export file\'s (or store page\'s) own category/department text was getting merged into the form under the same field Product Type uses, and almost never spelled "beer" exactly.',
+      ],
+    },
+    {
       version: '3.3.10',
       items: [
         'Changed: Also Available Chilled is now a switch instead of a checkbox, and no longer shows on Beer talkers (already sold cold out of a cooler).',
@@ -3794,7 +3800,21 @@
   async function confirmBeerUntappdMatch(data, applyFn) {
     applyFn(stripUntappdFields(data));
     const confirmed = await openUntappdConfirm(data);
-    if (confirmed) applyUntappdFields(data);
+    // `data` is the raw lookup response, which for a Scan UPC/SKU Lookup hit
+    // can carry its own `category` field - not the app's 'beer'/'wine'
+    // enum, but whatever literal department/class text the WinePOS export
+    // (or scraped store page) happened to have in that column (see
+    // FIELD_ALIASES.category in upcCatalog.js and enrichBeerFromUntappd's
+    // `...product` spread). applyFn above already set Product Type
+    // correctly from the tab staff are actually on; merging that stray
+    // field back in via applyUntappdFields's `{...readForm(), ...fields}`
+    // would silently overwrite it (almost never literally the string
+    // "beer", so fillForm's `talker.category === 'beer'` check falls
+    // through to 'wine') the moment staff click "Use This Match".
+    if (confirmed) {
+      const { category, ...untappdFields } = data;
+      applyUntappdFields(untappdFields);
+    }
     return confirmed;
   }
 
