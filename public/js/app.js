@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.8',
+      items: [
+        'New (Bourbon Shelf Talkers, experimental): Mash Bill Library - save a researched mash bill once and it\'s suggested automatically the next time you type that same Product Title, shared across every register once one PC is marked Server PC (Advanced → Server PC…). "Save this mash bill to the Mash Bill Library" sits right on the Mash Bill field; Tools → Mash Bill Library… manages every saved entry directly (search, add, edit, delete).',
+      ],
+    },
+    {
       version: '3.3.7',
       items: [
         'Fixed: the Size field\'s "ml"/"oz" unit now always prints lowercase on the Shelf Talker card and both Display Sign sizes, regardless of how the store export or product page cased it (e.g. "750ML" and "16OZ" now print as "750ml"/"16oz").',
