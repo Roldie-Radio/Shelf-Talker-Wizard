@@ -2456,13 +2456,18 @@ h1, h2, h3 { margin: 0; }
    Price!!!" callout (matching the store's printed Super Sale signs, which
    show a real number - unlike the plain callout the shelf talker used to
    show on its own). Same bold outlined style as .card__supersale-text
-   above, not the cursive script this used to assume - see the note there. */
+   above, not the cursive script this used to assume - see the note there.
+   Font-size matches .card__supersale-text exactly (was 0.085 against the
+   lettering's 0.11 - the price number read visibly smaller than the
+   "Super Sale Price!!!" lettering it sits under, when the two are meant to
+   read as one callout at one size) - see the shared superSaleStyle override
+   in buildPricingHtml, which now sizes both lines identically too. */
 .card__supersale-price {
   color: var(--sale-red);
   font-weight: 800;
   -webkit-text-stroke: calc(var(--w) * 0.003) #000;
   text-align: center;
-  font-size: calc(var(--w) * 0.085 * var(--price-fit, 1));
+  font-size: calc(var(--w) * 0.11 * var(--price-fit, 1));
   /* Top margin tightened to match .card__supersale-text's own tightened
      bottom margin above - see the note there. Bottom margin (separation
      before the optional Regular Price line) is untouched. */

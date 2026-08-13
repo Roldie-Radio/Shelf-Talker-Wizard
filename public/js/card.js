@@ -894,11 +894,17 @@ function buildPricingHtml(talker, plain = false) {
     // multiplies by --price-fit (unlike Title/Description, it has no Auto
     // Size checkbox of its own to gate that on), so includePriceFit is
     // unconditionally true here.
+    // superSaleStyle is applied to both the callout text and the price
+    // number below it (not just the text) so the price always renders at
+    // the same size as the "Super Sale Price!!!" lettering, whether that's
+    // the shared 0.11 default (see .card__supersale-text/-price in
+    // styles.css) or a user-typed override - the two are meant to read as
+    // one callout at one size, not a smaller number under bigger lettering.
     const bigPrice = hasSale ? talker.salePrice : talker.price;
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS.talker.printWidth, true);
     return `
       <div class="card__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
-      <div class="card__supersale-price">${formatMoney(bigPrice)}</div>
+      <div class="card__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
       ${hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : ''}
     `;
   }
