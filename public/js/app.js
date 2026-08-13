@@ -841,6 +841,11 @@
     guidePreviewCancelBtn: document.getElementById('guidePreviewCancelBtn'),
     guidePreviewConfirmBtn: document.getElementById('guidePreviewConfirmBtn'),
 
+    winePairingRulesMenuItem: document.getElementById('winePairingRulesMenuItem'),
+    winePairingRulesOverlay: document.getElementById('winePairingRulesOverlay'),
+    winePairingRulesCloseBtn: document.getElementById('winePairingRulesCloseBtn'),
+    winePairingRulesList: document.getElementById('winePairingRulesList'),
+
     helpBtn: document.getElementById('helpBtn'),
     helpOverlay: document.getElementById('helpOverlay'),
     helpCloseBtn: document.getElementById('helpCloseBtn'),
@@ -1060,11 +1065,17 @@
   // Well With" block (buildPairingsHtml). Nothing here is ever deleted:
   // readForm/fillForm don't check this flag, so pairings already picked on
   // a talker round-trip through a save untouched and reappear the instant
-  // the toggle goes back on.
+  // the toggle goes back on. Also hides/shows Tools > Wine Pairing Rules…
+  // (see winePairingRulesModal) - that reference describes a field staff
+  // can't see while this is off, so the menu item disappears with it
+  // rather than just greying out (see enabledDropdownItemsOf's [hidden]
+  // check, added alongside this menu item, for why hidden and not
+  // aria-disabled).
   function applyExperimentalPairings(enabled) {
     experimentalPairingsEnabled = enabled;
     window.ShelfTalkerSettings.experimentalPairings = enabled;
     els.experimentalPairingsCheckbox.checked = enabled;
+    els.winePairingRulesMenuItem.hidden = !enabled;
     applyFormMode();
     if (previewMode === 'single') renderPreview();
   }
@@ -4453,6 +4464,31 @@
     onClose: () => { els.guidePreviewStage.innerHTML = ''; },
   });
 
+  // Reachable via Tools > Wine Pairing Rules… - a read-only reference
+  // built straight from WINE_PAIRING_RULES (a plain global defined in
+  // card.js, same as detectWinePairings itself - see the Food Pairing
+  // Suggestions comment block near suggestPairings below). Renders on
+  // every open rather than once at startup so it always reflects
+  // whatever's currently in that array, same as Suggest Pairings would
+  // see if it ran right now.
+  function renderPairingRulesReference() {
+    els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
+      <div class="pairing-rule-row">
+        <div class="pairing-rule-row__name">${escapeHtml(rule.label)}</div>
+        <div class="pairing-rule-row__keywords">matches <code>${escapeHtml(rule.test.toString())}</code></div>
+        <div class="pairing-rule-row__pairings">${rule.pairings.map((p) => `
+          <span class="pairing-rule-chip">${escapeHtml(p.icon)} ${escapeHtml(p.food)}</span>
+        `).join('')}</div>
+      </div>
+    `).join('');
+  }
+
+  const winePairingRulesModal = createModal({
+    overlay: els.winePairingRulesOverlay,
+    closeBtns: [els.winePairingRulesCloseBtn],
+    onOpen: renderPairingRulesReference,
+  });
+
   // First click jumps to the print preview (Full Page mode - see
   // setPreviewMode); once it's showing, the button relabels itself "Print
   // Now" (also set in setPreviewMode) and this same click prints. No
@@ -5220,6 +5256,9 @@
       case 'beer-talker-info':
         guidePreviewModal.open();
         break;
+      case 'wine-pairing-rules':
+        winePairingRulesModal.open();
+        break;
       case 'settings':
         settingsModal.open();
         break;
@@ -5457,7 +5496,13 @@
       return [...topItem.querySelectorAll('.menubar__dropdown-item')];
     }
     function enabledDropdownItemsOf(topItem) {
-      return dropdownItemsOf(topItem).filter((el) => el.getAttribute('aria-disabled') !== 'true');
+      // Excludes both requires-electron greyed-out items (aria-disabled)
+      // and conditionally-hidden ones like Wine Pairing Rules (hidden
+      // while its experimental feature is off, see applyExperimentalPairings)
+      // - without the hidden check, arrow-key/Home/End navigation would
+      // still count a hidden item as a stop and try to .focus() it, a
+      // silent no-op that leaves the roving focus stuck.
+      return dropdownItemsOf(topItem).filter((el) => el.getAttribute('aria-disabled') !== 'true' && !el.hidden);
     }
 
     function closeAllMenus({ refocus = false } = {}) {
