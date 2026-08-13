@@ -88,3 +88,18 @@ browser.
   to **Current Talker**, and scrolls to the top &mdash; just via a second,
   more visual entry point. Single-target click-to-edit only, not multi-select/
   bulk actions; Move/Duplicate/Delete stay in the Queue row's menu.
+- **chilled-independent-toggle.html** &mdash; pulls **Also Available Chilled**
+  out of the **Talker Style** dropdown (`#fTalkerType` in `public/index.html`),
+  where it currently sits as a 4th option mutually exclusive with Standard/
+  Closeout/Super Sale, into its own independent field below it &mdash; off by
+  default, combinable with any Talker Style. Mirrors the shape the form
+  already uses for **Store Pick** (`#fStorePick`), whose own help text and the
+  `card.js` comment on it call out this exact problem by name. Two
+  interchangeable control shapes (a checkbox row and an on/off switch) are
+  wired to the same underlying state side by side, since the request asked
+  for &ldquo;a toggle button or checkbox&rdquo; &mdash; flip **Control Style**
+  above the field to compare them; ship one, not both. The live Shelf Talker
+  card preview shows the CLOSEOUT!!/Super Sale badges stacking with the
+  Chilled callout instead of being replaced by it, and a fixed **All
+  Combinations** panel shows all three Talker Styles with Chilled on side by
+  side for a quick sanity check.

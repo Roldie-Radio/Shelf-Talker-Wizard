@@ -536,6 +536,10 @@
 
   // Human-readable names for the queue list's meta line (see renderQueue).
   const SIZE_LABELS = { full: 'Full', half: 'Half', quarter: 'Quarter' };
+  // 'chilled' isn't a Talker Style value going forward (see the isChilled
+  // migration in fillForm), but a leftover legacy value still falls through
+  // this same lookup by key, same as closeout/supersale - kept so renderQueue
+  // below doesn't need its own separate legacy-value handling.
   const STYLE_LABELS = {
     closeout: 'Closeout',
     supersale: 'Super Sale',
@@ -772,6 +776,7 @@
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
     talkerTypeSupersaleOption: document.getElementById('talkerTypeSupersaleOption'),
+    chilled: document.getElementById('fChilled'),
     closeoutFontSizeField: document.getElementById('closeoutFontSizeField'),
     closeoutFontSize: document.getElementById('fCloseoutFontSize'),
     superSaleFontSizeField: document.getElementById('superSaleFontSizeField'),
@@ -1463,6 +1468,7 @@
       price: els.price.value.trim(),
       salePrice: els.salePrice.value.trim(),
       talkerType: els.talkerType.value,
+      isChilled: els.chilled.checked,
       superSaleFontSize: els.superSaleFontSize.value.trim(),
       closeoutFontSize: els.closeoutFontSize.value.trim(),
       ratingsFontSize: els.ratingsFontSize.value.trim(),
@@ -1503,7 +1509,12 @@
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
     els.salePrice.value = talker.salePrice || '';
-    els.talkerType.value = talker.talkerType || 'standard';
+    // 'chilled' used to be a 4th Talker Style option, mutually exclusive
+    // with Closeout/Super Sale (see the isChilled migration just below) -
+    // an older saved/imported talker carrying that value maps onto plain
+    // Standard here, same as any other unrecognised value would via the
+    // || 'standard' fallback.
+    els.talkerType.value = talker.talkerType === 'chilled' ? 'standard' : (talker.talkerType || 'standard');
     // applyFormMode's own supersale-vs-beer clamp ran above, before this
     // line existed to overwrite it - re-check here so loading an older
     // saved beer item that predates this rule doesn't restore Super Sale.
@@ -1521,6 +1532,10 @@
     els.awards.value = talker.awards || '';
     els.awardsColor.value = /^#[0-9a-fA-F]{6}$/.test(talker.awardsColor) ? talker.awardsColor : '#171717';
     els.storePick.checked = !!talker.isStorePick;
+    // Also carries the legacy Talker Style = 'chilled' value (see above) so
+    // a talker saved before this became its own field still prints its
+    // badge after being reloaded/edited.
+    els.chilled.checked = !!talker.isChilled || talker.talkerType === 'chilled';
     currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
     renderMashBillList();
     // Same reasoning as resetForm() above - "Save to Library" is per-
@@ -2325,9 +2340,13 @@
         : `${SIZE_LABELS[talker.talkerSize] || 'Full'} Shelf Talker`;
       const metaParts = [typeLabel];
       if (talker.category === 'beer') metaParts.push('Beer');
-      if (talker.talkerType && talker.talkerType !== 'standard') {
+      // 'chilled' is excluded here (handled by the isChilled line right
+      // below instead) so a legacy talker saved before it became its own
+      // field doesn't print "Also Available Chilled" twice.
+      if (talker.talkerType && talker.talkerType !== 'standard' && talker.talkerType !== 'chilled') {
         metaParts.push(STYLE_LABELS[talker.talkerType] || talker.talkerType);
       }
+      if (talker.isChilled || talker.talkerType === 'chilled') metaParts.push('Also Available Chilled');
       if (talker.size) metaParts.push(escapeHtml(talker.size));
       metaParts.push(priceLabel);
 

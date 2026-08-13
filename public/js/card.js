@@ -157,9 +157,11 @@ function buildMashBillHtml(talker) {
 // Store Pick corner ribbon - a provenance claim ("we hand-picked this
 // barrel"), not a pricing state, so it's a plain boolean (talker.isStorePick,
 // see #fStorePick in index.html) independent of Talker Style rather than a
-// fourth option alongside Closeout/Chilled/Super Sale - see
-// .card__pick-ribbon in styles.css for why that separation matters (it can
-// appear alongside a Closeout badge).
+// fourth option alongside Closeout/Super Sale - see .card__pick-ribbon in
+// styles.css for why that separation matters (it can appear alongside a
+// Closeout badge). Also Available Chilled (talker.isChilled, see
+// buildPricingHtml below) was originally that fourth option and has since
+// been split out the same way, for the same reason.
 function buildStorePickRibbonHtml(talker) {
   if (!talker.isStorePick) return '';
   return '<div class="card__pick-ribbon">Store Pick</div>';
@@ -954,14 +956,36 @@ function buildBeerTableHtml(talker) {
   return `<div class="card__beer-table">${simpleRowsHtml}${abvIbuHtml}</div>`;
 }
 
+// Also Available Chilled used to be a 4th Talker Style value ('chilled'),
+// mutually exclusive with Closeout/Super Sale, before it became its own
+// independent talker.isChilled boolean (see #fChilled in index.html and
+// buildStorePickRibbonHtml's comment above). A talker queued/saved before
+// that change carries only the old talkerType value, with no isChilled at
+// all - app.js's fillForm migrates that onto isChilled the moment such a
+// talker is reopened for editing, but print/queue rendering reads talker
+// objects straight out of the queue without ever going through fillForm, so
+// the same fallback is needed here too, at every place this file checks
+// isChilled, or an old queued item would silently lose its badge the first
+// time it's printed after this change ships.
+function isChilledTalker(talker) {
+  return !!talker.isChilled || talker.talkerType === 'chilled';
+}
+
 // plain forces the bare Regular/Sale Price layout regardless of Talker
-// Style, skipping the Closeout/Chilled badge and the Super Sale callout -
-// used for Quarter Size Shelf Talkers (see buildCardElement's isQuarter
-// branch below), which only ever show Product Title/Size/Regular Price/
-// Sale Price, no matter what Talker Style is selected.
+// Style, skipping the Closeout badge, the Also Available Chilled callout,
+// and the Super Sale callout - used for Quarter Size Shelf Talkers (see
+// buildCardElement's isQuarter branch below), which only ever show Product
+// Title/Size/Regular Price/Sale Price, no matter what Talker Style is
+// selected or whether Also Available Chilled is checked.
 function buildPricingHtml(talker, plain = false) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
+  // Also Available Chilled (talker.isChilled, see #fChilled in index.html)
+  // is a plain boolean independent of Talker Style rather than a 4th option
+  // alongside Closeout/Super Sale - same reasoning as buildStorePickRibbonHtml
+  // above, just applied to this badge too. Computed once so it can be
+  // slotted into either branch below.
+  const chilledBadge = (!plain && isChilledTalker(talker)) ? '<div class="card__chilled-badge">Also Available Chilled</div>' : '';
 
   if (!plain && talkerType === 'supersale') {
     // Matches the store's printed Super Sale signs: a stylized "Super Sale
@@ -983,29 +1007,29 @@ function buildPricingHtml(talker, plain = false) {
     const bigPrice = hasSale ? talker.salePrice : talker.price;
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS.talker.printWidth, true);
     return `
+      ${chilledBadge}
       <div class="card__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
       <div class="card__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
       ${hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : ''}
     `;
   }
 
-  // "closeout", "chilled" and "standard" all show the same regular/sale
-  // price layout; closeout/chilled just add their own badge above it
-  // (skipped entirely when plain). The badge's own size is user-adjustable
-  // (CLOSEOUT!! Font Size box) the same way Super Sale Price!!! is above -
-  // .card__closeout-badge's base rule always multiplies by --price-fit
-  // (no Auto Size checkbox of its own), so includePriceFit is
-  // unconditionally true here too.
-  let badge = '';
-  if (!plain) {
-    if (talkerType === 'closeout') {
-      const closeoutStyle = fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS.talker.printWidth, true);
-      badge = `<div class="card__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
-    } else if (talkerType === 'chilled') badge = '<div class="card__chilled-badge">Also Available Chilled</div>';
+  // "closeout" and "standard" both show the same regular/sale price layout;
+  // closeout just adds its own badge above it (skipped entirely when
+  // plain), with the Chilled callout, if any, stacking directly under it.
+  // The badge's own size is user-adjustable (CLOSEOUT!! Font Size box) the
+  // same way Super Sale Price!!! is above - .card__closeout-badge's base
+  // rule always multiplies by --price-fit (no Auto Size checkbox of its
+  // own), so includePriceFit is unconditionally true here too.
+  let closeoutBadge = '';
+  if (!plain && talkerType === 'closeout') {
+    const closeoutStyle = fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS.talker.printWidth, true);
+    closeoutBadge = `<div class="card__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
   }
   const regular = formatMoney(talker.price);
   return `
-    ${badge}
+    ${closeoutBadge}
+    ${chilledBadge}
     <div class="card__prices">
       ${hasSale ? `<div class="card__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : ''}
       ${regular ? `<div class="card__regular-price">Regular Price ${regular}</div>` : ''}
@@ -1064,11 +1088,23 @@ function buildRatingsInlineHtml(talker) {
 function buildSignMetaRowHtml(talker, leftHtml) {
   const talkerType = talker.talkerType || 'standard';
   const ratingsStyle = fontSizeOverrideAttr(talker.ratingsFontSize, SIGN_LAYOUTS['sign-large'].printWidth, true);
-  let left = leftHtml ? `<div class="sign__rating"${ratingsStyle}>${leftHtml}</div>` : '';
+  // Also Available Chilled is independent of Talker Style (see
+  // buildPricingHtml's own chilledBadge above) - stacks under the Closeout
+  // badge when both are on, or stands alone in the badge's usual spot,
+  // still taking priority over the rating either way (unchanged from
+  // before this was split out: a badge here has always meant the rating
+  // gets bumped, not shown alongside it - .sign__meta-row-left is a single
+  // narrow column, not room for three things).
+  const chilledBadge = isChilledTalker(talker) ? '<div class="sign__chilled-badge">Also Available Chilled</div>' : '';
+  let left;
   if (talkerType === 'closeout') {
     const closeoutStyle = fontSizeOverrideAttr(talker.closeoutFontSize, SIGN_LAYOUTS['sign-large'].printWidth, true);
-    left = `<div class="sign__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
-  } else if (talkerType === 'chilled') left = '<div class="sign__chilled-badge">Also Available Chilled</div>';
+    left = `<div class="sign__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>${chilledBadge}`;
+  } else if (isChilledTalker(talker)) {
+    left = chilledBadge;
+  } else {
+    left = leftHtml ? `<div class="sign__rating"${ratingsStyle}>${leftHtml}</div>` : '';
+  }
   if (!left && !talker.size) return '';
   return `
     <div class="sign__meta-row">
@@ -1136,6 +1172,10 @@ function buildSmallSignBodyHtml(talker) {
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   const titleAutoSize = !!talker.titleAutoSize;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, SIGN_LAYOUTS['sign-small'].printWidth, false);
+  // Also Available Chilled is independent of Talker Style here too (see
+  // buildPricingHtml's own chilledBadge above) - renders in both branches
+  // below, stacked with whatever else is showing rather than replacing it.
+  const chilledBadge = isChilledTalker(talker) ? '<div class="sign__chilled-badge">Also Available Chilled</div>' : '';
 
   let priceHtml;
   if (talkerType === 'supersale') {
@@ -1153,6 +1193,7 @@ function buildSmallSignBodyHtml(talker) {
     // -price both 0.042, see styles.css) or a typed override.
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS['sign-small'].printWidth, true);
     priceHtml = `
+      ${chilledBadge}
       <div class="sign__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
       <div class="sign__small-price sign__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
     `;
@@ -1167,7 +1208,7 @@ function buildSmallSignBodyHtml(talker) {
       : '';
     priceHtml = `
       ${talkerType === 'closeout' ? `<div class="sign__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>` : ''}
-      ${talkerType === 'chilled' ? '<div class="sign__chilled-badge">Also Available Chilled</div>' : ''}
+      ${chilledBadge}
       <div class="sign__small-price ${hasSale ? 'is-sale' : ''}">${formatMoney(hasSale ? talker.salePrice : talker.price)}</div>
     `;
   }
@@ -1217,7 +1258,7 @@ function buildSignElement(talker) {
 
 /**
  * @param {object} talker - { category, title, description, size, price,
- *   salePrice, theme, talkerType, ratings: [{reviewer, score}],
+ *   salePrice, theme, talkerType, isChilled, ratings: [{reviewer, score}],
  *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
  *   location, style, abv, ibu, untappdRating, untappdRatingCount }
  * @returns {HTMLElement} a .card element, not yet size-fitted
