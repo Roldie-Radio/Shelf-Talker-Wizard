@@ -165,14 +165,14 @@ test('deleteHistoryEntry removes the row and returns true, false if already gone
 
 test('getStats reports zero counts on a fresh database', () => {
   withTempDb(() => {
-    assert.deepEqual(db.getStats(), { printedTalkers: 0 });
+    assert.deepEqual(db.getStats(), { printedTalkers: 0, mashBills: 0 });
   });
 });
 
 test('getStats counts printed talkers', () => {
   withTempDb(() => {
     db.recordPrintedTalkers([sampleTalker({ id: 'a' }), sampleTalker({ id: 'b' })]);
-    assert.deepEqual(db.getStats(), { printedTalkers: 2 });
+    assert.deepEqual(db.getStats(), { printedTalkers: 2, mashBills: 0 });
   });
 });
 
@@ -191,5 +191,122 @@ test('applySchema drops a pre-existing product_cache table', () => {
     const reopened = db.getDb();
     const table = reopened.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'product_cache'").get();
     assert.equal(table, undefined);
+  });
+});
+
+// ---------- Mash Bill Library ----------
+
+function sampleGrains() {
+  return [{ grain: 'Corn', pct: 75 }, { grain: 'Rye', pct: 20 }, { grain: 'Malted Barley', pct: 5 }];
+}
+
+test('upsertMashBill creates a new entry with the given fields', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Four Roses Single Barrel', distillery: 'Four Roses', grains: sampleGrains(), source: 'Manual',
+    });
+    assert.equal(entry.title, 'Four Roses Single Barrel');
+    assert.equal(entry.distillery, 'Four Roses');
+    assert.deepEqual(entry.grains, sampleGrains());
+    assert.equal(entry.source, 'Manual');
+    assert.ok(entry.updatedAt);
+    assert.ok(entry.id);
+  });
+});
+
+test('upsertMashBill updates the existing entry in place on a repeat save (case-insensitive title)', () => {
+  withTempDb(() => {
+    const first = db.upsertMashBill({ title: 'Buffalo Trace', grains: sampleGrains() });
+    const second = db.upsertMashBill({
+      title: 'buffalo trace', distillery: 'Buffalo Trace Distillery', grains: [{ grain: 'Corn', pct: 90 }],
+    });
+    assert.equal(second.id, first.id);
+    assert.equal(second.distillery, 'Buffalo Trace Distillery');
+    assert.deepEqual(second.grains, [{ grain: 'Corn', pct: 90 }]);
+    assert.equal(db.listMashBills().length, 1);
+  });
+});
+
+test('upsertMashBill rejects a missing title or empty grains', () => {
+  withTempDb(() => {
+    assert.throws(() => db.upsertMashBill({ title: '', grains: sampleGrains() }), { code: 'TITLE_REQUIRED' });
+    assert.throws(() => db.upsertMashBill({ title: 'Wild Turkey 101', grains: [] }), { code: 'GRAINS_REQUIRED' });
+    assert.throws(() => db.upsertMashBill({ title: 'Wild Turkey 101', grains: [{ grain: '', pct: 90 }] }), { code: 'GRAINS_REQUIRED' });
+  });
+});
+
+test('upsertMashBill drops zero/negative/non-numeric grain entries rather than storing them', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Four Roses Small Batch',
+      grains: [{ grain: 'Corn', pct: 60 }, { grain: 'Rye', pct: 0 }, { grain: '', pct: 40 }, { grain: 'Oat', pct: 'NaN' }],
+    });
+    assert.deepEqual(entry.grains, [{ grain: 'Corn', pct: 60 }]);
+  });
+});
+
+test('listMashBills orders alphabetically by title, case-insensitively', () => {
+  withTempDb(() => {
+    db.upsertMashBill({ title: 'wild turkey 101', grains: sampleGrains() });
+    db.upsertMashBill({ title: 'Buffalo Trace', grains: sampleGrains() });
+    db.upsertMashBill({ title: 'Four Roses', grains: sampleGrains() });
+    assert.deepEqual(db.listMashBills().map((m) => m.title), ['Buffalo Trace', 'Four Roses', 'wild turkey 101']);
+  });
+});
+
+test('getMashBill returns a single entry or null', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Elijah Craig Small Batch', grains: sampleGrains() });
+    assert.deepEqual(db.getMashBill(entry.id), entry);
+    assert.equal(db.getMashBill(999999), null);
+  });
+});
+
+test('updateMashBillById changes fields and returns the updated entry', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Old Grand-Dad', grains: sampleGrains() });
+    const updated = db.updateMashBillById(entry.id, {
+      title: 'Old Grand-Dad Bonded', distillery: 'Jim Beam', grains: [{ grain: 'Corn', pct: 63 }, { grain: 'Rye', pct: 27 }],
+    });
+    assert.equal(updated.title, 'Old Grand-Dad Bonded');
+    assert.equal(updated.distillery, 'Jim Beam');
+    assert.deepEqual(updated.grains, [{ grain: 'Corn', pct: 63 }, { grain: 'Rye', pct: 27 }]);
+  });
+});
+
+test('updateMashBillById returns null for a missing id', () => {
+  withTempDb(() => {
+    assert.equal(db.updateMashBillById(999999, { title: 'Nope', grains: sampleGrains() }), null);
+  });
+});
+
+test('updateMashBillById refuses to rename onto another entry\'s title', () => {
+  withTempDb(() => {
+    db.upsertMashBill({ title: 'Eagle Rare', grains: sampleGrains() });
+    const other = db.upsertMashBill({ title: 'Blanton\'s', grains: sampleGrains() });
+    assert.throws(
+      () => db.updateMashBillById(other.id, { title: 'eagle rare', grains: sampleGrains() }),
+      { code: 'DUPLICATE_TITLE' },
+    );
+    // Unchanged - the failed rename didn't partially apply.
+    assert.equal(db.getMashBill(other.id).title, "Blanton's");
+  });
+});
+
+test('deleteMashBill removes the row and returns true, false if already gone', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Weller Special Reserve', grains: sampleGrains() });
+    assert.equal(db.deleteMashBill(entry.id), true);
+    assert.equal(db.getMashBill(entry.id), null);
+    assert.equal(db.deleteMashBill(entry.id), false);
+  });
+});
+
+test('getStats includes the mash bill count', () => {
+  withTempDb(() => {
+    assert.equal(db.getStats().mashBills, 0);
+    db.upsertMashBill({ title: 'Larceny', grains: sampleGrains() });
+    db.upsertMashBill({ title: 'Bulleit Bourbon', grains: sampleGrains() });
+    assert.equal(db.getStats().mashBills, 2);
   });
 });

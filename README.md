@@ -4,6 +4,7 @@ A small web app for Liquor Outlet Wine Cellars to create print-ready shelf talke
 
 - **Manual entry** form for title, description, size/unit, regular price, and sale price. For Wine / Spirits, a **Find Tasting Notes** button next to Description opens a dialog that searches Wine.com and/or Vivino using the Product Title (and Vintage, if set) and lets you preview and edit the result before it fills the field &mdash; no URL to paste, just a title to search with.
 - **Bourbon Shelf Talkers** (experimental, off by default &mdash; Settings &rarr; Experimental Features) &mdash; adds three things to Wine / Spirits Shelf Talkers: Nose / Palate / Finish fields printed under the description (with a Distiller.com source in **Find Tasting Notes** that fills them in automatically &mdash; Distiller's scraper hasn't been confirmed against the live site, so always double-check what it finds before printing), a Mash Bill proportion bar (add each grain with its percentage and it prints as a stacked bar with a legend), and a Store Pick corner ribbon (independent of Talker Style, so it can still show up alongside a Closeout badge). Turning the toggle off hides all three again without deleting anything already on a talker.
+- **Mash Bill Library** (part of Bourbon Shelf Talkers above) &mdash; a shared, store-wide record of researched mash bills, so a grain composition looked up once for a bottle doesn't need re-researching on the next talker made for it. On the Mash Bill field, typing a Product Title that already has a saved entry shows a **recall banner** with a **Use It** button that fills the grain bar for you; a **Save this mash bill to the Mash Bill Library** checkbox on the same field saves whatever's in the grain bar under the current title for next time. **Tools &rarr; Mash Bill Library&hellip;** (only shown while the Bourbon Shelf Talkers toggle is on) opens a dialog to search, add, edit, or delete entries directly, independent of any talker currently open. See "Sharing the Mash Bill Library across registers" below for the one-time setup every register (even a single-PC store) needs before this works.
 - **Wine Food Pairings** (experimental, off by default &mdash; Settings &rarr; Experimental Features) &mdash; adds a **Food Pairing Suggestions** field to Wine / Spirits Shelf Talkers. Click **Suggest Pairings** to match the varietal detected in the Product Title/Description (e.g. Cabernet Sauvignon, Chardonnay) against a short built-in list of food pairings, then pick up to 3 to print under the description as a "Pairs Well With" line &mdash; or skip the suggestions and type your own. For a handful of varietals (Cabernet Sauvignon, Malbec, Syrah/Shiraz, Pinot Noir, Sauvignon Blanc, Riesling), a country/region also mentioned in the title/description &mdash; e.g. "Napa Valley" or "Mendoza, Argentina" &mdash; refines one of the 4 suggested pairings to something more specific to that region and appends the region to the match ("Malbec &mdash; Mendoza, Argentina"); a title with no region wording still gets exactly the varietal's own base pairings. While the toggle is on, **Tools &rarr; Wine Pairing Rules&hellip;** in the menu bar shows the full list of varietals, their match keywords, and any region refinements, straight from the same rules Suggest Pairings uses. Turning the toggle off hides the field, the menu item, and the printed line again without deleting anything already on a talker.
 - **Type and Product Type dropdowns on every tab** &mdash; **Type** (Shelf Talker / Small Display / Large Display) and **Product Type** (Wine / Spirits / Beer) sit at the top of Edit Talker, Website, and Search alike, and stay in sync with each other: change either one on any tab and it's still set that way when you switch tabs.
 - **Import from website** &mdash; paste a product page URL and the app tries to pull the title, description, and price automatically (reads the page's structured product data), so you can review and tweak before adding it. Switch Product Type to Beer to pull from an Untappd beer page instead &mdash; brewery, location, style, ABV, IBU, rating, and description, since Untappd doesn't have a price to import.
@@ -189,6 +190,18 @@ The dialog always shows a status line under the checkbox with the timestamp and 
 
 This only ever moves the export file itself &mdash; Print History still isn't shared between PCs, and nothing on the Server PC's main app (its own web UI) becomes reachable from the network; only the export file itself is served, over its own small, read-only, single-purpose network port (41235 by default), the same spirit as the Server PC discovery beacon (41234/UDP) that's been there since the Server PC flag was introduced. Both may need a one-time "Allow" click in Windows Firewall the first time the app runs on a network profile that prompts for it.
 
+### Sharing the Mash Bill Library across registers
+
+Unlike the export file above (which only WinePOS ever writes), a mash bill can be researched at *any* register, so the Mash Bill Library (part of Bourbon Shelf Talkers &mdash; see above) needs both directions: every register can save/edit/delete an entry, not just read one. It's still one shared table, though &mdash; whichever PC is currently marked **Server PC** holds the real copy, and every other register works off a synced copy of it.
+
+**One-time setup, even for a single-PC store:** mark a PC as the **Server PC** (**Advanced &rarr; Server PC**, same flag "Sharing the export file across registers" above uses). Nothing else to configure &mdash; every register (including the Server PC itself) can use the Mash Bill Library as soon as one PC is marked. Skipping this step isn't a smaller/local-only version of the feature &mdash; without a Server PC marked, saving, editing, or deleting an entry fails outright with a message pointing back here, since there'd be nowhere for the write to actually go.
+
+From then on, every other register fetches the Server PC's Mash Bill Library over the network about every 30 seconds and shows a recall banner off that synced copy &mdash; same graceful degradation as export auto-sync above: if the Server PC is briefly unreachable, recall keeps working off whatever was last successfully synced, and only a *new* save/edit/delete needs the Server PC to actually be reachable at that moment (it fails with a clear error rather than silently queuing, so the shared copy never quietly forks). **Tools &rarr; Mash Bill Library&hellip;** shows the same kind of status line as Export File Settings' own sync status, plus a **Sync Now** button to force an immediate pull.
+
+This moves over its own small network port (41236 by default), separate from the export file's own read-only port (41235) since this one accepts writes too &mdash; same "small, single-purpose surface" spirit as that port and the Server PC discovery beacon. May need a one-time "Allow" click in Windows Firewall the first time the app runs on a network profile that prompts for it.
+
+If the Server PC role ever moves to a different physical PC, note that Mash Bill Library data doesn't automatically migrate with it &mdash; whichever PC currently holds the role is the one whose own copy is authoritative going forward.
+
 ## Printing
 
 1. Add shelf talkers via Edit Talker, Website, or any of Search's three lookup methods.
@@ -255,26 +268,31 @@ The desktop app's **Advanced** menu has three troubleshooting/admin dialogs, bel
   shows "Main store PC on this network" &mdash; its hostname and address &mdash;
   alongside this PC's own LAN IP address and database counts), and starts
   serving its own configured export file to other PCs' auto-sync (see "Sharing
-  the export file across registers" above). Print History still isn't shared
+  the export file across registers" above) and its own Mash Bill Library to
+  every other PC's recall/save/edit/delete (see "Sharing the Mash Bill Library
+  across registers" above). Print History still isn't shared
   between PCs &mdash; each PC keeps its own, and the main app itself still
   isn't reachable from the network; only the small
-  discovery broadcast and the export file's own small, read-only network port
-  leave the PC. Unmarking a PC (or closing the app) stops both; other PCs stop
-  showing it within about 15 seconds, and their next auto-sync attempt just
-  reports it can't find a Server PC right now.
+  discovery broadcast and the export file's/Mash Bill Library's own small
+  network ports leave the PC. Unmarking a PC (or closing the app) stops all of
+  it; other PCs stop showing it within about 15 seconds, and their next
+  auto-sync attempt (or Mash Bill Library save) just reports it can't find a
+  Server PC right now.
 
 ## Project layout
 
 ```
 server/
-  index.js            Express app: serves the frontend and the URL-import/History APIs
+  index.js            Express app: serves the frontend and the URL-import/History/Mash Bill Library APIs
   productImport.js    Fetches a product/Untappd page and extracts title/description/price or beer details,
                       plus the Wine.com/Vivino tasting-notes search and the store SKU/Untappd lookup behind
                       the Find Tasting Notes button and SKU Lookup method
   upcCatalog.js       Reads a local WinePOS product export file (or, with auto-sync on, the local copy
                       exportSync.js's puller last wrote) and looks products up by UPC (Scan UPC method)/name
                       (Search by Name method) - no network request itself, unlike everything else in server/
-  db.js               Local SQLite (better-sqlite3): the Print History log and stats
+  db.js               Local SQLite (better-sqlite3): the Print History log/stats and the Mash Bill Library
+                      (mash_bills table) - this PC's own copy, and the authoritative one store-wide whenever
+                      this PC is marked Server PC (see mashBillSync.js)
   appData.js          Shared per-PC storage directory (SHELF_TALKER_CONFIG_DIR override) - used by
                       upcCatalog.js's config.json, db.js's data.db, and serverConfig.js's server-config.json,
                       so they all agree on where it lives
@@ -285,23 +303,29 @@ server/
                       Server PC: a tiny read-only HTTP server on the Server PC's side, a polling fetch on
                       every other PC's side - both separate from, and much smaller than, the main HTTP API,
                       same spirit as discovery.js's own UDP beacon
+  mashBillSync.js     Same two-halves shape as exportSync.js, for the Mash Bill Library instead of the WinePOS
+                      export - a tiny HTTP server on the Server PC's side (this one also accepts writes, not
+                      just GET), a polling fetch + write-forwarding on every other PC's side
 public/
   index.html          Wizard UI
   css/styles.css      App styling + the shelf-talker card + print layout
   js/layout.js         Print-sheet geometry + sheet/auto-arrange packing (no DOM)
   js/card.js           Card rendering + auto text-fit
-  js/app.js            Form, queue, import, SKU lookup, Scan UPC, History, and print wiring
+  js/app.js            Form, queue, import, SKU lookup, Scan UPC, History, Mash Bill Library, and print wiring
   assets/logo.png      Brand logo (extracted from the provided template)
 test/
   layout.test.js          Packing invariants: every layout fits a sheet, no item lost
   print-css-sync.test.js  Guards the JS geometry against the print CSS
   upcCatalog.test.js      CSV/TSV parsing, header-alias matching, UPC-A/EAN-13 lookup, config persistence, export preview -
                           including a real WinePOS export (see fixtures/) with a BOM, CRLF, and a dropped-leading-zero UPC
-  db.test.js              Print History log: search/paginate/delete, stats
+  db.test.js              Print History log (search/paginate/delete, stats) and Mash Bill Library CRUD
+                          (upsert-by-title, update-by-id, rename conflicts, delete)
   serverConfig.test.js    Server PC flag persistence
   discovery.test.js       LAN announcement wire format, staleness, self-filtering, and a real send/receive round trip
   exportSync.test.js      Export-serve HTTP server (real request/response round trip) and the auto-sync puller
                           (mocked fetch/discovered-server, since exportSync.js is the network boundary itself)
+  mashBillSync.test.js    Mash Bill Library serve HTTP server (real create/list/update/delete round trip) and the
+                          puller's sync/forwardWrite (mocked fetch/discovered-server)
   fixtures/
     wine-pos-inventory-demo.csv  A real inventory export a store sent us, kept byte-for-byte - see upcCatalog.test.js
 ```

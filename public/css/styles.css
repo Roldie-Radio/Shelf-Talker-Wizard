@@ -786,6 +786,31 @@ h1, h2, h3 { margin: 0; }
 .reviewer-manager__list { display: flex; flex-direction: column; gap: 0.25rem; }
 .reviewer-manager__list .rating-chip { background: var(--ui-panel); }
 
+/* ---------- Mash Bill Library ----------
+   Two touch points: the recall banner + "Save to Library" row on Edit
+   Talker's own Mash Bill field (see refreshMashBillRecall/saveMashBillToLibrary
+   in app.js), and the Tools -> Mash Bill Library... dialog itself, which
+   reuses .history-list/.history-item (search results) and
+   .settings-section/.reviewer-manager__add (its own add/edit form) rather
+   than introducing new list/form styling. */
+
+.mashbill-recall {
+  margin-bottom: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ui-border);
+  border-left: 3px solid var(--ui-accent);
+  border-radius: 6px;
+  background: var(--ui-panel-alt);
+  font-size: 0.82rem;
+}
+.mashbill-recall__title { font-weight: 700; margin-bottom: 0.25rem; }
+.mashbill-recall__meta { color: var(--ui-muted); font-size: 0.74rem; margin-top: 0.2rem; }
+.mashbill-recall__actions { display: flex; gap: 0.4rem; margin-top: 0.45rem; }
+
+.mashbill-save { margin-top: 0.6rem; }
+.mashbill-save__row { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+.mashbill-save__row input { flex: 1; margin: 0; }
+
 /* ---------- Awards / other ratings ---------- */
 
 .awards-input-row { display: flex; gap: 0.4rem; align-items: flex-start; }

@@ -1,0 +1,619 @@
+<title>Mash Bill Library — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted from Shelf Talker Wizard's own public/css/styles.css
+   so this mockup sits in the same visual system as the real app,
+   rather than inventing a new one.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.appbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.5rem; background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); flex-wrap: wrap; row-gap: 0.6rem; }
+.appbar h1 { font-size: 1.1rem; }
+.appbar p { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--ui-muted); }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
+.btn--danger { color: var(--ui-danger); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn:focus-visible, input:focus-visible, select:focus-visible, .pill:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+.layout { display: grid; grid-template-columns: 440px 1fr; gap: 1.1rem; padding: 1.1rem 1.25rem 1.5rem; align-items: start; }
+@media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; min-width: 0; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem; gap: 0.5rem; flex-wrap: wrap; }
+.panel__subtitle { font-size: 0.78rem; color: var(--ui-muted); margin: 0.1rem 0 0.85rem; line-height: 1.45; }
+
+.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; min-width: 0; }
+.field span { color: var(--ui-ink-soft); }
+.field input, .field select { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font-weight: 400; width: 100%; min-width: 0; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.field-hint { font-size: 0.78rem; color: var(--ui-muted); font-weight: 400; margin-top: -0.15rem; }
+
+.pill-group { display: inline-flex; gap: 0.3rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.2rem; }
+.pill { border: none; background: transparent; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
+.pill.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+
+.compare-note { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.7rem 0.8rem; border-radius: 8px; background: var(--ui-panel-sunken); border: 1px dashed var(--ui-border); font-size: 0.8rem; color: var(--ui-ink-soft); line-height: 1.5; margin: 0.6rem 0 1rem; }
+.compare-note strong { color: var(--ui-ink); }
+
+.banner { border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.84rem; border: 1px solid; }
+.banner--found { background: var(--ui-good-tint); border-color: color-mix(in srgb, var(--ui-good) 45%, var(--ui-border)); }
+.banner--warn { background: var(--ui-warn-tint); border-color: color-mix(in srgb, var(--ui-warn) 45%, var(--ui-border)); }
+.banner--empty { background: var(--ui-panel-sunken); border-color: var(--ui-border); color: var(--ui-muted); }
+.banner__title { font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+.banner__meta { color: var(--ui-muted); font-size: 0.76rem; }
+.banner__actions { display: flex; gap: 0.5rem; margin-top: 0.1rem; }
+.banner__caution { display: flex; gap: 0.4rem; align-items: flex-start; color: var(--ui-warn); font-weight: 600; font-size: 0.78rem; }
+
+.grain-bar { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15); }
+.grain-bar__seg { height: 100%; }
+.grain-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.7rem; margin-top: 0.35rem; font-size: 0.76rem; font-weight: 700; }
+.grain-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.grain-swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.chip { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 999px; padding: 0.25rem 0.35rem 0.25rem 0.65rem; font-size: 0.8rem; font-weight: 600; }
+.chip button { border: none; background: transparent; color: var(--ui-muted); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0.15rem 0.3rem; }
+.chip button:hover { color: var(--ui-danger); }
+.add-row { display: flex; gap: 0.4rem; align-items: center; }
+.add-row select, .add-row input { flex: 1; }
+
+.scrape-btn-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0 0.9rem; }
+.spinner { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--ui-border); border-top-color: var(--ui-accent-ink); animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.scrape-preview { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.8rem; background: var(--ui-panel-sunken); margin-bottom: 0.9rem; font-size: 0.82rem; }
+.scrape-preview__source { font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; }
+.scrape-preview__caution { color: var(--ui-warn); font-size: 0.76rem; margin-top: 0.5rem; line-height: 1.45; }
+.scrape-preview__actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+
+.save-box { border-top: 1px solid var(--ui-border); margin-top: 0.4rem; padding-top: 0.85rem; }
+.save-box label.checkline { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.save-scope { margin: 0.6rem 0 0.7rem 1.6rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem; font-weight: 400; color: var(--ui-ink-soft); }
+.save-scope label { display: flex; align-items: flex-start; gap: 0.45rem; cursor: pointer; }
+.save-scope small { display: block; color: var(--ui-muted); }
+.toast { display: none; align-items: center; gap: 0.4rem; background: var(--ui-good-tint); color: var(--ui-good); border: 1px solid color-mix(in srgb, var(--ui-good) 45%, var(--ui-border)); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.8rem; font-weight: 700; margin-top: 0.6rem; }
+.toast.is-shown { display: inline-flex; }
+
+.lib-search { margin-bottom: 0.8rem; }
+.lib-table { display: flex; flex-direction: column; gap: 0.5rem; }
+.lib-row { display: grid; grid-template-columns: 1fr 1.3fr auto; gap: 0.7rem; align-items: center; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.65rem 0.75rem; background: var(--ui-panel-sunken); }
+.lib-row__id { font-size: 0.85rem; }
+.lib-row__distillery { font-weight: 700; }
+.lib-row__expr { color: var(--ui-muted); font-size: 0.78rem; margin-top: 0.05rem; }
+.lib-row__tag { display: inline-block; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.08rem 0.4rem; border-radius: 999px; margin-top: 0.3rem; }
+.lib-row__tag--default { background: var(--ui-code-bg); color: var(--ui-ink-soft); }
+.lib-row__tag--exact { background: var(--ui-good-tint); color: var(--ui-good); }
+.lib-row__meta { font-size: 0.7rem; color: var(--ui-muted); margin-top: 0.35rem; }
+.lib-row__actions { display: flex; gap: 0.35rem; }
+.lib-row.is-removed { display: none; }
+
+.sync-status { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--ui-border); font-size: 0.8rem; flex-wrap: wrap; }
+.sync-status__line { display: flex; align-items: center; gap: 0.4rem; color: var(--ui-ink-soft); }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-good); flex: 0 0 auto; }
+.sync-dot.is-down { background: var(--ui-danger); }
+.save-error { display: none; align-items: flex-start; gap: 0.4rem; background: var(--ui-warn-tint); color: var(--ui-warn); border: 1px solid color-mix(in srgb, var(--ui-warn) 45%, var(--ui-border)); border-radius: 6px; padding: 0.5rem 0.6rem; font-size: 0.8rem; font-weight: 600; margin-top: 0.6rem; }
+.save-error.is-shown { display: flex; }
+
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-panel h2 { font-size: 1rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+.notes-card--good { border-color: color-mix(in srgb, var(--ui-good) 35%, var(--ui-border)); }
+.notes-card--warn { border-color: color-mix(in srgb, var(--ui-warn) 40%, var(--ui-border)); }
+table.compare { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+table.compare th, table.compare td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--ui-border); vertical-align: top; }
+table.compare th { color: var(--ui-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed workflow &middot; not part of the running app</p>
+    <h1>Mash Bill Library</h1>
+    <p>
+      Today, <strong>Bourbon Shelf Talkers</strong> lets staff build a mash bill one grain+percent chip at a time,
+      but nothing about it is remembered &mdash; the same bottle gets re-researched and re-typed every time a new
+      talker is made for it. This mockup proposes a small persistent library behind that chip UI: research a mash
+      bill once (by hand, or auto-filled from Distiller.com the same way Nose/Palate/Finish already are), save it,
+      and have it <strong>suggested automatically</strong> the next time that product comes up &mdash; on any
+      register, via the same Server PC sync <code>exportSync.js</code> already uses for the WinePOS file.
+    </p>
+    <p>
+      The toggle below switches between the two ways a saved entry could be matched back to a talker &mdash;
+      <strong>exact expression</strong> vs. <strong>distillery default</strong> &mdash; using Four Roses (one
+      distillery, ten different recipe codes) to show why the choice matters.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Edit Talker</div>
+    </div>
+    <div class="appbar">
+      <div>
+        <h1>Edit Talker</h1>
+        <p>Product Type: Spirits &middot; Bourbon Shelf Talkers: ON</p>
+      </div>
+      <div class="pill-group" role="group" aria-label="Compare matching strategy">
+        <button type="button" class="pill is-active" data-mode="exact">Match: Exact Expression</button>
+        <button type="button" class="pill" data-mode="brand">Match: Distillery Default</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- ============== FORM PANEL ============== -->
+      <div class="panel">
+        <div class="panel__header"><h2>Talker details</h2></div>
+
+        <div class="field"><span>Distillery</span><input id="fDistillery" value="Four Roses"></div>
+        <div class="field"><span>Product Title</span><input id="fTitle" value="Four Roses Single Barrel"></div>
+        <div class="field-row">
+          <div class="field"><span>Size</span><input value="750mL"></div>
+          <div class="field"><span>Price</span><input value="$44.99"></div>
+        </div>
+
+        <div class="compare-note" id="compareNote"></div>
+
+        <!-- Recall banner - populated by JS based on mode -->
+        <div id="recallBanner"></div>
+
+        <div class="field"><span>Mash Bill</span></div>
+        <div class="grain-bar" id="chipBar"></div>
+        <div class="grain-legend" id="chipLegend"></div>
+        <div class="chip-row" id="chipRow"></div>
+        <div class="add-row">
+          <select id="grainSelect">
+            <option>Corn</option><option>Rye</option><option>Wheat</option>
+            <option>Malted Barley</option><option>Malted Rye</option><option>Oat</option>
+          </select>
+          <input id="pctInput" type="number" placeholder="%" min="1" max="100">
+          <button type="button" class="btn btn--small" id="addGrainBtn">Add</button>
+        </div>
+
+        <div class="scrape-btn-row">
+          <button type="button" class="btn btn--small" id="scrapeBtn">&#128269; Auto-Fill from Distiller.com</button>
+          <span id="scrapeSpinner" hidden><span class="spinner"></span></span>
+        </div>
+        <div class="scrape-preview" id="scrapePreview" hidden></div>
+
+        <div class="save-box">
+          <label class="checkline"><input type="checkbox" id="saveToggle"> Save this mash bill to the Library</label>
+          <div class="save-scope" id="saveScope" hidden></div>
+          <button type="button" class="btn btn--primary btn--small" id="saveBtn" hidden>Save to Library</button>
+          <span class="toast" id="saveToast">&#10003; Saved to Mash Bill Library</span>
+          <div class="save-error" id="saveError">&#9888;&#65039; Can't reach the Server PC to save this right now &mdash; it'll stay on this form. Try again once it's back online.</div>
+        </div>
+      </div>
+
+      <!-- ============== LIBRARY PANEL ============== -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Manage Mash Bill Library</h2>
+          <button type="button" class="btn btn--ghost btn--small">+ Add entry manually</button>
+        </div>
+        <p class="panel__subtitle">Every saved mash bill, store-wide &mdash; edit or remove an entry here without opening a talker.</p>
+        <input class="field" id="libSearch" placeholder="Search distillery or expression&hellip;" style="margin-bottom:0.9rem;">
+        <div class="lib-table" id="libTable"></div>
+
+        <div class="sync-status" id="syncStatus">
+          <div class="sync-status__line"><span class="sync-dot"></span> Synced with Server PC &middot; last pulled 2:14 PM</div>
+          <button type="button" class="btn btn--small" id="syncNowBtn">Sync Now</button>
+        </div>
+        <p class="field-hint" style="margin-top:0.5rem;">
+          <a href="#" id="toggleServerPcState">Preview: Server PC unreachable &rarr;</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+    <div class="notes-grid">
+      <div class="notes-card notes-card--good">
+        <h3>Exact Expression match</h3>
+        <p>Library is keyed by the full product title. "Four Roses Single Barrel" and "Four Roses Small Batch" are
+        separate entries, each with its own researched composition.</p>
+        <p><strong>Trade-off:</strong> precise, but every new expression needs its own entry before recall works &mdash;
+        no benefit until it's been saved once.</p>
+      </div>
+      <div class="notes-card notes-card--warn">
+        <h3>Distillery Default match</h3>
+        <p>Library falls back to a per-distillery "typical" recipe when no exact entry exists. Fewer entries to
+        maintain, and something is always suggested.</p>
+        <p><strong>Trade-off:</strong> silently wrong for distilleries that run multiple recipes (Four Roses'
+        ten recipe codes are the extreme case, but plenty of others blend by batch too). Needs a visible caution,
+        never a silent fill.</p>
+      </div>
+    </div>
+    <div class="notes-card">
+      <h3>Recommendation</h3>
+      <p>Exact-expression as the primary match, with distillery-default as an <em>opt-in</em> fallback only when no
+      exact entry exists &mdash; shown with the caution styling above, never auto-applied. That keeps the common
+      case (a bottle staff has made a talker for before) fast and correct, while still offering something for a
+      brand-new expression instead of a blank field.</p>
+    </div>
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Storage &amp; sync &mdash; confirmed: shared, Server-PC-hosted</h3>
+        <p>Scoped to registers on one store's LAN, same as today's Server PC. The Server PC's <code>data.db</code>
+        holds the one real <code>mash_bills</code> table &mdash; it's the <strong>single source of truth</strong>,
+        the same role it already plays for the WinePOS export file. Every other PC keeps only a synced
+        <em>read cache</em>, never its own authoritative copy.</p>
+        <p>The real change from the export file: that port is read-only today because only WinePOS ever writes the
+        export. A mash bill can be researched at <em>any</em> register, so this port needs actual write endpoints
+        &mdash; new surface area this app's network side doesn't have yet:</p>
+        <table class="compare" style="margin-top:0.5rem;">
+          <thead><tr><th>Endpoint</th><th>Used by</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET /mashbills</code></td><td>Every PC, polling ~30s (same cadence as export auto-sync) &mdash; full-replace into the local read cache, no diffing.</td></tr>
+            <tr><td><code>POST /mashbills</code></td><td>Save to Library, from any PC. On the Server PC itself this is an in-process call, not a real network hop &mdash; same as it already talks to its own export file locally.</td></tr>
+            <tr><td><code>PUT /mashbills/:id</code></td><td>Edit, from the Manage dialog.</td></tr>
+            <tr><td><code>DELETE /mashbills/:id</code></td><td>Delete, from the Manage dialog.</td></tr>
+          </tbody>
+        </table>
+        <p>Discovery reuses <code>discovery.js</code>'s existing UDP beacon &mdash; no new "find the Server PC" mechanism needed.</p>
+      </div>
+      <div class="notes-card notes-card--warn">
+        <h3>Resilience &amp; open questions</h3>
+        <p><strong>Server PC unreachable:</strong> recall keeps working off the last-synced read cache (matches how
+        Scan UPC already degrades). <em>Saving</em> a new/edited entry can't be queued for later the way a read can
+        just be stale &mdash; the mockup's live preview below shows the honest failure: an inline error, try again
+        once the Server PC's back, no silent local fallback that could quietly fork the data.</p>
+        <p><strong>No Server PC currently marked:</strong> same as Export File Settings today &mdash; Library
+        recall/save just doesn't work until one is designated; the Advanced menu's existing "Server PC" dialog is
+        where that already gets set.</p>
+        <p><strong>Open, not resolved by this mockup:</strong> if the Server PC role moves to a different physical
+        PC, that PC's own <code>mash_bills</code> table (if it ever held the role before) becomes authoritative
+        again with no merge against what the old Server PC accumulated in the meantime. Fine for how rarely this
+        flag actually moves in practice, but worth a one-line warning in the Server PC dialog if it ever has data
+        to lose.</p>
+      </div>
+    </div>
+    <div class="notes-card">
+      <h3>Research: manual + Distiller.com</h3>
+      <p>Reuses the exact pattern <code>Find Tasting Notes</code> already established: click, wait, get an
+      <strong>editable preview</strong> before anything is committed &mdash; never a blind auto-fill. Same
+      "scraper unconfirmed against the live site, double-check" caution the README already gives Nose/Palate/Finish.</p>
+      <p>Manual entry (today's chip UI) stays as-is and remains the fallback when Distiller.com has nothing.</p>
+    </div>
+    <table class="compare">
+      <thead><tr><th>Step</th><th>Where it happens</th><th>Existing pattern it reuses</th></tr></thead>
+      <tbody>
+        <tr><td>Research</td><td>Edit Talker &rarr; Mash Bill field</td><td>Find Tasting Notes' scrape-then-preview flow</td></tr>
+        <tr><td>Store</td><td>"Save to Library" checkbox on the same field</td><td><code>POST</code>/<code>PUT</code> to the Server PC's <code>data.db</code></td></tr>
+        <tr><td>Recall</td><td>Banner above the Mash Bill field, on Title/Distillery match</td><td>UPC/SKU catalog's title-matching, read from the local sync cache</td></tr>
+        <tr><td>Manage</td><td>New "Manage Mash Bill Library" dialog</td><td>Manage Reviewers list</td></tr>
+        <tr><td>Distribute</td><td>Server PC hosts, every PC polls ~30s</td><td>exportSync.js's shape, extended with real write endpoints</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const GRAIN_COLORS = { Corn: '#d9a441', Rye: '#8a3a2c', Wheat: '#c9b464', 'Malted Barley': '#a67c3d', 'Malted Rye': '#6e2a1f', Oat: '#ddd0ad' };
+const FALLBACK_COLOR = '#b8ab98';
+
+// Sample library state (mockup only)
+let library = [
+  { id: 1, distillery: 'Buffalo Trace', expression: null, grains: [{g:'Corn',p:90},{g:'Rye',p:8},{g:'Malted Barley',p:2}], source: 'Manual', updated: 'Jun 2, 2026' },
+  { id: 2, distillery: 'Wild Turkey', expression: null, grains: [{g:'Corn',p:75},{g:'Rye',p:13},{g:'Malted Barley',p:12}], source: 'Manual', updated: 'May 18, 2026' },
+  { id: 3, distillery: 'Four Roses', expression: 'Four Roses Small Batch', grains: [{g:'Corn',p:60},{g:'Rye',p:35},{g:'Malted Barley',p:5}], source: 'Distiller.com', updated: 'Jul 14, 2026' },
+  { id: 4, distillery: 'Four Roses', expression: 'Four Roses Single Barrel', grains: [{g:'Corn',p:75},{g:'Rye',p:20},{g:'Malted Barley',p:5}], source: 'Distiller.com', updated: 'Jul 14, 2026' },
+  { id: 5, distillery: 'Four Roses', expression: null, grains: [{g:'Corn',p:60},{g:'Rye',p:35},{g:'Malted Barley',p:5}], source: 'Manual', updated: 'Jul 20, 2026' },
+];
+let nextId = 6;
+let mode = 'exact';
+let currentChips = []; // {g, p} for the talker being edited
+
+function grainBarHtml(grains, big) {
+  const bar = grains.map(({g,p}) => `<div class="grain-bar__seg" style="width:${p}%;background:${GRAIN_COLORS[g]||FALLBACK_COLOR}"></div>`).join('');
+  const legend = grains.map(({g,p}) => `<span><span class="grain-swatch" style="background:${GRAIN_COLORS[g]||FALLBACK_COLOR}"></span>${p}% ${g}</span>`).join('');
+  return { bar, legend };
+}
+
+function renderChips() {
+  const { bar, legend } = grainBarHtml(currentChips.map(c => ({g:c.g,p:c.p})));
+  document.getElementById('chipBar').innerHTML = currentChips.length ? bar : '';
+  document.getElementById('chipLegend').innerHTML = currentChips.length ? legend : '';
+  document.getElementById('chipRow').innerHTML = currentChips.map((c,i) => `
+    <div class="chip">${c.p}% ${c.g}<button type="button" data-idx="${i}">&times;</button></div>
+  `).join('');
+}
+
+function findMatch() {
+  const distillery = document.getElementById('fDistillery').value.trim().toLowerCase();
+  const title = document.getElementById('fTitle').value.trim().toLowerCase();
+  if (mode === 'exact') {
+    return library.find(e => e.expression && e.expression.toLowerCase() === title) || null;
+  }
+  return library.find(e => !e.expression && e.distillery.toLowerCase() === distillery) || null;
+}
+
+function renderCompareNote() {
+  document.getElementById('compareNote').innerHTML = mode === 'exact'
+    ? '<div><strong>Exact Expression:</strong> looks for a saved entry whose title matches this product exactly. Nothing matches unless this specific bottling has been saved before.</div>'
+    : '<div><strong>Distillery Default:</strong> falls back to whatever "typical" recipe is on file for this distillery, regardless of which expression is being made. Watch what happens below with a distillery that runs more than one recipe.</div>';
+}
+
+function renderRecallBanner() {
+  const match = findMatch();
+  const el = document.getElementById('recallBanner');
+  if (!match) {
+    el.innerHTML = `<div class="banner banner--empty">No saved mash bill found for this ${mode === 'exact' ? 'expression' : 'distillery'} yet. Research it below, or add it to the Library once you have it.</div>`;
+    return;
+  }
+  const { bar, legend } = grainBarHtml(match.grains.map(x=>({g:x.g,p:x.p})));
+  const isDefaultFallback = mode === 'brand';
+  el.innerHTML = `
+    <div class="banner ${isDefaultFallback ? 'banner--warn' : 'banner--found'}">
+      <div class="banner__title">${isDefaultFallback ? '&#9888;&#65039; Saved default mash bill found' : '&#128218; Saved mash bill found'} for ${isDefaultFallback ? match.distillery : match.expression}</div>
+      <div class="grain-bar">${bar}</div>
+      <div class="grain-legend">${legend}</div>
+      <div class="banner__meta">Source: ${match.source} &middot; Updated ${match.updated}</div>
+      ${isDefaultFallback ? `<div class="banner__caution">&#9888;&#65039; This is a distillery-wide default, not researched for "${document.getElementById('fTitle').value.trim()}" specifically &mdash; Four Roses runs ten different recipe codes. Verify before using.</div>` : ''}
+      <div class="banner__actions">
+        <button type="button" class="btn btn--small btn--primary" id="useMatchBtn">Use It</button>
+        <button type="button" class="btn btn--small btn--ghost" id="ignoreMatchBtn">Not This One</button>
+      </div>
+    </div>`;
+  document.getElementById('useMatchBtn').addEventListener('click', () => {
+    currentChips = match.grains.map(x => ({ g: x.g, p: x.p }));
+    renderChips();
+  });
+  document.getElementById('ignoreMatchBtn').addEventListener('click', () => { el.innerHTML = ''; });
+}
+
+function renderSaveScope() {
+  const title = document.getElementById('fTitle').value.trim();
+  const distillery = document.getElementById('fDistillery').value.trim();
+  document.getElementById('saveScope').innerHTML = `
+    <label><input type="radio" name="scope" value="exact" checked>
+      <span>This expression only <br><small>Saved as "${title}" &mdash; only recalled for this exact product.</small></span>
+    </label>
+    <label><input type="radio" name="scope" value="brand">
+      <span>Set as ${distillery || 'this distillery'}'s default <br><small>Recalled for any ${distillery || 'this distillery'} product with no exact match of its own.</small></span>
+    </label>`;
+}
+
+function renderLibrary(filter) {
+  const q = (filter || '').trim().toLowerCase();
+  const rows = library.filter(e => !q || e.distillery.toLowerCase().includes(q) || (e.expression||'').toLowerCase().includes(q));
+  document.getElementById('libTable').innerHTML = rows.map(e => {
+    const { bar, legend } = grainBarHtml(e.grains.map(x=>({g:x.g,p:x.p})));
+    return `
+    <div class="lib-row" data-id="${e.id}">
+      <div class="lib-row__id">
+        <div class="lib-row__distillery">${e.distillery}</div>
+        <div class="lib-row__expr">${e.expression || 'All expressions (default)'}</div>
+        <span class="lib-row__tag ${e.expression ? 'lib-row__tag--exact' : 'lib-row__tag--default'}">${e.expression ? 'Exact' : 'Distillery default'}</span>
+      </div>
+      <div>
+        <div class="grain-bar">${bar}</div>
+        <div class="grain-legend">${legend}</div>
+        <div class="lib-row__meta">Source: ${e.source} &middot; Updated ${e.updated}</div>
+      </div>
+      <div class="lib-row__actions">
+        <button type="button" class="btn btn--small">Edit</button>
+        <button type="button" class="btn btn--small btn--danger" data-remove="${e.id}">Delete</button>
+      </div>
+    </div>`;
+  }).join('') || '<p class="panel__subtitle">No entries match.</p>';
+}
+
+function refreshAll() {
+  renderCompareNote();
+  renderRecallBanner();
+  renderSaveScope();
+}
+
+// ---- wire up ----
+document.querySelectorAll('.pill').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.pill').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  mode = btn.dataset.mode;
+  refreshAll();
+}));
+
+['fDistillery','fTitle'].forEach(id => document.getElementById(id).addEventListener('input', refreshAll));
+
+document.getElementById('addGrainBtn').addEventListener('click', () => {
+  const g = document.getElementById('grainSelect').value;
+  const p = Number(document.getElementById('pctInput').value);
+  if (!g || !p) return;
+  currentChips.push({ g, p });
+  document.getElementById('pctInput').value = '';
+  renderChips();
+});
+document.getElementById('chipRow').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-idx]');
+  if (!btn) return;
+  currentChips.splice(Number(btn.dataset.idx), 1);
+  renderChips();
+});
+
+document.getElementById('scrapeBtn').addEventListener('click', () => {
+  const spinner = document.getElementById('scrapeSpinner');
+  const preview = document.getElementById('scrapePreview');
+  spinner.hidden = false;
+  preview.hidden = true;
+  setTimeout(() => {
+    spinner.hidden = true;
+    const grains = [{g:'Corn',p:75},{g:'Rye',p:20},{g:'Malted Barley',p:5}];
+    const { bar, legend } = grainBarHtml(grains);
+    preview.hidden = false;
+    preview.innerHTML = `
+      <div class="scrape-preview__source">Found on Distiller.com</div>
+      <div class="grain-bar">${bar}</div>
+      <div class="grain-legend">${legend}</div>
+      <div class="scrape-preview__caution">&#9888;&#65039; Distiller's scraper hasn't been confirmed against the live site &mdash; double-check this against the bottle/distillery site before printing.</div>
+      <div class="scrape-preview__actions">
+        <button type="button" class="btn btn--small btn--primary" id="useScrapedBtn">Use This</button>
+        <button type="button" class="btn btn--small btn--ghost" id="cancelScrapedBtn">Cancel</button>
+      </div>`;
+    document.getElementById('useScrapedBtn').addEventListener('click', () => {
+      currentChips = grains.map(g => ({ g: g.g, p: g.p }));
+      renderChips();
+      preview.hidden = true;
+    });
+    document.getElementById('cancelScrapedBtn').addEventListener('click', () => { preview.hidden = true; });
+  }, 900);
+});
+
+document.getElementById('saveToggle').addEventListener('change', (e) => {
+  document.getElementById('saveScope').hidden = !e.target.checked;
+  document.getElementById('saveBtn').hidden = !e.target.checked;
+});
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const errorEl = document.getElementById('saveError');
+  if (!serverPcReachable) {
+    errorEl.classList.add('is-shown');
+    return;
+  }
+  errorEl.classList.remove('is-shown');
+  const scope = document.querySelector('input[name="scope"]:checked').value;
+  const distillery = document.getElementById('fDistillery').value.trim();
+  const title = document.getElementById('fTitle').value.trim();
+  library.push({
+    id: nextId++,
+    distillery,
+    expression: scope === 'exact' ? title : null,
+    grains: currentChips.map(c => ({ g: c.g, p: c.p })),
+    source: 'Manual',
+    updated: 'Just now',
+  });
+  renderLibrary(document.getElementById('libSearch').value);
+  const toast = document.getElementById('saveToast');
+  toast.classList.add('is-shown');
+  setTimeout(() => toast.classList.remove('is-shown'), 2200);
+});
+
+// ---- "Server PC unreachable" preview toggle (mockup only, dramatizes the
+// resilience behavior described in the design notes below) ----
+let serverPcReachable = true;
+function renderSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  const link = document.getElementById('toggleServerPcState');
+  const syncBtn = document.getElementById('syncNowBtn');
+  if (serverPcReachable) {
+    el.innerHTML = `
+      <div class="sync-status__line"><span class="sync-dot"></span> Synced with Server PC &middot; last pulled 2:14 PM</div>
+      <button type="button" class="btn btn--small" id="syncNowBtn">Sync Now</button>`;
+    link.textContent = 'Preview: Server PC unreachable →';
+  } else {
+    el.innerHTML = `
+      <div class="sync-status__line"><span class="sync-dot is-down"></span> Can't reach Server PC right now &mdash; showing the last synced copy (2:14 PM)</div>
+      <button type="button" class="btn btn--small" id="syncNowBtn" disabled>Retry</button>`;
+    link.textContent = '← Preview: Server PC reachable';
+  }
+  document.getElementById('saveError').classList.remove('is-shown');
+}
+document.getElementById('toggleServerPcState').addEventListener('click', (e) => {
+  e.preventDefault();
+  serverPcReachable = !serverPcReachable;
+  renderSyncStatus();
+});
+
+document.getElementById('libSearch').addEventListener('input', (e) => renderLibrary(e.target.value));
+document.getElementById('libTable').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-remove]');
+  if (!btn) return;
+  library = library.filter(x => String(x.id) !== btn.dataset.remove);
+  renderLibrary(document.getElementById('libSearch').value);
+});
+
+document.getElementById('syncStatus').addEventListener('click', (e) => {
+  const btn = e.target.closest('#syncNowBtn');
+  if (!btn || btn.disabled) return;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 800);
+});
+
+// initial render
+currentChips = [{ g: 'Corn', p: 75 }, { g: 'Rye', p: 20 }, { g: 'Malted Barley', p: 5 }];
+renderChips();
+renderLibrary('');
+refreshAll();
+</script>

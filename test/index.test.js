@@ -122,8 +122,12 @@ function withServer(run) {
 // right methods at the right time (see the /api/server-status and
 // /api/upc-settings tests below) - the real beacon/export-sync objects'
 // own behavior is covered by discovery.test.js and exportSync.test.js.
-function withServerAndFakes({ beacon, exportServeServer, exportPuller } = {}, run) {
-  const app = createApp({ beacon, exportServeServer, exportPuller });
+function withServerAndFakes({
+  beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+} = {}, run) {
+  const app = createApp({
+    beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+  });
   return new Promise((resolve, reject) => {
     const server = app.listen(0, '127.0.0.1', async () => {
       try {
@@ -181,6 +185,37 @@ function postJson(port, urlPath, body) {
     );
     req.on('error', reject);
     req.write(payload);
+    req.end();
+  });
+}
+
+// Generic PUT/DELETE (postJson above is POST-only) - used by the
+// /api/mashbills tests, the first routes in this file needing either verb.
+function requestJson(port, method, urlPath, body) {
+  return new Promise((resolve, reject) => {
+    const payload = body !== undefined ? JSON.stringify(body) : null;
+    const req = http.request(
+      {
+        host: '127.0.0.1',
+        port,
+        path: urlPath,
+        method,
+        headers: payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {},
+      },
+      (res) => {
+        let raw = '';
+        res.on('data', (chunk) => { raw += chunk; });
+        res.on('end', () => {
+          try {
+            resolve({ status: res.statusCode, body: raw ? JSON.parse(raw) : null });
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    if (payload) req.write(payload);
     req.end();
   });
 }
@@ -750,5 +785,199 @@ test('POST /api/upc-settings/sync-now reports sync: null when no exportPuller is
     const { status, body } = await postJson(port, '/api/upc-settings/sync-now', {});
     assert.equal(status, 200);
     assert.equal(body.sync, null);
+  }));
+});
+
+// ================================================================
+// /api/mashbills - the Mash Bill Library (Tools -> Mash Bill Library...,
+// see the comment above the routes in server/index.js). Two shapes:
+// isServer reads/writes this PC's own data.db directly (db.test.js already
+// covers the underlying upsert/update/delete logic in full - these confirm
+// the HTTP layer's isServer branch and status codes); not isServer relies
+// on an injected mashBillPuller, same "fake object, just the methods
+// createApp() actually calls" pattern as exportPuller above - the real
+// puller's own behavior is covered by mashBillSync.test.js.
+// ================================================================
+
+function fakeMashBillPuller({ cached = [], status = { lastSyncedAt: null, lastError: null, syncedFrom: null }, forwardWrite } = {}) {
+  return {
+    getCached: () => cached,
+    getStatus: () => status,
+    syncOnce: async () => {},
+    forwardWrite: forwardWrite || (async () => { throw new Error('forwardWrite not stubbed for this test'); }),
+  };
+}
+
+test('GET /api/mashbills reads this PC\'s own data.db directly once marked isServer', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    await postJson(port, '/api/mashbills', { title: 'Four Roses Single Barrel', distillery: 'Four Roses', grains: [{ grain: 'Corn', pct: 75 }] });
+
+    const { status, body } = await getJson(port, '/api/mashbills');
+    assert.equal(status, 200);
+    assert.equal(body.mashBills.length, 1);
+    assert.equal(body.mashBills[0].title, 'Four Roses Single Barrel');
+    assert.deepEqual(body.sync, { isServer: true });
+  }));
+});
+
+test('GET /api/mashbills falls back to an empty cached list with no puller wired in (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/mashbills');
+    assert.equal(status, 200);
+    assert.deepEqual(body.mashBills, []);
+    assert.equal(body.sync.isServer, false);
+  }));
+});
+
+test('GET /api/mashbills reports the injected mashBillPuller\'s cached list and status when not isServer', async () => {
+  const puller = fakeMashBillPuller({
+    cached: [{ id: 1, title: 'Larceny' }],
+    status: { lastSyncedAt: '2026-08-13T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' },
+  });
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    const { body } = await getJson(port, '/api/mashbills');
+    assert.deepEqual(body.mashBills, [{ id: 1, title: 'Larceny' }]);
+    assert.equal(body.sync.isServer, false);
+    assert.equal(body.sync.syncedFrom, 'SERVER-PC');
+  }));
+});
+
+test('POST /api/mashbills upserts directly once isServer, requires a title', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+
+    const missingTitle = await postJson(port, '/api/mashbills', { grains: [{ grain: 'Corn', pct: 90 }] });
+    assert.equal(missingTitle.status, 400);
+
+    const created = await postJson(port, '/api/mashbills', { title: 'Eagle Rare', grains: [{ grain: 'Corn', pct: 90 }] });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.title, 'Eagle Rare');
+  }));
+});
+
+test('POST /api/mashbills forwards to the injected mashBillPuller when not isServer', async () => {
+  let forwarded = null;
+  const puller = fakeMashBillPuller({
+    forwardWrite: async (method, path, body) => {
+      forwarded = { method, path, body };
+      return { status: 201, data: { id: 1, ...body } };
+    },
+  });
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/mashbills', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
+    assert.equal(status, 201);
+    assert.equal(body.title, 'Larceny');
+    assert.deepEqual(forwarded, { method: 'POST', path: '/mashbills', body: { title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined } });
+  }));
+});
+
+test('POST /api/mashbills reports 503 with no mashBillPuller wired in and not isServer (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status } = await postJson(port, '/api/mashbills', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
+    assert.equal(status, 503);
+  }));
+});
+
+test('POST /api/mashbills surfaces a Server PC unreachable error from forwardWrite as a 502', async () => {
+  const puller = fakeMashBillPuller({
+    forwardWrite: async () => { throw new Error('No Server PC found on this network yet.'); },
+  });
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/mashbills', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
+    assert.equal(status, 502);
+    assert.match(body.error, /No Server PC found/);
+  }));
+});
+
+test('PUT /api/mashbills/:id updates directly once isServer, 404s for an unknown id, 409s on a title collision', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    const a = await postJson(port, '/api/mashbills', { title: 'Eagle Rare', grains: [{ grain: 'Corn', pct: 90 }] });
+    const b = await postJson(port, '/api/mashbills', { title: "Blanton's", grains: [{ grain: 'Corn', pct: 75 }] });
+
+    const updated = await requestJson(port, 'PUT', `/api/mashbills/${a.body.id}`, { title: 'Eagle Rare 17 Year', grains: [{ grain: 'Corn', pct: 90 }] });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.title, 'Eagle Rare 17 Year');
+
+    const missing = await requestJson(port, 'PUT', '/api/mashbills/999999', { title: 'Nope', grains: [{ grain: 'Corn', pct: 90 }] });
+    assert.equal(missing.status, 404);
+
+    const collision = await requestJson(port, 'PUT', `/api/mashbills/${b.body.id}`, { title: 'eagle rare 17 year', grains: [{ grain: 'Corn', pct: 75 }] });
+    assert.equal(collision.status, 409);
+  }));
+});
+
+test('PUT /api/mashbills/:id forwards to the injected mashBillPuller when not isServer', async () => {
+  let forwarded = null;
+  const puller = fakeMashBillPuller({
+    forwardWrite: async (method, path, body) => {
+      forwarded = { method, path, body };
+      return { status: 200, data: { id: 7, ...body } };
+    },
+  });
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    const { status, body } = await requestJson(port, 'PUT', '/api/mashbills/7', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
+    assert.equal(status, 200);
+    assert.equal(body.id, 7);
+    assert.equal(forwarded.path, '/mashbills/7');
+  }));
+});
+
+test('DELETE /api/mashbills/:id deletes directly once isServer, 404s for an unknown id', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    const created = await postJson(port, '/api/mashbills', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
+
+    const deleted = await requestJson(port, 'DELETE', `/api/mashbills/${created.body.id}`);
+    assert.equal(deleted.status, 200);
+    assert.deepEqual((await getJson(port, '/api/mashbills')).body.mashBills, []);
+
+    const missing = await requestJson(port, 'DELETE', `/api/mashbills/${created.body.id}`);
+    assert.equal(missing.status, 404);
+  }));
+});
+
+test('DELETE /api/mashbills/:id forwards to the injected mashBillPuller when not isServer', async () => {
+  let forwarded = null;
+  const puller = fakeMashBillPuller({
+    forwardWrite: async (method, path) => {
+      forwarded = { method, path };
+      return { status: 200, data: { success: true } };
+    },
+  });
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    const { status, body } = await requestJson(port, 'DELETE', '/api/mashbills/7');
+    assert.equal(status, 200);
+    assert.deepEqual(body, { success: true });
+    assert.deepEqual(forwarded, { method: 'DELETE', path: '/mashbills/7' });
+  }));
+});
+
+test('POST /api/mashbills/sync-now calls the injected mashBillPuller\'s syncOnce, then reports isServer:false status', async () => {
+  let syncOnceCalls = 0;
+  const puller = fakeMashBillPuller({
+    cached: [{ id: 1, title: 'Larceny' }],
+    status: { lastSyncedAt: '2026-08-13T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' },
+  });
+  puller.syncOnce = async () => { syncOnceCalls += 1; };
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/mashbills/sync-now', {});
+    assert.equal(status, 200);
+    assert.equal(syncOnceCalls, 1);
+    assert.deepEqual(body.mashBills, [{ id: 1, title: 'Larceny' }]);
+  }));
+});
+
+test('POST /api/mashbills/sync-now reports this PC\'s own data.db once isServer, ignoring any cached puller list', async () => {
+  const puller = fakeMashBillPuller({ cached: [{ id: 999, title: 'Should not appear' }] });
+  await withTempDb(() => withServerAndFakes({ mashBillPuller: puller }, async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    await postJson(port, '/api/mashbills', { title: 'Eagle Rare', grains: [{ grain: 'Corn', pct: 90 }] });
+
+    const { body } = await postJson(port, '/api/mashbills/sync-now', {});
+    assert.equal(body.sync.isServer, true);
+    assert.equal(body.mashBills.length, 1);
+    assert.equal(body.mashBills[0].title, 'Eagle Rare');
   }));
 });
