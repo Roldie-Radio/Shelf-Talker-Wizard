@@ -44,6 +44,7 @@
       version: '3.3.11',
       items: [
         'Fixed: Scan UPC and SKU Lookup could silently switch Product Type from Beer to Wine/Spirits after clicking "Use This Match" on the Confirm Untappd Match popup - the export file\'s (or store page\'s) own category/department text was getting merged into the form under the same field Product Type uses, and almost never spelled "beer" exactly.',
+        'Changed: on a Large Display sign with no Sale Price, the Regular Price now takes over the Sale Price\'s larger font size and left-hand position instead of staying in its small, right-aligned secondary spot.',
       ],
     },
     {
