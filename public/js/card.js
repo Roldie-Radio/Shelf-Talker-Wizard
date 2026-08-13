@@ -274,6 +274,19 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Soft Cheeses' },
       { icon: '🍝', food: 'Tomato Pasta' },
     ] },
+  { id: 'sangiovese', label: 'Sangiovese', test: /sangiovese/i,
+    pairings: [
+      { icon: '🍝', food: 'Tomato Pasta' },
+      { icon: '🧀', food: 'Aged Pecorino' },
+      { icon: '🍕', food: 'Margherita Pizza' },
+      { icon: '🥓', food: 'Prosciutto & Salumi' },
+    ],
+    regions: [
+      { id: 'chianti', label: 'Chianti Classico, Tuscany', test: /chianti|tuscany|toscana/i,
+        swapIndex: 2, swap: { icon: '🥩', food: 'Bistecca alla Fiorentina' } },
+      { id: 'brunello', label: 'Brunello di Montalcino, Tuscany', test: /brunello|montalcino/i,
+        swapIndex: 3, swap: { icon: '🐗', food: 'Wild Boar Ragù' } },
+    ] },
   { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir/i,
     pairings: [
       { icon: '🦆', food: 'Roast Duck' },
