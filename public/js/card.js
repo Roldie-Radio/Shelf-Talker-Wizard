@@ -52,6 +52,19 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// The Size field's "ml"/"oz" unit comes straight from whatever the store
+// export or product page wrote it as ("750ML", "16OZ 4-Pack", "12oz") -
+// inconsistent about casing the abbreviation itself. Printed talkers/signs
+// always want that unit lowercase regardless of source casing, so every
+// .card__size/.sign__size render below runs the Size text through this
+// first. Matched with a manual "not a letter" guard on each side rather
+// than \b - \b wouldn't fire between "750" and "ML" since digits and
+// letters are both word characters, so it'd miss the most common case.
+function lowercaseSizeUnits(str) {
+  if (str == null) return '';
+  return String(str).replace(/(^|[^a-z])(ml|oz)(?![a-z])/gi, (_m, prefix, unit) => `${prefix}${unit.toLowerCase()}`);
+}
+
 function formatMoney(value) {
   // An empty field is "no price yet", not zero - Number('') is 0, which made
   // the live preview of a blank form advertise "Regular Price $0.00".
@@ -1060,7 +1073,7 @@ function buildSignMetaRowHtml(talker, leftHtml) {
   return `
     <div class="sign__meta-row">
       <div class="sign__meta-row-left">${left}</div>
-      ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
+      ${talker.size ? `<div class="sign__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '<div></div>'}
     </div>
   `;
 }
@@ -1164,7 +1177,7 @@ function buildSmallSignBodyHtml(talker) {
     ${priceHtml}
     <div class="sign__bottom-row">
       ${hasSale ? `<div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '<div></div>'}
-      ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
+      ${talker.size ? `<div class="sign__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '<div></div>'}
     </div>
   `;
 }
@@ -1265,7 +1278,7 @@ function buildCardElement(talker) {
   const descriptionStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
   const ratingsStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.ratingsFontSize, refWidthIn, true);
   const titleHtml = `<div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>`;
-  const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : '';
+  const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '';
 
   const bodyHtml = isQuarter ? `
       ${titleHtml}
