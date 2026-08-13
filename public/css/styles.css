@@ -2846,31 +2846,41 @@ h1, h2, h3 { margin: 0; }
 /* Small Super Sale sign's price number - same WordArt look as
    .sign__supersale-text above (bold italic sans, red fill, black
    outline, no drop shadow), in place of the plain Arial Black every
-   other Small sign price (.sign__small-price) uses. */
+   other Small sign price (.sign__small-price) uses. Font-size now matches
+   .sign__supersale-text's small-sign size (0.042) exactly too - it used to
+   fall through to .sign__small-price's own 0.078 below, so the price
+   number rendered noticeably larger than the "Super Sale Price!!!"
+   lettering above it (and didn't move when the Super Sale Price!!! Font
+   Size box was typed over, since that override only ever touched the
+   text - see the shared superSaleStyle in buildSmallSignBodyHtml). Set
+   here rather than relying on source order/specificity against
+   .sign__small-price below, same reasoning as that rule's own
+   :not(.sign__supersale-price) split for font-family. */
 .sign__supersale-price {
   font-family: Arial, Helvetica, sans-serif;
   font-style: italic;
   color: var(--sale-red);
   -webkit-text-stroke: calc(var(--w) * 0.0025) #000;
+  font-size: calc(var(--w) * var(--sign-text) * 0.042 * var(--price-fit, 1));
 }
 
 /* The reference Small sign's price (whichever of standard/closeout/chilled
-   or Super Sale is showing) is Arial Black bold 32pt (confirmed straight
+   is showing - Super Sale's own price size is set separately above,
+   .sign__supersale-price) is Arial Black bold 32pt (confirmed straight
    from the source PDF text: Arial-Black, size 32.04) - fraction-of-w =
    pt / 72 / 4.75 / --sign-text (the sign's real physical print width,
-   see layout.js), same conversion used throughout this section. Font-family
-   is a separate, more specific rule below rather than added here directly:
+   see layout.js), same conversion used throughout this section. Both
+   font-family and font-size are scoped with :not(.sign__supersale-price):
    .sign__supersale-price sits earlier in this file and sets its own Georgia
-   italic face for the same element (both classes apply together, see
-   buildSmallSignBodyHtml) - a plain .sign__small-price rule would come
-   after it in source order and win, silently undoing that already-established
-   Super Sale look. */
+   italic face and Super-Sale-matching size for the same element (both
+   classes apply together, see buildSmallSignBodyHtml) - an unscoped
+   .sign__small-price rule would come after it in source order and win,
+   silently undoing that already-established Super Sale look. */
 .sign__small-price {
   font-weight: 800;
-  font-size: calc(var(--w) * var(--sign-text) * 0.078 * var(--price-fit, 1));
   flex: 0 0 auto;
 }
-.sign__small-price:not(.sign__supersale-price) { font-family: "Arial Black", Arial, Helvetica, sans-serif; }
+.sign__small-price:not(.sign__supersale-price) { font-family: "Arial Black", Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.078 * var(--price-fit, 1)); }
 .sign__small-price.is-sale { color: var(--sale-red); }
 
 /* ---------- "How to Read" customer guide ----------
