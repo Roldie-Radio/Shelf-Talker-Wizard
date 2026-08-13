@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.10',
+      items: [
+        'Changed: Also Available Chilled is now a switch instead of a checkbox, and no longer shows on Beer talkers (already sold cold out of a cooler).',
+      ],
+    },
+    {
       version: '3.3.9',
       items: [
         'New: Also Available Chilled is now its own checkbox, independent of Talker Style - it used to be a 4th Talker Style option, mutually exclusive with Standard/Closeout/Super Sale. It now combines with any of them, so a Closeout or Super Sale talker can also say Also Available Chilled.',
