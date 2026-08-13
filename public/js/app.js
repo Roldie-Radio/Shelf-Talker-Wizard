@@ -1656,6 +1656,12 @@
   // card.js (same convention as buildCardElement/fitCardText, which this
   // file already calls directly - card.js's <script> tag loads before this
   // one's, see index.html), so no import/require is needed here.
+  //
+  // detectWinePairings folds a second, optional country/region match into
+  // its return value - see the WINE_PAIRING_RULES comment block in
+  // card.js. Nothing below this comment needs to know that: a region match
+  // just shows up as a longer rule.label ("Malbec — Mendoza, Argentina")
+  // and one already-swapped candidate in rule.pairings.
 
   // Renders the currently-selected pairings (currentPairings) as removable
   // chips - same markup/behavior as renderRatingsList above, just a
@@ -4470,7 +4476,11 @@
   // Suggestions comment block near suggestPairings below). Renders on
   // every open rather than once at startup so it always reflects
   // whatever's currently in that array, same as Suggest Pairings would
-  // see if it ran right now.
+  // see if it ran right now. A rule's optional `regions` list (see the
+  // WINE_PAIRING_RULES comment block in card.js) renders nested underneath
+  // it, one row per region, showing which pairing slot it swaps and with
+  // what - reading straight from the same data detectWinePairings matches
+  // against, so this can't describe a swap that doesn't actually happen.
   function renderPairingRulesReference() {
     els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
       <div class="pairing-rule-row">
@@ -4479,6 +4489,23 @@
         <div class="pairing-rule-row__pairings">${rule.pairings.map((p) => `
           <span class="pairing-rule-chip">${escapeHtml(p.icon)} ${escapeHtml(p.food)}</span>
         `).join('')}</div>
+        ${(rule.regions && rule.regions.length) ? `
+          <div class="pairing-rule-row__regions">
+            <div class="pairing-rule-row__regions-label">Region refinements (only checked once ${escapeHtml(rule.label)} itself matches)</div>
+            ${rule.regions.map((region) => `
+              <div class="pairing-region-row">
+                <div class="pairing-region-row__name">${escapeHtml(region.label)}</div>
+                <div class="pairing-region-row__keywords">matches <code>${escapeHtml(region.test.toString())}</code></div>
+                <div class="pairing-region-row__swap">
+                  slot ${region.swapIndex + 1}:
+                  <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[region.swapIndex].icon)} ${escapeHtml(rule.pairings[region.swapIndex].food)}</span>
+                  <span class="pairing-region-row__arrow">&rarr;</span>
+                  <span class="pairing-rule-chip">${escapeHtml(region.swap.icon)} ${escapeHtml(region.swap.food)}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>
     `).join('');
   }

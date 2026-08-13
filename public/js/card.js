@@ -191,6 +191,20 @@ function buildFlavorHtml(talker) {
 // Each rule offers 4 candidates; staff picks up to 3 to actually print (see
 // buildPairingsHtml below and the 3-item cap in app.js's addPairing) - more
 // choice than the card has room for, rather than a fixed take-the-first-3.
+//
+// A rule can optionally carry a `regions` array - a second matching tier,
+// same ordered/regex/first-match-wins shape one level down, scoped to
+// whatever text already matched the parent varietal (see detectWinePairings
+// below - a region regex never runs on its own). Each region entry:
+//   - swapIndex: which slot (0-3) in the varietal's own `pairings` to
+//     replace - kept to a single slot so region is a *refinement* of the
+//     varietal's identity, not a rewrite of it.
+//   - swap: the {icon, food} that takes that slot's place.
+//   - label: appended to the varietal's label as "Varietal — Region" when
+//     it's the one that matched (see detectWinePairings).
+// Only a handful of varietals have a `regions` list - it's opt-in per rule,
+// and a rule with none behaves exactly as it always has: a title with no
+// region wording still gets exactly the varietal's own base pairings.
 const WINE_PAIRING_RULES = [
   { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
     pairings: [
@@ -198,6 +212,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Aged Cheddar' },
       { icon: '🍫', food: 'Dark Chocolate' },
       { icon: '🍖', food: 'Braised Lamb' },
+    ],
+    regions: [
+      { id: 'bordeaux', label: 'Bordeaux, France', test: /bordeaux|m[eé]doc|pauillac|saint-julien/i,
+        swapIndex: 1, swap: { icon: '🧀', food: 'Roquefort' } },
+      { id: 'napa', label: 'Napa Valley, California', test: /napa|california/i,
+        swapIndex: 3, swap: { icon: '🔥', food: 'Smoked Brisket' } },
     ] },
   { id: 'malbec', label: 'Malbec', test: /malbec/i,
     pairings: [
@@ -205,6 +225,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🌶️', food: 'BBQ Ribs' },
       { icon: '🧀', food: 'Smoked Gouda' },
       { icon: '🫑', food: 'Chimichurri' },
+    ],
+    regions: [
+      { id: 'mendoza', label: 'Mendoza, Argentina', test: /argentin|mendoza/i,
+        swapIndex: 1, swap: { icon: '🥓', food: 'Asado' } },
+      { id: 'cahors', label: 'Cahors, France', test: /cahors|france/i,
+        swapIndex: 2, swap: { icon: '🦆', food: 'Duck Confit' } },
     ] },
   { id: 'syrah', label: 'Syrah / Shiraz', test: /syrah|shiraz/i,
     pairings: [
@@ -212,6 +238,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍖', food: 'Game Meats' },
       { icon: '🧀', food: 'Aged Gouda' },
       { icon: '🍄', food: 'Mushroom Ragout' },
+    ],
+    regions: [
+      { id: 'rhone', label: 'Rhône Valley, France', test: /rh[oô]ne|france/i,
+        swapIndex: 3, swap: { icon: '🐑', food: 'Cassoulet' } },
+      { id: 'barossa', label: 'Barossa Valley, Australia', test: /barossa|australia/i,
+        swapIndex: 1, swap: { icon: '🦘', food: 'Kangaroo & Native Pepper' } },
     ] },
   { id: 'zinfandel', label: 'Zinfandel', test: /zinfandel|\bzin\b/i,
     pairings: [
@@ -233,6 +265,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍄', food: 'Wild Mushrooms' },
       { icon: '🐟', food: 'Grilled Salmon' },
       { icon: '🧀', food: 'Brie' },
+    ],
+    regions: [
+      { id: 'burgundy', label: 'Burgundy, France', test: /burgundy|bourgogne|c[oô]te d.?or|france/i,
+        swapIndex: 1, swap: { icon: '🍲', food: 'Coq au Vin' } },
+      { id: 'willamette', label: 'Willamette Valley, Oregon', test: /willamette|oregon/i,
+        swapIndex: 3, swap: { icon: '🌰', food: 'Hazelnut Torte' } },
     ] },
   { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
     pairings: [
@@ -254,6 +292,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🐐', food: 'Goat Cheese' },
       { icon: '🦪', food: 'Oysters' },
       { icon: '🌿', food: 'Herbed Fish' },
+    ],
+    regions: [
+      { id: 'loire', label: 'Loire Valley, France', test: /loire|sancerre|pouilly-fum[eé]|france/i,
+        swapIndex: 0, swap: { icon: '🥖', food: 'Loire Valley Charcuterie' } },
+      { id: 'marlborough', label: 'Marlborough, New Zealand', test: /marlborough|new zealand|\bnz\b/i,
+        swapIndex: 2, swap: { icon: '🥝', food: 'Green-Lipped Mussels' } },
     ] },
   { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', test: /pinot grigio|pinot gris/i,
     pairings: [
@@ -268,6 +312,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍑', food: 'Fruit & Cheese' },
       { icon: '🥓', food: 'Roast Pork' },
       { icon: '🍣', food: 'Sushi' },
+    ],
+    regions: [
+      { id: 'mosel', label: 'Mosel, Germany', test: /mosel|germany|rheingau/i,
+        swapIndex: 2, swap: { icon: '🥨', food: 'Wiener Schnitzel' } },
+      { id: 'alsace', label: 'Alsace, France', test: /alsace|france/i,
+        swapIndex: 0, swap: { icon: '🥧', food: 'Tarte Flambée' } },
     ] },
   { id: 'moscato', label: 'Moscato', test: /moscato/i,
     pairings: [
@@ -292,9 +342,26 @@ const WINE_PAIRING_RULES = [
     ] },
 ];
 
+// Tier 1: which varietal rule matches at all. Tier 2, only once tier 1 has
+// a hit: does that varietal's own `regions` list (if it has one) also
+// match the same text? A region match returns a *new* object - the
+// varietal's label with " — Region" appended and its one swapped-in
+// pairing - so callers (Suggest Pairings' status text/candidate chips
+// below, and buildPairingsHtml's already-picked-pairings path, which never
+// calls this) don't need to know region exists at all. No region match
+// (including a varietal with no `regions` key) returns the varietal rule
+// object itself, untouched - exactly today's behavior.
 function detectWinePairings(text) {
   const haystack = text ? String(text) : '';
-  return WINE_PAIRING_RULES.find(({ test }) => test.test(haystack)) || null;
+  const varietal = WINE_PAIRING_RULES.find(({ test }) => test.test(haystack));
+  if (!varietal) return null;
+  const region = varietal.regions && varietal.regions.find(({ test }) => test.test(haystack));
+  if (!region) return varietal;
+  return {
+    ...varietal,
+    label: `${varietal.label} — ${region.label}`,
+    pairings: varietal.pairings.map((p, i) => (i === region.swapIndex ? region.swap : p)),
+  };
 }
 
 // Renders whatever's in talker.pairings ([{icon, food}], set by the Food

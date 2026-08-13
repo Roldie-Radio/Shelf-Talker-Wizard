@@ -1097,6 +1097,38 @@ h1, h2, h3 { margin: 0; }
   color: var(--ui-ink-soft);
   background: var(--ui-panel);
 }
+/* A rule's base chip that a matching region would replace - shown struck
+   through next to the chip that actually takes its place, so the swap
+   reads as "this becomes that" rather than two unrelated chips. */
+.pairing-rule-chip--swapped-out { text-decoration: line-through; opacity: 0.6; }
+
+/* Region sub-rules, nested one level under a varietal rule (see the
+   `regions` key on WINE_PAIRING_RULES in card.js) - only some rules have
+   any, so this whole block is conditional per row. */
+.pairing-rule-row__regions {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed var(--ui-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.pairing-rule-row__regions-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-muted); }
+.pairing-region-row {
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+  background: var(--ui-panel);
+  margin-left: 0.6rem;
+}
+.pairing-region-row__name { font-size: 0.78rem; font-weight: 700; color: var(--ui-ink); }
+.pairing-region-row__name::before { content: "\21B3"; margin-right: 0.3rem; color: var(--ui-muted); font-weight: 400; }
+.pairing-region-row__keywords { font-size: 0.72rem; color: var(--ui-muted); margin: 0.1rem 0 0.3rem; }
+.pairing-region-row__keywords code { background: var(--ui-code-bg); padding: 0.05rem 0.28rem; border-radius: 4px; font-size: 0.92em; }
+.pairing-region-row__swap { display: flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; color: var(--ui-ink-soft); flex-wrap: wrap; }
+.pairing-region-row__swap .pairing-rule-chip { font-size: 0.72rem; padding: 0.15rem 0.45rem; }
+.pairing-region-row__arrow { color: var(--ui-muted); }
+
 /* Nose/Palate/Finish preview (Distiller results only - see
    #tastingNotesFlavorPreview in index.html) - its own flex column so the
    three stacked fields get breathing room, same as the gap between every
