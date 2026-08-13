@@ -45,14 +45,22 @@ browser.
   mash bill to the Library" option on the Mash Bill field stores it either
   under the exact product title or as a distillery-wide default; a new
   **Manage Mash Bill Library** dialog (styled like Manage Reviewers) lists,
-  edits, and deletes saved entries; and a Server PC sync status row shows
-  the library syncing across registers the same way `exportSync.js` already
-  syncs the WinePOS export file. A pill toggle at the top switches between
-  the two ways a saved entry can be matched back to a talker &mdash; **Exact
-  Expression** vs. **Distillery Default** &mdash; using Four Roses (one
-  distillery, ten different recipe codes) to show live why an exact match is
-  recommended as the primary strategy, with distillery-default only ever
-  offered as a clearly-flagged fallback, never a silent auto-fill.
+  edits, and deletes saved entries. Confirmed as a real **shared database**
+  scoped to one store's LAN: the Server PC's `data.db` holds the one
+  authoritative `mash_bills` table, and every other register keeps only a
+  synced read cache &mdash; the same single-writer-of-record shape
+  `exportSync.js` already uses for the WinePOS export, extended with real
+  `POST`/`PUT`/`DELETE` endpoints since (unlike that export) a mash bill can
+  be researched at any register, not just the one WinePOS writes to. A
+  "Preview: Server PC unreachable" toggle on the sync status row dramatizes
+  the resilience story: recall keeps working off the last-synced cache,
+  saving surfaces an honest inline error instead of a silent local
+  fallback. A pill toggle at the top switches between the two ways a saved
+  entry can be matched back to a talker &mdash; **Exact Expression** vs.
+  **Distillery Default** &mdash; using Four Roses (one distillery, ten
+  different recipe codes) to show live why an exact match is recommended as
+  the primary strategy, with distillery-default only ever offered as a
+  clearly-flagged fallback, never a silent auto-fill.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

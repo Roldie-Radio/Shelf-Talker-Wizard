@@ -167,6 +167,9 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .sync-status { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--ui-border); font-size: 0.8rem; flex-wrap: wrap; }
 .sync-status__line { display: flex; align-items: center; gap: 0.4rem; color: var(--ui-ink-soft); }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-good); flex: 0 0 auto; }
+.sync-dot.is-down { background: var(--ui-danger); }
+.save-error { display: none; align-items: flex-start; gap: 0.4rem; background: var(--ui-warn-tint); color: var(--ui-warn); border: 1px solid color-mix(in srgb, var(--ui-warn) 45%, var(--ui-border)); border-radius: 6px; padding: 0.5rem 0.6rem; font-size: 0.8rem; font-weight: 600; margin-top: 0.6rem; }
+.save-error.is-shown { display: flex; }
 
 .notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
 .notes-panel h2 { font-size: 1rem; }
@@ -259,6 +262,7 @@ table.compare th { color: var(--ui-muted); font-size: 0.72rem; text-transform: u
           <div class="save-scope" id="saveScope" hidden></div>
           <button type="button" class="btn btn--primary btn--small" id="saveBtn" hidden>Save to Library</button>
           <span class="toast" id="saveToast">&#10003; Saved to Mash Bill Library</span>
+          <div class="save-error" id="saveError">&#9888;&#65039; Can't reach the Server PC to save this right now &mdash; it'll stay on this form. Try again once it's back online.</div>
         </div>
       </div>
 
@@ -272,10 +276,13 @@ table.compare th { color: var(--ui-muted); font-size: 0.72rem; text-transform: u
         <input class="field" id="libSearch" placeholder="Search distillery or expression&hellip;" style="margin-bottom:0.9rem;">
         <div class="lib-table" id="libTable"></div>
 
-        <div class="sync-status">
+        <div class="sync-status" id="syncStatus">
           <div class="sync-status__line"><span class="sync-dot"></span> Synced with Server PC &middot; last pulled 2:14 PM</div>
           <button type="button" class="btn btn--small" id="syncNowBtn">Sync Now</button>
         </div>
+        <p class="field-hint" style="margin-top:0.5rem;">
+          <a href="#" id="toggleServerPcState">Preview: Server PC unreachable &rarr;</a>
+        </p>
       </div>
     </div>
   </div>
@@ -308,32 +315,56 @@ table.compare th { color: var(--ui-muted); font-size: 0.72rem; text-transform: u
     </div>
     <div class="notes-grid">
       <div class="notes-card">
-        <h3>Storage &amp; sync</h3>
-        <p>Lives in the same local <code>data.db</code> (better-sqlite3) as Print History &mdash; a new
-        <code>mash_bills</code> table, not a separate file.</p>
-        <p>Cross-register sync reuses <code>exportSync.js</code>'s shape (Server PC serves, others poll every ~30s)
-        with one real addition: today that sync is <strong>one-directional</strong> (WinePOS &rarr; Server PC &rarr;
-        everyone else) because only WinePOS ever writes the export. A mash bill can be researched at <em>any</em>
-        register, so a non-Server PC needs a small write path too &mdash; it POSTs a new/edited entry to the Server
-        PC's existing read-only port, which persists it and becomes the source every PC re-polls. Same
-        single-writer-of-record shape as today, just with more than one PC allowed to propose a write.</p>
+        <h3>Storage &amp; sync &mdash; confirmed: shared, Server-PC-hosted</h3>
+        <p>Scoped to registers on one store's LAN, same as today's Server PC. The Server PC's <code>data.db</code>
+        holds the one real <code>mash_bills</code> table &mdash; it's the <strong>single source of truth</strong>,
+        the same role it already plays for the WinePOS export file. Every other PC keeps only a synced
+        <em>read cache</em>, never its own authoritative copy.</p>
+        <p>The real change from the export file: that port is read-only today because only WinePOS ever writes the
+        export. A mash bill can be researched at <em>any</em> register, so this port needs actual write endpoints
+        &mdash; new surface area this app's network side doesn't have yet:</p>
+        <table class="compare" style="margin-top:0.5rem;">
+          <thead><tr><th>Endpoint</th><th>Used by</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET /mashbills</code></td><td>Every PC, polling ~30s (same cadence as export auto-sync) &mdash; full-replace into the local read cache, no diffing.</td></tr>
+            <tr><td><code>POST /mashbills</code></td><td>Save to Library, from any PC. On the Server PC itself this is an in-process call, not a real network hop &mdash; same as it already talks to its own export file locally.</td></tr>
+            <tr><td><code>PUT /mashbills/:id</code></td><td>Edit, from the Manage dialog.</td></tr>
+            <tr><td><code>DELETE /mashbills/:id</code></td><td>Delete, from the Manage dialog.</td></tr>
+          </tbody>
+        </table>
+        <p>Discovery reuses <code>discovery.js</code>'s existing UDP beacon &mdash; no new "find the Server PC" mechanism needed.</p>
       </div>
-      <div class="notes-card">
-        <h3>Research: manual + Distiller.com</h3>
-        <p>Reuses the exact pattern <code>Find Tasting Notes</code> already established: click, wait, get an
-        <strong>editable preview</strong> before anything is committed &mdash; never a blind auto-fill. Same
-        "scraper unconfirmed against the live site, double-check" caution the README already gives Nose/Palate/Finish.</p>
-        <p>Manual entry (today's chip UI) stays as-is and remains the fallback when Distiller.com has nothing.</p>
+      <div class="notes-card notes-card--warn">
+        <h3>Resilience &amp; open questions</h3>
+        <p><strong>Server PC unreachable:</strong> recall keeps working off the last-synced read cache (matches how
+        Scan UPC already degrades). <em>Saving</em> a new/edited entry can't be queued for later the way a read can
+        just be stale &mdash; the mockup's live preview below shows the honest failure: an inline error, try again
+        once the Server PC's back, no silent local fallback that could quietly fork the data.</p>
+        <p><strong>No Server PC currently marked:</strong> same as Export File Settings today &mdash; Library
+        recall/save just doesn't work until one is designated; the Advanced menu's existing "Server PC" dialog is
+        where that already gets set.</p>
+        <p><strong>Open, not resolved by this mockup:</strong> if the Server PC role moves to a different physical
+        PC, that PC's own <code>mash_bills</code> table (if it ever held the role before) becomes authoritative
+        again with no merge against what the old Server PC accumulated in the meantime. Fine for how rarely this
+        flag actually moves in practice, but worth a one-line warning in the Server PC dialog if it ever has data
+        to lose.</p>
       </div>
+    </div>
+    <div class="notes-card">
+      <h3>Research: manual + Distiller.com</h3>
+      <p>Reuses the exact pattern <code>Find Tasting Notes</code> already established: click, wait, get an
+      <strong>editable preview</strong> before anything is committed &mdash; never a blind auto-fill. Same
+      "scraper unconfirmed against the live site, double-check" caution the README already gives Nose/Palate/Finish.</p>
+      <p>Manual entry (today's chip UI) stays as-is and remains the fallback when Distiller.com has nothing.</p>
     </div>
     <table class="compare">
       <thead><tr><th>Step</th><th>Where it happens</th><th>Existing pattern it reuses</th></tr></thead>
       <tbody>
         <tr><td>Research</td><td>Edit Talker &rarr; Mash Bill field</td><td>Find Tasting Notes' scrape-then-preview flow</td></tr>
-        <tr><td>Store</td><td>"Save to Library" checkbox on the same field</td><td>data.db (better-sqlite3), new table</td></tr>
-        <tr><td>Recall</td><td>Banner above the Mash Bill field, on Title/Distillery match</td><td>UPC/SKU catalog's title-matching</td></tr>
+        <tr><td>Store</td><td>"Save to Library" checkbox on the same field</td><td><code>POST</code>/<code>PUT</code> to the Server PC's <code>data.db</code></td></tr>
+        <tr><td>Recall</td><td>Banner above the Mash Bill field, on Title/Distillery match</td><td>UPC/SKU catalog's title-matching, read from the local sync cache</td></tr>
         <tr><td>Manage</td><td>New "Manage Mash Bill Library" dialog</td><td>Manage Reviewers list</td></tr>
-        <tr><td>Distribute</td><td>Server PC, ~30s poll</td><td>exportSync.js (extended to accept writes)</td></tr>
+        <tr><td>Distribute</td><td>Server PC hosts, every PC polls ~30s</td><td>exportSync.js's shape, extended with real write endpoints</td></tr>
       </tbody>
     </table>
   </div>
@@ -514,6 +545,12 @@ document.getElementById('saveToggle').addEventListener('change', (e) => {
   document.getElementById('saveBtn').hidden = !e.target.checked;
 });
 document.getElementById('saveBtn').addEventListener('click', () => {
+  const errorEl = document.getElementById('saveError');
+  if (!serverPcReachable) {
+    errorEl.classList.add('is-shown');
+    return;
+  }
+  errorEl.classList.remove('is-shown');
   const scope = document.querySelector('input[name="scope"]:checked').value;
   const distillery = document.getElementById('fDistillery').value.trim();
   const title = document.getElementById('fTitle').value.trim();
@@ -531,6 +568,32 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   setTimeout(() => toast.classList.remove('is-shown'), 2200);
 });
 
+// ---- "Server PC unreachable" preview toggle (mockup only, dramatizes the
+// resilience behavior described in the design notes below) ----
+let serverPcReachable = true;
+function renderSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  const link = document.getElementById('toggleServerPcState');
+  const syncBtn = document.getElementById('syncNowBtn');
+  if (serverPcReachable) {
+    el.innerHTML = `
+      <div class="sync-status__line"><span class="sync-dot"></span> Synced with Server PC &middot; last pulled 2:14 PM</div>
+      <button type="button" class="btn btn--small" id="syncNowBtn">Sync Now</button>`;
+    link.textContent = 'Preview: Server PC unreachable →';
+  } else {
+    el.innerHTML = `
+      <div class="sync-status__line"><span class="sync-dot is-down"></span> Can't reach Server PC right now &mdash; showing the last synced copy (2:14 PM)</div>
+      <button type="button" class="btn btn--small" id="syncNowBtn" disabled>Retry</button>`;
+    link.textContent = '← Preview: Server PC reachable';
+  }
+  document.getElementById('saveError').classList.remove('is-shown');
+}
+document.getElementById('toggleServerPcState').addEventListener('click', (e) => {
+  e.preventDefault();
+  serverPcReachable = !serverPcReachable;
+  renderSyncStatus();
+});
+
 document.getElementById('libSearch').addEventListener('input', (e) => renderLibrary(e.target.value));
 document.getElementById('libTable').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-remove]');
@@ -539,8 +602,9 @@ document.getElementById('libTable').addEventListener('click', (e) => {
   renderLibrary(document.getElementById('libSearch').value);
 });
 
-document.getElementById('syncNowBtn').addEventListener('click', (e) => {
-  const btn = e.target;
+document.getElementById('syncStatus').addEventListener('click', (e) => {
+  const btn = e.target.closest('#syncNowBtn');
+  if (!btn || btn.disabled) return;
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Syncing…';
