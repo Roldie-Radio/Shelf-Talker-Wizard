@@ -1067,10 +1067,14 @@ function buildSmallSignBodyHtml(talker) {
     // shared text-scale multiplier) is left out of the override on purpose,
     // same as the title override two lines up - it's specific to the base
     // CSS rule this inline style replaces, not to the typed point size.
+    // Applied to the price div too (not just the text), same as
+    // buildPricingHtml's card version - the two are meant to render at one
+    // shared size, whether that's the CSS defaults (.sign__supersale-text/
+    // -price both 0.042, see styles.css) or a typed override.
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS['sign-small'].printWidth, true);
     priceHtml = `
       <div class="sign__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
-      <div class="sign__small-price sign__supersale-price">${formatMoney(bigPrice)}</div>
+      <div class="sign__small-price sign__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
     `;
   } else {
     // Same user-adjustable badge size as the Large sign's own
