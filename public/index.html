@@ -384,9 +384,16 @@
               <option value="standard">Standard</option>
               <option value="closeout">Closeout</option>
               <option value="supersale" id="talkerTypeSupersaleOption">Super Sale</option>
-              <option value="chilled">Also Available Chilled</option>
             </select>
           </label>
+
+          <div class="field" id="chilledField">
+            <label class="server-pc-checkbox">
+              <input type="checkbox" id="fChilled" />
+              Also Available Chilled
+            </label>
+            <p class="help-text">Prints an "Also Available Chilled" callout on the card - independent of Talker Style, so it can still show up alongside a Closeout badge or Super Sale price. Same idea as Store Pick above, for Bourbon Shelf Talkers.</p>
+          </div>
 
           <div class="field" id="closeoutFontSizeField" hidden>
             <div class="field-head">
