@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.9',
+      items: [
+        'New: Also Available Chilled is now its own checkbox, independent of Talker Style - it used to be a 4th Talker Style option, mutually exclusive with Standard/Closeout/Super Sale. It now combines with any of them, so a Closeout or Super Sale talker can also say Also Available Chilled.',
+      ],
+    },
+    {
       version: '3.3.8',
       items: [
         'New (Bourbon Shelf Talkers, experimental): Mash Bill Library - save a researched mash bill once and it\'s suggested automatically the next time you type that same Product Title, shared across every register once one PC is marked Server PC (Advanced → Server PC…). "Save this mash bill to the Mash Bill Library" sits right on the Mash Bill field; Tools → Mash Bill Library… manages every saved entry directly (search, add, edit, delete).',
