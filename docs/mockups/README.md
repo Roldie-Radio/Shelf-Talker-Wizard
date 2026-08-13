@@ -36,6 +36,20 @@ browser.
   introduces this app's first on/off switch component (`.switch`), since
   Settings today only has the toggle-btn pill-pair pattern (Change Theme, Menu
   Bar Size) &mdash; not the right shape for a single boolean feature flag.
+- **wine-pairing-regions.html** &mdash; follow-up to food-pairing-suggestions.html
+  above: deepens the pairing rules with an optional second matching tier.
+  After a varietal rule matches (Cabernet Sauvignon, Malbec, Pinot Noir&hellip;),
+  its own ordered list of country/region sub-rules (e.g. Napa Valley vs.
+  Bordeaux for Cabernet) is checked against the same title/description text;
+  a region match swaps in one more specific candidate pairing and appends
+  the region to the printed label ("Malbec &mdash; Mendoza, Argentina"). Region
+  is opt-in per rule and never required &mdash; only 6 of the 14 varietal
+  rules carry region sub-rules here, and a title with no region wording
+  still gets exactly today's base pairings. The **Pairing Rules** panel
+  shows each varietal's nested region rules, with the currently active one
+  (if any) highlighted; the sample wines on the left include several picked
+  to trigger a swap and a few picked not to, so both cases are easy to
+  compare.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

@@ -76,6 +76,13 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="beer-talker-info">
           <span>Beer Talker Info</span>
         </button>
+        <!-- Hidden/shown by applyExperimentalPairings in app.js, same
+             switch that gates the Edit Talker form's Food Pairing
+             Suggestions field - this reference is pointless (and would
+             describe a field staff can't even see) while that's off. -->
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="wine-pairing-rules" id="winePairingRulesMenuItem">
+          <span>Wine Pairing Rules&hellip;</span>
+        </button>
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="settings">
           <span>Settings&hellip;</span>
         </button>
@@ -851,6 +858,28 @@
         <button type="button" class="btn" id="guidePreviewCancelBtn">Cancel</button>
         <button type="button" class="btn btn--primary" id="guidePreviewConfirmBtn">Print Now</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Reachable via Tools > Wine Pairing Rules… in the menu bar - no
+       app-bar button. Read-only reference for the Edit Talker form's
+       Food Pairing Suggestions field: renderPairingRulesReference (see
+       app.js) builds the list body directly from WINE_PAIRING_RULES in
+       card.js, the same array the Suggest Pairings button itself
+       matches against, so this can't drift out of sync with what that
+       button actually does. Hidden from the menu (not just disabled)
+       while Settings > Experimental Features > Wine Food Pairings is
+       off - see applyExperimentalPairings. -->
+  <div id="winePairingRulesOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="winePairingRulesTitle">
+      <div class="modal__header">
+        <h2 id="winePairingRulesTitle">Wine Pairing Rules</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="winePairingRulesCloseBtn">&times; Close</button>
+      </div>
+      <p class="pairing-rules-modal-intro">
+        <strong>Suggest Pairings</strong> (Edit Talker &rarr; Food Pairing Suggestions) checks the Product Title, falling back to the Description, against this list top to bottom &mdash; the first varietal whose pattern matches wins, and its 4 candidate pairings are offered (pick up to 3 to print). No match falls back to picking pairings manually.
+      </p>
+      <div class="pairing-rules-modal-body" id="winePairingRulesList"></div>
     </div>
   </div>
 
