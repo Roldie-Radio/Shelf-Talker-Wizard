@@ -41,6 +41,25 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.7',
+      items: [
+        'Fixed: the Size field\'s "ml"/"oz" unit now always prints lowercase on the Shelf Talker card and both Display Sign sizes, regardless of how the store export or product page cased it (e.g. "750ML" and "16OZ" now print as "750ml"/"16oz").',
+      ],
+    },
+    {
+      version: '3.3.6',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now also picks up on a country/region in the title/description for Cabernet Sauvignon, Malbec, Syrah/Shiraz, Pinot Noir, Sauvignon Blanc, and Riesling (e.g. "Mendoza, Argentina") - swaps in one more specific pairing and adds the region to the match ("Malbec — Mendoza, Argentina"). A title with no region wording still gets exactly the same pairings as before.',
+        'New: Tools → Wine Pairing Rules… (shown while Wine Food Pairings is on) lists every varietal Suggest Pairings can match, its candidate pairings, and any region refinements - a live reference, not a static doc.',
+      ],
+    },
+    {
+      version: '3.3.5',
+      items: [
+        'Fixed: on Super Sale talkers/signs, the price number under "Super Sale Price!!!" now always renders at the same font size as that lettering - it used to run smaller by default, and didn\'t resize at all when you typed a size into the Super Sale Price!!! Font Size box.',
+      ],
+    },
+    {
       version: '3.3.4',
       items: [
         'New: Full Page Live Preview is now the print preview, too - the separate Print Preview dialog is gone. Auto-arrange and the sheet summary sit right above the sheets, and the same button that jumps you to Full Page relabels to Print Now once you\'re looking at it.',
@@ -852,6 +871,11 @@
     guidePreviewCancelBtn: document.getElementById('guidePreviewCancelBtn'),
     guidePreviewConfirmBtn: document.getElementById('guidePreviewConfirmBtn'),
 
+    winePairingRulesMenuItem: document.getElementById('winePairingRulesMenuItem'),
+    winePairingRulesOverlay: document.getElementById('winePairingRulesOverlay'),
+    winePairingRulesCloseBtn: document.getElementById('winePairingRulesCloseBtn'),
+    winePairingRulesList: document.getElementById('winePairingRulesList'),
+
     helpBtn: document.getElementById('helpBtn'),
     helpOverlay: document.getElementById('helpOverlay'),
     helpCloseBtn: document.getElementById('helpCloseBtn'),
@@ -1101,11 +1125,17 @@
   // Well With" block (buildPairingsHtml). Nothing here is ever deleted:
   // readForm/fillForm don't check this flag, so pairings already picked on
   // a talker round-trip through a save untouched and reappear the instant
-  // the toggle goes back on.
+  // the toggle goes back on. Also hides/shows Tools > Wine Pairing Rules…
+  // (see winePairingRulesModal) - that reference describes a field staff
+  // can't see while this is off, so the menu item disappears with it
+  // rather than just greying out (see enabledDropdownItemsOf's [hidden]
+  // check, added alongside this menu item, for why hidden and not
+  // aria-disabled).
   function applyExperimentalPairings(enabled) {
     experimentalPairingsEnabled = enabled;
     window.ShelfTalkerSettings.experimentalPairings = enabled;
     els.experimentalPairingsCheckbox.checked = enabled;
+    els.winePairingRulesMenuItem.hidden = !enabled;
     applyFormMode();
     if (previewMode === 'single') renderPreview();
   }
@@ -1863,6 +1893,12 @@
   // card.js (same convention as buildCardElement/fitCardText, which this
   // file already calls directly - card.js's <script> tag loads before this
   // one's, see index.html), so no import/require is needed here.
+  //
+  // detectWinePairings folds a second, optional country/region match into
+  // its return value - see the WINE_PAIRING_RULES comment block in
+  // card.js. Nothing below this comment needs to know that: a region match
+  // just shows up as a longer rule.label ("Malbec — Mendoza, Argentina")
+  // and one already-swapped candidate in rule.pairings.
 
   // Renders the currently-selected pairings (currentPairings) as removable
   // chips - same markup/behavior as renderRatingsList above, just a
@@ -4671,6 +4707,52 @@
     onClose: () => { els.guidePreviewStage.innerHTML = ''; },
   });
 
+  // Reachable via Tools > Wine Pairing Rules… - a read-only reference
+  // built straight from WINE_PAIRING_RULES (a plain global defined in
+  // card.js, same as detectWinePairings itself - see the Food Pairing
+  // Suggestions comment block near suggestPairings below). Renders on
+  // every open rather than once at startup so it always reflects
+  // whatever's currently in that array, same as Suggest Pairings would
+  // see if it ran right now. A rule's optional `regions` list (see the
+  // WINE_PAIRING_RULES comment block in card.js) renders nested underneath
+  // it, one row per region, showing which pairing slot it swaps and with
+  // what - reading straight from the same data detectWinePairings matches
+  // against, so this can't describe a swap that doesn't actually happen.
+  function renderPairingRulesReference() {
+    els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
+      <div class="pairing-rule-row">
+        <div class="pairing-rule-row__name">${escapeHtml(rule.label)}</div>
+        <div class="pairing-rule-row__keywords">matches <code>${escapeHtml(rule.test.toString())}</code></div>
+        <div class="pairing-rule-row__pairings">${rule.pairings.map((p) => `
+          <span class="pairing-rule-chip">${escapeHtml(p.icon)} ${escapeHtml(p.food)}</span>
+        `).join('')}</div>
+        ${(rule.regions && rule.regions.length) ? `
+          <div class="pairing-rule-row__regions">
+            <div class="pairing-rule-row__regions-label">Region refinements (only checked once ${escapeHtml(rule.label)} itself matches)</div>
+            ${rule.regions.map((region) => `
+              <div class="pairing-region-row">
+                <div class="pairing-region-row__name">${escapeHtml(region.label)}</div>
+                <div class="pairing-region-row__keywords">matches <code>${escapeHtml(region.test.toString())}</code></div>
+                <div class="pairing-region-row__swap">
+                  slot ${region.swapIndex + 1}:
+                  <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[region.swapIndex].icon)} ${escapeHtml(rule.pairings[region.swapIndex].food)}</span>
+                  <span class="pairing-region-row__arrow">&rarr;</span>
+                  <span class="pairing-rule-chip">${escapeHtml(region.swap.icon)} ${escapeHtml(region.swap.food)}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  }
+
+  const winePairingRulesModal = createModal({
+    overlay: els.winePairingRulesOverlay,
+    closeBtns: [els.winePairingRulesCloseBtn],
+    onOpen: renderPairingRulesReference,
+  });
+
   // First click jumps to the print preview (Full Page mode - see
   // setPreviewMode); once it's showing, the button relabels itself "Print
   // Now" (also set in setPreviewMode) and this same click prints. No
@@ -5694,6 +5776,9 @@
       case 'mash-bill-library':
         mashBillLibraryModal.open();
         break;
+      case 'wine-pairing-rules':
+        winePairingRulesModal.open();
+        break;
       case 'settings':
         settingsModal.open();
         break;
@@ -5931,7 +6016,13 @@
       return [...topItem.querySelectorAll('.menubar__dropdown-item')];
     }
     function enabledDropdownItemsOf(topItem) {
-      return dropdownItemsOf(topItem).filter((el) => el.getAttribute('aria-disabled') !== 'true');
+      // Excludes both requires-electron greyed-out items (aria-disabled)
+      // and conditionally-hidden ones like Wine Pairing Rules (hidden
+      // while its experimental feature is off, see applyExperimentalPairings)
+      // - without the hidden check, arrow-key/Home/End navigation would
+      // still count a hidden item as a stop and try to .focus() it, a
+      // silent no-op that leaves the roving focus stuck.
+      return dropdownItemsOf(topItem).filter((el) => el.getAttribute('aria-disabled') !== 'true' && !el.hidden);
     }
 
     function closeAllMenus({ refocus = false } = {}) {

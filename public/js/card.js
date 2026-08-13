@@ -52,6 +52,19 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// The Size field's "ml"/"oz" unit comes straight from whatever the store
+// export or product page wrote it as ("750ML", "16OZ 4-Pack", "12oz") -
+// inconsistent about casing the abbreviation itself. Printed talkers/signs
+// always want that unit lowercase regardless of source casing, so every
+// .card__size/.sign__size render below runs the Size text through this
+// first. Matched with a manual "not a letter" guard on each side rather
+// than \b - \b wouldn't fire between "750" and "ML" since digits and
+// letters are both word characters, so it'd miss the most common case.
+function lowercaseSizeUnits(str) {
+  if (str == null) return '';
+  return String(str).replace(/(^|[^a-z])(ml|oz)(?![a-z])/gi, (_m, prefix, unit) => `${prefix}${unit.toLowerCase()}`);
+}
+
 function formatMoney(value) {
   // An empty field is "no price yet", not zero - Number('') is 0, which made
   // the live preview of a blank form advertise "Regular Price $0.00".
@@ -191,6 +204,20 @@ function buildFlavorHtml(talker) {
 // Each rule offers 4 candidates; staff picks up to 3 to actually print (see
 // buildPairingsHtml below and the 3-item cap in app.js's addPairing) - more
 // choice than the card has room for, rather than a fixed take-the-first-3.
+//
+// A rule can optionally carry a `regions` array - a second matching tier,
+// same ordered/regex/first-match-wins shape one level down, scoped to
+// whatever text already matched the parent varietal (see detectWinePairings
+// below - a region regex never runs on its own). Each region entry:
+//   - swapIndex: which slot (0-3) in the varietal's own `pairings` to
+//     replace - kept to a single slot so region is a *refinement* of the
+//     varietal's identity, not a rewrite of it.
+//   - swap: the {icon, food} that takes that slot's place.
+//   - label: appended to the varietal's label as "Varietal — Region" when
+//     it's the one that matched (see detectWinePairings).
+// Only a handful of varietals have a `regions` list - it's opt-in per rule,
+// and a rule with none behaves exactly as it always has: a title with no
+// region wording still gets exactly the varietal's own base pairings.
 const WINE_PAIRING_RULES = [
   { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
     pairings: [
@@ -198,6 +225,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Aged Cheddar' },
       { icon: '🍫', food: 'Dark Chocolate' },
       { icon: '🍖', food: 'Braised Lamb' },
+    ],
+    regions: [
+      { id: 'bordeaux', label: 'Bordeaux, France', test: /bordeaux|m[eé]doc|pauillac|saint-julien/i,
+        swapIndex: 1, swap: { icon: '🧀', food: 'Roquefort' } },
+      { id: 'napa', label: 'Napa Valley, California', test: /napa|california/i,
+        swapIndex: 3, swap: { icon: '🔥', food: 'Smoked Brisket' } },
     ] },
   { id: 'malbec', label: 'Malbec', test: /malbec/i,
     pairings: [
@@ -205,6 +238,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🌶️', food: 'BBQ Ribs' },
       { icon: '🧀', food: 'Smoked Gouda' },
       { icon: '🫑', food: 'Chimichurri' },
+    ],
+    regions: [
+      { id: 'mendoza', label: 'Mendoza, Argentina', test: /argentin|mendoza/i,
+        swapIndex: 1, swap: { icon: '🥓', food: 'Asado' } },
+      { id: 'cahors', label: 'Cahors, France', test: /cahors|france/i,
+        swapIndex: 2, swap: { icon: '🦆', food: 'Duck Confit' } },
     ] },
   { id: 'syrah', label: 'Syrah / Shiraz', test: /syrah|shiraz/i,
     pairings: [
@@ -212,6 +251,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍖', food: 'Game Meats' },
       { icon: '🧀', food: 'Aged Gouda' },
       { icon: '🍄', food: 'Mushroom Ragout' },
+    ],
+    regions: [
+      { id: 'rhone', label: 'Rhône Valley, France', test: /rh[oô]ne|france/i,
+        swapIndex: 3, swap: { icon: '🐑', food: 'Cassoulet' } },
+      { id: 'barossa', label: 'Barossa Valley, Australia', test: /barossa|australia/i,
+        swapIndex: 1, swap: { icon: '🦘', food: 'Kangaroo & Native Pepper' } },
     ] },
   { id: 'zinfandel', label: 'Zinfandel', test: /zinfandel|\bzin\b/i,
     pairings: [
@@ -233,6 +278,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍄', food: 'Wild Mushrooms' },
       { icon: '🐟', food: 'Grilled Salmon' },
       { icon: '🧀', food: 'Brie' },
+    ],
+    regions: [
+      { id: 'burgundy', label: 'Burgundy, France', test: /burgundy|bourgogne|c[oô]te d.?or|france/i,
+        swapIndex: 1, swap: { icon: '🍲', food: 'Coq au Vin' } },
+      { id: 'willamette', label: 'Willamette Valley, Oregon', test: /willamette|oregon/i,
+        swapIndex: 3, swap: { icon: '🌰', food: 'Hazelnut Torte' } },
     ] },
   { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
     pairings: [
@@ -254,6 +305,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🐐', food: 'Goat Cheese' },
       { icon: '🦪', food: 'Oysters' },
       { icon: '🌿', food: 'Herbed Fish' },
+    ],
+    regions: [
+      { id: 'loire', label: 'Loire Valley, France', test: /loire|sancerre|pouilly-fum[eé]|france/i,
+        swapIndex: 0, swap: { icon: '🥖', food: 'Loire Valley Charcuterie' } },
+      { id: 'marlborough', label: 'Marlborough, New Zealand', test: /marlborough|new zealand|\bnz\b/i,
+        swapIndex: 2, swap: { icon: '🥝', food: 'Green-Lipped Mussels' } },
     ] },
   { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', test: /pinot grigio|pinot gris/i,
     pairings: [
@@ -268,6 +325,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍑', food: 'Fruit & Cheese' },
       { icon: '🥓', food: 'Roast Pork' },
       { icon: '🍣', food: 'Sushi' },
+    ],
+    regions: [
+      { id: 'mosel', label: 'Mosel, Germany', test: /mosel|germany|rheingau/i,
+        swapIndex: 2, swap: { icon: '🥨', food: 'Wiener Schnitzel' } },
+      { id: 'alsace', label: 'Alsace, France', test: /alsace|france/i,
+        swapIndex: 0, swap: { icon: '🥧', food: 'Tarte Flambée' } },
     ] },
   { id: 'moscato', label: 'Moscato', test: /moscato/i,
     pairings: [
@@ -292,9 +355,26 @@ const WINE_PAIRING_RULES = [
     ] },
 ];
 
+// Tier 1: which varietal rule matches at all. Tier 2, only once tier 1 has
+// a hit: does that varietal's own `regions` list (if it has one) also
+// match the same text? A region match returns a *new* object - the
+// varietal's label with " — Region" appended and its one swapped-in
+// pairing - so callers (Suggest Pairings' status text/candidate chips
+// below, and buildPairingsHtml's already-picked-pairings path, which never
+// calls this) don't need to know region exists at all. No region match
+// (including a varietal with no `regions` key) returns the varietal rule
+// object itself, untouched - exactly today's behavior.
 function detectWinePairings(text) {
   const haystack = text ? String(text) : '';
-  return WINE_PAIRING_RULES.find(({ test }) => test.test(haystack)) || null;
+  const varietal = WINE_PAIRING_RULES.find(({ test }) => test.test(haystack));
+  if (!varietal) return null;
+  const region = varietal.regions && varietal.regions.find(({ test }) => test.test(haystack));
+  if (!region) return varietal;
+  return {
+    ...varietal,
+    label: `${varietal.label} — ${region.label}`,
+    pairings: varietal.pairings.map((p, i) => (i === region.swapIndex ? region.swap : p)),
+  };
 }
 
 // Renders whatever's in talker.pairings ([{icon, food}], set by the Food
@@ -894,11 +974,17 @@ function buildPricingHtml(talker, plain = false) {
     // multiplies by --price-fit (unlike Title/Description, it has no Auto
     // Size checkbox of its own to gate that on), so includePriceFit is
     // unconditionally true here.
+    // superSaleStyle is applied to both the callout text and the price
+    // number below it (not just the text) so the price always renders at
+    // the same size as the "Super Sale Price!!!" lettering, whether that's
+    // the shared 0.11 default (see .card__supersale-text/-price in
+    // styles.css) or a user-typed override - the two are meant to read as
+    // one callout at one size, not a smaller number under bigger lettering.
     const bigPrice = hasSale ? talker.salePrice : talker.price;
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS.talker.printWidth, true);
     return `
       <div class="card__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
-      <div class="card__supersale-price">${formatMoney(bigPrice)}</div>
+      <div class="card__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
       ${hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : ''}
     `;
   }
@@ -987,7 +1073,7 @@ function buildSignMetaRowHtml(talker, leftHtml) {
   return `
     <div class="sign__meta-row">
       <div class="sign__meta-row-left">${left}</div>
-      ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
+      ${talker.size ? `<div class="sign__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '<div></div>'}
     </div>
   `;
 }
@@ -1061,10 +1147,14 @@ function buildSmallSignBodyHtml(talker) {
     // shared text-scale multiplier) is left out of the override on purpose,
     // same as the title override two lines up - it's specific to the base
     // CSS rule this inline style replaces, not to the typed point size.
+    // Applied to the price div too (not just the text), same as
+    // buildPricingHtml's card version - the two are meant to render at one
+    // shared size, whether that's the CSS defaults (.sign__supersale-text/
+    // -price both 0.042, see styles.css) or a typed override.
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS['sign-small'].printWidth, true);
     priceHtml = `
       <div class="sign__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
-      <div class="sign__small-price sign__supersale-price">${formatMoney(bigPrice)}</div>
+      <div class="sign__small-price sign__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
     `;
   } else {
     // Same user-adjustable badge size as the Large sign's own
@@ -1087,7 +1177,7 @@ function buildSmallSignBodyHtml(talker) {
     ${priceHtml}
     <div class="sign__bottom-row">
       ${hasSale ? `<div class="sign__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '<div></div>'}
-      ${talker.size ? `<div class="sign__size">${escapeHtml(talker.size)}</div>` : '<div></div>'}
+      ${talker.size ? `<div class="sign__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '<div></div>'}
     </div>
   `;
 }
@@ -1188,7 +1278,7 @@ function buildCardElement(talker) {
   const descriptionStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
   const ratingsStyle = isQuarter ? '' : fontSizeOverrideAttr(talker.ratingsFontSize, refWidthIn, true);
   const titleHtml = `<div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>`;
-  const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(talker.size)}</div>` : '';
+  const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '';
 
   const bodyHtml = isQuarter ? `
       ${titleHtml}
