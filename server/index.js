@@ -12,20 +12,26 @@ const {
 } = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
+  listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
 const { createExportServeServer, createExportPuller } = require('./exportSync');
+const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
 const { version: APP_VERSION } = require('../package.json');
 
-// The LAN discovery beacon and the export-sync serve/pull halves (see
-// discovery.js and exportSync.js) are only ever passed in by start() below -
-// createApp() itself never touches the network, so tests that build an app
-// with createApp() alone (see test/index.test.js) never bind a socket as a
-// side effect. Without them, /api/server-status simply reports no
-// discovered server and its POST is a no-op for announcing/serving, and
-// /api/upc-settings reports no sync status, rather than crashing.
-function createApp({ beacon, exportServeServer, exportPuller } = {}) {
+// The LAN discovery beacon and the export-sync/mash-bill-sync serve/pull
+// halves (see discovery.js, exportSync.js, mashBillSync.js) are only ever
+// passed in by start() below - createApp() itself never touches the
+// network, so tests that build an app with createApp() alone (see
+// test/index.test.js) never bind a socket as a side effect. Without them,
+// /api/server-status simply reports no discovered server and its POST is a
+// no-op for announcing/serving, /api/upc-settings reports no sync status,
+// and /api/mashbills falls back to an empty cached list with no sync
+// status, rather than crashing.
+function createApp({
+  beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+} = {}) {
   const app = express();
 
   app.use(express.json());
@@ -407,6 +413,104 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     res.json({ success: true });
   });
 
+  // Backs the Mash Bill Library (Tools -> Mash Bill Library..., Bourbon
+  // Shelf Talkers only): a shared, Server-PC-hosted table of researched
+  // grain compositions (see the mash_bills table in db.js), so the same
+  // bottle's mash bill doesn't need re-researching on every talker made for
+  // it. Every route below branches on whether *this* PC is currently
+  // marked Server PC (see serverConfig.js):
+  //  - isServer: this PC's own data.db is the source of truth - read/write
+  //    it directly, exactly what mashBillSync.js's serve-side HTTP server
+  //    does for every *other* PC's requests.
+  //  - not isServer: reads come back from mashBillPuller's last
+  //    successfully synced cache (never blocking on a live round trip -
+  //    same fallback spirit as the UPC export's own auto-sync), and writes
+  //    are forwarded over the network to whichever PC currently holds the
+  //    role (see mashBillSync.js's forwardWrite) and its response relayed
+  //    back as-is.
+  // A PC that never had a puller wired in (createApp() alone, see the note
+  // above) just reports an empty list with isServer: false and no sync
+  // status, and every write 503s, rather than crashing.
+  app.get('/api/mashbills', (req, res) => {
+    if (getServerConfig().isServer) {
+      return res.json({ mashBills: listMashBills(), sync: { isServer: true } });
+    }
+    res.json({
+      mashBills: mashBillPuller ? mashBillPuller.getCached() : [],
+      sync: { isServer: false, ...(mashBillPuller ? mashBillPuller.getStatus() : {}) },
+    });
+  });
+
+  app.post('/api/mashbills', async (req, res) => {
+    const { title, distillery, grains, source } = req.body || {};
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'A product title is required.' });
+    }
+    if (getServerConfig().isServer) {
+      try {
+        return res.status(201).json(upsertMashBill({ title, distillery, grains, source }));
+      } catch (err) {
+        return res.status(err.code === 'GRAINS_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+      }
+    }
+    if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
+    try {
+      const result = await mashBillPuller.forwardWrite('POST', '/mashbills', { title, distillery, grains, source });
+      res.status(result.status).json(result.data);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
+    }
+  });
+
+  app.put('/api/mashbills/:id', async (req, res) => {
+    const { title, distillery, grains, source } = req.body || {};
+    if (getServerConfig().isServer) {
+      try {
+        const updated = updateMashBillById(Number(req.params.id), { title, distillery, grains, source });
+        if (!updated) return res.status(404).json({ error: 'No mash bill entry with that id.' });
+        return res.json(updated);
+      } catch (err) {
+        return res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'GRAINS_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+      }
+    }
+    if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
+    try {
+      const result = await mashBillPuller.forwardWrite('PUT', `/mashbills/${Number(req.params.id)}`, { title, distillery, grains, source });
+      res.status(result.status).json(result.data);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
+    }
+  });
+
+  app.delete('/api/mashbills/:id', async (req, res) => {
+    if (getServerConfig().isServer) {
+      const deleted = deleteMashBill(Number(req.params.id));
+      if (!deleted) return res.status(404).json({ error: 'No mash bill entry with that id.' });
+      return res.json({ success: true });
+    }
+    if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
+    try {
+      const result = await mashBillPuller.forwardWrite('DELETE', `/mashbills/${Number(req.params.id)}`);
+      res.status(result.status).json(result.data);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
+    }
+  });
+
+  // Backs the Mash Bill Library dialog's "Sync Now" button - forces an
+  // immediate pull from the Server PC rather than waiting up to ~30s for
+  // the puller's own interval, same pattern as /api/upc-settings/sync-now.
+  app.post('/api/mashbills/sync-now', async (req, res) => {
+    if (mashBillPuller) await mashBillPuller.syncOnce();
+    if (getServerConfig().isServer) {
+      return res.json({ mashBills: listMashBills(), sync: { isServer: true } });
+    }
+    res.json({
+      mashBills: mashBillPuller ? mashBillPuller.getCached() : [],
+      sync: { isServer: false, ...(mashBillPuller ? mashBillPuller.getStatus() : {}) },
+    });
+  });
+
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
   // LAN-visible IPv4 addresses, the current isServer flag/db stats (so
   // staff can tell whether this looks like the PC with real accumulated
@@ -446,6 +550,13 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
     if (exportServeServer) {
       if (config.isServer) exportServeServer.start();
       else exportServeServer.stop();
+    }
+    // Same gating for the Mash Bill Library's serve port (see
+    // mashBillSync.js) - only the PC currently marked isServer answers
+    // GET/POST/PUT/DELETE /mashbills for everyone else's pull/forwardWrite.
+    if (mashBillServeServer) {
+      if (config.isServer) mashBillServeServer.start();
+      else mashBillServeServer.stop();
     }
     res.json(config);
   });
@@ -499,7 +610,7 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
  * http.Server instance once listening, so callers (e.g. the Electron main
  * process) can close it on shutdown.
  *
- * Also starts two small, separate network surfaces the main app itself
+ * Also starts three small, separate network surfaces the main app itself
  * doesn't use:
  *  - the LAN discovery beacon (see discovery.js): every PC listens for
  *    announcements from whichever PC is marked the main store PC, and this
@@ -511,21 +622,31 @@ function createApp({ beacon, exportServeServer, exportPuller } = {}) {
  *    export-serve port starts too, so other PCs' pulls have something to
  *    fetch from immediately rather than waiting for the Server PC dialog to
  *    be opened and re-saved.
+ *  - the Mash Bill Library puller (see mashBillSync.js): every PC polls on
+ *    the same interval, always (not opt-in like export auto-sync - see that
+ *    file's own header comment for why). Same isServer boot check starts
+ *    its own serve port immediately when this PC is already marked.
  */
 function start(port) {
   const resolvedPort = port || process.env.PORT || 3000;
   const beacon = createBeacon();
   const exportServeServer = createExportServeServer();
   const exportPuller = createExportPuller({ beacon });
-  const app = createApp({ beacon, exportServeServer, exportPuller });
+  const mashBillServeServer = createMashBillServeServer();
+  const mashBillPuller = createMashBillPuller({ beacon });
+  const app = createApp({
+    beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+  });
   return new Promise((resolve, reject) => {
     const server = app.listen(resolvedPort, '127.0.0.1', () => {
       beacon.startListening();
       exportPuller.start();
+      mashBillPuller.start();
       const config = getServerConfig();
       if (config.isServer) {
         beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
         exportServeServer.start();
+        mashBillServeServer.start();
       }
       console.log(`Shelf Talker Wizard running at http://localhost:${resolvedPort}`);
       resolve(server);
@@ -535,6 +656,8 @@ function start(port) {
       beacon.stop();
       exportPuller.stop();
       exportServeServer.stop();
+      mashBillPuller.stop();
+      mashBillServeServer.stop();
     });
   });
 }

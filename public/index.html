@@ -76,6 +76,14 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="beer-talker-info">
           <span>Beer Talker Info</span>
         </button>
+        <!-- Bourbon Shelf Talkers only (Settings -> Experimental Features) -
+             hidden outright rather than shown-disabled while the toggle is
+             off, same as Store Pick/Mash Bill/Nose-Palate-Finish on Edit
+             Talker itself (see applyExperimentalBourbon in app.js, which
+             toggles .hidden on every [data-requires-bourbon] element). -->
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="mash-bill-library" data-requires-bourbon hidden>
+          <span>Mash Bill Library&hellip;</span>
+        </button>
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="settings">
           <span>Settings&hellip;</span>
         </button>
@@ -252,6 +260,21 @@
             <div class="field-head">
               <span>Mash Bill (optional)</span>
             </div>
+            <!-- Mash Bill Library recall - shown when the current Product
+                 Title exactly matches a saved entry (see
+                 refreshMashBillRecall in app.js). Only ever a suggestion:
+                 "Use It" copies the saved grains into the chip list below,
+                 still fully editable afterward - nothing here fills the
+                 chips on its own. -->
+            <div class="mashbill-recall no-print" id="mashBillRecallBanner" hidden>
+              <div class="mashbill-recall__title" id="mashBillRecallTitle"></div>
+              <div class="mashbill-recall__grains" id="mashBillRecallGrains"></div>
+              <div class="mashbill-recall__meta" id="mashBillRecallMeta"></div>
+              <div class="mashbill-recall__actions">
+                <button type="button" class="btn btn--small btn--primary" id="mashBillRecallUseBtn">Use It</button>
+                <button type="button" class="btn btn--small btn--ghost" id="mashBillRecallDismissBtn">Not This One</button>
+              </div>
+            </div>
             <div class="ratings-builder">
               <select id="fMashBillGrain" aria-label="Grain">
                 <option value="Corn">Corn</option>
@@ -266,6 +289,25 @@
             </div>
             <div class="ratings-list" id="mashBillList"></div>
             <p class="help-text">Prints as a proportion bar under the description - add each grain in the mash bill with its percentage.</p>
+
+            <!-- Saves the grains above to the shared Mash Bill Library
+                 (see server/db.js's mash_bills table), keyed by the current
+                 Product Title, so the next talker for this same bottle
+                 shows the recall banner above instead of starting blank.
+                 Distillery here is optional, free-text metadata for
+                 browsing/search in the Manage dialog - it plays no part in
+                 recall matching, which is by exact title only. -->
+            <div class="mashbill-save">
+              <label class="server-pc-checkbox">
+                <input type="checkbox" id="mashBillSaveCheckbox" />
+                Save this mash bill to the Mash Bill Library
+              </label>
+              <div class="mashbill-save__row" id="mashBillSaveRow" hidden>
+                <input type="text" id="mashBillSaveDistillery" maxlength="80" placeholder="Distillery (optional)" aria-label="Distillery" />
+                <button type="button" class="btn btn--small" id="mashBillSaveBtn">Save to Library</button>
+              </div>
+              <p class="help-text" id="mashBillSaveStatus" role="status" aria-live="polite"></p>
+            </div>
           </div>
 
           <div class="field-group" id="flavorFields">
@@ -1009,6 +1051,81 @@
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="historyCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tools > Mash Bill Library… (Bourbon Shelf Talkers only - see the
+       hidden [data-requires-bourbon] menu item above). A shared,
+       Server-PC-hosted table of researched grain compositions (see
+       server/db.js's mash_bills table and server/mashBillSync.js), so a
+       mash bill looked up once for a product can be recalled instead of
+       re-researched on the next talker for that same bottle. Search/add/
+       edit/delete here; recalling a saved entry onto a talker happens from
+       Edit Talker's own Mash Bill field (see #mashBillRecallBanner above),
+       not from this dialog. -->
+  <div id="mashBillLibraryOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="mashBillLibraryTitle">
+      <div class="modal__header">
+        <h2 id="mashBillLibraryTitle">Mash Bill Library</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="mashBillLibraryCloseBtn">&times; Close</button>
+      </div>
+      <div class="history-body">
+        <label class="field">
+          <span>Search by title or distillery</span>
+          <input type="search" id="mashBillLibrarySearchInput" placeholder="Four Roses, Buffalo Trace..." />
+        </label>
+        <p class="help-text" id="mashBillLibraryStatus" role="status" aria-live="polite"></p>
+        <div class="history-list" id="mashBillLibraryList"></div>
+
+        <hr class="settings-section-divider" />
+
+        <!-- Doubles as both "Add an entry manually" and "Edit" - clicking
+             Edit on a row (see renderMashBillLibraryList in app.js) fills
+             this same form and switches Add Entry to Save Changes, with
+             Cancel reverting to a blank Add form. Grain builder here is the
+             same three-control pattern as Edit Talker's own Mash Bill
+             field, just against its own local chip list. -->
+        <div class="settings-section">
+          <h3 class="settings-section-title" id="mashBillLibraryFormTitle">Add an entry manually</h3>
+          <div class="field-row">
+            <label class="field">
+              <span>Product Title</span>
+              <input type="text" id="mashBillLibraryFormTitleInput" maxlength="120" placeholder="Four Roses Single Barrel" />
+            </label>
+            <label class="field">
+              <span>Distillery (optional)</span>
+              <input type="text" id="mashBillLibraryFormDistilleryInput" maxlength="80" placeholder="Four Roses" />
+            </label>
+          </div>
+          <div class="ratings-builder">
+            <select id="mashBillLibraryFormGrain" aria-label="Grain">
+              <option value="Corn">Corn</option>
+              <option value="Rye">Rye</option>
+              <option value="Wheat">Wheat</option>
+              <option value="Malted Barley">Malted Barley</option>
+              <option value="Malted Rye">Malted Rye</option>
+              <option value="Oat">Oat</option>
+            </select>
+            <input type="text" inputmode="numeric" id="mashBillLibraryFormPct" maxlength="3" placeholder="70" aria-label="Percent" />
+            <button type="button" class="btn btn--small" id="mashBillLibraryFormAddGrainBtn">Add</button>
+          </div>
+          <div class="ratings-list" id="mashBillLibraryFormGrainList"></div>
+          <div class="reviewer-manager__add">
+            <button type="button" class="btn btn--small btn--primary" id="mashBillLibraryFormSaveBtn">Add Entry</button>
+            <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormCancelBtn" hidden>Cancel</button>
+          </div>
+          <p class="help-text" id="mashBillLibraryFormStatus" role="status" aria-live="polite"></p>
+        </div>
+
+        <hr class="settings-section-divider" />
+        <p class="help-text" id="mashBillLibrarySyncStatus" role="status" aria-live="polite"></p>
+        <div class="reviewer-manager__add">
+          <button type="button" class="btn btn--small" id="mashBillLibrarySyncNowBtn">Sync Now</button>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="mashBillLibraryCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

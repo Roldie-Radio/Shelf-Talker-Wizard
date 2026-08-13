@@ -696,6 +696,17 @@
     mashBillPct: document.getElementById('fMashBillPct'),
     addMashBillBtn: document.getElementById('addMashBillBtn'),
     mashBillList: document.getElementById('mashBillList'),
+    mashBillRecallBanner: document.getElementById('mashBillRecallBanner'),
+    mashBillRecallTitle: document.getElementById('mashBillRecallTitle'),
+    mashBillRecallGrains: document.getElementById('mashBillRecallGrains'),
+    mashBillRecallMeta: document.getElementById('mashBillRecallMeta'),
+    mashBillRecallUseBtn: document.getElementById('mashBillRecallUseBtn'),
+    mashBillRecallDismissBtn: document.getElementById('mashBillRecallDismissBtn'),
+    mashBillSaveCheckbox: document.getElementById('mashBillSaveCheckbox'),
+    mashBillSaveRow: document.getElementById('mashBillSaveRow'),
+    mashBillSaveDistillery: document.getElementById('mashBillSaveDistillery'),
+    mashBillSaveBtn: document.getElementById('mashBillSaveBtn'),
+    mashBillSaveStatus: document.getElementById('mashBillSaveStatus'),
     flavorFields: document.getElementById('flavorFields'),
     nose: document.getElementById('fNose'),
     palate: document.getElementById('fPalate'),
@@ -863,6 +874,25 @@
     historyPrevBtn: document.getElementById('historyPrevBtn'),
     historyNextBtn: document.getElementById('historyNextBtn'),
     historyPageIndicator: document.getElementById('historyPageIndicator'),
+
+    mashBillLibraryOverlay: document.getElementById('mashBillLibraryOverlay'),
+    mashBillLibraryCloseBtn: document.getElementById('mashBillLibraryCloseBtn'),
+    mashBillLibraryCloseFooterBtn: document.getElementById('mashBillLibraryCloseFooterBtn'),
+    mashBillLibrarySearchInput: document.getElementById('mashBillLibrarySearchInput'),
+    mashBillLibraryStatus: document.getElementById('mashBillLibraryStatus'),
+    mashBillLibraryList: document.getElementById('mashBillLibraryList'),
+    mashBillLibraryFormTitle: document.getElementById('mashBillLibraryFormTitle'),
+    mashBillLibraryFormTitleInput: document.getElementById('mashBillLibraryFormTitleInput'),
+    mashBillLibraryFormDistilleryInput: document.getElementById('mashBillLibraryFormDistilleryInput'),
+    mashBillLibraryFormGrain: document.getElementById('mashBillLibraryFormGrain'),
+    mashBillLibraryFormPct: document.getElementById('mashBillLibraryFormPct'),
+    mashBillLibraryFormAddGrainBtn: document.getElementById('mashBillLibraryFormAddGrainBtn'),
+    mashBillLibraryFormGrainList: document.getElementById('mashBillLibraryFormGrainList'),
+    mashBillLibraryFormSaveBtn: document.getElementById('mashBillLibraryFormSaveBtn'),
+    mashBillLibraryFormCancelBtn: document.getElementById('mashBillLibraryFormCancelBtn'),
+    mashBillLibraryFormStatus: document.getElementById('mashBillLibraryFormStatus'),
+    mashBillLibrarySyncStatus: document.getElementById('mashBillLibrarySyncStatus'),
+    mashBillLibrarySyncNowBtn: document.getElementById('mashBillLibrarySyncNowBtn'),
 
     exportPreviewOverlay: document.getElementById('exportPreviewOverlay'),
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
@@ -1038,6 +1068,17 @@
     experimentalBourbonEnabled = enabled;
     window.ShelfTalkerSettings.experimentalBourbon = enabled;
     els.experimentalBourbonCheckbox.checked = enabled;
+    // Tools > Mash Bill Library… (see index.html) - hidden outright while
+    // the toggle is off, same as Store Pick/Mash Bill/Nose-Palate-Finish on
+    // Edit Talker itself, rather than shown-disabled like the Electron-only
+    // items (data-requires-electron) - this isn't "unavailable in this
+    // environment", it's a feature the store hasn't opted into yet.
+    document.querySelectorAll('[data-requires-bourbon]').forEach((el) => { el.hidden = !enabled; });
+    // Refreshes the Mash Bill Library cache right as the feature turns on,
+    // so the very first talker made after flipping the toggle can already
+    // show a recall banner rather than waiting on whatever load already
+    // happened (or didn't) before the toggle was on.
+    if (enabled) fetchMashBillLibrary().then(refreshMashBillRecall);
     applyFormMode();
     renderTastingNotesSourceOptions();
     if (previewMode === 'single') renderPreview();
@@ -1224,6 +1265,10 @@
     els.storePickField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     els.mashBillField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
     els.flavorFields.hidden = isBeer || isSign || !experimentalBourbonEnabled;
+    // Mash Bill field just changed visibility (or the Product Title may
+    // have too, on the fillForm() call path) - re-check whether the recall
+    // banner should be showing (see refreshMashBillRecall below).
+    refreshMashBillRecall();
     // Same rule/reasoning as Nose/Palate/Finish right above - printed onto
     // the .card only (see buildPairingsHtml in card.js), and gated behind
     // its own Settings -> Experimental Features -> Wine Food Pairings
@@ -1442,6 +1487,12 @@
     els.storePick.checked = !!talker.isStorePick;
     currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
     renderMashBillList();
+    // Same reasoning as resetForm() above - "Save to Library" is per-
+    // editing-session state, not something a loaded talker carries.
+    els.mashBillSaveCheckbox.checked = false;
+    els.mashBillSaveRow.hidden = true;
+    els.mashBillSaveStatus.textContent = '';
+    mashBillRecallDismissedFor = '';
     els.nose.value = talker.nose || '';
     els.palate.value = talker.palate || '';
     els.finish.value = talker.finish || '';
@@ -1496,6 +1547,13 @@
     els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
     currentMashBill = [];
     renderMashBillList();
+    // "Save to Library" is per-editing-session state, not part of the
+    // talker itself - form.reset() above already unchecks the checkbox
+    // (a native control) but doesn't fire its 'change' listener, so the
+    // row it reveals needs hiding by hand.
+    els.mashBillSaveRow.hidden = true;
+    els.mashBillSaveStatus.textContent = '';
+    mashBillRecallDismissedFor = '';
     hideError();
     refreshPreview();
   }
@@ -1570,9 +1628,12 @@
 
   // Same "build a list, one Add click at a time" pattern as Ratings above,
   // just grain+percent instead of reviewer+score - no "manage grains"
-  // equivalent to Manage Reviewers, since Mash Bill's grain list is a small
-  // fixed set (see #fMashBillGrain's own <option>s in index.html), not
-  // something a store customizes.
+  // equivalent to Manage Reviewers, since the *grain vocabulary* itself
+  // (Corn/Rye/Wheat/... - #fMashBillGrain's own <option>s in index.html) is
+  // a small fixed set, not something a store customizes. The Mash Bill
+  // Library further down (Tools -> Mash Bill Library...) is a different
+  // kind of "manage" - saved title -> grains compositions, not this
+  // dropdown's own options.
   function renderMashBillList() {
     if (currentMashBill.length === 0) {
       els.mashBillList.innerHTML = '';
@@ -1608,6 +1669,163 @@
     currentMashBill.splice(idx, 1);
     renderMashBillList();
     refreshPreview();
+  });
+
+  // ---------- Mash Bill Library: recall + Save to Library ----------
+  //
+  // A shared, Server-PC-hosted table of researched grain compositions (see
+  // server/db.js's mash_bills table and server/mashBillSync.js) - so a mash
+  // bill researched once for a product can be suggested again on the next
+  // talker made for that same bottle, instead of re-typed from scratch.
+  // Managing the library itself (add/edit/delete without an open talker)
+  // is the separate Tools -> Mash Bill Library... dialog further down; this
+  // section is just the two touch points that live on this field:
+  //  - a recall banner that appears when the current Product Title exactly
+  //    matches a saved entry, and
+  //  - a "Save to Library" action that stores whatever's in the chip list
+  //    above under the current Product Title.
+  //
+  // `mashBillLibraryCache` is this client's own copy of the shared library,
+  // refreshed on load, when the Bourbon toggle turns on, and after any
+  // write this client makes - not on a recurring poll, since the server
+  // side already keeps every PC's data current every ~30s regardless (see
+  // mashBillSync.js) and recall only needs to be "current as of a moment
+  // ago", not live-updating while staff are mid-edit.
+  let mashBillLibraryCache = [];
+  // Which Product Title the recall banner was last dismissed for ("Use It"
+  // counts as a dismissal too, once the chips reflect the match) - reset
+  // whenever the title changes to something else, or a different/blank
+  // talker is loaded (see fillForm/resetForm), so the same title can always
+  // bring the banner back if staff type it again later.
+  let mashBillRecallDismissedFor = '';
+
+  // A fresh install (or a genuinely single-PC store) has no Server PC
+  // marked yet, so every read/write here 502s with mashBillSync.js's own
+  // "No Server PC found on this network yet." - accurate, but it doesn't
+  // say what to actually do about it. Unlike the WinePOS export (which a
+  // single-PC store just points straight at the local file, no Server PC
+  // needed), this feature has no non-networked path - even one PC needs to
+  // mark *itself* Server PC once before its own local library works. This
+  // appends that missing next step onto the same message rather than
+  // inventing a new one, so the underlying error text everywhere else
+  // (recall, save, the Manage dialog) still matches mashBillSync.js's own.
+  function withServerPcHint(message) {
+    if (!message || !/No Server PC found/.test(message)) return message;
+    return `${message} Mark this PC (or another one) as the Server PC first - Advanced > Server PC…, even for a single-PC store.`;
+  }
+
+  function describeMashBillGrains(grains) {
+    return (grains || []).map((g) => `${g.pct}% ${g.grain}`).join(', ');
+  }
+
+  async function fetchMashBillLibrary() {
+    try {
+      const resp = await fetch('/api/mashbills');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not load the Mash Bill Library.');
+      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
+      return data;
+    } catch {
+      // Keep whatever was already cached rather than clearing it - same
+      // graceful-degradation spirit as the rest of this app's sync
+      // fallbacks. The Manage dialog surfaces a real failure of its own on
+      // open (see loadMashBillLibrary further down); this quiet failure
+      // just means recall works off a possibly-stale cache instead of
+      // blocking on one bad request.
+      return null;
+    }
+  }
+
+  function findMashBillMatch(title) {
+    const needle = (title || '').trim().toLowerCase();
+    if (!needle) return null;
+    return mashBillLibraryCache.find((m) => (m.title || '').trim().toLowerCase() === needle) || null;
+  }
+
+  // Exact-title match only, deliberately - no distillery-level fallback.
+  // A distillery's own products don't all share one mash bill (Four Roses
+  // alone runs ten different recipe codes across its lineup), so a
+  // wrong-but-confident suggestion risks a worse mistake on the printed
+  // talker than just showing nothing.
+  function refreshMashBillRecall() {
+    if (els.mashBillField.hidden) { els.mashBillRecallBanner.hidden = true; return; }
+    const title = els.title.value.trim();
+    if (!title || title === mashBillRecallDismissedFor) { els.mashBillRecallBanner.hidden = true; return; }
+    const match = findMashBillMatch(title);
+    if (!match) { els.mashBillRecallBanner.hidden = true; return; }
+
+    els.mashBillRecallTitle.textContent = `📚 Saved mash bill found for "${match.title}"`;
+    els.mashBillRecallGrains.textContent = describeMashBillGrains(match.grains);
+    const updated = match.updatedAt ? formatHistoryTimestamp(match.updatedAt) : '';
+    els.mashBillRecallMeta.textContent = `Source: ${match.source || 'Manual'}${updated ? ` · Updated ${updated}` : ''}`;
+    els.mashBillRecallBanner.hidden = false;
+  }
+
+  els.title.addEventListener('input', () => {
+    mashBillRecallDismissedFor = '';
+    refreshMashBillRecall();
+  });
+
+  els.mashBillRecallUseBtn.addEventListener('click', () => {
+    const match = findMashBillMatch(els.title.value.trim());
+    if (!match) return;
+    // Copies into the same {grain, pct} shape addMashBillGrain() itself
+    // builds (pct as the string the chip UI already expects) - still fully
+    // editable afterward, same as any other chip added by hand.
+    currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
+    renderMashBillList();
+    refreshPreview();
+    mashBillRecallDismissedFor = els.title.value.trim();
+    els.mashBillRecallBanner.hidden = true;
+  });
+
+  els.mashBillRecallDismissBtn.addEventListener('click', () => {
+    mashBillRecallDismissedFor = els.title.value.trim();
+    els.mashBillRecallBanner.hidden = true;
+  });
+
+  els.mashBillSaveCheckbox.addEventListener('change', () => {
+    els.mashBillSaveRow.hidden = !els.mashBillSaveCheckbox.checked;
+  });
+
+  // Upserts by title (see server/db.js's upsertMashBill) - safe to click
+  // again after fixing a typo in the chips, updates the same entry in
+  // place rather than erroring or creating a duplicate.
+  els.mashBillSaveBtn.addEventListener('click', async () => {
+    const title = els.title.value.trim();
+    if (!title) {
+      els.mashBillSaveStatus.textContent = 'Enter a Product Title first.';
+      return;
+    }
+    if (!currentMashBill.length) {
+      els.mashBillSaveStatus.textContent = 'Add at least one grain first.';
+      return;
+    }
+    els.mashBillSaveBtn.disabled = true;
+    els.mashBillSaveStatus.textContent = 'Saving...';
+    try {
+      const resp = await fetch('/api/mashbills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          distillery: els.mashBillSaveDistillery.value.trim(),
+          grains: currentMashBill.map((m) => ({ grain: m.grain, pct: Number(m.pct) })),
+          source: 'Manual',
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save to the Mash Bill Library.');
+      await fetchMashBillLibrary();
+      // It's now exactly what's saved - no reason to also suggest itself
+      // back as a "found" recall for the rest of this editing session.
+      mashBillRecallDismissedFor = title;
+      els.mashBillSaveStatus.textContent = `Saved "${title}" to the Mash Bill Library.`;
+    } catch (err) {
+      els.mashBillSaveStatus.textContent = withServerPcHint(err.message) || 'Could not save to the Mash Bill Library.';
+    } finally {
+      els.mashBillSaveBtn.disabled = false;
+    }
   });
 
   els.manageReviewersToggle.addEventListener('click', () => {
@@ -4778,6 +4996,259 @@
     runHistorySearch();
   });
 
+  // ---------- Mash Bill Library dialog (Tools -> Mash Bill Library...) ----------
+  //
+  // Manages the shared library directly (add/edit/delete without an open
+  // talker) - recalling a saved entry onto a talker happens from Edit
+  // Talker's own Mash Bill field instead (see refreshMashBillRecall above).
+  // Reuses .history-list/.history-item for the search results, same as
+  // History's own list right above, and .settings-section/
+  // .reviewer-manager__add for its own add/edit form.
+
+  let mashBillLibraryQuery = '';
+  // null while adding a new entry; the entry's id while editing an
+  // existing one (see loadMashBillLibraryEntryIntoForm) - one form serves
+  // both, switching label/button text based on which mode this is in.
+  let mashBillLibraryEditingId = null;
+  let mashBillLibraryFormGrains = [];
+  let mashBillLibrarySyncPollTimer = null;
+
+  function renderMashBillLibraryFormGrainList() {
+    els.mashBillLibraryFormGrainList.innerHTML = mashBillLibraryFormGrains.map((g, i) => `
+      <div class="rating-chip" data-mashbill-form-index="${i}">
+        <span>${escapeHtml(String(g.pct))}% ${escapeHtml(g.grain)}</span>
+        <button type="button" data-action="remove-mashbill-form-grain" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  function resetMashBillLibraryForm() {
+    mashBillLibraryEditingId = null;
+    mashBillLibraryFormGrains = [];
+    els.mashBillLibraryFormTitleInput.value = '';
+    els.mashBillLibraryFormDistilleryInput.value = '';
+    els.mashBillLibraryFormPct.value = '';
+    renderMashBillLibraryFormGrainList();
+    els.mashBillLibraryFormTitle.textContent = 'Add an entry manually';
+    els.mashBillLibraryFormSaveBtn.textContent = 'Add Entry';
+    els.mashBillLibraryFormCancelBtn.hidden = true;
+    els.mashBillLibraryFormStatus.textContent = '';
+  }
+
+  function loadMashBillLibraryEntryIntoForm(entry) {
+    mashBillLibraryEditingId = entry.id;
+    mashBillLibraryFormGrains = entry.grains.map((g) => ({ grain: g.grain, pct: g.pct }));
+    els.mashBillLibraryFormTitleInput.value = entry.title;
+    els.mashBillLibraryFormDistilleryInput.value = entry.distillery || '';
+    renderMashBillLibraryFormGrainList();
+    els.mashBillLibraryFormTitle.textContent = `Edit "${entry.title}"`;
+    els.mashBillLibraryFormSaveBtn.textContent = 'Save Changes';
+    els.mashBillLibraryFormCancelBtn.hidden = false;
+    els.mashBillLibraryFormStatus.textContent = '';
+    els.mashBillLibraryFormTitleInput.scrollIntoView({ block: 'nearest' });
+  }
+
+  function renderMashBillLibraryList() {
+    const q = mashBillLibraryQuery.toLowerCase();
+    const rows = mashBillLibraryCache.filter((m) => !q
+      || (m.title || '').toLowerCase().includes(q)
+      || (m.distillery || '').toLowerCase().includes(q));
+
+    if (!rows.length) {
+      els.mashBillLibraryList.innerHTML = mashBillLibraryQuery
+        ? '<p class="empty-hint">No entries match that search.</p>'
+        : '<p class="empty-hint">Nothing saved yet - add one below, or check "Save this mash bill to the Mash Bill Library" on Edit Talker\'s Mash Bill field.</p>';
+      return;
+    }
+
+    els.mashBillLibraryList.innerHTML = '';
+    rows.forEach((row) => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const metaParts = [];
+      if (row.distillery) metaParts.push(escapeHtml(row.distillery));
+      metaParts.push(escapeHtml(describeMashBillGrains(row.grains)));
+      metaParts.push(`${escapeHtml(row.source || 'Manual')} &middot; Updated ${escapeHtml(formatHistoryTimestamp(row.updatedAt))}`);
+
+      item.innerHTML = `
+        <div class="history-item__body">
+          <div class="history-item__title">${escapeHtml(row.title)}</div>
+          <div class="history-item__meta">${metaParts.join(' &middot; ')}</div>
+        </div>
+        <div class="history-item__actions">
+          <button type="button" class="btn btn--small" data-action="edit">Edit</button>
+          <button type="button" class="btn btn--small btn--ghost" data-action="delete" title="Remove from the Library">Delete</button>
+        </div>
+      `;
+      item.querySelector('[data-action="edit"]').addEventListener('click', () => loadMashBillLibraryEntryIntoForm(row));
+      item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteMashBillLibraryEntry(row.id));
+      els.mashBillLibraryList.appendChild(item);
+    });
+  }
+
+  // Describes the puller's own sync status (see mashBillSync.js's
+  // getStatus) - not gated behind an "autoSync" flag the way
+  // describeSyncStatus (the UPC export's own version, above) is, since
+  // Mash Bill Library sync always runs, on every PC, unconditionally (see
+  // that file's header comment for why).
+  function describeMashBillSyncStatus(sync) {
+    if (!sync) return '';
+    if (sync.isServer) return 'This PC is the Server PC - this is the shared library other registers sync from.';
+    const parts = [];
+    parts.push(sync.lastSyncedAt
+      ? `Last synced from ${sync.syncedFrom || 'the Server PC'} at ${formatHistoryTimestamp(sync.lastSyncedAt)}.`
+      : 'Waiting for the first sync from the Server PC...');
+    if (sync.lastError) parts.push(`⚠ ${withServerPcHint(sync.lastError)}`);
+    return parts.join(' ');
+  }
+
+  async function loadMashBillLibrary() {
+    els.mashBillLibraryStatus.textContent = 'Loading...';
+    const data = await fetchMashBillLibrary();
+    if (!data) {
+      els.mashBillLibraryStatus.textContent = 'Could not load the Mash Bill Library.';
+      els.mashBillLibraryList.innerHTML = '';
+      els.mashBillLibrarySyncStatus.textContent = '';
+      return;
+    }
+    renderMashBillLibraryList();
+    const count = mashBillLibraryCache.length;
+    els.mashBillLibraryStatus.textContent = count
+      ? `${count} saved mash bill${count === 1 ? '' : 's'}${mashBillLibraryQuery ? ' match' : ''}.`
+      : '';
+    els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
+  }
+
+  // Keeps the sync status line (and the list itself, in case another
+  // register just added/edited something) live while the dialog stays
+  // open, since a sync can happen in the background on its own ~30s timer
+  // at any point while staff are looking at this dialog - same "poll while
+  // open" pattern Export File Settings uses for its own sync status line.
+  async function refreshMashBillLibrarySyncStatus() {
+    const data = await fetchMashBillLibrary();
+    if (!data) return;
+    els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
+    renderMashBillLibraryList();
+  }
+
+  async function deleteMashBillLibraryEntry(id) {
+    try {
+      const resp = await fetch(`/api/mashbills/${id}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
+      if (mashBillLibraryEditingId === id) resetMashBillLibraryForm();
+      await loadMashBillLibrary();
+    } catch (err) {
+      els.mashBillLibraryStatus.textContent = withServerPcHint(err.message) || 'Could not delete that entry.';
+    }
+  }
+
+  const mashBillLibraryModal = createModal({
+    overlay: els.mashBillLibraryOverlay,
+    closeBtns: [els.mashBillLibraryCloseBtn, els.mashBillLibraryCloseFooterBtn],
+    onOpen: () => {
+      mashBillLibraryQuery = '';
+      els.mashBillLibrarySearchInput.value = '';
+      resetMashBillLibraryForm();
+      loadMashBillLibrary();
+      mashBillLibrarySyncPollTimer = setInterval(refreshMashBillLibrarySyncStatus, 5000);
+    },
+    onClose: () => {
+      clearInterval(mashBillLibrarySyncPollTimer);
+      mashBillLibrarySyncPollTimer = null;
+    },
+  });
+
+  // Also reachable via Tools > Mash Bill Library… in the menu bar (see
+  // runMenuAction's 'mash-bill-library' case) - Bourbon Shelf Talkers only,
+  // same as the field it manages (see the hidden [data-requires-bourbon]
+  // menu item in index.html).
+
+  els.mashBillLibrarySearchInput.addEventListener('input', () => {
+    mashBillLibraryQuery = els.mashBillLibrarySearchInput.value.trim();
+    renderMashBillLibraryList();
+  });
+
+  function addMashBillLibraryFormGrain() {
+    const grain = els.mashBillLibraryFormGrain.value;
+    const pct = Number(els.mashBillLibraryFormPct.value.trim());
+    if (!grain || !pct) return;
+    mashBillLibraryFormGrains.push({ grain, pct });
+    els.mashBillLibraryFormPct.value = '';
+    renderMashBillLibraryFormGrainList();
+  }
+  els.mashBillLibraryFormAddGrainBtn.addEventListener('click', addMashBillLibraryFormGrain);
+  els.mashBillLibraryFormPct.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addMashBillLibraryFormGrain(); }
+  });
+
+  els.mashBillLibraryFormGrainList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-mashbill-form-grain"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-mashbill-form-index]').dataset.mashbillFormIndex);
+    mashBillLibraryFormGrains.splice(idx, 1);
+    renderMashBillLibraryFormGrainList();
+  });
+
+  els.mashBillLibraryFormCancelBtn.addEventListener('click', resetMashBillLibraryForm);
+
+  els.mashBillLibraryFormSaveBtn.addEventListener('click', async () => {
+    const title = els.mashBillLibraryFormTitleInput.value.trim();
+    if (!title) {
+      els.mashBillLibraryFormStatus.textContent = 'A product title is required.';
+      return;
+    }
+    if (!mashBillLibraryFormGrains.length) {
+      els.mashBillLibraryFormStatus.textContent = 'Add at least one grain first.';
+      return;
+    }
+    els.mashBillLibraryFormSaveBtn.disabled = true;
+    els.mashBillLibraryFormStatus.textContent = 'Saving...';
+    try {
+      const payload = {
+        title,
+        distillery: els.mashBillLibraryFormDistilleryInput.value.trim(),
+        grains: mashBillLibraryFormGrains,
+        source: 'Manual',
+      };
+      const resp = mashBillLibraryEditingId
+        ? await fetch(`/api/mashbills/${mashBillLibraryEditingId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        })
+        : await fetch('/api/mashbills', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
+      resetMashBillLibraryForm();
+      await loadMashBillLibrary();
+    } catch (err) {
+      els.mashBillLibraryFormStatus.textContent = withServerPcHint(err.message) || 'Could not save that entry.';
+    } finally {
+      els.mashBillLibraryFormSaveBtn.disabled = false;
+    }
+  });
+
+  // Forces an immediate pull from the Server PC instead of waiting up to
+  // ~30s for the puller's own interval (see mashBillSync.js's syncOnce) -
+  // same pattern as Export File Settings' own Sync Now button.
+  els.mashBillLibrarySyncNowBtn.addEventListener('click', async () => {
+    els.mashBillLibrarySyncNowBtn.disabled = true;
+    els.mashBillLibrarySyncStatus.textContent = 'Syncing...';
+    try {
+      const resp = await fetch('/api/mashbills/sync-now', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not sync right now.');
+      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
+      renderMashBillLibraryList();
+      els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
+    } catch (err) {
+      els.mashBillLibrarySyncStatus.textContent = err.message || 'Could not sync right now.';
+    } finally {
+      els.mashBillLibrarySyncNowBtn.disabled = false;
+    }
+  });
+
   // Fired once, right as printing is confirmed (see printNow() below) with
   // whatever's in the Queue at that moment - that's exactly what's about to
   // be laid out on the sheet(s). Best-effort: a failure here (e.g. History's
@@ -5219,6 +5690,9 @@
         break;
       case 'beer-talker-info':
         guidePreviewModal.open();
+        break;
+      case 'mash-bill-library':
+        mashBillLibraryModal.open();
         break;
       case 'settings':
         settingsModal.open();
