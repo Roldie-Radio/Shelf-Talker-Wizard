@@ -1136,10 +1136,23 @@ function buildSignPriceRowHtml(talker) {
     `;
   }
 
+  // No sale price: the lone Regular Price takes over the Sale Price's own
+  // size and slot (see .sign__regular-price--solo in styles.css) instead of
+  // sitting in its usual small, right-hand spot - dropping the Sale Price's
+  // empty placeholder div lets flexbox's space-between put this single
+  // child flush left, the same spot the Sale Price line would occupy.
+  if (!hasSale) {
+    return `
+      <div class="sign__price-row">
+        <div class="sign__regular-price sign__regular-price--solo">Regular Price ${regular}</div>
+      </div>
+    `;
+  }
+
   return `
     <div class="sign__price-row">
-      ${hasSale ? `<div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : '<div></div>'}
-      ${regular ? `<div class="sign__regular-price">Regular Price ${regular}</div>` : '<div></div>'}
+      <div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>
+      <div class="sign__regular-price">Regular Price ${regular}</div>
     </div>
   `;
 }

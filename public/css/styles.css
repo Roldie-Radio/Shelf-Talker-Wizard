@@ -2998,6 +2998,12 @@ h1, h2, h3 { margin: 0; }
 .sign__regular-price { font-weight: 800; font-family: Verdana, Geneva, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0128 * var(--price-fit, 1)); }
 .sign[data-size="small"] .sign__regular-price { font-family: Arial, Helvetica, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0389 * var(--price-fit, 1)); }
 
+/* Large-only (see buildSignPriceRowHtml): when there's no Sale Price to
+   pair with, the lone Regular Price is set in the Sale Price's own font
+   size instead of staying at the small size above - matches .sign__sale-
+   price exactly except for its red color, since this price isn't on sale. */
+.sign__regular-price--solo { font-size: calc(var(--w) * var(--sign-text) * 0.0257 * var(--price-fit, 1)); }
+
 /* Small Super Sale sign's price number - same WordArt look as
    .sign__supersale-text above (bold italic sans, red fill, black
    outline, no drop shadow), in place of the plain Arial Black every
