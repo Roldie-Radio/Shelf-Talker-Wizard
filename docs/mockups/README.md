@@ -36,6 +36,23 @@ browser.
   introduces this app's first on/off switch component (`.switch`), since
   Settings today only has the toggle-btn pill-pair pattern (Change Theme, Menu
   Bar Size) &mdash; not the right shape for a single boolean feature flag.
+- **mash-bill-library.html** &mdash; proposes a persistent **Mash Bill
+  Library** behind the existing Bourbon Shelf Talkers mash bill chips, so a
+  grain composition researched once can be recalled on later talkers instead
+  of re-typed every time. Research stays exactly where it is today (manual
+  chips) plus a new **Auto-Fill from Distiller.com** button using the same
+  scrape-then-editable-preview pattern as Find Tasting Notes. A "Save this
+  mash bill to the Library" option on the Mash Bill field stores it either
+  under the exact product title or as a distillery-wide default; a new
+  **Manage Mash Bill Library** dialog (styled like Manage Reviewers) lists,
+  edits, and deletes saved entries; and a Server PC sync status row shows
+  the library syncing across registers the same way `exportSync.js` already
+  syncs the WinePOS export file. A pill toggle at the top switches between
+  the two ways a saved entry can be matched back to a talker &mdash; **Exact
+  Expression** vs. **Distillery Default** &mdash; using Four Roses (one
+  distillery, ten different recipe codes) to show live why an exact match is
+  recommended as the primary strategy, with distillery-default only ever
+  offered as a clearly-flagged fallback, never a silent auto-fill.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.
