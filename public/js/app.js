@@ -41,6 +41,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.6',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now also picks up on a country/region in the title/description for Cabernet Sauvignon, Malbec, Syrah/Shiraz, Pinot Noir, Sauvignon Blanc, and Riesling (e.g. "Mendoza, Argentina") - swaps in one more specific pairing and adds the region to the match ("Malbec — Mendoza, Argentina"). A title with no region wording still gets exactly the same pairings as before.',
+        'New: Tools → Wine Pairing Rules… (shown while Wine Food Pairings is on) lists every varietal Suggest Pairings can match, its candidate pairings, and any region refinements - a live reference, not a static doc.',
+      ],
+    },
+    {
       version: '3.3.5',
       items: [
         'Fixed: on Super Sale talkers/signs, the price number under "Super Sale Price!!!" now always renders at the same font size as that lettering - it used to run smaller by default, and didn\'t resize at all when you typed a size into the Super Sale Price!!! Font Size box.',
