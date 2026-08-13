@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.5',
+      items: [
+        'Fixed: on Super Sale talkers/signs, the price number under "Super Sale Price!!!" now always renders at the same font size as that lettering - it used to run smaller by default, and didn\'t resize at all when you typed a size into the Super Sale Price!!! Font Size box.',
+      ],
+    },
+    {
       version: '3.3.4',
       items: [
         'New: Full Page Live Preview is now the print preview, too - the separate Print Preview dialog is gone. Auto-arrange and the sheet summary sit right above the sheets, and the same button that jumps you to Full Page relabels to Print Now once you\'re looking at it.',
