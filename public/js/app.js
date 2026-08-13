@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.7',
+      items: [
+        'Fixed: the Size field\'s "ml"/"oz" unit now always prints lowercase on the Shelf Talker card and both Display Sign sizes, regardless of how the store export or product page cased it (e.g. "750ML" and "16OZ" now print as "750ml"/"16oz").',
+      ],
+    },
+    {
       version: '3.3.6',
       items: [
         'New (Wine Food Pairings, experimental): Suggest Pairings now also picks up on a country/region in the title/description for Cabernet Sauvignon, Malbec, Syrah/Shiraz, Pinot Noir, Sauvignon Blanc, and Riesling (e.g. "Mendoza, Argentina") - swaps in one more specific pairing and adds the region to the match ("Malbec — Mendoza, Argentina"). A title with no region wording still gets exactly the same pairings as before.',
