@@ -388,11 +388,13 @@
           </label>
 
           <div class="field" id="chilledField">
-            <label class="server-pc-checkbox">
-              <input type="checkbox" id="fChilled" />
-              Also Available Chilled
-            </label>
-            <p class="help-text">Prints an "Also Available Chilled" callout on the card - independent of Talker Style, so it can still show up alongside a Closeout badge or Super Sale price. Same idea as Store Pick above, for Bourbon Shelf Talkers.</p>
+            <div class="chilled-toggle-row">
+              <span class="chilled-toggle-row__label">❄️ Also Available Chilled</span>
+              <label class="switch">
+                <input type="checkbox" id="fChilled" />
+                <span class="switch__track"><span class="switch__thumb"></span></span>
+              </label>
+            </div>
           </div>
 
           <div class="field" id="closeoutFontSizeField" hidden>
