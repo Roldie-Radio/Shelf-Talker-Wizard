@@ -220,6 +220,18 @@ function buildFlavorHtml(talker) {
 // Only a handful of varietals have a `regions` list - it's opt-in per rule,
 // and a rule with none behaves exactly as it always has: a title with no
 // region wording still gets exactly the varietal's own base pairings.
+//
+// A rule can also optionally carry a `sweetness` array - same shape as
+// `regions` (id/label/test/swapIndex/swap), for a classification system
+// that isn't about where the wine is from (Riesling's Pradikatswein
+// ripeness scale - Kabinett, Spatlese, Auslese... - is the only one
+// today). `regions` and `sweetness` are independent: both are checked,
+// and if both match, both swaps apply and both labels get appended (see
+// detectWinePairings below). A rule that uses both tiers together needs
+// its region swaps and sweetness swaps to land on different pairing
+// slots, or whichever tier's swap runs second would silently overwrite
+// the other's - see the comment on the Riesling rule itself for how it
+// keeps the two apart.
 const WINE_PAIRING_RULES = [
   { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
     pairings: [
@@ -411,6 +423,17 @@ const WINE_PAIRING_RULES = [
       { id: 'alsace-pinot-gris', label: 'Alsace, France', test: /alsace|france/i,
         swapIndex: 3, swap: { icon: '🥧', food: 'Choucroute Garnie' } },
     ] },
+  // Riesling carries both refinement tiers - `regions` (where it's from)
+  // and `sweetness` (Germany's own Pradikatswein ripeness scale, the thing
+  // "German wine classification" usually means, since it's printed on the
+  // label right alongside the region and swings the actual food pairing
+  // far more than region does - a bone-dry Kabinett Trocken and a
+  // dessert-sweet Trockenbeerenauslese are both "Mosel Riesling" but pair
+  // with nothing like the same food). Both tiers are checked and, if they
+  // both match (e.g. "Spatlese Pfalz"), both apply at once - see
+  // detectWinePairings below. To make that safe, `regions` here only ever
+  // swaps slot 0 or 2 and `sweetness` only ever swaps slot 1 or 3, so the
+  // two tiers can never silently overwrite each other's slot.
   { id: 'riesling', label: 'Riesling', test: /riesling/i,
     pairings: [
       { icon: '🌶️', food: 'Spicy Asian' },
@@ -419,10 +442,26 @@ const WINE_PAIRING_RULES = [
       { icon: '🍣', food: 'Sushi' },
     ],
     regions: [
-      { id: 'mosel', label: 'Mosel, Germany', test: /mosel|germany|rheingau/i,
+      { id: 'rheingau', label: 'Rheingau, Germany', test: /rheingau/i,
+        swapIndex: 0, swap: { icon: '🌿', food: 'Frankfurt Green Sauce' } },
+      { id: 'pfalz', label: 'Pfalz, Germany', test: /pfalz|palatinate/i,
+        swapIndex: 0, swap: { icon: '🫓', food: 'Flammkuchen' } },
+      { id: 'nahe', label: 'Nahe, Germany', test: /\bnahe\b/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Poached Trout' } },
+      { id: 'mosel', label: 'Mosel, Germany', test: /mosel|germany/i,
         swapIndex: 2, swap: { icon: '🥨', food: 'Wiener Schnitzel' } },
       { id: 'alsace', label: 'Alsace, France', test: /alsace|france/i,
         swapIndex: 0, swap: { icon: '🥧', food: 'Tarte Flambée' } },
+    ],
+    sweetness: [
+      { id: 'trocken', label: 'Trocken (Dry)', test: /\btrocken\b/i,
+        swapIndex: 1, swap: { icon: '🦪', food: 'Fresh Oysters' } },
+      { id: 'kabinett', label: 'Kabinett', test: /kabinett/i,
+        swapIndex: 1, swap: { icon: '🥬', food: 'White Asparagus' } },
+      { id: 'spatlese', label: 'Spätlese', test: /sp[aä]tlese/i,
+        swapIndex: 3, swap: { icon: '🍛', food: 'Thai Green Curry' } },
+      { id: 'auslese', label: 'Auslese & Beyond', test: /\bauslese\b|beerenauslese|trockenbeerenauslese|eiswein|ice wine/i,
+        swapIndex: 3, swap: { icon: '🧀', food: 'Blue Cheese' } },
     ] },
   { id: 'albarino', label: 'Albariño', test: /albari[nñ]o|alvarinho/i,
     pairings: [
@@ -476,25 +515,32 @@ const WINE_PAIRING_RULES = [
 ];
 
 // Tier 1: which varietal rule matches at all. Tier 2, only once tier 1 has
-// a hit: does that varietal's own `regions` list (if it has one) also
-// match the same text? A region match returns a *new* object - the
-// varietal's label with " — Region" appended and its one swapped-in
-// pairing - so callers (Suggest Pairings' status text/candidate chips
-// below, and buildPairingsHtml's already-picked-pairings path, which never
-// calls this) don't need to know region exists at all. No region match
-// (including a varietal with no `regions` key) returns the varietal rule
-// object itself, untouched - exactly today's behavior.
+// a hit: does that varietal's own `regions` list and/or `sweetness` list
+// (either or both, if it has them) also match the same text? Each is
+// independent - a rule with only `regions` (most of them) behaves exactly
+// as before, and Riesling's `regions` and `sweetness` can both match the
+// same title at once ("Spatlese Pfalz"), each contributing its own slot
+// swap and its own " — Label" suffix (region first, then sweetness). No
+// match on either tier (including a varietal with neither key) returns
+// the varietal rule object itself, untouched - exactly today's behavior.
 function detectWinePairings(text) {
   const haystack = text ? String(text) : '';
   const varietal = WINE_PAIRING_RULES.find(({ test }) => test.test(haystack));
   if (!varietal) return null;
   const region = varietal.regions && varietal.regions.find(({ test }) => test.test(haystack));
-  if (!region) return varietal;
-  return {
-    ...varietal,
-    label: `${varietal.label} — ${region.label}`,
-    pairings: varietal.pairings.map((p, i) => (i === region.swapIndex ? region.swap : p)),
-  };
+  const level = varietal.sweetness && varietal.sweetness.find(({ test }) => test.test(haystack));
+  if (!region && !level) return varietal;
+  let label = varietal.label;
+  let pairings = varietal.pairings;
+  if (region) {
+    label += ` — ${region.label}`;
+    pairings = pairings.map((p, i) => (i === region.swapIndex ? region.swap : p));
+  }
+  if (level) {
+    label += region ? `, ${level.label}` : ` — ${level.label}`;
+    pairings = pairings.map((p, i) => (i === level.swapIndex ? level.swap : p));
+  }
+  return { ...varietal, label, pairings };
 }
 
 // Renders whatever's in talker.pairings ([{icon, food}], set by the Food

@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.15',
+      items: [
+        'New (Wine Food Pairings, experimental): Riesling\'s region matching now tells apart Rheingau, Pfalz, and Nahe (previously all lumped into "Mosel, Germany"), and gains a second, independent refinement tier for Germany\'s own Pradikatswein sweetness classification (Trocken, Kabinett, Spätlese, Auslese and beyond) - the thing that actually swings what food a Riesling pairs with. A title carrying both a region and a sweetness level (e.g. "Spätlese Pfalz") gets both refinements at once ("Riesling — Pfalz, Germany, Spätlese").',
+      ],
+    },
+    {
       version: '3.3.14',
       items: [
         'New (Wine Food Pairings, experimental): Suggest Pairings now covers Spanish classifications - Albariño, Tempranillo, Garnacha/Grenache, and Verdejo join the varietal list. Region refinements deepen Albariño (Rías Baixas, Spain vs. Vinho Verde, Portugal - same grape, different country), Tempranillo (Rioja vs. Ribera del Duero), and Garnacha (Priorat); Champagne/Sparkling also gains a Cava, Catalonia refinement.',
@@ -1974,11 +1980,12 @@
   // file already calls directly - card.js's <script> tag loads before this
   // one's, see index.html), so no import/require is needed here.
   //
-  // detectWinePairings folds a second, optional country/region match into
-  // its return value - see the WINE_PAIRING_RULES comment block in
-  // card.js. Nothing below this comment needs to know that: a region match
-  // just shows up as a longer rule.label ("Malbec — Mendoza, Argentina")
-  // and one already-swapped candidate in rule.pairings.
+  // detectWinePairings folds in optional second-tier matches (country/
+  // region and, for Riesling, Germany's own sweetness classification) -
+  // see the WINE_PAIRING_RULES comment block in card.js. Nothing below
+  // this comment needs to know that: a tier match just shows up as a
+  // longer rule.label ("Malbec — Mendoza, Argentina", "Riesling — Mosel,
+  // Germany, Kabinett") and already-swapped candidates in rule.pairings.
 
   // Renders the currently-selected pairings (currentPairings) as removable
   // chips - same markup/behavior as renderRatingsList above, just a
@@ -4838,11 +4845,36 @@
   // Suggestions comment block near suggestPairings below). Renders on
   // every open rather than once at startup so it always reflects
   // whatever's currently in that array, same as Suggest Pairings would
-  // see if it ran right now. A rule's optional `regions` list (see the
-  // WINE_PAIRING_RULES comment block in card.js) renders nested underneath
-  // it, one row per region, showing which pairing slot it swaps and with
-  // what - reading straight from the same data detectWinePairings matches
-  // against, so this can't describe a swap that doesn't actually happen.
+  // see if it ran right now. A rule's optional `regions` and/or
+  // `sweetness` lists (see the WINE_PAIRING_RULES comment block in
+  // card.js) each render as their own nested section, one row per entry,
+  // showing which pairing slot it swaps and with what - reading straight
+  // from the same data detectWinePairings matches against, so this can't
+  // describe a swap that doesn't actually happen. renderRefinementList
+  // below builds either section from a rule + one of its two lists, since
+  // they're identical in shape (id/label/test/swapIndex/swap) and differ
+  // only in the heading above them.
+  function renderRefinementList(rule, list, heading) {
+    if (!list || !list.length) return '';
+    return `
+      <div class="pairing-rule-row__regions">
+        <div class="pairing-rule-row__regions-label">${escapeHtml(heading)} (only checked once ${escapeHtml(rule.label)} itself matches)</div>
+        ${list.map((entry) => `
+          <div class="pairing-region-row">
+            <div class="pairing-region-row__name">${escapeHtml(entry.label)}</div>
+            <div class="pairing-region-row__keywords">matches <code>${escapeHtml(entry.test.toString())}</code></div>
+            <div class="pairing-region-row__swap">
+              slot ${entry.swapIndex + 1}:
+              <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[entry.swapIndex].icon)} ${escapeHtml(rule.pairings[entry.swapIndex].food)}</span>
+              <span class="pairing-region-row__arrow">&rarr;</span>
+              <span class="pairing-rule-chip">${escapeHtml(entry.swap.icon)} ${escapeHtml(entry.swap.food)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   function renderPairingRulesReference() {
     els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
       <div class="pairing-rule-row">
@@ -4851,23 +4883,8 @@
         <div class="pairing-rule-row__pairings">${rule.pairings.map((p) => `
           <span class="pairing-rule-chip">${escapeHtml(p.icon)} ${escapeHtml(p.food)}</span>
         `).join('')}</div>
-        ${(rule.regions && rule.regions.length) ? `
-          <div class="pairing-rule-row__regions">
-            <div class="pairing-rule-row__regions-label">Region refinements (only checked once ${escapeHtml(rule.label)} itself matches)</div>
-            ${rule.regions.map((region) => `
-              <div class="pairing-region-row">
-                <div class="pairing-region-row__name">${escapeHtml(region.label)}</div>
-                <div class="pairing-region-row__keywords">matches <code>${escapeHtml(region.test.toString())}</code></div>
-                <div class="pairing-region-row__swap">
-                  slot ${region.swapIndex + 1}:
-                  <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[region.swapIndex].icon)} ${escapeHtml(rule.pairings[region.swapIndex].food)}</span>
-                  <span class="pairing-region-row__arrow">&rarr;</span>
-                  <span class="pairing-rule-chip">${escapeHtml(region.swap.icon)} ${escapeHtml(region.swap.food)}</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+        ${renderRefinementList(rule, rule.regions, 'Region refinements')}
+        ${renderRefinementList(rule, rule.sweetness, 'Sweetness refinements')}
       </div>
     `).join('');
   }
