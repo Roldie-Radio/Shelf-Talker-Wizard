@@ -1092,6 +1092,22 @@ h1, h2, h3 { margin: 0; }
   line-height: 1.5;
   color: var(--ui-ink-soft);
 }
+/* Filters WINE_PAIRING_RULES rows client-side as staff types (see
+   winePairingRulesFilterInput's 'input' listener in app.js) - the list
+   crossed 30 varietals with 60+ region/sweetness sub-entries, long enough
+   that finding one by scrolling stopped being reasonable. Matches against
+   a row's label, region/sweetness labels, and every regex's own source
+   text, so searching "Chablis" or "Trocken" surfaces the varietal that
+   sub-entry belongs to, not just rows whose own top-level name matches. */
+.pairing-rules-modal-filter {
+  padding: 0 1.2rem;
+  margin-bottom: 0.6rem;
+}
+.pairing-rules-modal-filter span { font-size: 0.8rem; }
+#winePairingRulesFilterStatus {
+  padding: 0 1.2rem;
+  margin: -0.3rem 0 0.6rem;
+}
 .pairing-rules-modal-body {
   flex: 1;
   overflow-y: auto;

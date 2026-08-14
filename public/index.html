@@ -930,6 +930,11 @@
       <p class="pairing-rules-modal-intro">
         <strong>Suggest Pairings</strong> (Edit Talker &rarr; Food Pairing Suggestions) checks the Product Title, falling back to the Description, against this list top to bottom &mdash; the first varietal whose pattern matches wins, and its 4 candidate pairings are offered (pick up to 3 to print). No match falls back to picking pairings manually.
       </p>
+      <label class="field pairing-rules-modal-filter">
+        <span>Filter by varietal, region, or keyword</span>
+        <input type="search" id="winePairingRulesFilterInput" placeholder="Barolo, Coonawarra, Chablis..." />
+      </label>
+      <p class="help-text" id="winePairingRulesFilterStatus" role="status" aria-live="polite"></p>
       <div class="pairing-rules-modal-body" id="winePairingRulesList"></div>
     </div>
   </div>

@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.20',
+      items: [
+        'New: Tools → Wine Pairing Rules… now has a filter box - type a varietal, region, or keyword to narrow the list down instead of scrolling through all 30+ entries. Matches against every region and sweetness refinement too, not just each rule\'s own name, so searching "Chablis" or "Trocken" finds the Chardonnay or Riesling rule that keyword belongs to.',
+      ],
+    },
+    {
       version: '3.3.19',
       items: [
         'New (Wine Food Pairings, experimental): Suggest Pairings now covers Australia, Greece, and South Africa. Australia adds a new Semillon varietal plus region refinements across several existing rules (Hunter Valley and McLaren Vale for Shiraz, Coonawarra for Cabernet Sauvignon, Clare/Eden Valley for Riesling, McLaren Vale for Garnacha/Grenache). South Africa adds Pinotage and Chenin Blanc (with its own Stellenbosch/Swartland vs. Loire Valley split) plus a Stellenbosch refinement for Cabernet Sauvignon. Greece adds Assyrtiko, Agiorgitiko, Xinomavro, and Retsina, matched by appellation (Santorini, Nemea, Naoussa) as well as grape.',
@@ -954,6 +960,8 @@
     winePairingRulesMenuItem: document.getElementById('winePairingRulesMenuItem'),
     winePairingRulesOverlay: document.getElementById('winePairingRulesOverlay'),
     winePairingRulesCloseBtn: document.getElementById('winePairingRulesCloseBtn'),
+    winePairingRulesFilterInput: document.getElementById('winePairingRulesFilterInput'),
+    winePairingRulesFilterStatus: document.getElementById('winePairingRulesFilterStatus'),
     winePairingRulesList: document.getElementById('winePairingRulesList'),
 
     helpBtn: document.getElementById('helpBtn'),
@@ -4899,8 +4907,31 @@
     `;
   }
 
+  // Matches a filter query against a rule's own label/pattern and every
+  // one of its region/sweetness sub-entries' labels/patterns, not just the
+  // rule's own top-level name - so typing "Chablis" or "Trocken" surfaces
+  // the varietal that sub-entry belongs to (Chardonnay, Riesling) even
+  // though neither word appears in that rule's own label or top-level
+  // test. Matching against `test.source` (the regex body, not the
+  // /pattern/flags wrapper `test.toString()` prints) means the filter
+  // finds a varietal by any keyword Suggest Pairings itself would match on,
+  // including ones not spelled out in the rule's label.
+  function pairingRuleMatchesQuery(rule, query) {
+    if (!query) return true;
+    const haystacks = [rule.label, rule.test.source];
+    (rule.regions || []).forEach((r) => haystacks.push(r.label, r.test.source));
+    (rule.sweetness || []).forEach((s) => haystacks.push(s.label, s.test.source));
+    return haystacks.some((h) => h.toLowerCase().includes(query));
+  }
+
   function renderPairingRulesReference() {
-    els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
+    const rawQuery = els.winePairingRulesFilterInput.value.trim();
+    const query = rawQuery.toLowerCase();
+    const matches = WINE_PAIRING_RULES.filter((rule) => pairingRuleMatchesQuery(rule, query));
+    els.winePairingRulesFilterStatus.textContent = query
+      ? `${matches.length} of ${WINE_PAIRING_RULES.length} varietals match "${rawQuery}".`
+      : '';
+    els.winePairingRulesList.innerHTML = matches.length ? matches.map((rule) => `
       <div class="pairing-rule-row">
         <div class="pairing-rule-row__name">${escapeHtml(rule.label)}</div>
         <div class="pairing-rule-row__keywords">matches <code>${escapeHtml(rule.test.toString())}</code></div>
@@ -4910,14 +4941,19 @@
         ${renderRefinementList(rule, rule.regions, 'Region refinements')}
         ${renderRefinementList(rule, rule.sweetness, 'Sweetness refinements')}
       </div>
-    `).join('');
+    `).join('') : '<p class="help-text">No varietals match that filter.</p>';
   }
 
   const winePairingRulesModal = createModal({
     overlay: els.winePairingRulesOverlay,
     closeBtns: [els.winePairingRulesCloseBtn],
-    onOpen: renderPairingRulesReference,
+    onOpen: () => {
+      els.winePairingRulesFilterInput.value = '';
+      renderPairingRulesReference();
+    },
   });
+
+  els.winePairingRulesFilterInput.addEventListener('input', renderPairingRulesReference);
 
   // First click jumps to the print preview (Full Page mode - see
   // setPreviewMode); once it's showing, the button relabels itself "Print
