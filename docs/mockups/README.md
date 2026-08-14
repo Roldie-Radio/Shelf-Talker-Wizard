@@ -78,6 +78,25 @@ browser.
   follow-up to this mockup &mdash; see the README's own Mash Bill Library
   section for the shipped behavior, which stuck to exact-title matching
   only (see that section for why).
+- **bourbon-profile-page.html** &mdash; follow-up to mash-bill-library.html
+  above: proposes a read-focused **profile page** on top of each saved
+  Mash Bill Library entry &mdash; distillery, parent company, tasting
+  notes, and mash bill together, doubling as a staff reference instead of
+  only feeding the Edit Talker form's recall banner. Introduces a
+  **Mash Bill Confidence** section: a four-tier score (Confirmed / Reported
+  / Estimated / Unknown) reflecting how directly a grain composition traces
+  back to the distillery itself, since a lot of this data is
+  industry-reported rather than officially disclosed. Each tier gets a
+  color badge, a dot meter, a one-line rationale, and an expandable
+  source-citation list; deliberately staff-only &mdash; it never prints on
+  the shelf talker, only the grain bar does when one is known. The five
+  sample entries (Buffalo Trace, Four Roses, Blanton's, Michter's,
+  Redemption) are drawn from the public-source research behind the mash
+  bill seed list, picked so all four tiers show up at least once instead of
+  clustering in the middle. Not yet backed by real schema &mdash;
+  <code>mash_bills</code> today has no parent-company, category,
+  tasting-note, or confidence columns; this mockup is scoped to the page
+  and scoring design, not the data-model changes it would need.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.
