@@ -41,6 +41,54 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.20',
+      items: [
+        'New: Tools → Wine Pairing Rules… now has a filter box - type a varietal, region, or keyword to narrow the list down instead of scrolling through all 30+ entries. Matches against every region and sweetness refinement too, not just each rule\'s own name, so searching "Chablis" or "Trocken" finds the Chardonnay or Riesling rule that keyword belongs to.',
+      ],
+    },
+    {
+      version: '3.3.19',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Australia, Greece, and South Africa. Australia adds a new Semillon varietal plus region refinements across several existing rules (Hunter Valley and McLaren Vale for Shiraz, Coonawarra for Cabernet Sauvignon, Clare/Eden Valley for Riesling, McLaren Vale for Garnacha/Grenache). South Africa adds Pinotage and Chenin Blanc (with its own Stellenbosch/Swartland vs. Loire Valley split) plus a Stellenbosch refinement for Cabernet Sauvignon. Greece adds Assyrtiko, Agiorgitiko, Xinomavro, and Retsina, matched by appellation (Santorini, Nemea, Naoussa) as well as grape.',
+      ],
+    },
+    {
+      version: '3.3.18',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Portugal - Vinho Verde, Douro Red (Touriga Nacional/Touriga Franca), and Port all join the varietal list. A title naming both a grape and Vinho Verde (e.g. "Alvarinho, Vinho Verde") still resolves to the more specific Albariño match added a few releases back; a bare "Vinho Verde" with no grape named now matches on its own instead of going unmatched.',
+      ],
+    },
+    {
+      version: '3.3.17',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now tells Bordeaux and Burgundy styles apart, and can match them even when the title never says the grape - real Bordeaux/Burgundy is labeled by chateau/village, not varietal. Cabernet Sauvignon\'s Bordeaux match now specifically means the Cabernet-dominant Left Bank (Médoc, Pauillac, Margaux, Saint-Julien, Saint-Estèphe); Merlot gains its own Right Bank match (Saint-Émilion, Pomerol) it never had before. Pinot Noir\'s Burgundy match splits into Côte de Nuits vs. Côte de Beaune, and Chardonnay gains its first Burgundy matches (Chablis, plus Côte de Beaune whites like Meursault and Puligny-Montrachet) alongside its existing California ones.',
+      ],
+    },
+    {
+      version: '3.3.16',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now tells domestic sub-regions apart by climate instead of lumping them under one state-wide match. Cabernet Sauvignon splits Napa Valley from cooler Sonoma County, plus new Paso Robles and Washington State refinements. Chardonnay and Zinfandel each gain their own warmer-vs-cooler California split for the first time (Napa Valley vs. Sonoma Coast/Russian River Valley for Chardonnay; Lodi vs. Dry Creek Valley for Zinfandel), and Merlot gains a California vs. Washington State refinement. A bare "California" on a Cabernet or Merlot still falls back to its most recognized region (Napa) rather than going unmatched.',
+      ],
+    },
+    {
+      version: '3.3.15',
+      items: [
+        'New (Wine Food Pairings, experimental): Riesling\'s region matching now tells apart Rheingau, Pfalz, and Nahe (previously all lumped into "Mosel, Germany"), and gains a second, independent refinement tier for Germany\'s own Pradikatswein sweetness classification (Trocken, Kabinett, Spätlese, Auslese and beyond) - the thing that actually swings what food a Riesling pairs with. A title carrying both a region and a sweetness level (e.g. "Spätlese Pfalz") gets both refinements at once ("Riesling — Pfalz, Germany, Spätlese").',
+      ],
+    },
+    {
+      version: '3.3.14',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Spanish classifications - Albariño, Tempranillo, Garnacha/Grenache, and Verdejo join the varietal list. Region refinements deepen Albariño (Rías Baixas, Spain vs. Vinho Verde, Portugal - same grape, different country), Tempranillo (Rioja vs. Ribera del Duero), and Garnacha (Priorat); Champagne/Sparkling also gains a Cava, Catalonia refinement.',
+      ],
+    },
+    {
+      version: '3.3.13',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers six more Italian classifications - Nebbiolo, Sangiovese, Montepulciano d\'Abruzzo, Primitivo, and Barbera join the varietal list, and Pinot Grigio/Gris and Champagne/Sparkling gain Italian region refinements (Alto Adige, Prosecco, Franciacorta). Region matching also deepens for Nebbiolo (Barolo vs. Barbaresco), Sangiovese (Chianti Classico vs. Brunello di Montalcino), and Barbera (d\'Alba vs. d\'Asti). A title reading "Vino Nobile di Montepulciano" correctly matches Sangiovese, not the unrelated Montepulciano grape.',
+      ],
+    },
+    {
       version: '3.3.12',
       items: [
         'Fixed: Beer Name\'s Auto-size toggle wasn\'t actually defaulting on for beer scanned/looked up via Scan UPC, SKU Lookup, Search by Name, or Import - filling the form from a lookup was silently forcing it off (even after picking a beer from the "Pick the Right Beer" dialog), overriding the on-by-default behavior added in 3.3.3. It now defaults on for beer through every one of those paths, same as starting a beer entry from Manual Entry already did.',
@@ -912,6 +960,8 @@
     winePairingRulesMenuItem: document.getElementById('winePairingRulesMenuItem'),
     winePairingRulesOverlay: document.getElementById('winePairingRulesOverlay'),
     winePairingRulesCloseBtn: document.getElementById('winePairingRulesCloseBtn'),
+    winePairingRulesFilterInput: document.getElementById('winePairingRulesFilterInput'),
+    winePairingRulesFilterStatus: document.getElementById('winePairingRulesFilterStatus'),
     winePairingRulesList: document.getElementById('winePairingRulesList'),
 
     helpBtn: document.getElementById('helpBtn'),
@@ -1962,11 +2012,12 @@
   // file already calls directly - card.js's <script> tag loads before this
   // one's, see index.html), so no import/require is needed here.
   //
-  // detectWinePairings folds a second, optional country/region match into
-  // its return value - see the WINE_PAIRING_RULES comment block in
-  // card.js. Nothing below this comment needs to know that: a region match
-  // just shows up as a longer rule.label ("Malbec — Mendoza, Argentina")
-  // and one already-swapped candidate in rule.pairings.
+  // detectWinePairings folds in optional second-tier matches (country/
+  // region and, for Riesling, Germany's own sweetness classification) -
+  // see the WINE_PAIRING_RULES comment block in card.js. Nothing below
+  // this comment needs to know that: a tier match just shows up as a
+  // longer rule.label ("Malbec — Mendoza, Argentina", "Riesling — Mosel,
+  // Germany, Kabinett") and already-swapped candidates in rule.pairings.
 
   // Renders the currently-selected pairings (currentPairings) as removable
   // chips - same markup/behavior as renderRatingsList above, just a
@@ -4826,45 +4877,83 @@
   // Suggestions comment block near suggestPairings below). Renders on
   // every open rather than once at startup so it always reflects
   // whatever's currently in that array, same as Suggest Pairings would
-  // see if it ran right now. A rule's optional `regions` list (see the
-  // WINE_PAIRING_RULES comment block in card.js) renders nested underneath
-  // it, one row per region, showing which pairing slot it swaps and with
-  // what - reading straight from the same data detectWinePairings matches
-  // against, so this can't describe a swap that doesn't actually happen.
+  // see if it ran right now. A rule's optional `regions` and/or
+  // `sweetness` lists (see the WINE_PAIRING_RULES comment block in
+  // card.js) each render as their own nested section, one row per entry,
+  // showing which pairing slot it swaps and with what - reading straight
+  // from the same data detectWinePairings matches against, so this can't
+  // describe a swap that doesn't actually happen. renderRefinementList
+  // below builds either section from a rule + one of its two lists, since
+  // they're identical in shape (id/label/test/swapIndex/swap) and differ
+  // only in the heading above them.
+  function renderRefinementList(rule, list, heading) {
+    if (!list || !list.length) return '';
+    return `
+      <div class="pairing-rule-row__regions">
+        <div class="pairing-rule-row__regions-label">${escapeHtml(heading)} (only checked once ${escapeHtml(rule.label)} itself matches)</div>
+        ${list.map((entry) => `
+          <div class="pairing-region-row">
+            <div class="pairing-region-row__name">${escapeHtml(entry.label)}</div>
+            <div class="pairing-region-row__keywords">matches <code>${escapeHtml(entry.test.toString())}</code></div>
+            <div class="pairing-region-row__swap">
+              slot ${entry.swapIndex + 1}:
+              <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[entry.swapIndex].icon)} ${escapeHtml(rule.pairings[entry.swapIndex].food)}</span>
+              <span class="pairing-region-row__arrow">&rarr;</span>
+              <span class="pairing-rule-chip">${escapeHtml(entry.swap.icon)} ${escapeHtml(entry.swap.food)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // Matches a filter query against a rule's own label/pattern and every
+  // one of its region/sweetness sub-entries' labels/patterns, not just the
+  // rule's own top-level name - so typing "Chablis" or "Trocken" surfaces
+  // the varietal that sub-entry belongs to (Chardonnay, Riesling) even
+  // though neither word appears in that rule's own label or top-level
+  // test. Matching against `test.source` (the regex body, not the
+  // /pattern/flags wrapper `test.toString()` prints) means the filter
+  // finds a varietal by any keyword Suggest Pairings itself would match on,
+  // including ones not spelled out in the rule's label.
+  function pairingRuleMatchesQuery(rule, query) {
+    if (!query) return true;
+    const haystacks = [rule.label, rule.test.source];
+    (rule.regions || []).forEach((r) => haystacks.push(r.label, r.test.source));
+    (rule.sweetness || []).forEach((s) => haystacks.push(s.label, s.test.source));
+    return haystacks.some((h) => h.toLowerCase().includes(query));
+  }
+
   function renderPairingRulesReference() {
-    els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
+    const rawQuery = els.winePairingRulesFilterInput.value.trim();
+    const query = rawQuery.toLowerCase();
+    const matches = WINE_PAIRING_RULES.filter((rule) => pairingRuleMatchesQuery(rule, query));
+    els.winePairingRulesFilterStatus.textContent = query
+      ? `${matches.length} of ${WINE_PAIRING_RULES.length} varietals match "${rawQuery}".`
+      : '';
+    els.winePairingRulesList.innerHTML = matches.length ? matches.map((rule) => `
       <div class="pairing-rule-row">
         <div class="pairing-rule-row__name">${escapeHtml(rule.label)}</div>
         <div class="pairing-rule-row__keywords">matches <code>${escapeHtml(rule.test.toString())}</code></div>
         <div class="pairing-rule-row__pairings">${rule.pairings.map((p) => `
           <span class="pairing-rule-chip">${escapeHtml(p.icon)} ${escapeHtml(p.food)}</span>
         `).join('')}</div>
-        ${(rule.regions && rule.regions.length) ? `
-          <div class="pairing-rule-row__regions">
-            <div class="pairing-rule-row__regions-label">Region refinements (only checked once ${escapeHtml(rule.label)} itself matches)</div>
-            ${rule.regions.map((region) => `
-              <div class="pairing-region-row">
-                <div class="pairing-region-row__name">${escapeHtml(region.label)}</div>
-                <div class="pairing-region-row__keywords">matches <code>${escapeHtml(region.test.toString())}</code></div>
-                <div class="pairing-region-row__swap">
-                  slot ${region.swapIndex + 1}:
-                  <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[region.swapIndex].icon)} ${escapeHtml(rule.pairings[region.swapIndex].food)}</span>
-                  <span class="pairing-region-row__arrow">&rarr;</span>
-                  <span class="pairing-rule-chip">${escapeHtml(region.swap.icon)} ${escapeHtml(region.swap.food)}</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+        ${renderRefinementList(rule, rule.regions, 'Region refinements')}
+        ${renderRefinementList(rule, rule.sweetness, 'Sweetness refinements')}
       </div>
-    `).join('');
+    `).join('') : '<p class="help-text">No varietals match that filter.</p>';
   }
 
   const winePairingRulesModal = createModal({
     overlay: els.winePairingRulesOverlay,
     closeBtns: [els.winePairingRulesCloseBtn],
-    onOpen: renderPairingRulesReference,
+    onOpen: () => {
+      els.winePairingRulesFilterInput.value = '';
+      renderPairingRulesReference();
+    },
   });
+
+  els.winePairingRulesFilterInput.addEventListener('input', renderPairingRulesReference);
 
   // First click jumps to the print preview (Full Page mode - see
   // setPreviewMode); once it's showing, the button relabels itself "Print

@@ -220,8 +220,39 @@ function buildFlavorHtml(talker) {
 // Only a handful of varietals have a `regions` list - it's opt-in per rule,
 // and a rule with none behaves exactly as it always has: a title with no
 // region wording still gets exactly the varietal's own base pairings.
+//
+// A rule can also optionally carry a `sweetness` array - same shape as
+// `regions` (id/label/test/swapIndex/swap), for a classification system
+// that isn't about where the wine is from (Riesling's Pradikatswein
+// ripeness scale - Kabinett, Spatlese, Auslese... - is the only one
+// today). `regions` and `sweetness` are independent: both are checked,
+// and if both match, both swaps apply and both labels get appended (see
+// detectWinePairings below). A rule that uses both tiers together needs
+// its region swaps and sweetness swaps to land on different pairing
+// slots, or whichever tier's swap runs second would silently overwrite
+// the other's - see the comment on the Riesling rule itself for how it
+// keeps the two apart.
 const WINE_PAIRING_RULES = [
-  { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
+  // Napa's own test is deliberately the only one of the four California/
+  // Washington entries with a bare `california` fallback, and is ordered
+  // last among them so that fallback can't preempt a more specific match -
+  // "Sonoma County, California" would otherwise hit Napa's regex on the
+  // word "California" before ever reaching the Sonoma entry below it. A
+  // title that just says "California" with no county/AVA named still
+  // falls through to Napa, the most recognized default.
+  //
+  // The top-level test also carries the Left Bank Bordeaux communes
+  // (Medoc, Pauillac, Margaux, Saint-Julien, Saint-Estephe) - unlike most
+  // varietals, real Bordeaux is labeled by chateau/appellation, not grape,
+  // so a title that never says "Cabernet" still needs to match here.
+  // Deliberately not the bare word "bordeaux" itself, though - that alone
+  // doesn't say which bank, and Cabernet is checked before Merlot below,
+  // so a generic "bordeaux" catch here would wrongly out-run Merlot's own
+  // Right Bank communes (Saint-Emilion, Pomerol) on a title that names
+  // both a specific Right Bank commune and the word "Bordeaux" together
+  // (e.g. "Saint-Emilion, Bordeaux") - the specific communes on both
+  // sides stay disjoint so this can't happen.
+  { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv|\bm[eé]doc\b|\bpauillac\b|\bmargaux\b|\bsaint-julien\b|\bsaint-est[eè]phe\b/i,
     pairings: [
       { icon: '🥩', food: 'Grilled Steak' },
       { icon: '🧀', food: 'Aged Cheddar' },
@@ -229,8 +260,18 @@ const WINE_PAIRING_RULES = [
       { icon: '🍖', food: 'Braised Lamb' },
     ],
     regions: [
-      { id: 'bordeaux', label: 'Bordeaux, France', test: /bordeaux|m[eé]doc|pauillac|saint-julien/i,
+      { id: 'bordeaux', label: 'Bordeaux (Left Bank), France', test: /bordeaux|m[eé]doc|pauillac|margaux|saint-julien|saint-est[eè]phe/i,
         swapIndex: 1, swap: { icon: '🧀', food: 'Roquefort' } },
+      { id: 'sonoma', label: 'Sonoma County, California', test: /sonoma/i,
+        swapIndex: 2, swap: { icon: '🦆', food: 'Seared Duck Breast' } },
+      { id: 'paso-robles', label: 'Paso Robles, California', test: /paso robles/i,
+        swapIndex: 0, swap: { icon: '🔥', food: 'Santa Maria Tri-Tip' } },
+      { id: 'washington', label: 'Washington State', test: /washington|columbia valley/i,
+        swapIndex: 1, swap: { icon: '🦬', food: 'Grilled Bison' } },
+      { id: 'coonawarra', label: 'Coonawarra, Australia', test: /coonawarra/i,
+        swapIndex: 2, swap: { icon: '🌿', food: 'Mint-Crusted Lamb' } },
+      { id: 'stellenbosch', label: 'Stellenbosch, South Africa', test: /stellenbosch/i,
+        swapIndex: 0, swap: { icon: '🔥', food: 'Boerewors' } },
       { id: 'napa', label: 'Napa Valley, California', test: /napa|california/i,
         swapIndex: 3, swap: { icon: '🔥', food: 'Smoked Brisket' } },
     ] },
@@ -247,6 +288,10 @@ const WINE_PAIRING_RULES = [
       { id: 'cahors', label: 'Cahors, France', test: /cahors|france/i,
         swapIndex: 2, swap: { icon: '🦆', food: 'Duck Confit' } },
     ] },
+  // Barossa's own test is the only one of the three Australian entries
+  // with a bare `australia` fallback, so (same reasoning as Napa on the
+  // Cabernet rule above) it's ordered last among them to keep that
+  // fallback from preempting a more specific region match.
   { id: 'syrah', label: 'Syrah / Shiraz', test: /syrah|shiraz/i,
     pairings: [
       { icon: '🥩', food: 'Peppered Steak' },
@@ -257,6 +302,10 @@ const WINE_PAIRING_RULES = [
     regions: [
       { id: 'rhone', label: 'Rhône Valley, France', test: /rh[oô]ne|france/i,
         swapIndex: 3, swap: { icon: '🐑', food: 'Cassoulet' } },
+      { id: 'hunter-valley', label: 'Hunter Valley, Australia', test: /hunter valley/i,
+        swapIndex: 2, swap: { icon: '🥧', food: 'Aussie Meat Pie' } },
+      { id: 'mclaren-vale', label: 'McLaren Vale, Australia', test: /mclaren vale/i,
+        swapIndex: 3, swap: { icon: '🍫', food: 'Chocolate-Rubbed Ribs' } },
       { id: 'barossa', label: 'Barossa Valley, Australia', test: /barossa|australia/i,
         swapIndex: 1, swap: { icon: '🦘', food: 'Kangaroo & Native Pepper' } },
     ] },
@@ -266,15 +315,39 @@ const WINE_PAIRING_RULES = [
       { icon: '🌭', food: 'Spicy Sausage' },
       { icon: '🧀', food: 'Blue Cheese' },
       { icon: '🍕', food: 'Pepperoni Pizza' },
+    ],
+    regions: [
+      { id: 'lodi', label: 'Lodi, California', test: /\blodi\b/i,
+        swapIndex: 0, swap: { icon: '🔥', food: 'Smoked Baby Back Ribs' } },
+      { id: 'dry-creek', label: 'Dry Creek Valley, Sonoma', test: /dry creek|russian river|\bsonoma\b/i,
+        swapIndex: 1, swap: { icon: '🌶️', food: 'Peppercorn-Crusted Steak' } },
     ] },
-  { id: 'merlot', label: 'Merlot', test: /merlot/i,
+  // Right Bank Bordeaux (Saint-Emilion, Pomerol) is Merlot-dominant, not
+  // Cabernet - see the comment on the Cabernet rule above for why both
+  // rules' top-level tests carry their own bank's commune names instead
+  // of the bare word "bordeaux".
+  { id: 'merlot', label: 'Merlot', test: /merlot|saint-[eé]milion|pomerol/i,
     pairings: [
       { icon: '🍗', food: 'Roast Chicken' },
       { icon: '🍄', food: 'Mushroom Risotto' },
       { icon: '🧀', food: 'Soft Cheeses' },
       { icon: '🍝', food: 'Tomato Pasta' },
+    ],
+    regions: [
+      { id: 'bordeaux-right-bank', label: 'Bordeaux (Right Bank), France', test: /saint-[eé]milion|pomerol/i,
+        swapIndex: 1, swap: { icon: '🦆', food: "Duck à l'Orange" } },
+      { id: 'california', label: 'California', test: /napa|sonoma|california/i,
+        swapIndex: 0, swap: { icon: '🍖', food: 'Herb-Roasted Pork Loin' } },
+      { id: 'washington', label: 'Washington State', test: /washington|columbia valley/i,
+        swapIndex: 3, swap: { icon: '🦌', food: 'Venison Medallions' } },
     ] },
-  { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir/i,
+  // Like Bordeaux, red Burgundy is labeled by village, not grape - the
+  // top-level test carries the unambiguous red-only Cote de Nuits/Cote de
+  // Beaune villages (never used for white Burgundy) so a bare village name
+  // still matches. `regions` below tries those same villages first, then
+  // falls back to the generic "burgundy"/"bourgogne"/"france" catch, kept
+  // last so a specific village always wins its own, more precise label.
+  { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir|bourgogne rouge|gevrey-chambertin|vosne-roman[eé]e|chambolle-musigny|nuits-saint-georges|\bvolnay\b|\bpommard\b/i,
     pairings: [
       { icon: '🦆', food: 'Roast Duck' },
       { icon: '🍄', food: 'Wild Mushrooms' },
@@ -282,10 +355,121 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Brie' },
     ],
     regions: [
+      { id: 'cote-de-nuits', label: 'Côte de Nuits, Burgundy', test: /c[oô]te de nuits|gevrey-chambertin|vosne-roman[eé]e|chambolle-musigny|nuits-saint-georges/i,
+        swapIndex: 1, swap: { icon: '🦌', food: 'Braised Venison' } },
+      { id: 'cote-de-beaune', label: 'Côte de Beaune, Burgundy', test: /c[oô]te de beaune|\bvolnay\b|\bpommard\b/i,
+        swapIndex: 1, swap: { icon: '🍒', food: 'Duck with Cherry Sauce' } },
       { id: 'burgundy', label: 'Burgundy, France', test: /burgundy|bourgogne|c[oô]te d.?or|france/i,
         swapIndex: 1, swap: { icon: '🍲', food: 'Coq au Vin' } },
       { id: 'willamette', label: 'Willamette Valley, Oregon', test: /willamette|oregon/i,
         swapIndex: 3, swap: { icon: '🌰', food: 'Hazelnut Torte' } },
+    ] },
+  { id: 'nebbiolo', label: 'Nebbiolo', test: /nebbiolo|barolo|barbaresco|gattinara|roero/i,
+    pairings: [
+      { icon: '🥩', food: 'Braised Short Rib' },
+      { icon: '🍄', food: 'Wild Mushroom Risotto' },
+      { icon: '🧀', food: 'Aged Parmesan' },
+      { icon: '🍖', food: 'Osso Buco' },
+    ],
+    regions: [
+      { id: 'barolo', label: 'Barolo, Piedmont', test: /barolo/i,
+        swapIndex: 1, swap: { icon: '🍄', food: 'White Truffle Risotto' } },
+      { id: 'barbaresco', label: 'Barbaresco, Piedmont', test: /barbaresco/i,
+        swapIndex: 3, swap: { icon: '🦆', food: 'Duck Ragù' } },
+    ] },
+  // Sangiovese's own test deliberately matches "vino nobile" - Vino Nobile
+  // di Montepulciano is a Sangiovese wine from the Tuscan town of
+  // Montepulciano, not the unrelated Montepulciano grape (see that rule
+  // below). Sangiovese must stay ordered ahead of it so detectWinePairings'
+  // top-to-bottom .find claims any "vino nobile" text here first - the
+  // Montepulciano rule's own bare `montepulciano` regex would otherwise
+  // mismatch it.
+  { id: 'sangiovese', label: 'Sangiovese', test: /sangiovese|chianti|brunello|vino nobile|rosso di montalcino/i,
+    pairings: [
+      { icon: '🍝', food: 'Tomato Ragù' },
+      { icon: '🧀', food: 'Aged Pecorino' },
+      { icon: '🍕', food: 'Margherita Pizza' },
+      { icon: '🌭', food: 'Italian Sausage' },
+    ],
+    regions: [
+      { id: 'chianti-classico', label: 'Chianti Classico, Tuscany', test: /chianti classico|\bchianti\b/i,
+        swapIndex: 0, swap: { icon: '🥩', food: 'Bistecca alla Fiorentina' } },
+      { id: 'brunello', label: 'Brunello di Montalcino, Tuscany', test: /brunello|montalcino/i,
+        swapIndex: 3, swap: { icon: '🐗', food: 'Wild Boar Ragù' } },
+    ] },
+  { id: 'montepulciano', label: 'Montepulciano d\'Abruzzo', test: /montepulciano/i,
+    pairings: [
+      { icon: '🍝', food: 'Arrabbiata Pasta' },
+      { icon: '🌭', food: 'Grilled Sausage' },
+      { icon: '🧀', food: 'Aged Pecorino' },
+      { icon: '🥩', food: 'Lamb Skewers' },
+    ] },
+  { id: 'primitivo', label: 'Primitivo', test: /primitivo/i,
+    pairings: [
+      { icon: '🥩', food: 'Grilled Lamb' },
+      { icon: '🍝', food: 'Orecchiette & Sausage' },
+      { icon: '🧀', food: 'Aged Provolone' },
+      { icon: '🫒', food: 'Salumi & Olives' },
+    ] },
+  { id: 'barbera', label: 'Barbera', test: /barbera/i,
+    pairings: [
+      { icon: '🍄', food: 'Agnolotti del Plin' },
+      { icon: '🧀', food: 'Charcuterie Board' },
+      { icon: '🍝', food: 'Tomato Pasta' },
+      { icon: '🍖', food: 'Braised Short Rib' },
+    ],
+    regions: [
+      { id: 'barbera-alba', label: 'Barbera d\'Alba, Piedmont', test: /alba/i,
+        swapIndex: 0, swap: { icon: '🍄', food: 'Tajarin with Truffle' } },
+      { id: 'barbera-asti', label: 'Barbera d\'Asti, Piedmont', test: /\basti\b/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Bagna Cauda' } },
+    ] },
+  { id: 'pinotage', label: 'Pinotage', test: /pinotage/i,
+    pairings: [
+      { icon: '🔥', food: 'South African Braai' },
+      { icon: '🌭', food: 'Boerewors' },
+      { icon: '🧀', food: 'Smoked Gouda' },
+      { icon: '🍖', food: 'Bobotie' },
+    ] },
+  { id: 'xinomavro', label: 'Xinomavro', test: /xinomavro|\bnaoussa\b/i,
+    pairings: [
+      { icon: '🍖', food: 'Slow-Roasted Lamb' },
+      { icon: '🍅', food: 'Tomato-Braised Beef' },
+      { icon: '🧀', food: 'Aged Kefalotyri' },
+      { icon: '🫒', food: 'Olive Tapenade' },
+    ] },
+  { id: 'agiorgitiko', label: 'Agiorgitiko', test: /agiorgitiko|\bnemea\b/i,
+    pairings: [
+      { icon: '🍆', food: 'Moussaka' },
+      { icon: '🥩', food: 'Grilled Lamb' },
+      { icon: '🧀', food: 'Feta' },
+      { icon: '🍝', food: 'Pastitsio' },
+    ] },
+  { id: 'tempranillo', label: 'Tempranillo', test: /tempranillo|\brioja\b|ribera del duero/i,
+    pairings: [
+      { icon: '🐑', food: 'Roast Lamb' },
+      { icon: '🥓', food: 'Jamón Ibérico' },
+      { icon: '🧀', food: 'Manchego' },
+      { icon: '🌶️', food: 'Chorizo' },
+    ],
+    regions: [
+      { id: 'rioja', label: 'Rioja, Spain', test: /\brioja\b/i,
+        swapIndex: 1, swap: { icon: '🐖', food: 'Cochinillo Asado' } },
+      { id: 'ribera-del-duero', label: 'Ribera del Duero, Spain', test: /ribera del duero|ribera del/i,
+        swapIndex: 0, swap: { icon: '🥩', food: 'Chuletón' } },
+    ] },
+  { id: 'garnacha', label: 'Garnacha / Grenache', test: /garnacha|grenache/i,
+    pairings: [
+      { icon: '🌭', food: 'Grilled Sausage' },
+      { icon: '🧀', food: 'Manchego' },
+      { icon: '🥘', food: 'Paella' },
+      { icon: '🌶️', food: 'Spanish Tapas' },
+    ],
+    regions: [
+      { id: 'priorat', label: 'Priorat, Catalonia', test: /priorat/i,
+        swapIndex: 3, swap: { icon: '🍫', food: 'Dark Chocolate' } },
+      { id: 'mclaren-vale', label: 'McLaren Vale, Australia', test: /mclaren vale/i,
+        swapIndex: 0, swap: { icon: '🥩', food: 'Char-Grilled Lamb' } },
     ] },
   { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
     pairings: [
@@ -294,12 +478,27 @@ const WINE_PAIRING_RULES = [
       { icon: '🍫', food: 'Dark Chocolate' },
       { icon: '🍕', food: 'Hearty Pizza' },
     ] },
-  { id: 'chardonnay', label: 'Chardonnay', test: /chardonnay/i,
+  // White Burgundy is Chardonnay's own home turf, and (like red Burgundy
+  // and Bordeaux) is labeled by village rather than grape - Chablis is
+  // 100% Chardonnay by AOC rule, and Meursault/Puligny-Montrachet/
+  // Chassagne-Montrachet produce no red, so all four are unambiguous
+  // additions to the top-level test.
+  { id: 'chardonnay', label: 'Chardonnay', test: /chardonnay|bourgogne blanc|\bchablis\b|meursault|puligny-montrachet|chassagne-montrachet/i,
     pairings: [
       { icon: '🦞', food: 'Lobster' },
       { icon: '🍗', food: 'Roast Chicken' },
       { icon: '🍝', food: 'Creamy Pasta' },
       { icon: '🌽', food: 'Grilled Corn' },
+    ],
+    regions: [
+      { id: 'chablis', label: 'Chablis, France', test: /\bchablis\b/i,
+        swapIndex: 3, swap: { icon: '🦪', food: 'Fresh Oysters' } },
+      { id: 'cote-de-beaune', label: 'Côte de Beaune, France', test: /c[oô]te de beaune|meursault|puligny-montrachet|chassagne-montrachet/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Sole Meunière' } },
+      { id: 'sonoma-coast', label: 'Sonoma Coast, California', test: /sonoma coast|russian river|\bsonoma\b/i,
+        swapIndex: 3, swap: { icon: '🐟', food: 'Grilled Halibut' } },
+      { id: 'napa', label: 'Napa Valley, California', test: /napa/i,
+        swapIndex: 2, swap: { icon: '🧈', food: 'Butter-Basted Scallops' } },
     ] },
   { id: 'sauvignon-blanc', label: 'Sauvignon Blanc', test: /sauvignon blanc/i,
     pairings: [
@@ -314,13 +513,70 @@ const WINE_PAIRING_RULES = [
       { id: 'marlborough', label: 'Marlborough, New Zealand', test: /marlborough|new zealand|\bnz\b/i,
         swapIndex: 2, swap: { icon: '🥝', food: 'Green-Lipped Mussels' } },
     ] },
+  { id: 'semillon', label: 'Semillon', test: /s[eé]millon/i,
+    pairings: [
+      { icon: '🦪', food: 'Fresh Oysters' },
+      { icon: '🍤', food: 'Fried Calamari' },
+      { icon: '🐟', food: 'Barramundi' },
+      { icon: '🧀', food: 'Aged Cheddar' },
+    ],
+    regions: [
+      { id: 'hunter-valley', label: 'Hunter Valley, Australia', test: /hunter valley/i,
+        swapIndex: 1, swap: { icon: '🍯', food: 'Honeyed Toast & Brie' } },
+      { id: 'sauternes', label: 'Sauternes, France', test: /sauternes|bordeaux/i,
+        swapIndex: 3, swap: { icon: '🦆', food: 'Foie Gras' } },
+    ] },
+  { id: 'chenin-blanc', label: 'Chenin Blanc', test: /chenin blanc/i,
+    pairings: [
+      { icon: '🍗', food: 'Roast Chicken' },
+      { icon: '🍤', food: 'Shrimp Curry' },
+      { icon: '🐐', food: 'Soft Goat Cheese' },
+      { icon: '🍏', food: 'Green Apple Salad' },
+    ],
+    regions: [
+      { id: 'stellenbosch', label: 'Stellenbosch, South Africa', test: /stellenbosch|swartland|south africa/i,
+        swapIndex: 1, swap: { icon: '🔥', food: 'Braai-Grilled Prawns' } },
+      { id: 'vouvray', label: 'Vouvray, France', test: /vouvray|anjou|loire/i,
+        swapIndex: 3, swap: { icon: '🍑', food: 'Poached Pear' } },
+    ] },
+  { id: 'assyrtiko', label: 'Assyrtiko', test: /assyrtiko|santorini/i,
+    pairings: [
+      { icon: '🐙', food: 'Grilled Octopus' },
+      { icon: '🦪', food: 'Fresh Oysters' },
+      { icon: '🥗', food: 'Greek Salad' },
+      { icon: '🐟', food: 'Grilled Sea Bass' },
+    ] },
+  { id: 'retsina', label: 'Retsina', test: /retsina/i,
+    pairings: [
+      { icon: '🐙', food: 'Grilled Octopus' },
+      { icon: '🫒', food: 'Greek Meze' },
+      { icon: '🧀', food: 'Feta & Olives' },
+      { icon: '🍗', food: 'Souvlaki' },
+    ] },
   { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', test: /pinot grigio|pinot gris/i,
     pairings: [
       { icon: '🐟', food: 'Light Seafood' },
       { icon: '🥗', food: 'Garden Salad' },
       { icon: '🍋', food: 'Citrus Dishes' },
       { icon: '🍤', food: 'Shrimp Scampi' },
+    ],
+    regions: [
+      { id: 'alto-adige', label: 'Alto Adige, Italy', test: /alto adige|friuli|veneto|trentino/i,
+        swapIndex: 2, swap: { icon: '🍋', food: 'Lemon Risotto' } },
+      { id: 'alsace-pinot-gris', label: 'Alsace, France', test: /alsace|france/i,
+        swapIndex: 3, swap: { icon: '🥧', food: 'Choucroute Garnie' } },
     ] },
+  // Riesling carries both refinement tiers - `regions` (where it's from)
+  // and `sweetness` (Germany's own Pradikatswein ripeness scale, the thing
+  // "German wine classification" usually means, since it's printed on the
+  // label right alongside the region and swings the actual food pairing
+  // far more than region does - a bone-dry Kabinett Trocken and a
+  // dessert-sweet Trockenbeerenauslese are both "Mosel Riesling" but pair
+  // with nothing like the same food). Both tiers are checked and, if they
+  // both match (e.g. "Spatlese Pfalz"), both apply at once - see
+  // detectWinePairings below. To make that safe, `regions` here only ever
+  // swaps slot 0 or 2 and `sweetness` only ever swaps slot 1 or 3, so the
+  // two tiers can never silently overwrite each other's slot.
   { id: 'riesling', label: 'Riesling', test: /riesling/i,
     pairings: [
       { icon: '🌶️', food: 'Spicy Asian' },
@@ -329,10 +585,78 @@ const WINE_PAIRING_RULES = [
       { icon: '🍣', food: 'Sushi' },
     ],
     regions: [
-      { id: 'mosel', label: 'Mosel, Germany', test: /mosel|germany|rheingau/i,
+      { id: 'rheingau', label: 'Rheingau, Germany', test: /rheingau/i,
+        swapIndex: 0, swap: { icon: '🌿', food: 'Frankfurt Green Sauce' } },
+      { id: 'pfalz', label: 'Pfalz, Germany', test: /pfalz|palatinate/i,
+        swapIndex: 0, swap: { icon: '🫓', food: 'Flammkuchen' } },
+      { id: 'nahe', label: 'Nahe, Germany', test: /\bnahe\b/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Poached Trout' } },
+      { id: 'mosel', label: 'Mosel, Germany', test: /mosel|germany/i,
         swapIndex: 2, swap: { icon: '🥨', food: 'Wiener Schnitzel' } },
       { id: 'alsace', label: 'Alsace, France', test: /alsace|france/i,
         swapIndex: 0, swap: { icon: '🥧', food: 'Tarte Flambée' } },
+      { id: 'clare-valley', label: 'Clare Valley, Australia', test: /clare valley|eden valley/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Fish and Chips' } },
+    ],
+    sweetness: [
+      { id: 'trocken', label: 'Trocken (Dry)', test: /\btrocken\b/i,
+        swapIndex: 1, swap: { icon: '🦪', food: 'Fresh Oysters' } },
+      { id: 'kabinett', label: 'Kabinett', test: /kabinett/i,
+        swapIndex: 1, swap: { icon: '🥬', food: 'White Asparagus' } },
+      { id: 'spatlese', label: 'Spätlese', test: /sp[aä]tlese/i,
+        swapIndex: 3, swap: { icon: '🍛', food: 'Thai Green Curry' } },
+      { id: 'auslese', label: 'Auslese & Beyond', test: /\bauslese\b|beerenauslese|trockenbeerenauslese|eiswein|ice wine/i,
+        swapIndex: 3, swap: { icon: '🧀', food: 'Blue Cheese' } },
+    ] },
+  { id: 'albarino', label: 'Albariño', test: /albari[nñ]o|alvarinho/i,
+    pairings: [
+      { icon: '🦪', food: 'Oysters' },
+      { icon: '🐙', food: 'Grilled Octopus' },
+      { icon: '🦐', food: 'Garlic Shrimp' },
+      { icon: '🧀', food: 'Manchego' },
+    ],
+    regions: [
+      { id: 'rias-baixas', label: 'Rías Baixas, Galicia', test: /r[ií]as baixas|galicia/i,
+        swapIndex: 1, swap: { icon: '🐙', food: 'Pulpo a la Gallega' } },
+      { id: 'vinho-verde', label: 'Vinho Verde, Portugal', test: /vinho verde|portugal|alvarinho/i,
+        swapIndex: 3, swap: { icon: '🐟', food: 'Bacalhau Fritters' } },
+    ] },
+  { id: 'verdejo', label: 'Verdejo', test: /verdejo|\brueda\b/i,
+    pairings: [
+      { icon: '🥗', food: 'Fresh Salad' },
+      { icon: '🐟', food: 'Grilled Fish' },
+      { icon: '🫒', food: 'Spanish Tapas' },
+      { icon: '🐐', food: 'Fresh Goat Cheese' },
+    ] },
+  // Ordered after albarino (above) rather than before it: most Vinho Verde
+  // on a US shelf is a blend of several native grapes (Loureiro, Arinto,
+  // Trajadura...) and just says "Vinho Verde" with no grape named at all,
+  // but the region's flagship sub-zone (Monção e Melgaço) is varietal
+  // Alvarinho and often does say so on the label - see the Albariño rule's
+  // own Vinho Verde region entry above. Checking albarino's test first
+  // means a title naming both ("Soalheiro Alvarinho, Vinho Verde") still
+  // resolves to the more specific Albariño match; this rule only catches
+  // Vinho Verde titles that never name a grape at all.
+  { id: 'vinho-verde', label: 'Vinho Verde', test: /vinho verde/i,
+    pairings: [
+      { icon: '🦐', food: 'Grilled Shrimp' },
+      { icon: '🫒', food: 'Portuguese Tapas' },
+      { icon: '🍋', food: 'Ceviche' },
+      { icon: '🐟', food: 'Grilled Sardines' },
+    ] },
+  { id: 'douro-red', label: 'Douro Red', test: /\bdouro\b|touriga nacional|touriga franca/i,
+    pairings: [
+      { icon: '🥩', food: 'Bife à Portuguesa' },
+      { icon: '🍲', food: 'Cozido à Portuguesa' },
+      { icon: '🧀', food: 'Serra da Estrela Cheese' },
+      { icon: '🌭', food: 'Alheira Sausage' },
+    ] },
+  { id: 'port', label: 'Port', test: /\bport\b|\bporto\b/i,
+    pairings: [
+      { icon: '🧀', food: 'Blue Cheese' },
+      { icon: '🍫', food: 'Dark Chocolate' },
+      { icon: '🥜', food: 'Toasted Almonds' },
+      { icon: '🫐', food: 'Fig & Walnut Tart' },
     ] },
   { id: 'moscato', label: 'Moscato', test: /moscato/i,
     pairings: [
@@ -341,12 +665,20 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Mild Cheese' },
       { icon: '🥐', food: 'Pastries' },
     ] },
-  { id: 'sparkling', label: 'Champagne / Sparkling', test: /champagne|sparkling|prosecco|\bcava\b/i,
+  { id: 'sparkling', label: 'Champagne / Sparkling', test: /champagne|sparkling|prosecco|\bcava\b|franciacorta/i,
     pairings: [
       { icon: '🍟', food: 'Fried Appetizers' },
       { icon: '🦪', food: 'Oysters' },
       { icon: '🍰', food: 'Light Desserts' },
       { icon: '🍓', food: 'Fresh Berries' },
+    ],
+    regions: [
+      { id: 'prosecco', label: 'Prosecco, Veneto', test: /prosecco|veneto|conegliano|valdobbiadene/i,
+        swapIndex: 0, swap: { icon: '🍕', food: 'Cicchetti & Prosciutto' } },
+      { id: 'franciacorta', label: 'Franciacorta, Lombardy', test: /franciacorta|lombardy/i,
+        swapIndex: 3, swap: { icon: '🍤', food: 'Fritto Misto' } },
+      { id: 'cava', label: 'Cava, Catalonia', test: /\bcava\b|catalonia|catalunya|pened[eè]s/i,
+        swapIndex: 1, swap: { icon: '🥓', food: 'Jamón Ibérico' } },
     ] },
   { id: 'rose', label: 'Rosé', test: /ros[eé]/i,
     pairings: [
@@ -358,25 +690,32 @@ const WINE_PAIRING_RULES = [
 ];
 
 // Tier 1: which varietal rule matches at all. Tier 2, only once tier 1 has
-// a hit: does that varietal's own `regions` list (if it has one) also
-// match the same text? A region match returns a *new* object - the
-// varietal's label with " — Region" appended and its one swapped-in
-// pairing - so callers (Suggest Pairings' status text/candidate chips
-// below, and buildPairingsHtml's already-picked-pairings path, which never
-// calls this) don't need to know region exists at all. No region match
-// (including a varietal with no `regions` key) returns the varietal rule
-// object itself, untouched - exactly today's behavior.
+// a hit: does that varietal's own `regions` list and/or `sweetness` list
+// (either or both, if it has them) also match the same text? Each is
+// independent - a rule with only `regions` (most of them) behaves exactly
+// as before, and Riesling's `regions` and `sweetness` can both match the
+// same title at once ("Spatlese Pfalz"), each contributing its own slot
+// swap and its own " — Label" suffix (region first, then sweetness). No
+// match on either tier (including a varietal with neither key) returns
+// the varietal rule object itself, untouched - exactly today's behavior.
 function detectWinePairings(text) {
   const haystack = text ? String(text) : '';
   const varietal = WINE_PAIRING_RULES.find(({ test }) => test.test(haystack));
   if (!varietal) return null;
   const region = varietal.regions && varietal.regions.find(({ test }) => test.test(haystack));
-  if (!region) return varietal;
-  return {
-    ...varietal,
-    label: `${varietal.label} — ${region.label}`,
-    pairings: varietal.pairings.map((p, i) => (i === region.swapIndex ? region.swap : p)),
-  };
+  const level = varietal.sweetness && varietal.sweetness.find(({ test }) => test.test(haystack));
+  if (!region && !level) return varietal;
+  let label = varietal.label;
+  let pairings = varietal.pairings;
+  if (region) {
+    label += ` — ${region.label}`;
+    pairings = pairings.map((p, i) => (i === region.swapIndex ? region.swap : p));
+  }
+  if (level) {
+    label += region ? `, ${level.label}` : ` — ${level.label}`;
+    pairings = pairings.map((p, i) => (i === level.swapIndex ? level.swap : p));
+  }
+  return { ...varietal, label, pairings };
 }
 
 // Renders whatever's in talker.pairings ([{icon, food}], set by the Food
