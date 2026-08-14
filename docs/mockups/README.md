@@ -97,6 +97,26 @@ browser.
   <code>mash_bills</code> today has no parent-company, category,
   tasting-note, or confidence columns; this mockup is scoped to the page
   and scoring design, not the data-model changes it would need.
+- **bourbon-library-app-shell.html** &mdash; follow-up to
+  bourbon-profile-page.html above: confirms **Bourbon Shelf Talkers** (the
+  mash bill chip builder, Nose/Palate/Finish, Store Pick) stays gated
+  behind Settings &rarr; Experimental Features exactly as today, but takes
+  the **Bourbon Library** itself out from under that toggle and out of
+  Tools&hellip; into something that reads as its own space within the
+  program. Compares three entry points &mdash; a top-level **Talker
+  Builder / Bourbon Library** tab switch (recommended), a persistent
+  sidebar icon rail, and a header launcher button &mdash; with a live
+  Experimental Features switch proving the entry point never reacts to it,
+  only the talker form's own fields do. Once inside, the Library gets a
+  distinct dark "reading room" header band (same fonts/radii/accent family
+  as the rest of the app, just a different room) with search, a card grid
+  (swaps the flat table for something more browsable), working confidence
+  filter chips (All / Confirmed / Reported / **Needs verification**, the
+  last one doubling as a real research to-do list), and the profile page
+  from bourbon-profile-page.html re-chromed with a back-to-grid breadcrumb.
+  Presentation only &mdash; storage/sync stays the existing Mash
+  Bill Library design; open questions (a real "Add a bourbon" flow, grid
+  vs. table at scale) are called out rather than resolved.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

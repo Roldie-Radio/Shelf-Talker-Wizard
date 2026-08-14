@@ -1,0 +1,667 @@
+<title>Bourbon Library App Shell — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - same base set as bourbon-profile-page.html/mash-bill-library.html
+   so this sits in the same visual system. Adds one new fixed set for the
+   Library's own "app-within-an-app" band (--lib-band-*) - declared once,
+   not re-toggled per theme, same precedent as --ink/--sale-red above:
+   this is a brand/identity color, not a UI-chrome surface color.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+  --ui-low: #a8391a;
+  --ui-low-tint: rgba(168, 57, 26, 0.1);
+
+  --lib-band-bg: #241a10;
+  --lib-band-bg-soft: #2f2216;
+  --lib-band-ink: #f3e6cf;
+  --lib-band-muted: #c9b89a;
+  --lib-band-accent: #d9a441;
+  --lib-band-accent-soft: rgba(217, 164, 65, 0.16);
+  --lib-band-border: #4a3a26;
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 2rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro h2.section-h { font-size: 1.15rem; margin-top: 0.4rem; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:focus-visible, input:focus-visible, .pill:focus-visible, .card:focus-visible, .chip-filter:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+.pill-group { display: inline-flex; gap: 0.3rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.2rem; flex-wrap: wrap; }
+.pill { border: none; background: transparent; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
+.pill.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+
+/* ---------- switch component ---------- */
+.switch-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 600; }
+.switch { position: relative; width: 40px; height: 22px; flex: 0 0 auto; }
+.switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+.switch__track { position: absolute; inset: 0; background: var(--ui-border); border-radius: 999px; transition: background 0.15s; }
+.switch__thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--ui-panel); box-shadow: 0 1px 2px var(--ui-shadow); transition: transform 0.15s; }
+.switch input:checked ~ .switch__track { background: var(--ui-accent); }
+.switch input:checked ~ .switch__thumb { transform: translateX(18px); }
+.switch-caption { font-size: 0.8rem; color: var(--ui-ink-soft); font-weight: 400; line-height: 1.5; }
+
+/* ---------- section 1: entry-point illustrations ---------- */
+.entry-pad { padding: 1.3rem 1.5rem 1.6rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.entry-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.option-card { border: 1px solid var(--ui-border); border-radius: 10px; overflow: hidden; background: var(--ui-panel-sunken); }
+.option-card__label { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.78rem; font-weight: 700; color: var(--ui-ink-soft); border-bottom: 1px solid var(--ui-border); background: var(--ui-panel-alt); }
+.rec-badge { font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--ui-good-tint); color: var(--ui-good); padding: 0.1rem 0.45rem; border-radius: 999px; }
+.mini-app { padding: 0; }
+.mini-toplevel-tabs { display: flex; gap: 0.25rem; padding: 0.6rem 0.9rem 0; background: var(--ui-panel); }
+.mini-tab { border: 1px solid var(--ui-border); border-bottom: none; background: var(--ui-panel-sunken); color: var(--ui-ink-soft); font-family: inherit; font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 8px 8px 0 0; cursor: default; }
+.mini-tab.is-active { background: var(--ui-panel); color: var(--ui-ink); }
+.mini-tab.is-library { color: var(--lib-band-accent); }
+.mini-subbar { padding: 0.65rem 0.9rem; background: var(--ui-panel); border-top: 1px solid var(--ui-border); font-size: 0.78rem; color: var(--ui-muted); }
+.mini-app--sidebar { display: flex; }
+.mini-rail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; padding: 0.8rem 0.5rem; background: var(--ui-panel-alt); border-right: 1px solid var(--ui-border); }
+.mini-rail__icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1rem; color: var(--ui-ink-soft); }
+.mini-rail__icon.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.mini-rail__icon.is-library { color: var(--lib-band-accent); }
+.mini-rail-content { flex: 1; padding: 0.9rem 1rem; font-size: 0.8rem; color: var(--ui-muted); background: var(--ui-panel); }
+.mini-appbar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0.9rem; background: var(--ui-panel); gap: 0.6rem; flex-wrap: wrap; }
+.mini-appbar > span:first-child { font-size: 0.85rem; font-weight: 700; }
+.mini-appbar__actions { display: flex; gap: 0.4rem; }
+.btn--library-launch { background: var(--lib-band-bg); border-color: var(--lib-band-bg); color: var(--lib-band-accent); }
+.btn--library-launch:hover { background: var(--lib-band-bg-soft); }
+.option-card__caption { padding: 0.7rem 0.85rem; font-size: 0.78rem; color: var(--ui-ink-soft); line-height: 1.5; border-top: 1px solid var(--ui-border); }
+.options-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; }
+@media (max-width: 900px) { .options-grid { grid-template-columns: 1fr; } }
+.invariant-note { display: flex; gap: 0.5rem; align-items: flex-start; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.82rem; font-weight: 600; }
+
+/* ---------- section 2: the library shell itself ---------- */
+.lib-shell { background: var(--ui-panel); }
+.lib-band { background: var(--lib-band-bg); color: var(--lib-band-ink); padding: 1.1rem 1.6rem; }
+.lib-band__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.lib-brand { display: flex; align-items: center; gap: 0.7rem; }
+.lib-brand__icon { width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(155deg, var(--lib-band-accent), #a86a24); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex: 0 0 auto; }
+.lib-brand__name { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; }
+.lib-brand__tag { font-size: 0.72rem; color: var(--lib-band-muted); margin-top: 0.1rem; }
+.lib-back { color: var(--lib-band-muted); font-size: 0.8rem; text-decoration: none; font-weight: 600; }
+.lib-back:hover { color: var(--lib-band-ink); }
+.lib-search { margin-top: 1rem; }
+.lib-search input { width: 100%; font: inherit; font-size: 0.92rem; padding: 0.65rem 0.9rem; border-radius: 8px; border: 1px solid var(--lib-band-border); background: var(--lib-band-bg-soft); color: var(--lib-band-ink); }
+.lib-search input::placeholder { color: var(--lib-band-muted); }
+.lib-chips { display: flex; gap: 0.4rem; margin-top: 0.7rem; flex-wrap: wrap; }
+.chip-filter { border: 1px solid var(--lib-band-border); background: var(--lib-band-bg-soft); color: var(--lib-band-muted); font-family: inherit; font-size: 0.76rem; font-weight: 700; padding: 0.32rem 0.7rem; border-radius: 999px; cursor: pointer; }
+.chip-filter.is-active { background: var(--lib-band-accent-soft); border-color: var(--lib-band-accent); color: var(--lib-band-accent); }
+.lib-stats { display: flex; gap: 1.4rem; margin-top: 0.9rem; flex-wrap: wrap; }
+.lib-stat { display: flex; flex-direction: column; }
+.lib-stat b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.lib-stat span { font-size: 0.7rem; color: var(--lib-band-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.lib-body { padding: 1.3rem 1.6rem 1.7rem; min-height: 480px; }
+
+/* card grid (home view) */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
+.card { text-align: left; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-panel-sunken); padding: 0.9rem 1rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.5rem; }
+.card:hover { border-color: var(--ui-accent); box-shadow: 0 4px 14px var(--ui-shadow); }
+.card__title { font-size: 0.98rem; font-weight: 700; }
+.card__sub { font-size: 0.76rem; color: var(--ui-muted); }
+.card__bar { display: flex; width: 100%; height: 8px; border-radius: 3px; overflow: hidden; border: 1px solid rgba(0,0,0,0.12); }
+.card__bar span { height: 100%; }
+.card__bar--empty { background: repeating-linear-gradient(135deg, var(--ui-code-bg), var(--ui-code-bg) 5px, var(--ui-panel-alt) 5px, var(--ui-panel-alt) 10px); }
+.card__footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.1rem; }
+
+.conf-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.12rem 0.5rem 0.12rem 0.4rem; border-radius: 999px; border: 1px solid transparent; }
+.conf-badge--confirmed { background: var(--ui-good-tint); color: var(--ui-good); border-color: color-mix(in srgb, var(--ui-good) 40%, transparent); }
+.conf-badge--reported  { background: var(--ui-warn-tint); color: var(--ui-warn); border-color: color-mix(in srgb, var(--ui-warn) 40%, transparent); }
+.conf-badge--estimated { background: var(--ui-low-tint);  color: var(--ui-low);  border-color: color-mix(in srgb, var(--ui-low) 40%, transparent); }
+.conf-badge--unknown   { background: var(--ui-code-bg);   color: var(--ui-muted); }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--ui-muted); font-size: 0.88rem; }
+
+/* profile view (reused/adapted from bourbon-profile-page.html, re-chromed) */
+.crumb { font-size: 0.8rem; color: var(--ui-muted); margin-bottom: 1rem; }
+.crumb button { background: none; border: none; color: var(--ui-accent-ink); font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0; }
+.profile-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1.2rem; }
+.profile-head h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+.profile-head__by { margin: 0.25rem 0 0; font-size: 0.88rem; color: var(--ui-ink-soft); }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; }
+.tag { font-size: 0.72rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.18rem 0.55rem; border-radius: 999px; }
+.profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.1rem; align-items: start; }
+@media (max-width: 760px) { .profile-grid { grid-template-columns: 1fr; } }
+.block { border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1rem 1.1rem; background: var(--ui-panel); margin-bottom: 1.1rem; }
+.block h3 { font-size: 0.92rem; margin-bottom: 0.75rem; }
+.grain-bar { display: flex; width: 100%; height: 16px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15); }
+.grain-bar__seg { height: 100%; }
+.grain-bar--empty { background: repeating-linear-gradient(135deg, var(--ui-code-bg), var(--ui-code-bg) 6px, var(--ui-panel-sunken) 6px, var(--ui-panel-sunken) 12px); border-style: dashed; }
+.grain-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.7rem; margin-top: 0.4rem; font-size: 0.78rem; font-weight: 700; }
+.grain-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.grain-swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.grain-empty-note { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.5rem; }
+.conf-meter { display: inline-flex; gap: 2px; }
+.conf-meter span { width: 6px; height: 6px; border-radius: 50%; background: var(--ui-border); }
+.conf-meter span.is-on { background: currentColor; }
+.conf-block { margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px dashed var(--ui-border); }
+.conf-block__row { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.conf-block__note { font-size: 0.84rem; color: var(--ui-ink-soft); line-height: 1.5; margin: 0.5rem 0 0; }
+.conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
+details.sources { margin-top: 0.5rem; }
+details.sources summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--ui-accent-ink); list-style: none; }
+details.sources summary::-webkit-details-marker { display: none; }
+details.sources summary::before { content: "▸ "; }
+details.sources[open] summary::before { content: "▾ "; }
+.sources-list { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.8rem; color: var(--ui-ink-soft); line-height: 1.7; }
+.sources-list a { color: var(--ui-accent-ink); }
+.tasting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+@media (max-width: 560px) { .tasting-grid { grid-template-columns: 1fr; } }
+.tasting-card { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.8rem; }
+.tasting-card h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.35rem; }
+.tasting-card p { margin: 0; font-size: 0.86rem; color: var(--ui-ink); line-height: 1.45; }
+.tasting-source { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.6rem; }
+.info-card dl { margin: 0; display: flex; flex-direction: column; gap: 0.65rem; }
+.info-card dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.1rem; }
+.info-card dd { margin: 0; font-size: 0.88rem; font-weight: 600; }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed structure &middot; not part of the running app</p>
+    <h1>Bourbon Library App Shell</h1>
+    <p>
+      Confirmed direction: <strong>Bourbon Shelf Talkers</strong> (the mash bill chip builder, Nose/Palate/Finish
+      fields, and Store Pick ribbon on an actual talker) stays exactly where it is today, gated behind
+      Settings &rarr; Experimental Features. The <strong>Bourbon Library</strong> &mdash; the browsable reference
+      built on bourbon-profile-page.html &mdash; is the part coming out from under that toggle and out from
+      Tools&hellip;, into something that reads as its own space within the program rather than a management dialog
+      for a talker-building feature. This mockup proposes how it gets there: where the entry point lives, and what
+      the Library looks like once you're inside it.
+    </p>
+  </div>
+
+  <!-- ============== SECTION 1: entry point ============== -->
+  <div class="intro">
+    <h2 class="section-h">Where it lives</h2>
+    <p>Three ways to surface a Library entry point in the existing app chrome, independent of whether Bourbon
+    Shelf Talkers itself is on. Flip the switch below &mdash; the entry point never reacts to it.</p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; app chrome</div>
+    </div>
+    <div class="entry-pad">
+      <div class="entry-toolbar">
+        <div class="switch-row">
+          <label class="switch">
+            <input type="checkbox" id="experimentalToggle" checked>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+          <span>Bourbon Shelf Talkers (experimental feature)</span>
+        </div>
+        <div class="pill-group" role="group" aria-label="Compare entry point">
+          <button type="button" class="pill is-active" data-entry="tabs">Top Nav Tab</button>
+          <button type="button" class="pill" data-entry="sidebar">Sidebar Rail</button>
+          <button type="button" class="pill" data-entry="launcher">Header Launcher</button>
+        </div>
+      </div>
+
+      <p class="switch-caption" id="switchCaption"></p>
+
+      <div class="options-grid" id="optionsGrid"></div>
+
+      <div class="invariant-note">
+        &#9989; In every option above, the Bourbon Library entry point stays visible and enabled no matter what the
+        switch is set to &mdash; only the Mash Bill / Tasting Notes / Store Pick fields on the talker form itself
+        come and go with it, same as they do today.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== SECTION 2: the library itself ============== -->
+  <div class="intro">
+    <h2 class="section-h">Inside the Bourbon Library</h2>
+    <p>
+      A distinct dark "reading room" band (vs. the light, form-heavy Talker Builder) signals the shift without
+      leaving the app &mdash; same fonts, same corner radii, same gold accent family, just a different room. Search
+      and browse first, profile pages second; nothing here is a talker-editing surface. Try the confidence filter
+      chips, or click a card.
+    </p>
+  </div>
+
+  <div class="device-frame lib-shell">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Bourbon Library</div>
+    </div>
+    <div class="lib-band">
+      <div class="lib-band__top">
+        <div class="lib-brand">
+          <div class="lib-brand__icon">&#129348;</div>
+          <div>
+            <div class="lib-brand__name">Bourbon Library</div>
+            <div class="lib-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+        <a href="#" class="lib-back" id="backToBuilder">&larr; Back to Talker Builder</a>
+      </div>
+      <div class="lib-search"><input type="text" id="librarySearch" placeholder="Search by name, distillery, or parent company&hellip;"></div>
+      <div class="lib-chips" id="libraryChips"></div>
+      <div class="lib-stats" id="libraryStats"></div>
+    </div>
+    <div class="lib-body" id="libraryBody"></div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Recommendation: Top Nav Tab</h3>
+        <p>Reads most clearly as "a second app living here" while reusing a pattern staff already know from
+        switching workspaces in other tools. <strong>Sidebar Rail</strong> is the most scalable if more standalone
+        reference tools show up later, but it restructures the entire app shell to get there &mdash; a bigger
+        change than this one feature justifies today. <strong>Header Launcher</strong> is the smallest change but
+        reads as "one more button," not a separate space &mdash; weakest fit for what was actually asked for.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Decoupled from the experimental flag on purpose</h3>
+        <p>Bourbon Shelf Talkers stays experimental because it changes what prints on a real, customer-facing
+        talker &mdash; that's still worth gating. The Library is read-only staff reference; nothing about browsing
+        it affects a printed sign. Tying its visibility to an unrelated print-feature flag was never really about
+        risk, just an accident of where the data happened to live first.</p>
+      </div>
+    </div>
+    <div class="notes-card">
+      <h3>Confidence filter chips are a real staff workflow, not decoration</h3>
+      <p>"Needs verification" surfaces exactly the Estimated/Unknown entries from the Mash Bill Confidence work
+      &mdash; a standing to-do list of what's worth researching next, for free, out of data the Library already
+      has. Worth keeping as a real filter rather than trimming it in an actual build.</p>
+    </div>
+    <div class="notes-card">
+      <h3>Open questions</h3>
+      <ul>
+        <li>Does "Add a bourbon" belong in the Library itself now (a real add-entry flow, not just the Edit
+        Talker form's "Save this mash bill" checkbox), now that it's meant to stand on its own as a reference?</li>
+        <li>Sync/storage stays exactly as designed for the Mash Bill Library (Server-PC-hosted, every register
+        polls) &mdash; the app-shell change here is presentation only, not a new data architecture.</li>
+        <li>Card grid vs. table for Browse: grid reads more "reference app," but a dense table scales better past
+        a few dozen entries. Worth revisiting once real shelf data is seeded in.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const GRAIN_COLORS = { Corn: '#d9a441', Rye: '#8a3a2c', Wheat: '#c9b464', 'Malted Barley': '#a67c3d', 'Malted Rye': '#6e2a1f', Oat: '#ddd0ad' };
+const FALLBACK_COLOR = '#b8ab98';
+const TIER_META = {
+  confirmed: { label: 'Confirmed', on: 4, colorVar: '--ui-good' },
+  reported:  { label: 'Reported',  on: 3, colorVar: '--ui-warn' },
+  estimated: { label: 'Estimated', on: 2, colorVar: '--ui-low' },
+  unknown:   { label: 'Unknown',   on: 0, colorVar: '--ui-muted' },
+};
+
+const bourbons = [
+  { id: 1, title: 'Buffalo Trace', distillery: 'Buffalo Trace Distillery', parent: 'Sazerac Company',
+    tags: ['Straight Bourbon', 'Mash Bill #1 (Low-Rye)'],
+    grains: [{ g: 'Corn', p: 89.5 }, { g: 'Rye', p: 7 }, { g: 'Malted Barley', p: 3.5 }],
+    confidence: { tier: 'reported', verified: 'Aug 2026',
+      note: 'Sazerac has never officially published exact percentages. These figures are what multiple independent industry sources consistently converge on.',
+      sources: [
+        { label: 'VinePair — The Complete Guide to Each of Buffalo Trace’s Elusive Mash Bills', url: 'https://vinepair.com/articles/buffalo-trace-mash-bill-guide/' },
+        { label: 'Whisky Advocate — The Mashbills of Buffalo Trace', url: 'https://whiskyadvocate.com/The-Mashbills-of-Buffalo-Trace' },
+      ] },
+    tasting: { nose: 'Vanilla, brown sugar, a light hit of oak spice.', palate: 'Caramel corn, mint, oak.', finish: 'Long, warm, a trace of smoke.', source: 'Distiller.com (auto-filled)' } },
+  { id: 2, title: 'Four Roses Single Barrel', distillery: 'Four Roses Distillery', parent: 'Kirin Holdings (Four Roses Distillery LLC)',
+    tags: ['Single Barrel Bourbon', 'Recipe OBSK'],
+    grains: [{ g: 'Corn', p: 60 }, { g: 'Rye', p: 35 }, { g: 'Malted Barley', p: 5 }],
+    confidence: { tier: 'confirmed', verified: 'Aug 2026',
+      note: 'Four Roses publishes both base mash bills and all ten recipe codes directly on their own site.',
+      sources: [ { label: 'Four Roses — Our Recipes (official)', url: 'https://www.fourrosesbourbon.com/our-recipes' } ] },
+    tasting: { nose: 'Ripe berries, caramel, floral notes.', palate: 'Cinnamon, dried fruit, toasted oak.', finish: 'Spicy and warm, lingers.', source: 'Distiller.com (auto-filled)' } },
+  { id: 3, title: "Blanton's Single Barrel", distillery: 'Buffalo Trace Distillery', parent: 'Sazerac Company',
+    tags: ['Single Barrel Bourbon', 'Mash Bill #2 (Higher-Rye)'],
+    grains: [{ g: 'Corn', p: 87.5 }, { g: 'Rye', p: 9 }, { g: 'Malted Barley', p: 3.5 }],
+    confidence: { tier: 'estimated', verified: 'Aug 2026',
+      note: 'Corn and malted barley are fairly consistent across sources, but the rye share is disputed — estimates range from about 9% to as high as 15%.',
+      sources: [ { label: 'VinePair — The Complete Guide to Each of Buffalo Trace’s Elusive Mash Bills', url: 'https://vinepair.com/articles/buffalo-trace-mash-bill-guide/' } ] },
+    tasting: { nose: 'Citrus peel, honey, vanilla.', palate: 'Nutmeg, caramel, orange zest.', finish: 'Smooth, sweet, medium length.', source: 'Manually entered' } },
+  { id: 4, title: "Michter's US*1 Bourbon", distillery: "Michter's Distillery (Shively / Fort Nelson)", parent: 'Chatham Imports',
+    tags: ['Small Batch Bourbon'], grains: null,
+    confidence: { tier: 'unknown', verified: 'Aug 2026',
+      note: 'Michter’s has never disclosed a mash bill for this expression — nothing recorded rather than printing a guess.',
+      sources: [ { label: 'Bourbon Culture — Michter’s Distillery: Past, Present and Future (no distillery confirmation)', url: 'https://thebourbonculture.com/whiskey-info/michters-distillery-past-present-and-future/' } ] },
+    tasting: { nose: 'Toffee, vanilla, light oak.', palate: 'Caramel, baking spice.', finish: 'Soft, balanced.', source: 'Manually entered' } },
+  { id: 5, title: 'Redemption Bourbon', distillery: 'MGP Ingredients (Lawrenceburg, IN)', parent: 'Deutsch Family Wine & Spirits',
+    tags: ['Straight Bourbon', 'MGP-distilled'],
+    grains: [{ g: 'Corn', p: 60 }, { g: 'Rye', p: 38.1 }, { g: 'Malted Barley', p: 1.8 }],
+    confidence: { tier: 'reported', verified: 'Aug 2026',
+      note: 'MGP doesn’t publish per-brand percentages, but this breakdown is consistently cited across whiskey-industry references tracking MGP’s standard recipes.',
+      sources: [ { label: 'Kindred Cocktails — Redemption (ingredient reference)', url: 'https://kindredcocktails.com/ingredient/redemption' } ] },
+    tasting: { nose: 'Rye spice, black pepper, caramel.', palate: 'Cinnamon, dark fruit, oak.', finish: 'Dry, peppery.', source: 'Distiller.com (auto-filled)' } },
+];
+
+// ---------------- Section 1: entry point options ----------------
+const OPTION_HTML = {
+  tabs: `
+    <div class="option-card">
+      <div class="option-card__label"><span>Top Nav Tab</span><span class="rec-badge">Recommended</span></div>
+      <div class="mini-app">
+        <div class="mini-toplevel-tabs">
+          <button class="mini-tab is-active">&#128296; Talker Builder</button>
+          <button class="mini-tab is-library">&#129348; Bourbon Library</button>
+        </div>
+        <div class="mini-subbar">Manual Entry &middot; Import from Website &middot; Search</div>
+      </div>
+      <div class="option-card__caption">A second top-level tab, same level as the Talker Builder itself &mdash; like
+      switching workspaces. Most discoverable; most clearly says "separate space."</div>
+    </div>`,
+  sidebar: `
+    <div class="option-card">
+      <div class="option-card__label"><span>Sidebar Rail</span></div>
+      <div class="mini-app mini-app--sidebar">
+        <div class="mini-rail">
+          <span class="mini-rail__icon is-active" title="Talker Builder">&#128296;</span>
+          <span class="mini-rail__icon" title="Queue">&#128203;</span>
+          <span class="mini-rail__icon" title="History">&#128337;</span>
+          <span class="mini-rail__icon is-library" title="Bourbon Library">&#129348;</span>
+          <span class="mini-rail__icon" title="Settings">&#9881;&#65039;</span>
+        </div>
+        <div class="mini-rail-content">Talker Builder content&hellip;</div>
+      </div>
+      <div class="option-card__caption">A persistent icon rail across the whole app. Scales well if more
+      standalone tools show up later, but restructures every screen to get there &mdash; biggest change of the
+      three.</div>
+    </div>`,
+  launcher: `
+    <div class="option-card">
+      <div class="option-card__label"><span>Header Launcher</span></div>
+      <div class="mini-app">
+        <div class="mini-appbar">
+          <span>Shelf Talker Wizard</span>
+          <span class="mini-appbar__actions">
+            <button class="btn btn--small" disabled>Tools</button>
+            <button class="btn btn--small btn--library-launch" disabled>&#129348; Bourbon Library</button>
+            <button class="btn btn--small" disabled>Settings</button>
+          </span>
+        </div>
+      </div>
+      <div class="option-card__caption">One new button in the existing header, styled with the Library's own dark
+      band color so it reads as a launcher, not a menu item. Smallest change; weakest "separate app" feeling of the
+      three.</div>
+    </div>`,
+};
+
+function renderOptions() {
+  document.getElementById('optionsGrid').innerHTML = Object.values(OPTION_HTML).join('');
+}
+renderOptions();
+
+function renderSwitchCaption() {
+  const on = document.getElementById('experimentalToggle').checked;
+  document.getElementById('switchCaption').textContent = on
+    ? 'ON — Mash Bill, Nose/Palate/Finish, and Store Pick fields are active on the talker form.'
+    : 'OFF — those fields are hidden on the talker form, same as today. Watch the entry point above: it doesn’t change.';
+}
+document.getElementById('experimentalToggle').addEventListener('change', renderSwitchCaption);
+renderSwitchCaption();
+
+document.querySelectorAll('.pill[data-entry]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pill[data-entry]').forEach((b) => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+  });
+});
+
+// ---------------- Section 2: the library itself ----------------
+let view = 'home'; // 'home' | 'profile'
+let selectedId = null;
+let searchQuery = '';
+let activeFilter = 'all'; // all | confirmed | reported | needs
+
+function grainBarHtml(grains) {
+  const bar = grains.map(({ g, p }) => `<span style="width:${p}%;background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></span>`).join('');
+  const legend = grains.map(({ g, p }) => `<span><span class="grain-swatch" style="background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></span>${p}% ${g}</span>`).join('');
+  return { bar, legend };
+}
+function meterHtml(tier) {
+  const meta = TIER_META[tier];
+  const dots = [0, 1, 2, 3].map((i) => `<span class="${i < meta.on ? 'is-on' : ''}"></span>`).join('');
+  return `<span class="conf-meter" style="color:var(${meta.colorVar})">${dots}</span>`;
+}
+function badgeHtml(tier) {
+  const meta = TIER_META[tier];
+  return `<span class="conf-badge conf-badge--${tier}">${meta.label}</span>`;
+}
+
+function matchesFilter(b) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'confirmed') return b.confidence.tier === 'confirmed';
+  if (activeFilter === 'reported') return b.confidence.tier === 'reported';
+  if (activeFilter === 'needs') return b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown';
+  return true;
+}
+function matchesSearch(b) {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return true;
+  return b.title.toLowerCase().includes(q) || b.distillery.toLowerCase().includes(q) || b.parent.toLowerCase().includes(q);
+}
+
+function renderChips() {
+  const counts = {
+    all: bourbons.length,
+    confirmed: bourbons.filter((b) => b.confidence.tier === 'confirmed').length,
+    reported: bourbons.filter((b) => b.confidence.tier === 'reported').length,
+    needs: bourbons.filter((b) => b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown').length,
+  };
+  const chips = [
+    { key: 'all', label: `All bourbons (${counts.all})` },
+    { key: 'confirmed', label: `✅ Confirmed (${counts.confirmed})` },
+    { key: 'reported', label: `📋 Reported (${counts.reported})` },
+    { key: 'needs', label: `⚠️ Needs verification (${counts.needs})` },
+  ];
+  document.getElementById('libraryChips').innerHTML = chips.map((c) => `
+    <button type="button" class="chip-filter ${activeFilter === c.key ? 'is-active' : ''}" data-filter="${c.key}">${c.label}</button>
+  `).join('');
+  document.querySelectorAll('.chip-filter[data-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => { activeFilter = btn.dataset.filter; renderLibrary(); });
+  });
+}
+
+function renderStats() {
+  const distilleries = new Set(bourbons.map((b) => b.distillery)).size;
+  const parents = new Set(bourbons.map((b) => b.parent)).size;
+  const needsCount = bourbons.filter((b) => b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown').length;
+  document.getElementById('libraryStats').innerHTML = `
+    <div class="lib-stat"><b>${bourbons.length}</b><span>Bourbons</span></div>
+    <div class="lib-stat"><b>${distilleries}</b><span>Distilleries</span></div>
+    <div class="lib-stat"><b>${parents}</b><span>Parent companies</span></div>
+    <div class="lib-stat"><b>${needsCount}</b><span>Need verification</span></div>
+  `;
+}
+
+function renderHome() {
+  const rows = bourbons.filter((b) => matchesFilter(b) && matchesSearch(b));
+  if (!rows.length) {
+    document.getElementById('libraryBody').innerHTML = '<div class="empty-state">No bourbons match this search/filter.</div>';
+    return;
+  }
+  document.getElementById('libraryBody').innerHTML = `
+    <div class="card-grid">
+      ${rows.map((b) => {
+        const barInner = b.grains ? grainBarHtml(b.grains).bar : '';
+        return `
+        <button type="button" class="card" data-id="${b.id}">
+          <div>
+            <div class="card__title">${b.title}</div>
+            <div class="card__sub">${b.distillery}</div>
+          </div>
+          <div class="card__bar ${b.grains ? '' : 'card__bar--empty'}">${barInner}</div>
+          <div class="card__footer">
+            <span class="card__sub">${b.tags[0]}</span>
+            ${badgeHtml(b.confidence.tier)}
+          </div>
+        </button>`;
+      }).join('')}
+    </div>
+  `;
+  document.querySelectorAll('.card[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); view = 'profile'; renderLibrary(); });
+  });
+}
+
+function renderProfile() {
+  const b = bourbons.find((x) => x.id === selectedId);
+  const siblings = bourbons.filter((x) => x.id !== b.id && x.distillery === b.distillery);
+  const mashBillBlock = b.grains
+    ? (() => { const { bar, legend } = grainBarHtml(b.grains); return `<div class="grain-bar">${bar}</div><div class="grain-legend">${legend}</div>`; })()
+    : `<div class="grain-bar grain-bar--empty"></div><p class="grain-empty-note">No mash bill on file for this expression.</p>`;
+
+  document.getElementById('libraryBody').innerHTML = `
+    <div class="crumb"><button type="button" id="crumbBack">&larr; Bourbon Library</button> / ${b.title}</div>
+    <div class="profile-head">
+      <div>
+        <h2>${b.title}</h2>
+        <p class="profile-head__by">${b.distillery} &middot; <strong>${b.parent}</strong></p>
+        <div class="profile-tags">${b.tags.map((t) => `<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="profile-grid">
+      <div>
+        <div class="block">
+          <h3>Mash Bill</h3>
+          ${mashBillBlock}
+          <div class="conf-block">
+            <div class="conf-block__row">
+              <span style="font-size:0.78rem;font-weight:700;color:var(--ui-ink-soft);text-transform:uppercase;letter-spacing:0.03em;">Mash Bill Confidence</span>
+              ${badgeHtml(b.confidence.tier)}
+              ${meterHtml(b.confidence.tier)}
+            </div>
+            <p class="conf-block__note">${b.confidence.note}</p>
+            <div class="conf-block__verified">Last verified ${b.confidence.verified}</div>
+            <details class="sources">
+              <summary>View ${b.confidence.sources.length} source${b.confidence.sources.length === 1 ? '' : 's'}</summary>
+              <ul class="sources-list">${b.confidence.sources.map((s) => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.label}</a></li>`).join('')}</ul>
+            </details>
+          </div>
+        </div>
+        <div class="block">
+          <h3>Tasting Notes</h3>
+          <div class="tasting-grid">
+            <div class="tasting-card"><h4>Nose</h4><p>${b.tasting.nose}</p></div>
+            <div class="tasting-card"><h4>Palate</h4><p>${b.tasting.palate}</p></div>
+            <div class="tasting-card"><h4>Finish</h4><p>${b.tasting.finish}</p></div>
+          </div>
+          <div class="tasting-source">Source: ${b.tasting.source}</div>
+        </div>
+      </div>
+      <div class="block info-card">
+        <h3>Distillery &amp; Ownership</h3>
+        <dl>
+          <div><dt>Distillery</dt><dd>${b.distillery}</dd></div>
+          <div><dt>Parent company</dt><dd>${b.parent}</dd></div>
+          <div><dt>Style</dt><dd>${b.tags[0]}</dd></div>
+        </dl>
+        ${siblings.length ? `
+          <dt style="margin-top:0.9rem;">Other ${b.distillery} entries</dt>
+          <div style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;">
+            ${siblings.map((s) => `<button type="button" class="card" data-id="${s.id}" style="padding:0.5rem 0.65rem;flex-direction:row;align-items:center;justify-content:space-between;"><span class="card__sub" style="color:var(--ui-ink);font-weight:700;">${s.title}</span>${badgeHtml(s.confidence.tier)}</button>`).join('')}
+          </div>` : ''}
+      </div>
+    </div>
+  `;
+  document.getElementById('crumbBack').addEventListener('click', () => { view = 'home'; renderLibrary(); });
+  document.querySelectorAll('.info-card .card[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderLibrary(); });
+  });
+}
+
+function renderLibrary() {
+  renderStats();
+  renderChips();
+  if (view === 'home') renderHome(); else renderProfile();
+}
+
+document.getElementById('librarySearch').addEventListener('input', (e) => { searchQuery = e.target.value; view = 'home'; renderLibrary(); });
+document.getElementById('backToBuilder').addEventListener('click', (e) => { e.preventDefault(); view = 'home'; selectedId = null; searchQuery = ''; document.getElementById('librarySearch').value = ''; renderLibrary(); });
+
+renderLibrary();
+</script>
