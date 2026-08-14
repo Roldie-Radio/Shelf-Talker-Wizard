@@ -287,6 +287,66 @@ const WINE_PAIRING_RULES = [
       { id: 'willamette', label: 'Willamette Valley, Oregon', test: /willamette|oregon/i,
         swapIndex: 3, swap: { icon: '🌰', food: 'Hazelnut Torte' } },
     ] },
+  { id: 'nebbiolo', label: 'Nebbiolo', test: /nebbiolo|barolo|barbaresco|gattinara|roero/i,
+    pairings: [
+      { icon: '🥩', food: 'Braised Short Rib' },
+      { icon: '🍄', food: 'Wild Mushroom Risotto' },
+      { icon: '🧀', food: 'Aged Parmesan' },
+      { icon: '🍖', food: 'Osso Buco' },
+    ],
+    regions: [
+      { id: 'barolo', label: 'Barolo, Piedmont', test: /barolo/i,
+        swapIndex: 1, swap: { icon: '🍄', food: 'White Truffle Risotto' } },
+      { id: 'barbaresco', label: 'Barbaresco, Piedmont', test: /barbaresco/i,
+        swapIndex: 3, swap: { icon: '🦆', food: 'Duck Ragù' } },
+    ] },
+  // Sangiovese's own test deliberately matches "vino nobile" - Vino Nobile
+  // di Montepulciano is a Sangiovese wine from the Tuscan town of
+  // Montepulciano, not the unrelated Montepulciano grape (see that rule
+  // below). Sangiovese must stay ordered ahead of it so detectWinePairings'
+  // top-to-bottom .find claims any "vino nobile" text here first - the
+  // Montepulciano rule's own bare `montepulciano` regex would otherwise
+  // mismatch it.
+  { id: 'sangiovese', label: 'Sangiovese', test: /sangiovese|chianti|brunello|vino nobile|rosso di montalcino/i,
+    pairings: [
+      { icon: '🍝', food: 'Tomato Ragù' },
+      { icon: '🧀', food: 'Aged Pecorino' },
+      { icon: '🍕', food: 'Margherita Pizza' },
+      { icon: '🌭', food: 'Italian Sausage' },
+    ],
+    regions: [
+      { id: 'chianti-classico', label: 'Chianti Classico, Tuscany', test: /chianti classico|\bchianti\b/i,
+        swapIndex: 0, swap: { icon: '🥩', food: 'Bistecca alla Fiorentina' } },
+      { id: 'brunello', label: 'Brunello di Montalcino, Tuscany', test: /brunello|montalcino/i,
+        swapIndex: 3, swap: { icon: '🐗', food: 'Wild Boar Ragù' } },
+    ] },
+  { id: 'montepulciano', label: 'Montepulciano d\'Abruzzo', test: /montepulciano/i,
+    pairings: [
+      { icon: '🍝', food: 'Arrabbiata Pasta' },
+      { icon: '🌭', food: 'Grilled Sausage' },
+      { icon: '🧀', food: 'Aged Pecorino' },
+      { icon: '🥩', food: 'Lamb Skewers' },
+    ] },
+  { id: 'primitivo', label: 'Primitivo', test: /primitivo/i,
+    pairings: [
+      { icon: '🥩', food: 'Grilled Lamb' },
+      { icon: '🍝', food: 'Orecchiette & Sausage' },
+      { icon: '🧀', food: 'Aged Provolone' },
+      { icon: '🫒', food: 'Salumi & Olives' },
+    ] },
+  { id: 'barbera', label: 'Barbera', test: /barbera/i,
+    pairings: [
+      { icon: '🍄', food: 'Agnolotti del Plin' },
+      { icon: '🧀', food: 'Charcuterie Board' },
+      { icon: '🍝', food: 'Tomato Pasta' },
+      { icon: '🍖', food: 'Braised Short Rib' },
+    ],
+    regions: [
+      { id: 'barbera-alba', label: 'Barbera d\'Alba, Piedmont', test: /alba/i,
+        swapIndex: 0, swap: { icon: '🍄', food: 'Tajarin with Truffle' } },
+      { id: 'barbera-asti', label: 'Barbera d\'Asti, Piedmont', test: /\basti\b/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Bagna Cauda' } },
+    ] },
   { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
     pairings: [
       { icon: '🧀', food: 'Cheese Board' },
@@ -320,6 +380,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🥗', food: 'Garden Salad' },
       { icon: '🍋', food: 'Citrus Dishes' },
       { icon: '🍤', food: 'Shrimp Scampi' },
+    ],
+    regions: [
+      { id: 'alto-adige', label: 'Alto Adige, Italy', test: /alto adige|friuli|veneto|trentino/i,
+        swapIndex: 2, swap: { icon: '🍋', food: 'Lemon Risotto' } },
+      { id: 'alsace-pinot-gris', label: 'Alsace, France', test: /alsace|france/i,
+        swapIndex: 3, swap: { icon: '🥧', food: 'Choucroute Garnie' } },
     ] },
   { id: 'riesling', label: 'Riesling', test: /riesling/i,
     pairings: [
@@ -341,12 +407,18 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Mild Cheese' },
       { icon: '🥐', food: 'Pastries' },
     ] },
-  { id: 'sparkling', label: 'Champagne / Sparkling', test: /champagne|sparkling|prosecco|\bcava\b/i,
+  { id: 'sparkling', label: 'Champagne / Sparkling', test: /champagne|sparkling|prosecco|\bcava\b|franciacorta/i,
     pairings: [
       { icon: '🍟', food: 'Fried Appetizers' },
       { icon: '🦪', food: 'Oysters' },
       { icon: '🍰', food: 'Light Desserts' },
       { icon: '🍓', food: 'Fresh Berries' },
+    ],
+    regions: [
+      { id: 'prosecco', label: 'Prosecco, Veneto', test: /prosecco|veneto|conegliano|valdobbiadene/i,
+        swapIndex: 0, swap: { icon: '🍕', food: 'Cicchetti & Prosciutto' } },
+      { id: 'franciacorta', label: 'Franciacorta, Lombardy', test: /franciacorta|lombardy/i,
+        swapIndex: 3, swap: { icon: '🍤', food: 'Fritto Misto' } },
     ] },
   { id: 'rose', label: 'Rosé', test: /ros[eé]/i,
     pairings: [
