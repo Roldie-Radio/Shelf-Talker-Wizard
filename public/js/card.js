@@ -551,6 +551,36 @@ const WINE_PAIRING_RULES = [
       { icon: '🫒', food: 'Spanish Tapas' },
       { icon: '🐐', food: 'Fresh Goat Cheese' },
     ] },
+  // Ordered after albarino (above) rather than before it: most Vinho Verde
+  // on a US shelf is a blend of several native grapes (Loureiro, Arinto,
+  // Trajadura...) and just says "Vinho Verde" with no grape named at all,
+  // but the region's flagship sub-zone (Monção e Melgaço) is varietal
+  // Alvarinho and often does say so on the label - see the Albariño rule's
+  // own Vinho Verde region entry above. Checking albarino's test first
+  // means a title naming both ("Soalheiro Alvarinho, Vinho Verde") still
+  // resolves to the more specific Albariño match; this rule only catches
+  // Vinho Verde titles that never name a grape at all.
+  { id: 'vinho-verde', label: 'Vinho Verde', test: /vinho verde/i,
+    pairings: [
+      { icon: '🦐', food: 'Grilled Shrimp' },
+      { icon: '🫒', food: 'Portuguese Tapas' },
+      { icon: '🍋', food: 'Ceviche' },
+      { icon: '🐟', food: 'Grilled Sardines' },
+    ] },
+  { id: 'douro-red', label: 'Douro Red', test: /\bdouro\b|touriga nacional|touriga franca/i,
+    pairings: [
+      { icon: '🥩', food: 'Bife à Portuguesa' },
+      { icon: '🍲', food: 'Cozido à Portuguesa' },
+      { icon: '🧀', food: 'Serra da Estrela Cheese' },
+      { icon: '🌭', food: 'Alheira Sausage' },
+    ] },
+  { id: 'port', label: 'Port', test: /\bport\b|\bporto\b/i,
+    pairings: [
+      { icon: '🧀', food: 'Blue Cheese' },
+      { icon: '🍫', food: 'Dark Chocolate' },
+      { icon: '🥜', food: 'Toasted Almonds' },
+      { icon: '🫐', food: 'Fig & Walnut Tart' },
+    ] },
   { id: 'moscato', label: 'Moscato', test: /moscato/i,
     pairings: [
       { icon: '🍰', food: 'Light Dessert' },
