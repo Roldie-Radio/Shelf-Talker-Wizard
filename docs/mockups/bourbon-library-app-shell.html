@@ -119,18 +119,10 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .rail__icon:hover { background: var(--ui-hover); }
 .rail__icon.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
 .rail__icon.is-library:not(.is-active) { color: var(--lib-band-accent); }
-.mini-talker-icon { display: block; }
+.rail__spacer { flex: 1; }
+.mini-talker-icon, .mini-glass-icon { display: block; }
 
 .content-pane { flex: 1; min-width: 0; overflow-y: auto; background: var(--ui-panel); }
-
-/* ---------- Settings modal (matches the real app's own dialog pattern -
-   Settings is a menu item that opens a dialog, not a screen, so it's
-   reached from inside Shelf Talker rather than living on the rail) ---------- */
-.modal-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 1.5rem; z-index: 5; }
-.modal { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); box-shadow: 0 20px 44px var(--ui-shadow); width: 100%; max-width: 480px; max-height: 90%; overflow-y: auto; }
-.modal__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--ui-border); }
-.modal__header h3 { font-size: 1rem; }
-.modal__body { padding: 1.1rem; }
 
 /* ---------- Shelf Talker view (representative slice of the real Talker Builder,
    incl. the Queue side panel and History button that already live on this one
@@ -157,7 +149,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .build-queue__count { font-size: 0.7rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.1rem 0.45rem; border-radius: 999px; }
 .build-queue__item { font-size: 0.78rem; padding: 0.5rem 0.55rem; border-radius: 6px; background: var(--ui-panel); border: 1px solid var(--ui-border); margin-bottom: 0.4rem; }
 
-/* ---------- Settings modal body content ---------- */
+/* ---------- Settings view (rail icon -> content pane swap) ---------- */
+.settings-pad { padding: 1.2rem 1.6rem 1.6rem; max-width: 560px; }
 .settings-section h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.6rem; }
 .settings-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
 .settings-row__label { font-size: 0.88rem; font-weight: 700; }
@@ -262,17 +255,19 @@ details.sources[open] summary::before { content: "▾ "; }
     <p>
       Of the three entry points compared last round, <strong>Sidebar Rail</strong> is the pick &mdash; a persistent
       icon rail down the left edge of the whole app, with <strong>Bourbon Library</strong> as one first-class icon
-      alongside the app's existing screen rather than a tab switch or a header button. Everything the existing
-      wizard already does &mdash; Manual Entry / Import / Search, the Queue side panel, History, and Settings
-      &mdash; stays together under one <strong>Shelf Talker</strong> icon, reached exactly the way each piece is
-      reached today (Queue as the panel next to the form, History and Settings as buttons that open their own
-      dialogs). The rail itself only ever adds one new thing: <strong>Bourbon Library</strong>.
+      alongside the app's existing screen rather than a tab switch or a header button. Manual Entry / Import /
+      Search, the Queue side panel, and History all stay together under one <strong>Shelf Talker</strong> icon,
+      reached exactly the way each is reached today. <strong>Settings</strong> keeps its own rail icon rather than
+      nesting inside Shelf Talker &mdash; a standing destination for the one screen most likely to get more
+      settings over time, not just a single menu item.
     </p>
     <p>
-      This version wires the rail up for real: click between <strong>Shelf Talker</strong> and
-      <strong>Library</strong> to swap the content pane. Open Settings from inside Shelf Talker and flip
-      <strong>Bourbon Shelf Talkers</strong> off, then check the form behind it and the Library icon &mdash; one
-      changes, the other doesn't.
+      Both new icons are drawn rather than emoji: <strong>Shelf Talker</strong> is a tiny rendering of an actual
+      printed talker, and <strong>Bourbon Library</strong> is a Glencairn glass, partly filled &mdash; the shape
+      whiskey gets nosed and tasted from, standing in for the whole reference idea. Click between
+      <strong>Shelf Talker</strong>, <strong>Library</strong>, and <strong>Settings</strong> to swap the content
+      pane. Flip <strong>Bourbon Shelf Talkers</strong> off in Settings, then check the Shelf Talker tab and the
+      Library icon &mdash; one changes, the other doesn't.
     </p>
   </div>
 
@@ -297,18 +292,24 @@ details.sources[open] summary::before { content: "▾ "; }
           </span>
           <span class="caption">Shelf Talker</span>
         </button>
-        <button type="button" class="rail__icon is-library" data-view="library"><span class="glyph">&#129348;</span><span class="caption">Library</span></button>
+        <button type="button" class="rail__icon is-library" data-view="library">
+          <span class="glyph">
+            <svg class="mini-glass-icon" viewBox="0 0 22 30" width="18" height="24" aria-hidden="true">
+              <defs>
+                <clipPath id="glencairnClip">
+                  <path d="M8,2 C7,5 6.5,7 6.5,10 C6.5,13 4.5,14 4.5,17 C4.5,20 8,21 9,23 L9,25.5 C9,26.5 6,26.5 6,27.5 L6,28.5 L16,28.5 L16,27.5 C16,26.5 13,26.5 13,25.5 L13,23 C14,21 17.5,20 17.5,17 C17.5,14 15.5,13 15.5,10 C15.5,7 15,5 14,2 Z"/>
+                </clipPath>
+              </defs>
+              <rect x="2" y="13" width="18" height="9" fill="var(--lib-band-accent)" clip-path="url(#glencairnClip)"/>
+              <path d="M8,2 C7,5 6.5,7 6.5,10 C6.5,13 4.5,14 4.5,17 C4.5,20 8,21 9,23 L9,25.5 C9,26.5 6,26.5 6,27.5 L6,28.5 L16,28.5 L16,27.5 C16,26.5 13,26.5 13,25.5 L13,23 C14,21 17.5,20 17.5,17 C17.5,14 15.5,13 15.5,10 C15.5,7 15,5 14,2 Z" fill="none" stroke="var(--ink)" stroke-width="1.3"/>
+            </svg>
+          </span>
+          <span class="caption">Library</span>
+        </button>
+        <div class="rail__spacer"></div>
+        <button type="button" class="rail__icon" data-view="settings"><span class="glyph">&#9881;&#65039;</span><span class="caption">Settings</span></button>
       </div>
       <div class="content-pane" id="contentPane"></div>
-    </div>
-    <div class="modal-overlay" id="settingsOverlay" hidden>
-      <div class="modal">
-        <div class="modal__header">
-          <h3>Settings</h3>
-          <button type="button" class="btn btn--small" id="closeSettingsBtn">&times; Close</button>
-        </div>
-        <div class="modal__body" id="settingsModalBody"></div>
-      </div>
     </div>
   </div>
 
@@ -316,29 +317,28 @@ details.sources[open] summary::before { content: "▾ "; }
     <h2>Design notes</h2>
     <div class="notes-grid">
       <div class="notes-card">
-        <h3>The rail only ever needed two icons</h3>
-        <p>Queue is already a side panel on the same screen as the form, History is already a button that opens a
-        dialog, and Settings is already a menu item that opens a dialog too &mdash; none of the three is a
-        separate top-level screen today, so none needed its own rail icon. Everything the existing wizard does
-        stays together under one <strong>Shelf Talker</strong> icon (renamed from an earlier "Build"); the rail
-        adds exactly one new thing, <strong>Library</strong>.</p>
+        <h3>Queue and History fold in; Settings keeps its own icon</h3>
+        <p>Queue is already a side panel on the same screen as the form, and History is already a button that
+        opens a dialog &mdash; neither is a separate top-level screen today, so neither needed its own rail icon;
+        both stay nested inside <strong>Shelf Talker</strong> (renamed from an earlier "Build"). Settings gets its
+        own rail icon back rather than folding in too &mdash; it's the one screen most likely to grow more
+        settings over time, and staff reaching for it shouldn't have to go through Shelf Talker to get there.</p>
       </div>
       <div class="notes-card">
-        <h3>Shelf Talker view now shows Queue, History &amp; Settings in place</h3>
-        <p>The mock content pane puts the Queue panel back on the right and a History button back near the tabs,
-        right where both live in the real app today, and adds a Settings&hellip; button next to History that opens
-        a dialog &mdash; matching the real app's own Settings&hellip; menu item rather than inventing a new pattern.
-        Nothing about any of the three changes, only the outer chrome around the whole screen (the new rail on the
-        left) does.</p>
+        <h3>Two icons drawn from the product, not picked from an emoji set</h3>
+        <p>Shelf Talker is a tiny rendering of an actual printed talker &mdash; white card, dark border, red price
+        block, using the same <code>--ink</code>/<code>--sale-red</code> print colors the real cards use. Library
+        is a Glencairn glass, partly filled with amber liquid clipped to the glass's own outline &mdash; the
+        nosing glass shape, standing in for "everything we know about what's in the bottle." Both read as the
+        product itself rather than a generic tool/book icon.</p>
       </div>
     </div>
     <div class="notes-card">
       <h3>Decoupling, now shown where the flag actually lives</h3>
-      <p>Last round's mockup floated the Experimental Features switch next to the entry-point comparison. Here it
-      sits inside the real Settings dialog, opened from inside Shelf Talker exactly like it is today &mdash; flip
-      it off, and only the Shelf Talker form's Mash Bill / Nose-Palate-Finish fields react live underneath. The
-      Library rail icon, its content, and its own confidence filters are untouched, because they never read that
-      flag to begin with.</p>
+      <p>The Experimental Features switch sits on its own Settings screen, reached from its own rail icon &mdash;
+      flip it off, then switch to Shelf Talker and only the Mash Bill / Nose-Palate-Finish fields react. The
+      Library icon, its content, and its own confidence filters are untouched, because they never read that flag
+      to begin with.</p>
     </div>
     <div class="notes-card">
       <h3>Open questions</h3>
@@ -446,10 +446,7 @@ function renderBuild() {
           <button class="build-tab" type="button">Import from Website</button>
           <button class="build-tab" type="button">Search</button>
         </div>
-        <div style="display:flex;gap:0.4rem;">
-          <button type="button" class="btn btn--small" title="Search and reprint past shelf talkers">History</button>
-          <button type="button" class="btn btn--small" id="openSettingsBtn">Settings&hellip;</button>
-        </div>
+        <button type="button" class="btn btn--small" title="Search and reprint past shelf talkers">History</button>
       </div>
       <div class="build-columns">
         <div class="build-form">
@@ -470,50 +467,37 @@ function renderBuild() {
       </div>
     </div>
   `;
-  document.getElementById('openSettingsBtn').addEventListener('click', openSettings);
 }
 
-/* ---------------- Settings (a dialog reached from inside Shelf Talker,
-   same as the real app's own Settings… menu item - never a rail icon) ---------------- */
-function renderSettingsModalBody() {
-  document.getElementById('settingsModalBody').innerHTML = `
-    <div class="settings-section">
-      <h4>Experimental Features</h4>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row__label">Bourbon Shelf Talkers</div>
-          <div class="settings-row__caption">Adds Mash Bill, Nose/Palate/Finish, and a Store Pick ribbon to the
-          talker form. Gated here because it changes what prints on a real, customer-facing sign.</div>
+/* ---------------- Settings view ---------------- */
+function renderSettings() {
+  document.getElementById('contentPane').innerHTML = `
+    <div class="settings-pad">
+      <div class="settings-section">
+        <h4>Experimental Features</h4>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row__label">Bourbon Shelf Talkers</div>
+            <div class="settings-row__caption">Adds Mash Bill, Nose/Palate/Finish, and a Store Pick ribbon to the
+            talker form. Gated here because it changes what prints on a real, customer-facing sign.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="experimentalToggle" ${experimentalOn ? 'checked' : ''}>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
         </div>
-        <label class="switch">
-          <input type="checkbox" id="experimentalToggle" ${experimentalOn ? 'checked' : ''}>
-          <span class="switch__track"></span>
-          <span class="switch__thumb"></span>
-        </label>
       </div>
-    </div>
-    <div class="settings-note">
-      &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
-      rail on the left no matter how this switch is set. Try it: flip the switch, close this dialog, then click
-      Library.
+      <div class="settings-note">
+        &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
+        rail on the left no matter how this switch is set. Try it: flip the switch, then click Library.
+      </div>
     </div>
   `;
   document.getElementById('experimentalToggle').addEventListener('change', (e) => {
     experimentalOn = e.target.checked;
-    if (activeRailItem === 'shelfTalker') renderBuild();
   });
 }
-function openSettings() {
-  renderSettingsModalBody();
-  document.getElementById('settingsOverlay').hidden = false;
-}
-function closeSettings() {
-  document.getElementById('settingsOverlay').hidden = true;
-}
-document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
-document.getElementById('settingsOverlay').addEventListener('click', (e) => {
-  if (e.target.id === 'settingsOverlay') closeSettings();
-});
 
 /* ---------------- Library view ---------------- */
 function matchesFilter(b) {
@@ -642,7 +626,17 @@ function renderLibrary() {
     <div class="lib-band">
       <div class="lib-band__top">
         <div class="lib-brand">
-          <div class="lib-brand__icon">&#129348;</div>
+          <div class="lib-brand__icon">
+            <svg viewBox="0 0 22 30" width="22" height="30" aria-hidden="true">
+              <defs>
+                <clipPath id="glencairnClipBand">
+                  <path d="M8,2 C7,5 6.5,7 6.5,10 C6.5,13 4.5,14 4.5,17 C4.5,20 8,21 9,23 L9,25.5 C9,26.5 6,26.5 6,27.5 L6,28.5 L16,28.5 L16,27.5 C16,26.5 13,26.5 13,25.5 L13,23 C14,21 17.5,20 17.5,17 C17.5,14 15.5,13 15.5,10 C15.5,7 15,5 14,2 Z"/>
+                </clipPath>
+              </defs>
+              <rect x="2" y="13" width="18" height="9" fill="#f3e6cf" clip-path="url(#glencairnClipBand)"/>
+              <path d="M8,2 C7,5 6.5,7 6.5,10 C6.5,13 4.5,14 4.5,17 C4.5,20 8,21 9,23 L9,25.5 C9,26.5 6,26.5 6,27.5 L6,28.5 L16,28.5 L16,27.5 C16,26.5 13,26.5 13,25.5 L13,23 C14,21 17.5,20 17.5,17 C17.5,14 15.5,13 15.5,10 C15.5,7 15,5 14,2 Z" fill="none" stroke="#241a10" stroke-width="1.3"/>
+            </svg>
+          </div>
           <div>
             <div class="lib-brand__name">Bourbon Library</div>
             <div class="lib-brand__tag">Part of Shelf Talker Wizard</div>
@@ -676,6 +670,7 @@ function renderContent() {
   renderRailState();
   if (activeRailItem === 'shelfTalker') renderBuild();
   else if (activeRailItem === 'library') renderLibrary();
+  else if (activeRailItem === 'settings') renderSettings();
 }
 document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
   btn.addEventListener('click', () => { activeRailItem = btn.dataset.view; renderContent(); });
