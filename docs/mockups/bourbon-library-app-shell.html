@@ -78,14 +78,14 @@
 html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 h1, h2, h3 { margin: 0; text-wrap: balance; }
 
-.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 2rem; }
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
 .intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
 .eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
 .intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
-.intro h2.section-h { font-size: 1.15rem; margin-top: 0.4rem; }
 .intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
 .intro p strong { color: var(--ui-ink); }
 .intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+.decision-strip { display: flex; align-items: center; gap: 0.5rem; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.55rem 0.8rem; font-size: 0.85rem; font-weight: 700; width: fit-content; }
 
 .device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
 .device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
@@ -97,13 +97,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .btn:hover { background: var(--ui-btn-hover); }
 .btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
 .btn--primary:hover { background: var(--ui-accent-hover); }
-.btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
 .btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
-.btn:focus-visible, input:focus-visible, .pill:focus-visible, .card:focus-visible, .chip-filter:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
-
-.pill-group { display: inline-flex; gap: 0.3rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.2rem; flex-wrap: wrap; }
-.pill { border: none; background: transparent; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
-.pill.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.btn:focus-visible, input:focus-visible, .card:focus-visible, .chip-filter:focus-visible, .rail__icon:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
 
 /* ---------- switch component ---------- */
 .switch-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 600; }
@@ -113,46 +108,56 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .switch__thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--ui-panel); box-shadow: 0 1px 2px var(--ui-shadow); transition: transform 0.15s; }
 .switch input:checked ~ .switch__track { background: var(--ui-accent); }
 .switch input:checked ~ .switch__thumb { transform: translateX(18px); }
-.switch-caption { font-size: 0.8rem; color: var(--ui-ink-soft); font-weight: 400; line-height: 1.5; }
 
-/* ---------- section 1: entry-point illustrations ---------- */
-.entry-pad { padding: 1.3rem 1.5rem 1.6rem; display: flex; flex-direction: column; gap: 1.2rem; }
-.entry-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.option-card { border: 1px solid var(--ui-border); border-radius: 10px; overflow: hidden; background: var(--ui-panel-sunken); }
-.option-card__label { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.78rem; font-weight: 700; color: var(--ui-ink-soft); border-bottom: 1px solid var(--ui-border); background: var(--ui-panel-alt); }
-.rec-badge { font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--ui-good-tint); color: var(--ui-good); padding: 0.1rem 0.45rem; border-radius: 999px; }
-.mini-app { padding: 0; }
-.mini-toplevel-tabs { display: flex; gap: 0.25rem; padding: 0.6rem 0.9rem 0; background: var(--ui-panel); }
-.mini-tab { border: 1px solid var(--ui-border); border-bottom: none; background: var(--ui-panel-sunken); color: var(--ui-ink-soft); font-family: inherit; font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 8px 8px 0 0; cursor: default; }
-.mini-tab.is-active { background: var(--ui-panel); color: var(--ui-ink); }
-.mini-tab.is-library { color: var(--lib-band-accent); }
-.mini-subbar { padding: 0.65rem 0.9rem; background: var(--ui-panel); border-top: 1px solid var(--ui-border); font-size: 0.78rem; color: var(--ui-muted); }
-.mini-app--sidebar { display: flex; }
-.mini-rail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; padding: 0.8rem 0.5rem; background: var(--ui-panel-alt); border-right: 1px solid var(--ui-border); }
-.mini-rail__icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1rem; color: var(--ui-ink-soft); }
-.mini-rail__icon.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
-.mini-rail__icon.is-library { color: var(--lib-band-accent); }
-.mini-rail-content { flex: 1; padding: 0.9rem 1rem; font-size: 0.8rem; color: var(--ui-muted); background: var(--ui-panel); }
-.mini-appbar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0.9rem; background: var(--ui-panel); gap: 0.6rem; flex-wrap: wrap; }
-.mini-appbar > span:first-child { font-size: 0.85rem; font-weight: 700; }
-.mini-appbar__actions { display: flex; gap: 0.4rem; }
-.btn--library-launch { background: var(--lib-band-bg); border-color: var(--lib-band-bg); color: var(--lib-band-accent); }
-.btn--library-launch:hover { background: var(--lib-band-bg-soft); }
-.option-card__caption { padding: 0.7rem 0.85rem; font-size: 0.78rem; color: var(--ui-ink-soft); line-height: 1.5; border-top: 1px solid var(--ui-border); }
-.options-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; }
-@media (max-width: 900px) { .options-grid { grid-template-columns: 1fr; } }
-.invariant-note { display: flex; gap: 0.5rem; align-items: flex-start; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.82rem; font-weight: 600; }
+/* ---------- app shell: real persistent rail + swapped content ---------- */
+.app-shell { display: flex; min-height: 620px; }
+.rail { width: 68px; flex: 0 0 auto; background: var(--ui-panel-alt); border-right: 1px solid var(--ui-border); display: flex; flex-direction: column; align-items: center; padding: 0.9rem 0; gap: 0.35rem; }
+.rail__brand { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(155deg, var(--ui-accent), var(--ui-accent-hover)); display: flex; align-items: center; justify-content: center; color: var(--ui-on-accent); font-weight: 800; font-size: 0.85rem; margin-bottom: 0.6rem; }
+.rail__icon { width: 46px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; border: none; background: transparent; border-radius: 10px; cursor: pointer; color: var(--ui-ink-soft); font-family: inherit; }
+.rail__icon .glyph { font-size: 1.15rem; line-height: 1; }
+.rail__icon .caption { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.02em; }
+.rail__icon:hover { background: var(--ui-hover); }
+.rail__icon.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.rail__icon.is-library:not(.is-active) { color: var(--lib-band-accent); }
+.rail__spacer { flex: 1; }
 
-/* ---------- section 2: the library shell itself ---------- */
-.lib-shell { background: var(--ui-panel); }
+.content-pane { flex: 1; min-width: 0; overflow-y: auto; background: var(--ui-panel); }
+
+/* ---------- Build view (representative slice of the real Talker Builder) ---------- */
+.build-pad { padding: 1.2rem 1.6rem 1.6rem; }
+.build-tabs { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
+.build-tab { border: 1px solid var(--ui-border); background: var(--ui-panel-sunken); color: var(--ui-ink-soft); font-family: inherit; font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 8px; }
+.build-tab.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; max-width: 420px; }
+.field span { color: var(--ui-ink-soft); }
+.field input { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font-weight: 400; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; max-width: 420px; }
+.bourbon-fields { border: 1px dashed var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; margin-top: 0.9rem; max-width: 420px; }
+.bourbon-fields__label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--lib-band-accent); margin-bottom: 0.6rem; }
+.bourbon-fields-hidden-note { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.9rem; max-width: 420px; line-height: 1.5; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip-ph { background: var(--ui-code-bg); border-radius: 999px; padding: 0.25rem 0.65rem; font-size: 0.78rem; font-weight: 600; color: var(--ui-ink-soft); }
+
+/* ---------- Settings view ---------- */
+.settings-pad { padding: 1.2rem 1.6rem 1.6rem; max-width: 560px; }
+.settings-section h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.6rem; }
+.settings-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.settings-row__label { font-size: 0.88rem; font-weight: 700; }
+.settings-row__caption { font-size: 0.8rem; color: var(--ui-ink-soft); margin-top: 0.25rem; line-height: 1.5; max-width: 46ch; }
+.settings-note { display: flex; gap: 0.5rem; align-items: flex-start; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.65rem 0.8rem; font-size: 0.82rem; font-weight: 600; margin-top: 1rem; }
+
+/* ---------- Queue/History placeholder ---------- */
+.placeholder-view { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; padding: 4rem 1.5rem; color: var(--ui-muted); height: 100%; }
+.placeholder-view .glyph { font-size: 2rem; }
+.placeholder-view p { max-width: 40ch; font-size: 0.86rem; line-height: 1.5; margin: 0; }
+
+/* ---------- Library view ---------- */
 .lib-band { background: var(--lib-band-bg); color: var(--lib-band-ink); padding: 1.1rem 1.6rem; }
 .lib-band__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .lib-brand { display: flex; align-items: center; gap: 0.7rem; }
 .lib-brand__icon { width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(155deg, var(--lib-band-accent), #a86a24); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex: 0 0 auto; }
 .lib-brand__name { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; }
 .lib-brand__tag { font-size: 0.72rem; color: var(--lib-band-muted); margin-top: 0.1rem; }
-.lib-back { color: var(--lib-band-muted); font-size: 0.8rem; text-decoration: none; font-weight: 600; }
-.lib-back:hover { color: var(--lib-band-ink); }
 .lib-search { margin-top: 1rem; }
 .lib-search input { width: 100%; font: inherit; font-size: 0.92rem; padding: 0.65rem 0.9rem; border-radius: 8px; border: 1px solid var(--lib-band-border); background: var(--lib-band-bg-soft); color: var(--lib-band-ink); }
 .lib-search input::placeholder { color: var(--lib-band-muted); }
@@ -163,10 +168,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .lib-stat { display: flex; flex-direction: column; }
 .lib-stat b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
 .lib-stat span { font-size: 0.7rem; color: var(--lib-band-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.lib-body { padding: 1.3rem 1.6rem 1.7rem; }
 
-.lib-body { padding: 1.3rem 1.6rem 1.7rem; min-height: 480px; }
-
-/* card grid (home view) */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
 .card { text-align: left; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-panel-sunken); padding: 0.9rem 1rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.5rem; }
 .card:hover { border-color: var(--ui-accent); box-shadow: 0 4px 14px var(--ui-shadow); }
@@ -182,10 +185,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .conf-badge--reported  { background: var(--ui-warn-tint); color: var(--ui-warn); border-color: color-mix(in srgb, var(--ui-warn) 40%, transparent); }
 .conf-badge--estimated { background: var(--ui-low-tint);  color: var(--ui-low);  border-color: color-mix(in srgb, var(--ui-low) 40%, transparent); }
 .conf-badge--unknown   { background: var(--ui-code-bg);   color: var(--ui-muted); }
-
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--ui-muted); font-size: 0.88rem; }
 
-/* profile view (reused/adapted from bourbon-profile-page.html, re-chromed) */
 .crumb { font-size: 0.8rem; color: var(--ui-muted); margin-bottom: 1rem; }
 .crumb button { background: none; border: none; color: var(--ui-accent-ink); font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0; }
 .profile-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1.2rem; }
@@ -244,126 +245,76 @@ details.sources[open] summary::before { content: "▾ "; }
   <div class="intro">
     <p class="eyebrow">Proposed structure &middot; not part of the running app</p>
     <h1>Bourbon Library App Shell</h1>
+    <div class="decision-strip">&#9989; Decided: Sidebar Rail</div>
     <p>
-      Confirmed direction: <strong>Bourbon Shelf Talkers</strong> (the mash bill chip builder, Nose/Palate/Finish
-      fields, and Store Pick ribbon on an actual talker) stays exactly where it is today, gated behind
-      Settings &rarr; Experimental Features. The <strong>Bourbon Library</strong> &mdash; the browsable reference
-      built on bourbon-profile-page.html &mdash; is the part coming out from under that toggle and out from
-      Tools&hellip;, into something that reads as its own space within the program rather than a management dialog
-      for a talker-building feature. This mockup proposes how it gets there: where the entry point lives, and what
-      the Library looks like once you're inside it.
+      Of the three entry points compared last round, <strong>Sidebar Rail</strong> is the pick &mdash; a persistent
+      icon rail down the left edge of the whole app, with <strong>Bourbon Library</strong> as one first-class icon
+      among the app's existing screens rather than a tab switch or a header button. It's the biggest structural
+      change of the three (every screen gains the rail, not just this one), but it's also the one that most reads
+      as "a set of apps living together" and scales cleanly if more standalone reference tools show up later.
     </p>
-  </div>
-
-  <!-- ============== SECTION 1: entry point ============== -->
-  <div class="intro">
-    <h2 class="section-h">Where it lives</h2>
-    <p>Three ways to surface a Library entry point in the existing app chrome, independent of whether Bourbon
-    Shelf Talkers itself is on. Flip the switch below &mdash; the entry point never reacts to it.</p>
+    <p>
+      This version wires the rail up for real: click between <strong>Build</strong>, <strong>Queue</strong>,
+      <strong>History</strong>, <strong>Library</strong>, and <strong>Settings</strong> to swap the content pane.
+      Flip <strong>Bourbon Shelf Talkers</strong> off in Settings, then check the Build tab and the Library icon
+      &mdash; one changes, the other doesn't.
+    </p>
   </div>
 
   <div class="device-frame">
     <div class="device-chrome">
       <div class="device-chrome__dots"><span></span><span></span><span></span></div>
-      <div class="device-chrome__label">Shelf Talker Wizard &mdash; app chrome</div>
+      <div class="device-chrome__label">Shelf Talker Wizard</div>
     </div>
-    <div class="entry-pad">
-      <div class="entry-toolbar">
-        <div class="switch-row">
-          <label class="switch">
-            <input type="checkbox" id="experimentalToggle" checked>
-            <span class="switch__track"></span>
-            <span class="switch__thumb"></span>
-          </label>
-          <span>Bourbon Shelf Talkers (experimental feature)</span>
-        </div>
-        <div class="pill-group" role="group" aria-label="Compare entry point">
-          <button type="button" class="pill is-active" data-entry="tabs">Top Nav Tab</button>
-          <button type="button" class="pill" data-entry="sidebar">Sidebar Rail</button>
-          <button type="button" class="pill" data-entry="launcher">Header Launcher</button>
-        </div>
+    <div class="app-shell">
+      <div class="rail" id="rail">
+        <div class="rail__brand">STW</div>
+        <button type="button" class="rail__icon" data-view="build"><span class="glyph">&#128296;</span><span class="caption">Build</span></button>
+        <button type="button" class="rail__icon" data-view="queue"><span class="glyph">&#128203;</span><span class="caption">Queue</span></button>
+        <button type="button" class="rail__icon" data-view="history"><span class="glyph">&#128337;</span><span class="caption">History</span></button>
+        <button type="button" class="rail__icon is-library" data-view="library"><span class="glyph">&#129348;</span><span class="caption">Library</span></button>
+        <div class="rail__spacer"></div>
+        <button type="button" class="rail__icon" data-view="settings"><span class="glyph">&#9881;&#65039;</span><span class="caption">Settings</span></button>
       </div>
-
-      <p class="switch-caption" id="switchCaption"></p>
-
-      <div class="options-grid" id="optionsGrid"></div>
-
-      <div class="invariant-note">
-        &#9989; In every option above, the Bourbon Library entry point stays visible and enabled no matter what the
-        switch is set to &mdash; only the Mash Bill / Tasting Notes / Store Pick fields on the talker form itself
-        come and go with it, same as they do today.
-      </div>
+      <div class="content-pane" id="contentPane"></div>
     </div>
-  </div>
-
-  <!-- ============== SECTION 2: the library itself ============== -->
-  <div class="intro">
-    <h2 class="section-h">Inside the Bourbon Library</h2>
-    <p>
-      A distinct dark "reading room" band (vs. the light, form-heavy Talker Builder) signals the shift without
-      leaving the app &mdash; same fonts, same corner radii, same gold accent family, just a different room. Search
-      and browse first, profile pages second; nothing here is a talker-editing surface. Try the confidence filter
-      chips, or click a card.
-    </p>
-  </div>
-
-  <div class="device-frame lib-shell">
-    <div class="device-chrome">
-      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
-      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Bourbon Library</div>
-    </div>
-    <div class="lib-band">
-      <div class="lib-band__top">
-        <div class="lib-brand">
-          <div class="lib-brand__icon">&#129348;</div>
-          <div>
-            <div class="lib-brand__name">Bourbon Library</div>
-            <div class="lib-brand__tag">Part of Shelf Talker Wizard</div>
-          </div>
-        </div>
-        <a href="#" class="lib-back" id="backToBuilder">&larr; Back to Talker Builder</a>
-      </div>
-      <div class="lib-search"><input type="text" id="librarySearch" placeholder="Search by name, distillery, or parent company&hellip;"></div>
-      <div class="lib-chips" id="libraryChips"></div>
-      <div class="lib-stats" id="libraryStats"></div>
-    </div>
-    <div class="lib-body" id="libraryBody"></div>
   </div>
 
   <div class="panel notes-panel">
     <h2>Design notes</h2>
     <div class="notes-grid">
       <div class="notes-card">
-        <h3>Recommendation: Top Nav Tab</h3>
-        <p>Reads most clearly as "a second app living here" while reusing a pattern staff already know from
-        switching workspaces in other tools. <strong>Sidebar Rail</strong> is the most scalable if more standalone
-        reference tools show up later, but it restructures the entire app shell to get there &mdash; a bigger
-        change than this one feature justifies today. <strong>Header Launcher</strong> is the smallest change but
-        reads as "one more button," not a separate space &mdash; weakest fit for what was actually asked for.</p>
+        <h3>What choosing Sidebar Rail actually commits to</h3>
+        <p>Every existing screen &mdash; Manual Entry, Import, Search, Queue, History &mdash; picks up the rail,
+        not just the Library. That's more surface area than "add one tab" or "add one button," so worth confirming
+        it's an acceptable scope increase before this becomes a real implementation task, not just a Library
+        feature.</p>
       </div>
       <div class="notes-card">
-        <h3>Decoupled from the experimental flag on purpose</h3>
-        <p>Bourbon Shelf Talkers stays experimental because it changes what prints on a real, customer-facing
-        talker &mdash; that's still worth gating. The Library is read-only staff reference; nothing about browsing
-        it affects a printed sign. Tying its visibility to an unrelated print-feature flag was never really about
-        risk, just an accident of where the data happened to live first.</p>
+        <h3>Queue &amp; History move into the rail as-is</h3>
+        <p>Their content doesn't change, only where you get to them from &mdash; today they're presumably reached
+        some other way (a menu, a tab); this proposes the rail becomes the one place all top-level screens live.
+        Placeholder panels here since redesigning those screens isn't in scope.</p>
       </div>
     </div>
     <div class="notes-card">
-      <h3>Confidence filter chips are a real staff workflow, not decoration</h3>
-      <p>"Needs verification" surfaces exactly the Estimated/Unknown entries from the Mash Bill Confidence work
-      &mdash; a standing to-do list of what's worth researching next, for free, out of data the Library already
-      has. Worth keeping as a real filter rather than trimming it in an actual build.</p>
+      <h3>Decoupling, now shown where the flag actually lives</h3>
+      <p>Last round's mockup floated the Experimental Features switch next to the entry-point comparison. Here it
+      sits in the real Settings screen, where it already lives today &mdash; flip it off, and only the Build tab's
+      Mash Bill / Nose-Palate-Finish fields react. The Library rail icon, its content, and its own confidence
+      filters are untouched, because they never read that flag to begin with.</p>
     </div>
     <div class="notes-card">
       <h3>Open questions</h3>
       <ul>
         <li>Does "Add a bourbon" belong in the Library itself now (a real add-entry flow, not just the Edit
         Talker form's "Save this mash bill" checkbox), now that it's meant to stand on its own as a reference?</li>
-        <li>Sync/storage stays exactly as designed for the Mash Bill Library (Server-PC-hosted, every register
-        polls) &mdash; the app-shell change here is presentation only, not a new data architecture.</li>
+        <li>Storage/sync stays exactly as designed for the Mash Bill Library (Server-PC-hosted, every register
+        polls) &mdash; this is presentation only, not a new data architecture.</li>
         <li>Card grid vs. table for Browse: grid reads more "reference app," but a dense table scales better past
         a few dozen entries. Worth revisiting once real shelf data is seeded in.</li>
+        <li>Rail icon order/labels for Queue and History are placeholders matching their current names &mdash;
+        not a proposal to rename or reorder the existing screens.</li>
       </ul>
     </div>
   </div>
@@ -419,83 +370,12 @@ const bourbons = [
     tasting: { nose: 'Rye spice, black pepper, caramel.', palate: 'Cinnamon, dark fruit, oak.', finish: 'Dry, peppery.', source: 'Distiller.com (auto-filled)' } },
 ];
 
-// ---------------- Section 1: entry point options ----------------
-const OPTION_HTML = {
-  tabs: `
-    <div class="option-card">
-      <div class="option-card__label"><span>Top Nav Tab</span><span class="rec-badge">Recommended</span></div>
-      <div class="mini-app">
-        <div class="mini-toplevel-tabs">
-          <button class="mini-tab is-active">&#128296; Talker Builder</button>
-          <button class="mini-tab is-library">&#129348; Bourbon Library</button>
-        </div>
-        <div class="mini-subbar">Manual Entry &middot; Import from Website &middot; Search</div>
-      </div>
-      <div class="option-card__caption">A second top-level tab, same level as the Talker Builder itself &mdash; like
-      switching workspaces. Most discoverable; most clearly says "separate space."</div>
-    </div>`,
-  sidebar: `
-    <div class="option-card">
-      <div class="option-card__label"><span>Sidebar Rail</span></div>
-      <div class="mini-app mini-app--sidebar">
-        <div class="mini-rail">
-          <span class="mini-rail__icon is-active" title="Talker Builder">&#128296;</span>
-          <span class="mini-rail__icon" title="Queue">&#128203;</span>
-          <span class="mini-rail__icon" title="History">&#128337;</span>
-          <span class="mini-rail__icon is-library" title="Bourbon Library">&#129348;</span>
-          <span class="mini-rail__icon" title="Settings">&#9881;&#65039;</span>
-        </div>
-        <div class="mini-rail-content">Talker Builder content&hellip;</div>
-      </div>
-      <div class="option-card__caption">A persistent icon rail across the whole app. Scales well if more
-      standalone tools show up later, but restructures every screen to get there &mdash; biggest change of the
-      three.</div>
-    </div>`,
-  launcher: `
-    <div class="option-card">
-      <div class="option-card__label"><span>Header Launcher</span></div>
-      <div class="mini-app">
-        <div class="mini-appbar">
-          <span>Shelf Talker Wizard</span>
-          <span class="mini-appbar__actions">
-            <button class="btn btn--small" disabled>Tools</button>
-            <button class="btn btn--small btn--library-launch" disabled>&#129348; Bourbon Library</button>
-            <button class="btn btn--small" disabled>Settings</button>
-          </span>
-        </div>
-      </div>
-      <div class="option-card__caption">One new button in the existing header, styled with the Library's own dark
-      band color so it reads as a launcher, not a menu item. Smallest change; weakest "separate app" feeling of the
-      three.</div>
-    </div>`,
-};
-
-function renderOptions() {
-  document.getElementById('optionsGrid').innerHTML = Object.values(OPTION_HTML).join('');
-}
-renderOptions();
-
-function renderSwitchCaption() {
-  const on = document.getElementById('experimentalToggle').checked;
-  document.getElementById('switchCaption').textContent = on
-    ? 'ON — Mash Bill, Nose/Palate/Finish, and Store Pick fields are active on the talker form.'
-    : 'OFF — those fields are hidden on the talker form, same as today. Watch the entry point above: it doesn’t change.';
-}
-document.getElementById('experimentalToggle').addEventListener('change', renderSwitchCaption);
-renderSwitchCaption();
-
-document.querySelectorAll('.pill[data-entry]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.pill[data-entry]').forEach((b) => b.classList.remove('is-active'));
-    btn.classList.add('is-active');
-  });
-});
-
-// ---------------- Section 2: the library itself ----------------
-let view = 'home'; // 'home' | 'profile'
+let activeRailItem = 'build';
+let experimentalOn = true;
+let libView = 'home'; // home | profile
 let selectedId = null;
 let searchQuery = '';
-let activeFilter = 'all'; // all | confirmed | reported | needs
+let activeFilter = 'all';
 
 function grainBarHtml(grains) {
   const bar = grains.map(({ g, p }) => `<span style="width:${p}%;background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></span>`).join('');
@@ -512,6 +392,77 @@ function badgeHtml(tier) {
   return `<span class="conf-badge conf-badge--${tier}">${meta.label}</span>`;
 }
 
+/* ---------------- Build view ---------------- */
+function renderBuild() {
+  const bourbonFields = experimentalOn ? `
+    <div class="bourbon-fields">
+      <div class="bourbon-fields__label">Bourbon Shelf Talkers fields</div>
+      <div class="field"><span>Mash Bill</span></div>
+      <div class="chip-row"><span class="chip-ph">75% Corn</span><span class="chip-ph">13% Rye</span><span class="chip-ph">12% Malted Barley</span></div>
+      <div class="field" style="margin-top:0.8rem;"><span>Nose / Palate / Finish</span><input placeholder="Vanilla, brown sugar, oak spice&hellip;"></div>
+    </div>` : `
+    <p class="bourbon-fields-hidden-note">Mash Bill / Nose-Palate-Finish / Store Pick fields are hidden &mdash;
+    turn on <strong>Bourbon Shelf Talkers</strong> in Settings to show them on this form.</p>`;
+  document.getElementById('contentPane').innerHTML = `
+    <div class="build-pad">
+      <div class="build-tabs">
+        <button class="build-tab is-active" type="button">Manual Entry</button>
+        <button class="build-tab" type="button">Import from Website</button>
+        <button class="build-tab" type="button">Search</button>
+      </div>
+      <div class="field"><span>Distillery</span><input value="Buffalo Trace"></div>
+      <div class="field"><span>Product Title</span><input value="Buffalo Trace Kentucky Straight Bourbon"></div>
+      <div class="field-row">
+        <div class="field"><span>Size</span><input value="750mL"></div>
+        <div class="field"><span>Price</span><input value="$27.99"></div>
+      </div>
+      ${bourbonFields}
+    </div>
+  `;
+}
+
+/* ---------------- Settings view ---------------- */
+function renderSettings() {
+  document.getElementById('contentPane').innerHTML = `
+    <div class="settings-pad">
+      <div class="settings-section">
+        <h4>Experimental Features</h4>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row__label">Bourbon Shelf Talkers</div>
+            <div class="settings-row__caption">Adds Mash Bill, Nose/Palate/Finish, and a Store Pick ribbon to the
+            talker form. Gated here because it changes what prints on a real, customer-facing sign.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="experimentalToggle" ${experimentalOn ? 'checked' : ''}>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-note">
+        &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
+        rail on the left no matter how this switch is set. Try it: flip the switch, then click Library.
+      </div>
+    </div>
+  `;
+  document.getElementById('experimentalToggle').addEventListener('change', (e) => {
+    experimentalOn = e.target.checked;
+  });
+}
+
+/* ---------------- Queue/History placeholders ---------------- */
+function renderPlaceholder(glyph, label) {
+  document.getElementById('contentPane').innerHTML = `
+    <div class="placeholder-view">
+      <div class="glyph">${glyph}</div>
+      <p><strong>${label}</strong> &mdash; existing screen, unaffected by this proposal. Not modeled in this
+      mockup; only its position (now in the rail) is being proposed.</p>
+    </div>
+  `;
+}
+
+/* ---------------- Library view ---------------- */
 function matchesFilter(b) {
   if (activeFilter === 'all') return true;
   if (activeFilter === 'confirmed') return b.confidence.tier === 'confirmed';
@@ -524,8 +475,7 @@ function matchesSearch(b) {
   if (!q) return true;
   return b.title.toLowerCase().includes(q) || b.distillery.toLowerCase().includes(q) || b.parent.toLowerCase().includes(q);
 }
-
-function renderChips() {
+function chipsHtml() {
   const counts = {
     all: bourbons.length,
     confirmed: bourbons.filter((b) => b.confidence.tier === 'confirmed').length,
@@ -538,33 +488,23 @@ function renderChips() {
     { key: 'reported', label: `📋 Reported (${counts.reported})` },
     { key: 'needs', label: `⚠️ Needs verification (${counts.needs})` },
   ];
-  document.getElementById('libraryChips').innerHTML = chips.map((c) => `
-    <button type="button" class="chip-filter ${activeFilter === c.key ? 'is-active' : ''}" data-filter="${c.key}">${c.label}</button>
-  `).join('');
-  document.querySelectorAll('.chip-filter[data-filter]').forEach((btn) => {
-    btn.addEventListener('click', () => { activeFilter = btn.dataset.filter; renderLibrary(); });
-  });
+  return chips.map((c) => `<button type="button" class="chip-filter ${activeFilter === c.key ? 'is-active' : ''}" data-filter="${c.key}">${c.label}</button>`).join('');
 }
-
-function renderStats() {
+function statsHtml() {
   const distilleries = new Set(bourbons.map((b) => b.distillery)).size;
   const parents = new Set(bourbons.map((b) => b.parent)).size;
   const needsCount = bourbons.filter((b) => b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown').length;
-  document.getElementById('libraryStats').innerHTML = `
+  return `
     <div class="lib-stat"><b>${bourbons.length}</b><span>Bourbons</span></div>
     <div class="lib-stat"><b>${distilleries}</b><span>Distilleries</span></div>
     <div class="lib-stat"><b>${parents}</b><span>Parent companies</span></div>
     <div class="lib-stat"><b>${needsCount}</b><span>Need verification</span></div>
   `;
 }
-
-function renderHome() {
+function homeBodyHtml() {
   const rows = bourbons.filter((b) => matchesFilter(b) && matchesSearch(b));
-  if (!rows.length) {
-    document.getElementById('libraryBody').innerHTML = '<div class="empty-state">No bourbons match this search/filter.</div>';
-    return;
-  }
-  document.getElementById('libraryBody').innerHTML = `
+  if (!rows.length) return '<div class="empty-state">No bourbons match this search/filter.</div>';
+  return `
     <div class="card-grid">
       ${rows.map((b) => {
         const barInner = b.grains ? grainBarHtml(b.grains).bar : '';
@@ -583,19 +523,14 @@ function renderHome() {
       }).join('')}
     </div>
   `;
-  document.querySelectorAll('.card[data-id]').forEach((btn) => {
-    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); view = 'profile'; renderLibrary(); });
-  });
 }
-
-function renderProfile() {
+function profileBodyHtml() {
   const b = bourbons.find((x) => x.id === selectedId);
   const siblings = bourbons.filter((x) => x.id !== b.id && x.distillery === b.distillery);
   const mashBillBlock = b.grains
     ? (() => { const { bar, legend } = grainBarHtml(b.grains); return `<div class="grain-bar">${bar}</div><div class="grain-legend">${legend}</div>`; })()
     : `<div class="grain-bar grain-bar--empty"></div><p class="grain-empty-note">No mash bill on file for this expression.</p>`;
-
-  document.getElementById('libraryBody').innerHTML = `
+  return `
     <div class="crumb"><button type="button" id="crumbBack">&larr; Bourbon Library</button> / ${b.title}</div>
     <div class="profile-head">
       <div>
@@ -648,20 +583,53 @@ function renderProfile() {
       </div>
     </div>
   `;
-  document.getElementById('crumbBack').addEventListener('click', () => { view = 'home'; renderLibrary(); });
-  document.querySelectorAll('.info-card .card[data-id]').forEach((btn) => {
-    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderLibrary(); });
+}
+function renderLibrary() {
+  document.getElementById('contentPane').innerHTML = `
+    <div class="lib-band">
+      <div class="lib-band__top">
+        <div class="lib-brand">
+          <div class="lib-brand__icon">&#129348;</div>
+          <div>
+            <div class="lib-brand__name">Bourbon Library</div>
+            <div class="lib-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+      </div>
+      <div class="lib-search"><input type="text" id="librarySearch" placeholder="Search by name, distillery, or parent company&hellip;" value="${searchQuery}"></div>
+      <div class="lib-chips" id="libraryChips">${chipsHtml()}</div>
+      <div class="lib-stats">${statsHtml()}</div>
+    </div>
+    <div class="lib-body" id="libraryBody">${libView === 'home' ? homeBodyHtml() : profileBodyHtml()}</div>
+  `;
+  document.getElementById('librarySearch').addEventListener('input', (e) => { searchQuery = e.target.value; libView = 'home'; renderLibrary(); });
+  document.querySelectorAll('.chip-filter[data-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => { activeFilter = btn.dataset.filter; renderLibrary(); });
+  });
+  document.querySelectorAll('#libraryBody .card[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); libView = 'profile'; renderLibrary(); });
+  });
+  const crumbBack = document.getElementById('crumbBack');
+  if (crumbBack) crumbBack.addEventListener('click', () => { libView = 'home'; renderLibrary(); });
+}
+
+/* ---------------- rail wiring ---------------- */
+function renderRailState() {
+  document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.view === activeRailItem);
   });
 }
-
-function renderLibrary() {
-  renderStats();
-  renderChips();
-  if (view === 'home') renderHome(); else renderProfile();
+function renderContent() {
+  renderRailState();
+  if (activeRailItem === 'build') renderBuild();
+  else if (activeRailItem === 'settings') renderSettings();
+  else if (activeRailItem === 'library') renderLibrary();
+  else if (activeRailItem === 'queue') renderPlaceholder('&#128203;', 'Queue');
+  else if (activeRailItem === 'history') renderPlaceholder('&#128337;', 'History');
 }
+document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
+  btn.addEventListener('click', () => { activeRailItem = btn.dataset.view; renderContent(); });
+});
 
-document.getElementById('librarySearch').addEventListener('input', (e) => { searchQuery = e.target.value; view = 'home'; renderLibrary(); });
-document.getElementById('backToBuilder').addEventListener('click', (e) => { e.preventDefault(); view = 'home'; selectedId = null; searchQuery = ''; document.getElementById('librarySearch').value = ''; renderLibrary(); });
-
-renderLibrary();
+renderContent();
 </script>

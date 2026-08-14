@@ -103,20 +103,28 @@ browser.
   behind Settings &rarr; Experimental Features exactly as today, but takes
   the **Bourbon Library** itself out from under that toggle and out of
   Tools&hellip; into something that reads as its own space within the
-  program. Compares three entry points &mdash; a top-level **Talker
-  Builder / Bourbon Library** tab switch (recommended), a persistent
-  sidebar icon rail, and a header launcher button &mdash; with a live
-  Experimental Features switch proving the entry point never reacts to it,
-  only the talker form's own fields do. Once inside, the Library gets a
-  distinct dark "reading room" header band (same fonts/radii/accent family
-  as the rest of the app, just a different room) with search, a card grid
-  (swaps the flat table for something more browsable), working confidence
-  filter chips (All / Confirmed / Reported / **Needs verification**, the
-  last one doubling as a real research to-do list), and the profile page
-  from bourbon-profile-page.html re-chromed with a back-to-grid breadcrumb.
-  Presentation only &mdash; storage/sync stays the existing Mash
-  Bill Library design; open questions (a real "Add a bourbon" flow, grid
-  vs. table at scale) are called out rather than resolved.
+  program. Compared three entry points and settled on a persistent
+  **Sidebar Rail** &mdash; Build / Queue / History / Library / Settings as
+  icons down the left edge of the whole app, with Library as one
+  first-class icon rather than a tab switch or a header button; the
+  biggest structural change of the three options, but the one that most
+  reads as "a set of apps living together." The rail is wired up for
+  real: click between icons to swap the content pane, and flip
+  **Bourbon Shelf Talkers** off on the real Settings screen to see only
+  the Build tab's fields react &mdash; the Library icon and its content
+  are untouched, because they never read that flag. Once inside, the
+  Library gets a distinct dark "reading room" header band (same
+  fonts/radii/accent family as the rest of the app, just a different
+  room) with search, a card grid (swaps the flat table for something more
+  browsable), working confidence filter chips (All / Confirmed / Reported
+  / **Needs verification**, the last one doubling as a real research
+  to-do list), and the profile page from bourbon-profile-page.html
+  re-chromed with a back-to-grid breadcrumb. Presentation only &mdash;
+  storage/sync stays the existing Mash Bill Library design; Queue/History
+  are placeholder panels since redesigning those screens isn't in scope.
+  Open questions (a real "Add a bourbon" flow, grid vs. table at scale,
+  whether the rail's scope increase across every screen is acceptable)
+  are called out rather than resolved.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.
