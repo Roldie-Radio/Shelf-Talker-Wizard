@@ -151,8 +151,16 @@ browser.
   Shelf Talker screen. Flags one open question this raises: the Queue
   side panel itself still only renders on the Shelf Talker screen even
   though File &gt; Save Queue is now reachable from anywhere, which the
-  notes call out rather than resolve. Other open questions (a real "Add a
-  bourbon" flow, grid vs. table at scale) also remain.
+  notes call out rather than resolve. Fixes a second dropped piece too:
+  the real Shelf Talker screen is a three-column layout (form, **Live
+  Preview**, Queue, see <code>.layout</code> in styles.css) and this
+  mockup had quietly collapsed to two columns, form and Queue only. Live
+  Preview is back as its own column with the same Current Talker / Full
+  Page toggle the real app uses, showing a simplified preview card that
+  still reacts to the same state as the rest of the screen &mdash;
+  Bourbon Shelf Talkers on/off toggles its mash bill bar, and Full Page
+  renders one small card per queued item. Other open questions (a real
+  "Add a bourbon" flow, grid vs. table at scale) also remain.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

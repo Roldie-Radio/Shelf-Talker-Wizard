@@ -148,8 +148,30 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .build-tabs { display: flex; gap: 0.3rem; }
 .build-tab { border: 1px solid var(--ui-border); background: var(--ui-panel-sunken); color: var(--ui-ink-soft); font-family: inherit; font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 8px; }
 .build-tab.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
-.build-columns { display: grid; grid-template-columns: 1fr 240px; gap: 1.5rem; align-items: start; }
-@media (max-width: 760px) { .build-columns { grid-template-columns: 1fr; } }
+.build-columns { display: grid; grid-template-columns: 300px 1fr 230px; gap: 1.3rem; align-items: start; }
+@media (max-width: 1000px) { .build-columns { grid-template-columns: 1fr; } }
+
+/* ---------- Live Preview panel (index.html's .panel--preview, third
+   column of its own three-column .layout - form / preview / queue - that
+   this mockup had dropped entirely) ---------- */
+.build-preview { display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+.preview-header { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.preview-header h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); }
+.preview-toggle { display: inline-flex; gap: 0.2rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.15rem; }
+.preview-toggle button { border: none; background: transparent; padding: 0.28rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
+.preview-toggle button.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.preview-stage { display: flex; justify-content: center; padding: 0.4rem 0.4rem 0.6rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 10px; min-height: 200px; align-items: center; }
+.preview-sheet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; padding: 0.5rem; }
+.preview-card { background: #fff; border: 2px solid var(--ink); border-radius: 3px; padding: 0.6rem 0.55rem; width: 140px; display: flex; flex-direction: column; gap: 0.3rem; color: var(--ink); }
+.preview-card--sheet { width: 96px; padding: 0.4rem 0.35rem; gap: 0.2rem; }
+.preview-card__title { font-weight: 800; font-size: 0.7rem; line-height: 1.2; }
+.preview-card--sheet .preview-card__title { font-size: 0.56rem; }
+.preview-card__desc { font-size: 0.58rem; color: #4a4a4a; line-height: 1.25; }
+.preview-card--sheet .preview-card__desc { display: none; }
+.preview-card__mashbar { display: flex; height: 5px; border-radius: 2px; overflow: hidden; margin-top: 0.05rem; }
+.preview-card__mashbar span { height: 100%; }
+.preview-card__price { margin-top: auto; font-weight: 800; font-size: 0.8rem; color: var(--sale-red); }
+.preview-card--sheet .preview-card__price { font-size: 0.64rem; }
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; max-width: 420px; }
 .field span { color: var(--ui-ink-soft); }
 .field input { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font-weight: 400; }
@@ -298,6 +320,14 @@ details.sources[open] summary::before { content: "▾ "; }
       moves the last two menus off the bar entirely &mdash; open Settings below to see them as two new sections
       there instead.
     </p>
+    <p>
+      A second gap, same story: the real Shelf Talker screen is a <strong>three-column layout</strong> &mdash;
+      form, <strong>Live Preview</strong> (Current Talker / Full Page toggle), Queue &mdash; and this mockup had
+      quietly dropped the middle column, leaving just form and Queue. It's back now, wired to the same toggle and
+      showing a live mini preview card that reacts to the Bourbon Shelf Talkers switch (the mash bill bar
+      only renders in Current Talker mode when the toggle is on) and to the Queue, which Full Page mode renders
+      as a small sheet of cards.
+    </p>
   </div>
 
   <div class="device-frame">
@@ -406,6 +436,15 @@ details.sources[open] summary::before { content: "▾ "; }
       Shelf-Talker-specific either way.</p>
     </div>
     <div class="notes-card">
+      <h3>Live Preview: restored, was missing entirely</h3>
+      <p>The real Shelf Talker screen (<code>.layout</code> in styles.css) is a three-column grid &mdash; form,
+      Live Preview, Queue &mdash; and this mockup's Shelf Talker view had silently collapsed to just two columns.
+      Restored as its own middle column with the same Current Talker / Full Page toggle the real app uses; the
+      preview card is a simplified stand-in (title/price/mash-bill-bar), not the actual card renderer, but it
+      reacts to the same state the rest of this view does &mdash; Bourbon Shelf Talkers on/off changes whether the
+      Current Talker preview shows a mash bill bar, and Full Page renders one small card per queued item.</p>
+    </div>
+    <div class="notes-card">
       <h3>Open questions</h3>
       <ul>
         <li>Queue visibility outside Shelf Talker (see above) &mdash; still open.</li>
@@ -472,6 +511,7 @@ const bourbons = [
 
 let activeRailItem = 'shelfTalker';
 let experimentalOn = true;
+let previewMode = 'sheet'; // single | sheet - matches index.html's own Full Page default
 let libView = 'home'; // home | profile
 let selectedId = null;
 let searchQuery = '';
@@ -493,9 +533,43 @@ function badgeHtml(tier) {
 }
 
 /* ---------------- Shelf Talker view (Build, renamed - includes the Queue
-   side panel and History button that already live on this one screen; the
-   File/Tools menu bar is now static chrome above the rail, not part of
-   this view - see the static .mb-bar in the page markup) ---------------- */
+   side panel, Live Preview panel, and History button that already live on
+   this one screen; the File/Tools menu bar is now static chrome above the
+   rail, not part of this view - see the static .mb-bar in the page
+   markup) ---------------- */
+const queueItems = [
+  { title: 'Buffalo Trace', size: '750mL', price: '$27.99' },
+  { title: 'Woodford Reserve', size: '750mL', price: '$34.99' },
+  { title: "Maker's Mark", size: '750mL', price: '$29.99' },
+];
+
+function previewStageHtml() {
+  if (previewMode === 'single') {
+    const mashBar = experimentalOn ? `
+      <div class="preview-card__mashbar">
+        <span style="width:75%;background:${GRAIN_COLORS.Corn}"></span>
+        <span style="width:13%;background:${GRAIN_COLORS.Rye}"></span>
+        <span style="width:12%;background:${GRAIN_COLORS['Malted Barley']}"></span>
+      </div>` : '';
+    return `
+      <div class="preview-card">
+        <div class="preview-card__title">Buffalo Trace Kentucky Straight Bourbon</div>
+        <div class="preview-card__desc">Kentucky Straight Bourbon Whiskey</div>
+        ${mashBar}
+        <div class="preview-card__price">$27.99</div>
+      </div>`;
+  }
+  return `
+    <div class="preview-sheet">
+      ${queueItems.map((q) => `
+        <div class="preview-card preview-card--sheet">
+          <div class="preview-card__title">${q.title}</div>
+          <div class="preview-card__price">${q.price}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
 function renderBuild() {
   const bourbonFields = experimentalOn ? `
     <div class="bourbon-fields">
@@ -526,15 +600,26 @@ function renderBuild() {
           </div>
           ${bourbonFields}
         </div>
+        <div class="build-preview">
+          <div class="preview-header">
+            <h4>Live Preview</h4>
+            <div class="preview-toggle" id="previewToggle">
+              <button type="button" data-mode="single" class="${previewMode === 'single' ? 'is-active' : ''}">Current Talker</button>
+              <button type="button" data-mode="sheet" class="${previewMode === 'sheet' ? 'is-active' : ''}">Full Page</button>
+            </div>
+          </div>
+          <div class="preview-stage">${previewStageHtml()}</div>
+        </div>
         <div class="build-queue">
-          <div class="build-queue__header"><h4>Queue</h4><span class="build-queue__count">3</span></div>
-          <div class="build-queue__item">Buffalo Trace &middot; 750mL &middot; $27.99</div>
-          <div class="build-queue__item">Woodford Reserve &middot; 750mL &middot; $34.99</div>
-          <div class="build-queue__item">Maker's Mark &middot; 750mL &middot; $29.99</div>
+          <div class="build-queue__header"><h4>Queue</h4><span class="build-queue__count">${queueItems.length}</span></div>
+          ${queueItems.map((q) => `<div class="build-queue__item">${q.title} &middot; ${q.size} &middot; ${q.price}</div>`).join('')}
         </div>
       </div>
     </div>
   `;
+  document.querySelectorAll('#previewToggle button').forEach((btn) => {
+    btn.addEventListener('click', () => { previewMode = btn.dataset.mode; renderBuild(); });
+  });
 }
 
 /* ---------------- Settings view ---------------- */
