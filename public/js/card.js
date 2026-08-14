@@ -233,6 +233,13 @@ function buildFlavorHtml(talker) {
 // the other's - see the comment on the Riesling rule itself for how it
 // keeps the two apart.
 const WINE_PAIRING_RULES = [
+  // Napa's own test is deliberately the only one of the four California/
+  // Washington entries with a bare `california` fallback, and is ordered
+  // last among them so that fallback can't preempt a more specific match -
+  // "Sonoma County, California" would otherwise hit Napa's regex on the
+  // word "California" before ever reaching the Sonoma entry below it. A
+  // title that just says "California" with no county/AVA named still
+  // falls through to Napa, the most recognized default.
   { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
     pairings: [
       { icon: '🥩', food: 'Grilled Steak' },
@@ -243,6 +250,12 @@ const WINE_PAIRING_RULES = [
     regions: [
       { id: 'bordeaux', label: 'Bordeaux, France', test: /bordeaux|m[eé]doc|pauillac|saint-julien/i,
         swapIndex: 1, swap: { icon: '🧀', food: 'Roquefort' } },
+      { id: 'sonoma', label: 'Sonoma County, California', test: /sonoma/i,
+        swapIndex: 2, swap: { icon: '🦆', food: 'Seared Duck Breast' } },
+      { id: 'paso-robles', label: 'Paso Robles, California', test: /paso robles/i,
+        swapIndex: 0, swap: { icon: '🔥', food: 'Santa Maria Tri-Tip' } },
+      { id: 'washington', label: 'Washington State', test: /washington|columbia valley/i,
+        swapIndex: 1, swap: { icon: '🦬', food: 'Grilled Bison' } },
       { id: 'napa', label: 'Napa Valley, California', test: /napa|california/i,
         swapIndex: 3, swap: { icon: '🔥', food: 'Smoked Brisket' } },
     ] },
@@ -278,6 +291,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🌭', food: 'Spicy Sausage' },
       { icon: '🧀', food: 'Blue Cheese' },
       { icon: '🍕', food: 'Pepperoni Pizza' },
+    ],
+    regions: [
+      { id: 'lodi', label: 'Lodi, California', test: /\blodi\b/i,
+        swapIndex: 0, swap: { icon: '🔥', food: 'Smoked Baby Back Ribs' } },
+      { id: 'dry-creek', label: 'Dry Creek Valley, Sonoma', test: /dry creek|russian river|\bsonoma\b/i,
+        swapIndex: 1, swap: { icon: '🌶️', food: 'Peppercorn-Crusted Steak' } },
     ] },
   { id: 'merlot', label: 'Merlot', test: /merlot/i,
     pairings: [
@@ -285,6 +304,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍄', food: 'Mushroom Risotto' },
       { icon: '🧀', food: 'Soft Cheeses' },
       { icon: '🍝', food: 'Tomato Pasta' },
+    ],
+    regions: [
+      { id: 'california', label: 'California', test: /napa|sonoma|california/i,
+        swapIndex: 0, swap: { icon: '🍖', food: 'Herb-Roasted Pork Loin' } },
+      { id: 'washington', label: 'Washington State', test: /washington|columbia valley/i,
+        swapIndex: 3, swap: { icon: '🦌', food: 'Venison Medallions' } },
     ] },
   { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir/i,
     pairings: [
@@ -396,6 +421,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍗', food: 'Roast Chicken' },
       { icon: '🍝', food: 'Creamy Pasta' },
       { icon: '🌽', food: 'Grilled Corn' },
+    ],
+    regions: [
+      { id: 'sonoma-coast', label: 'Sonoma Coast, California', test: /sonoma coast|russian river|\bsonoma\b/i,
+        swapIndex: 3, swap: { icon: '🐟', food: 'Grilled Halibut' } },
+      { id: 'napa', label: 'Napa Valley, California', test: /napa/i,
+        swapIndex: 2, swap: { icon: '🧈', food: 'Butter-Basted Scallops' } },
     ] },
   { id: 'sauvignon-blanc', label: 'Sauvignon Blanc', test: /sauvignon blanc/i,
     pairings: [
