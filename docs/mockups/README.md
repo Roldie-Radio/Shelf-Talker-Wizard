@@ -117,10 +117,16 @@ browser.
   **Shelf Talker** is a small inline-SVG rendering of an actual printed
   talker (white card, dark border, a red price block, using the same
   fixed <code>--ink</code>/<code>--sale-red</code> print colors the real
-  cards use), and **Bourbon Library** is a Glencairn glass partly filled
-  with amber liquid, clipped to the glass's own outline so the "whisky"
-  follows the glass shape &mdash; also used for the Library's own header
-  band icon. Once inside the Library, it gets a distinct dark "reading
+  cards use), and **Bourbon Library** is a Glencairn glass redrawn (from a
+  user-supplied reference image) as two stacked SVG paths &mdash; a
+  solid-filled bowl/foot underneath, a stroke-only outline on top spanning
+  rim to base &mdash; so the neck reads as glass and the bowl as contained
+  liquid, no clip-path needed. Same technique on the rail icon (gold fill)
+  and the Library header band's own icon (cream fill, so it reads against
+  that icon's gold badge instead of disappearing into it). The rail's
+  brand mark at the top is the real Liquor Outlet Wine Cellars logo
+  (embedded inline, base64) now too, not a placeholder "STW" badge. Once
+  inside the Library, it gets a distinct dark "reading
   room" header band (same fonts/radii/accent family as the rest of the
   app, just a different room) with search, a card grid (swaps the flat
   table for something more browsable), working confidence filter chips
