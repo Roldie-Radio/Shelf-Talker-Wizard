@@ -128,8 +128,20 @@ browser.
   doubling as a real research to-do list), and the profile page from
   bourbon-profile-page.html re-chromed with a back-to-grid breadcrumb.
   Presentation only &mdash; storage/sync stays the existing Mash Bill
-  Library design. Open questions (a real "Add a bourbon" flow, grid vs.
-  table at scale) are called out rather than resolved.
+  Library design. Also surfaces a gap earlier passes missed entirely: the
+  real app's Windows-style menu bar (File / Tools / Advanced / Help,
+  above the app bar, see <code>#menuBar</code> in index.html) never
+  appeared in this mockup before. File and Tools are Queue/talker-specific
+  (Open/Save/Find Queue, Beer Talker Info, Wine Pairing Rules) and nest
+  inside Shelf Talker as a working menu bar (native
+  <code>&lt;details&gt;</code> dropdowns, no extra JS) either way &mdash;
+  Mash Bill Library and Settings already dropped out of Tools since both
+  have rail icons now. Where **Advanced** and **Help** land is still
+  open, so a comparison toggle above the rail switches between keeping
+  them nested in Shelf Talker's menu bar (status quo shape) or moving them
+  into two new sections on the Settings screen. Open questions (that menu
+  bar placement, a real "Add a bourbon" flow, grid vs. table at scale) are
+  called out rather than resolved.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

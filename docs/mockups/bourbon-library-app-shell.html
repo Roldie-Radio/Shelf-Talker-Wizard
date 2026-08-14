@@ -87,6 +87,26 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
 .decision-strip { display: flex; align-items: center; gap: 0.5rem; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.55rem 0.8rem; font-size: 0.85rem; font-weight: 700; width: fit-content; }
 
+.pill-group { display: inline-flex; gap: 0.3rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.2rem; }
+.pill { border: none; background: transparent; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
+.pill.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.compare-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.7rem 1.6rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.compare-toolbar__label { font-size: 0.8rem; font-weight: 700; color: var(--ui-ink-soft); }
+
+/* ---------- menu bar (File/Tools/Advanced/Help - nested inside Shelf
+   Talker, same as index.html's #menuBar; native <details> gives working
+   click-to-open dropdowns with no JS of their own) ---------- */
+.mb-bar { display: flex; gap: 0.1rem; padding: 0.35rem 0 0.6rem; margin-bottom: 0.8rem; border-bottom: 1px solid var(--ui-border); font-size: 0.82rem; }
+.mb-menu { position: relative; }
+.mb-menu summary { list-style: none; cursor: pointer; padding: 0.3rem 0.65rem; border-radius: 6px; font-weight: 600; color: var(--ui-ink-soft); }
+.mb-menu summary::-webkit-details-marker { display: none; }
+.mb-menu summary:hover, .mb-menu[open] summary { background: var(--ui-hover); color: var(--ui-ink); }
+.mb-dropdown { position: absolute; top: 100%; left: 0; margin-top: 0.2rem; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 8px; box-shadow: 0 10px 26px var(--ui-shadow); padding: 0.3rem; min-width: 190px; z-index: 4; }
+.mb-dropdown-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; text-align: left; border: none; background: transparent; font-family: inherit; font-size: 0.82rem; color: var(--ui-ink); padding: 0.4rem 0.6rem; border-radius: 5px; cursor: pointer; }
+.mb-dropdown-item:hover { background: var(--ui-hover); }
+.mb-dropdown-item .accel { font-size: 0.72rem; color: var(--ui-muted); }
+.mb-sep { height: 1px; background: var(--ui-border); margin: 0.25rem 0.3rem; }
+
 .device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
 .device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
 .device-chrome__dots { display: flex; gap: 0.3rem; }
@@ -269,12 +289,27 @@ details.sources[open] summary::before { content: "▾ "; }
       pane. Flip <strong>Bourbon Shelf Talkers</strong> off in Settings, then check the Shelf Talker tab and the
       Library icon &mdash; one changes, the other doesn't.
     </p>
+    <p>
+      One thing earlier versions left out entirely: the real app also has a Windows-style <strong>menu bar</strong>
+      (File / Tools / Advanced / Help, above the app bar) that never appeared in this mockup. File and most of
+      Tools are Queue/talker-specific and clearly belong nested inside Shelf Talker, same as everything else &mdash;
+      but Advanced (Export File Settings, Server PC) and Help (What's New, About) are app-wide, not talker-specific,
+      and now that Settings has its own rail icon there's a real choice about where they land. The toolbar below
+      compares both; open File/Tools/Advanced/Help in the Shelf Talker view to see what's actually in each one.
+    </p>
   </div>
 
   <div class="device-frame">
     <div class="device-chrome">
       <div class="device-chrome__dots"><span></span><span></span><span></span></div>
       <div class="device-chrome__label">Shelf Talker Wizard</div>
+    </div>
+    <div class="compare-toolbar">
+      <span class="compare-toolbar__label">Advanced &amp; Help live in&hellip;</span>
+      <div class="pill-group" role="group" aria-label="Compare menu bar location">
+        <button type="button" class="pill is-active" data-menubar="shelfTalker">Menu Bar in Shelf Talker</button>
+        <button type="button" class="pill" data-menubar="settings">Settings</button>
+      </div>
     </div>
     <div class="app-shell">
       <div class="rail" id="rail">
@@ -341,8 +376,19 @@ details.sources[open] summary::before { content: "▾ "; }
       to begin with.</p>
     </div>
     <div class="notes-card">
+      <h3>Menu bar: not yet decided, shown both ways</h3>
+      <p>File and Tools are Queue/talker-specific (Open/Save/Find Queue, Beer Talker Info, Wine Pairing Rules) and
+      stay nested inside Shelf Talker either way &mdash; Mash Bill Library and Settings both already dropped out of
+      Tools since they have rail icons now. Advanced (Export File Settings, View Export File, Server PC) and Help
+      (What's New, Check for Updates, About) are the open part: app-wide, not talker-specific, so there's a real
+      argument for moving them into Settings now that Settings is a first-class destination rather than a menu
+      item. Toggle the comparison switch above the rail to see both; no default picked yet.</p>
+    </div>
+    <div class="notes-card">
       <h3>Open questions</h3>
       <ul>
+        <li>Menu bar: keep Advanced/Help nested in Shelf Talker, or move them into Settings (see above) &mdash;
+        still open.</li>
         <li>Does "Add a bourbon" belong in the Library itself now (a real add-entry flow, not just the Edit
         Talker form's "Save this mash bill" checkbox), now that it's meant to stand on its own as a reference?</li>
         <li>Storage/sync stays exactly as designed for the Mash Bill Library (Server-PC-hosted, every register
@@ -406,6 +452,7 @@ const bourbons = [
 
 let activeRailItem = 'shelfTalker';
 let experimentalOn = true;
+let menuBarMode = 'shelfTalker'; // shelfTalker | settings - where Advanced/Help live
 let libView = 'home'; // home | profile
 let selectedId = null;
 let searchQuery = '';
@@ -427,7 +474,54 @@ function badgeHtml(tier) {
 }
 
 /* ---------------- Shelf Talker view (Build, renamed - includes the Queue
-   side panel and History button that already live on this one screen) ---------------- */
+   side panel, History button, and menu bar that already live on this one
+   screen) ---------------- */
+function menuBarHtml() {
+  const advancedHelp = menuBarMode === 'shelfTalker' ? `
+    <details class="mb-menu">
+      <summary>Advanced</summary>
+      <div class="mb-dropdown">
+        <button type="button" class="mb-dropdown-item"><span>Export File Settings&hellip;</span></button>
+        <button type="button" class="mb-dropdown-item"><span>View Export File&hellip;</span></button>
+        <div class="mb-sep"></div>
+        <button type="button" class="mb-dropdown-item"><span>Server PC&hellip;</span></button>
+      </div>
+    </details>
+    <details class="mb-menu">
+      <summary>Help</summary>
+      <div class="mb-dropdown">
+        <button type="button" class="mb-dropdown-item"><span>Help</span></button>
+        <button type="button" class="mb-dropdown-item"><span>What&rsquo;s New</span></button>
+        <div class="mb-sep"></div>
+        <button type="button" class="mb-dropdown-item"><span>Check for Updates&hellip;</span></button>
+        <div class="mb-sep"></div>
+        <button type="button" class="mb-dropdown-item"><span>About Shelf Talker Wizard</span></button>
+      </div>
+    </details>` : '';
+  return `
+    <div class="mb-bar">
+      <details class="mb-menu">
+        <summary>File</summary>
+        <div class="mb-dropdown">
+          <button type="button" class="mb-dropdown-item"><span>Open Queue&hellip;</span><span class="accel">Ctrl+O</span></button>
+          <button type="button" class="mb-dropdown-item"><span>Save Queue</span><span class="accel">Ctrl+S</span></button>
+          <div class="mb-sep"></div>
+          <button type="button" class="mb-dropdown-item"><span>Exit</span></button>
+        </div>
+      </details>
+      <details class="mb-menu">
+        <summary>Tools</summary>
+        <div class="mb-dropdown">
+          <button type="button" class="mb-dropdown-item"><span>Find Queue&hellip;</span><span class="accel">Ctrl+F</span></button>
+          <div class="mb-sep"></div>
+          <button type="button" class="mb-dropdown-item"><span>Beer Talker Info</span></button>
+          <button type="button" class="mb-dropdown-item"><span>Wine Pairing Rules&hellip;</span></button>
+        </div>
+      </details>
+      ${advancedHelp}
+    </div>
+  `;
+}
 function renderBuild() {
   const bourbonFields = experimentalOn ? `
     <div class="bourbon-fields">
@@ -440,6 +534,7 @@ function renderBuild() {
     turn on <strong>Bourbon Shelf Talkers</strong> in Settings to show them on this form.</p>`;
   document.getElementById('contentPane').innerHTML = `
     <div class="build-pad">
+      ${menuBarHtml()}
       <div class="build-top-row">
         <div class="build-tabs">
           <button class="build-tab is-active" type="button">Manual Entry</button>
@@ -471,6 +566,17 @@ function renderBuild() {
 
 /* ---------------- Settings view ---------------- */
 function renderSettings() {
+  const advancedHelpSections = menuBarMode === 'settings' ? `
+    <div class="settings-section" style="margin-top:1.1rem;">
+      <h4>Advanced</h4>
+      <div class="settings-row"><div><div class="settings-row__label">Export File Settings&hellip;</div></div><button type="button" class="btn btn--small">Open</button></div>
+      <div class="settings-row" style="margin-top:0.5rem;"><div><div class="settings-row__label">View Export File&hellip;</div></div><button type="button" class="btn btn--small">Open</button></div>
+      <div class="settings-row" style="margin-top:0.5rem;"><div><div class="settings-row__label">Server PC&hellip;</div></div><button type="button" class="btn btn--small">Open</button></div>
+    </div>
+    <div class="settings-section" style="margin-top:1.1rem;">
+      <h4>Help</h4>
+      <div class="settings-row"><div><div class="settings-row__label">What&rsquo;s New / Check for Updates / About</div></div><button type="button" class="btn btn--small">Open</button></div>
+    </div>` : '';
   document.getElementById('contentPane').innerHTML = `
     <div class="settings-pad">
       <div class="settings-section">
@@ -488,6 +594,7 @@ function renderSettings() {
           </label>
         </div>
       </div>
+      ${advancedHelpSections}
       <div class="settings-note">
         &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
         rail on the left no matter how this switch is set. Try it: flip the switch, then click Library.
@@ -674,6 +781,15 @@ function renderContent() {
 }
 document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
   btn.addEventListener('click', () => { activeRailItem = btn.dataset.view; renderContent(); });
+});
+
+document.querySelectorAll('.pill[data-menubar]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pill[data-menubar]').forEach((b) => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    menuBarMode = btn.dataset.menubar;
+    renderContent();
+  });
 });
 
 renderContent();
