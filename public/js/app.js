@@ -41,6 +41,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.12',
+      items: [
+        'Fixed: Beer Name\'s Auto-size toggle wasn\'t actually defaulting on for beer scanned/looked up via Scan UPC, SKU Lookup, Search by Name, or Import - filling the form from a lookup was silently forcing it off (even after picking a beer from the "Pick the Right Beer" dialog), overriding the on-by-default behavior added in 3.3.3. It now defaults on for beer through every one of those paths, same as starting a beer entry from Manual Entry already did.',
+        'Fixed: SKU Lookup and Search by Name (Beer) now go straight to the queue after picking a beer from the "Pick the Right Beer" dialog (Recommended or one of the alternates), instead of stopping for a manual "Add to Queue" click - matches Scan UPC\'s own behavior from 3.2.6.',
+      ],
+    },
+    {
       version: '3.3.11',
       items: [
         'Fixed: Scan UPC and SKU Lookup could silently switch Product Type from Beer to Wine/Spirits after clicking "Use This Match" on the Confirm Untappd Match popup - the export file\'s (or store page\'s) own category/department text was getting merged into the form under the same field Product Type uses, and almost never spelled "beer" exactly.',
@@ -1527,7 +1534,15 @@
     applyFormMode();
     els.title.value = talker.title || '';
     els.titleFontSize.value = talker.titleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].title;
-    els.titleAutoSize.checked = !!talker.titleAutoSize;
+    // Same beer default as setCategory/resetForm (see their own comments) -
+    // a freshly-looked-up product (UPC/SKU/name-search/import/Untappd
+    // picker) never includes this key, so `undefined` means "not specified"
+    // and falls back to the category default here too, same as those two.
+    // An explicit true/false (a saved/edited talker's own readForm()
+    // snapshot, always a real boolean) is honored as-is either way.
+    els.titleAutoSize.checked = talker.titleAutoSize === undefined
+      ? currentCategory === 'beer'
+      : !!talker.titleAutoSize;
     els.vintage.value = talker.vintage || '';
     els.description.value = talker.description || '';
     els.descriptionFontSize.value = talker.descriptionFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].description;
@@ -2809,24 +2824,34 @@
   // to support rapid repeat lookups in place (see applySkuLookupProduct's
   // own note on staying put). Reuses the form's real submit handler via
   // requestSubmit() - same validate/save/resetForm path as clicking "Add
-  // to Queue" on Manual Entry, not a second copy of that logic.
-  els.skuSaveBtn.addEventListener('click', () => {
+  // to Queue" on Manual Entry, not a second copy of that logic. Pulled into
+  // its own function, rather than living only in skuSaveBtn's click handler
+  // below, so a beer picked from the "Pick the Right Beer" dialog (see
+  // els.skuLookupBtn/els.skuHtmlBtn below) can trigger it automatically,
+  // same as Scan UPC's addScannedUpcToQueue. `message` (optional) is the
+  // auto-add path's own success text; the manual button below has no pick
+  // of its own to describe, so it falls back to the plain default. Returns
+  // whether the add actually went through, same as addScannedUpcToQueue.
+  function addSkuLookupToQueue(message) {
     els.form.requestSubmit();
     if (!els.formError.hidden) {
       // The form's own error banner lives on the Manual Entry tab-panel,
       // not visible from here - mirror it into this tab's own status line
       // instead of switching tabs away from the SKU workflow.
       els.skuStatus.textContent = els.formError.textContent;
-      return;
+      return false;
     }
     // Saved successfully - resetForm() already cleared the shared fields
     // (title/size/price/etc.), but the SKU-specific bits above live
     // outside <form> and need their own reset so the tab is ready for the
     // next SKU instead of still showing the one that was just added.
     els.skuInput.value = '';
-    els.skuStatus.textContent = 'Added to queue! Enter another SKU to look up the next one.';
+    els.skuStatus.textContent = message || 'Added to queue! Enter another SKU to look up the next one.';
     els.skuUntappdSection.hidden = true;
-  });
+    return true;
+  }
+
+  els.skuSaveBtn.addEventListener('click', () => addSkuLookupToQueue());
 
   // ---------- Scan UPC ----------
 
@@ -3852,11 +3877,15 @@
 
       // Same disambiguation step Scan UPC's own handler takes above - see
       // openUntappdPicker's comment for why this can't just auto-pick one.
+      // Once staff actually make a pick (Recommended or one of the
+      // alternates), that's the same explicit sign-off "Use This Match"
+      // would give, so it goes straight to the queue too - see Scan UPC's
+      // own comment on addScannedUpcToQueue above for why.
       if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
         applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || sku);
         if (picked) {
-          els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
+          addSkuLookupToQueue('Loaded from the store and added to queue! Enter another SKU to look up the next one.');
         } else {
           // None of the offered candidates were right (or staff just backed
           // out) - reveal the same manual "paste an Untappd URL" fallback a
@@ -3927,7 +3956,7 @@
         applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || 'that product');
         if (picked) {
-          els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
+          addSkuLookupToQueue('Loaded from pasted HTML and added to queue! Enter another SKU to look up the next one.');
         } else {
           els.skuUntappdSection.hidden = false;
           els.skuStatus.textContent = 'Loaded from pasted HTML. Untappd had more than one possible match and none was picked - '
@@ -4293,6 +4322,34 @@
     renderNameSearchSelected();
   }
 
+  // Search by Name's own "Add to Queue" - same requestSubmit() pattern as
+  // SKU Lookup's addSkuLookupToQueue/Scan UPC's addScannedUpcToQueue above,
+  // pulled into its own function so a beer picked from the "Pick the Right
+  // Beer" dialog (see selectNameSearchProduct below) can trigger it
+  // automatically instead of just leaving a "click Add to Queue" status.
+  // `message` (optional) is the auto-add path's own success text, same as
+  // those two. Returns whether the add actually went through.
+  function addNameSearchToQueue(message) {
+    els.form.requestSubmit();
+    if (!els.formError.hidden) {
+      els.nameSearchStatus.textContent = els.formError.textContent;
+      return false;
+    }
+    // Saved successfully - resetForm() already cleared the shared fields;
+    // clearNameSearchSelection() (bumps nameSearchSelectToken, clears the
+    // selection, disables Save) is the same reset the manual click below
+    // always did by hand, plus the token bump - needed here so
+    // selectNameSearchProduct's own in-flight try/finally (still unwinding
+    // after this returns, from the auto-add-on-pick path) doesn't
+    // re-enable Save for a selection that no longer exists.
+    clearNameSearchSelection();
+    nameSearchResults = [];
+    els.nameSearchInput.value = '';
+    els.nameSearchStatus.textContent = message || 'Added to queue! Search for the next product.';
+    els.nameSearchInput.focus();
+    return true;
+  }
+
   // Picking a result fills the form immediately from the export's own
   // columns (title/size/price/etc - no network needed for those), then, for
   // beer only, kicks off a best-effort Untappd search in the background (see
@@ -4348,9 +4405,14 @@
         renderNameSearchSelected();
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || product.title);
         if (myToken !== nameSearchSelectToken) return;
-        els.nameSearchStatus.textContent = picked
-          ? 'Found it! Review the fields, then click "Add to Queue".'
-          : 'Found it! Untappd had more than one possible match and none was picked - review the fields, then click "Add to Queue".';
+        if (picked) {
+          // Same explicit sign-off "Use This Match" would give - goes
+          // straight to the queue, same as Scan UPC/SKU Lookup's own
+          // picker branches above.
+          addNameSearchToQueue('Found it and added to queue! Search for the next product.');
+        } else {
+          els.nameSearchStatus.textContent = 'Found it! Untappd had more than one possible match and none was picked - review the fields, then click "Add to Queue".';
+        }
         return;
       }
 
@@ -4429,27 +4491,7 @@
     if (!e.target.closest('#nameSearchFieldWrap')) closeNameSearchResults();
   });
 
-  // Same "Add to Queue" pattern as SKU Lookup/Scan UPC's own save buttons -
-  // see els.skuSaveBtn's note above. Reuses the form's real submit handler
-  // via requestSubmit() (same validate/save/resetForm path as Manual
-  // Entry), rather than a third copy of that logic.
-  els.nameSearchSaveBtn.addEventListener('click', () => {
-    els.form.requestSubmit();
-    if (!els.formError.hidden) {
-      els.nameSearchStatus.textContent = els.formError.textContent;
-      return;
-    }
-    // Saved successfully - resetForm() already cleared the shared fields;
-    // the search-specific bits above live outside <form> and need their
-    // own reset so the tab is ready for the next search.
-    nameSearchSelectedProduct = null;
-    nameSearchResults = [];
-    els.nameSearchInput.value = '';
-    els.nameSearchSaveBtn.disabled = true;
-    els.nameSearchStatus.textContent = 'Added to queue! Search for the next product.';
-    renderNameSearchSelected();
-    els.nameSearchInput.focus();
-  });
+  els.nameSearchSaveBtn.addEventListener('click', () => addNameSearchToQueue());
 
   // ---------- Print ----------
 
