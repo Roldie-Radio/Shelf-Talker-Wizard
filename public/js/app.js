@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.14',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Spanish classifications - Albariño, Tempranillo, Garnacha/Grenache, and Verdejo join the varietal list. Region refinements deepen Albariño (Rías Baixas, Spain vs. Vinho Verde, Portugal - same grape, different country), Tempranillo (Rioja vs. Ribera del Duero), and Garnacha (Priorat); Champagne/Sparkling also gains a Cava, Catalonia refinement.',
+      ],
+    },
+    {
       version: '3.3.13',
       items: [
         'New (Wine Food Pairings, experimental): Suggest Pairings now covers six more Italian classifications - Nebbiolo, Sangiovese, Montepulciano d\'Abruzzo, Primitivo, and Barbera join the varietal list, and Pinot Grigio/Gris and Champagne/Sparkling gain Italian region refinements (Alto Adige, Prosecco, Franciacorta). Region matching also deepens for Nebbiolo (Barolo vs. Barbaresco), Sangiovese (Chianti Classico vs. Brunello di Montalcino), and Barbera (d\'Alba vs. d\'Asti). A title reading "Vino Nobile di Montepulciano" correctly matches Sangiovese, not the unrelated Montepulciano grape.',

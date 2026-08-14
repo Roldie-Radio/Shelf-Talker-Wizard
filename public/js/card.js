@@ -347,6 +347,30 @@ const WINE_PAIRING_RULES = [
       { id: 'barbera-asti', label: 'Barbera d\'Asti, Piedmont', test: /\basti\b/i,
         swapIndex: 2, swap: { icon: '🐟', food: 'Bagna Cauda' } },
     ] },
+  { id: 'tempranillo', label: 'Tempranillo', test: /tempranillo|\brioja\b|ribera del duero/i,
+    pairings: [
+      { icon: '🐑', food: 'Roast Lamb' },
+      { icon: '🥓', food: 'Jamón Ibérico' },
+      { icon: '🧀', food: 'Manchego' },
+      { icon: '🌶️', food: 'Chorizo' },
+    ],
+    regions: [
+      { id: 'rioja', label: 'Rioja, Spain', test: /\brioja\b/i,
+        swapIndex: 1, swap: { icon: '🐖', food: 'Cochinillo Asado' } },
+      { id: 'ribera-del-duero', label: 'Ribera del Duero, Spain', test: /ribera del duero|ribera del/i,
+        swapIndex: 0, swap: { icon: '🥩', food: 'Chuletón' } },
+    ] },
+  { id: 'garnacha', label: 'Garnacha / Grenache', test: /garnacha|grenache/i,
+    pairings: [
+      { icon: '🌭', food: 'Grilled Sausage' },
+      { icon: '🧀', food: 'Manchego' },
+      { icon: '🥘', food: 'Paella' },
+      { icon: '🌶️', food: 'Spanish Tapas' },
+    ],
+    regions: [
+      { id: 'priorat', label: 'Priorat, Catalonia', test: /priorat/i,
+        swapIndex: 3, swap: { icon: '🍫', food: 'Dark Chocolate' } },
+    ] },
   { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
     pairings: [
       { icon: '🧀', food: 'Cheese Board' },
@@ -400,6 +424,26 @@ const WINE_PAIRING_RULES = [
       { id: 'alsace', label: 'Alsace, France', test: /alsace|france/i,
         swapIndex: 0, swap: { icon: '🥧', food: 'Tarte Flambée' } },
     ] },
+  { id: 'albarino', label: 'Albariño', test: /albari[nñ]o|alvarinho/i,
+    pairings: [
+      { icon: '🦪', food: 'Oysters' },
+      { icon: '🐙', food: 'Grilled Octopus' },
+      { icon: '🦐', food: 'Garlic Shrimp' },
+      { icon: '🧀', food: 'Manchego' },
+    ],
+    regions: [
+      { id: 'rias-baixas', label: 'Rías Baixas, Galicia', test: /r[ií]as baixas|galicia/i,
+        swapIndex: 1, swap: { icon: '🐙', food: 'Pulpo a la Gallega' } },
+      { id: 'vinho-verde', label: 'Vinho Verde, Portugal', test: /vinho verde|portugal|alvarinho/i,
+        swapIndex: 3, swap: { icon: '🐟', food: 'Bacalhau Fritters' } },
+    ] },
+  { id: 'verdejo', label: 'Verdejo', test: /verdejo|\brueda\b/i,
+    pairings: [
+      { icon: '🥗', food: 'Fresh Salad' },
+      { icon: '🐟', food: 'Grilled Fish' },
+      { icon: '🫒', food: 'Spanish Tapas' },
+      { icon: '🐐', food: 'Fresh Goat Cheese' },
+    ] },
   { id: 'moscato', label: 'Moscato', test: /moscato/i,
     pairings: [
       { icon: '🍰', food: 'Light Dessert' },
@@ -419,6 +463,8 @@ const WINE_PAIRING_RULES = [
         swapIndex: 0, swap: { icon: '🍕', food: 'Cicchetti & Prosciutto' } },
       { id: 'franciacorta', label: 'Franciacorta, Lombardy', test: /franciacorta|lombardy/i,
         swapIndex: 3, swap: { icon: '🍤', food: 'Fritto Misto' } },
+      { id: 'cava', label: 'Cava, Catalonia', test: /\bcava\b|catalonia|catalunya|pened[eè]s/i,
+        swapIndex: 1, swap: { icon: '🥓', food: 'Jamón Ibérico' } },
     ] },
   { id: 'rose', label: 'Rosé', test: /ros[eé]/i,
     pairings: [
