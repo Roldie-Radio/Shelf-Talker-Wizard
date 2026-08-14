@@ -128,20 +128,25 @@ browser.
   doubling as a real research to-do list), and the profile page from
   bourbon-profile-page.html re-chromed with a back-to-grid breadcrumb.
   Presentation only &mdash; storage/sync stays the existing Mash Bill
-  Library design. Also surfaces a gap earlier passes missed entirely: the
-  real app's Windows-style menu bar (File / Tools / Advanced / Help,
-  above the app bar, see <code>#menuBar</code> in index.html) never
-  appeared in this mockup before. File and Tools are Queue/talker-specific
-  (Open/Save/Find Queue, Beer Talker Info, Wine Pairing Rules) and nest
-  inside Shelf Talker as a working menu bar (native
-  <code>&lt;details&gt;</code> dropdowns, no extra JS) either way &mdash;
-  Mash Bill Library and Settings already dropped out of Tools since both
-  have rail icons now. Where **Advanced** and **Help** land is still
-  open, so a comparison toggle above the rail switches between keeping
-  them nested in Shelf Talker's menu bar (status quo shape) or moving them
-  into two new sections on the Settings screen. Open questions (that menu
-  bar placement, a real "Add a bourbon" flow, grid vs. table at scale) are
-  called out rather than resolved.
+  Library design. Also surfaces and resolves a gap earlier passes missed
+  entirely: the real app's Windows-style menu bar (File / Tools /
+  Advanced / Help, above the app bar, see <code>#menuBar</code> in
+  index.html) never appeared in this mockup before. **Decided:**
+  Advanced (Export File Settings, View Export File, Server PC) and Help
+  (What's New, Check for Updates, About) become two new sections on the
+  Settings screen, alongside Experimental Features &mdash; Mash Bill
+  Library and Settings itself had already dropped out of Tools since both
+  have rail icons now. That leaves just File and Tools (Open/Save/Find
+  Queue, Beer Talker Info, Wine Pairing Rules) as a working menu bar
+  (native <code>&lt;details&gt;</code> dropdowns, no extra JS), and since
+  both operate on the Queue &mdash; which persists no matter which rail
+  icon is active &mdash; that bar now spans the **full width of the app,
+  above the rail**, as permanent chrome rather than living inside the
+  Shelf Talker screen. Flags one open question this raises: the Queue
+  side panel itself still only renders on the Shelf Talker screen even
+  though File &gt; Save Queue is now reachable from anywhere, which the
+  notes call out rather than resolve. Other open questions (a real "Add a
+  bourbon" flow, grid vs. table at scale) also remain.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.
