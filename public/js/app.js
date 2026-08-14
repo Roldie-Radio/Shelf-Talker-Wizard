@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.19',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Australia, Greece, and South Africa. Australia adds a new Semillon varietal plus region refinements across several existing rules (Hunter Valley and McLaren Vale for Shiraz, Coonawarra for Cabernet Sauvignon, Clare/Eden Valley for Riesling, McLaren Vale for Garnacha/Grenache). South Africa adds Pinotage and Chenin Blanc (with its own Stellenbosch/Swartland vs. Loire Valley split) plus a Stellenbosch refinement for Cabernet Sauvignon. Greece adds Assyrtiko, Agiorgitiko, Xinomavro, and Retsina, matched by appellation (Santorini, Nemea, Naoussa) as well as grape.',
+      ],
+    },
+    {
       version: '3.3.18',
       items: [
         'New (Wine Food Pairings, experimental): Suggest Pairings now covers Portugal - Vinho Verde, Douro Red (Touriga Nacional/Touriga Franca), and Port all join the varietal list. A title naming both a grape and Vinho Verde (e.g. "Alvarinho, Vinho Verde") still resolves to the more specific Albariño match added a few releases back; a bare "Vinho Verde" with no grape named now matches on its own instead of going unmatched.',

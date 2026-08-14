@@ -268,6 +268,10 @@ const WINE_PAIRING_RULES = [
         swapIndex: 0, swap: { icon: '🔥', food: 'Santa Maria Tri-Tip' } },
       { id: 'washington', label: 'Washington State', test: /washington|columbia valley/i,
         swapIndex: 1, swap: { icon: '🦬', food: 'Grilled Bison' } },
+      { id: 'coonawarra', label: 'Coonawarra, Australia', test: /coonawarra/i,
+        swapIndex: 2, swap: { icon: '🌿', food: 'Mint-Crusted Lamb' } },
+      { id: 'stellenbosch', label: 'Stellenbosch, South Africa', test: /stellenbosch/i,
+        swapIndex: 0, swap: { icon: '🔥', food: 'Boerewors' } },
       { id: 'napa', label: 'Napa Valley, California', test: /napa|california/i,
         swapIndex: 3, swap: { icon: '🔥', food: 'Smoked Brisket' } },
     ] },
@@ -284,6 +288,10 @@ const WINE_PAIRING_RULES = [
       { id: 'cahors', label: 'Cahors, France', test: /cahors|france/i,
         swapIndex: 2, swap: { icon: '🦆', food: 'Duck Confit' } },
     ] },
+  // Barossa's own test is the only one of the three Australian entries
+  // with a bare `australia` fallback, so (same reasoning as Napa on the
+  // Cabernet rule above) it's ordered last among them to keep that
+  // fallback from preempting a more specific region match.
   { id: 'syrah', label: 'Syrah / Shiraz', test: /syrah|shiraz/i,
     pairings: [
       { icon: '🥩', food: 'Peppered Steak' },
@@ -294,6 +302,10 @@ const WINE_PAIRING_RULES = [
     regions: [
       { id: 'rhone', label: 'Rhône Valley, France', test: /rh[oô]ne|france/i,
         swapIndex: 3, swap: { icon: '🐑', food: 'Cassoulet' } },
+      { id: 'hunter-valley', label: 'Hunter Valley, Australia', test: /hunter valley/i,
+        swapIndex: 2, swap: { icon: '🥧', food: 'Aussie Meat Pie' } },
+      { id: 'mclaren-vale', label: 'McLaren Vale, Australia', test: /mclaren vale/i,
+        swapIndex: 3, swap: { icon: '🍫', food: 'Chocolate-Rubbed Ribs' } },
       { id: 'barossa', label: 'Barossa Valley, Australia', test: /barossa|australia/i,
         swapIndex: 1, swap: { icon: '🦘', food: 'Kangaroo & Native Pepper' } },
     ] },
@@ -412,6 +424,27 @@ const WINE_PAIRING_RULES = [
       { id: 'barbera-asti', label: 'Barbera d\'Asti, Piedmont', test: /\basti\b/i,
         swapIndex: 2, swap: { icon: '🐟', food: 'Bagna Cauda' } },
     ] },
+  { id: 'pinotage', label: 'Pinotage', test: /pinotage/i,
+    pairings: [
+      { icon: '🔥', food: 'South African Braai' },
+      { icon: '🌭', food: 'Boerewors' },
+      { icon: '🧀', food: 'Smoked Gouda' },
+      { icon: '🍖', food: 'Bobotie' },
+    ] },
+  { id: 'xinomavro', label: 'Xinomavro', test: /xinomavro|\bnaoussa\b/i,
+    pairings: [
+      { icon: '🍖', food: 'Slow-Roasted Lamb' },
+      { icon: '🍅', food: 'Tomato-Braised Beef' },
+      { icon: '🧀', food: 'Aged Kefalotyri' },
+      { icon: '🫒', food: 'Olive Tapenade' },
+    ] },
+  { id: 'agiorgitiko', label: 'Agiorgitiko', test: /agiorgitiko|\bnemea\b/i,
+    pairings: [
+      { icon: '🍆', food: 'Moussaka' },
+      { icon: '🥩', food: 'Grilled Lamb' },
+      { icon: '🧀', food: 'Feta' },
+      { icon: '🍝', food: 'Pastitsio' },
+    ] },
   { id: 'tempranillo', label: 'Tempranillo', test: /tempranillo|\brioja\b|ribera del duero/i,
     pairings: [
       { icon: '🐑', food: 'Roast Lamb' },
@@ -435,6 +468,8 @@ const WINE_PAIRING_RULES = [
     regions: [
       { id: 'priorat', label: 'Priorat, Catalonia', test: /priorat/i,
         swapIndex: 3, swap: { icon: '🍫', food: 'Dark Chocolate' } },
+      { id: 'mclaren-vale', label: 'McLaren Vale, Australia', test: /mclaren vale/i,
+        swapIndex: 0, swap: { icon: '🥩', food: 'Char-Grilled Lamb' } },
     ] },
   { id: 'red-blend', label: 'Red Blend', test: /red blend|meritage/i,
     pairings: [
@@ -478,6 +513,46 @@ const WINE_PAIRING_RULES = [
       { id: 'marlborough', label: 'Marlborough, New Zealand', test: /marlborough|new zealand|\bnz\b/i,
         swapIndex: 2, swap: { icon: '🥝', food: 'Green-Lipped Mussels' } },
     ] },
+  { id: 'semillon', label: 'Semillon', test: /s[eé]millon/i,
+    pairings: [
+      { icon: '🦪', food: 'Fresh Oysters' },
+      { icon: '🍤', food: 'Fried Calamari' },
+      { icon: '🐟', food: 'Barramundi' },
+      { icon: '🧀', food: 'Aged Cheddar' },
+    ],
+    regions: [
+      { id: 'hunter-valley', label: 'Hunter Valley, Australia', test: /hunter valley/i,
+        swapIndex: 1, swap: { icon: '🍯', food: 'Honeyed Toast & Brie' } },
+      { id: 'sauternes', label: 'Sauternes, France', test: /sauternes|bordeaux/i,
+        swapIndex: 3, swap: { icon: '🦆', food: 'Foie Gras' } },
+    ] },
+  { id: 'chenin-blanc', label: 'Chenin Blanc', test: /chenin blanc/i,
+    pairings: [
+      { icon: '🍗', food: 'Roast Chicken' },
+      { icon: '🍤', food: 'Shrimp Curry' },
+      { icon: '🐐', food: 'Soft Goat Cheese' },
+      { icon: '🍏', food: 'Green Apple Salad' },
+    ],
+    regions: [
+      { id: 'stellenbosch', label: 'Stellenbosch, South Africa', test: /stellenbosch|swartland|south africa/i,
+        swapIndex: 1, swap: { icon: '🔥', food: 'Braai-Grilled Prawns' } },
+      { id: 'vouvray', label: 'Vouvray, France', test: /vouvray|anjou|loire/i,
+        swapIndex: 3, swap: { icon: '🍑', food: 'Poached Pear' } },
+    ] },
+  { id: 'assyrtiko', label: 'Assyrtiko', test: /assyrtiko|santorini/i,
+    pairings: [
+      { icon: '🐙', food: 'Grilled Octopus' },
+      { icon: '🦪', food: 'Fresh Oysters' },
+      { icon: '🥗', food: 'Greek Salad' },
+      { icon: '🐟', food: 'Grilled Sea Bass' },
+    ] },
+  { id: 'retsina', label: 'Retsina', test: /retsina/i,
+    pairings: [
+      { icon: '🐙', food: 'Grilled Octopus' },
+      { icon: '🫒', food: 'Greek Meze' },
+      { icon: '🧀', food: 'Feta & Olives' },
+      { icon: '🍗', food: 'Souvlaki' },
+    ] },
   { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', test: /pinot grigio|pinot gris/i,
     pairings: [
       { icon: '🐟', food: 'Light Seafood' },
@@ -520,6 +595,8 @@ const WINE_PAIRING_RULES = [
         swapIndex: 2, swap: { icon: '🥨', food: 'Wiener Schnitzel' } },
       { id: 'alsace', label: 'Alsace, France', test: /alsace|france/i,
         swapIndex: 0, swap: { icon: '🥧', food: 'Tarte Flambée' } },
+      { id: 'clare-valley', label: 'Clare Valley, Australia', test: /clare valley|eden valley/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Fish and Chips' } },
     ],
     sweetness: [
       { id: 'trocken', label: 'Trocken (Dry)', test: /\btrocken\b/i,
