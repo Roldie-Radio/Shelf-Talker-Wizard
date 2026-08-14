@@ -104,28 +104,31 @@ browser.
   the **Bourbon Library** itself out from under that toggle and out of
   Tools&hellip; into something that reads as its own space within the
   program. Compared three entry points and settled on a persistent
-  **Sidebar Rail** &mdash; only three icons though, not five: **Shelf
-  Talker** (the entire existing app, renamed from an earlier "Build"),
-  **Library**, and **Settings**. Queue and History never got their own
-  icons because they aren't separate top-level screens today &mdash; Queue
-  is already the side panel next to the form and History is already a
-  button that opens a dialog, both still exactly where they are, just
-  nested inside the one Shelf Talker icon now. That makes this a smaller
-  change than "add a sidebar" first implied. The rail is wired up for
-  real: click between icons to swap the content pane, and flip
-  **Bourbon Shelf Talkers** off on the real Settings screen to see only
-  the Shelf Talker tab's fields react &mdash; the Library icon and its
-  content are untouched, because they never read that flag. Once inside,
-  the Library gets a distinct dark "reading room" header band (same
-  fonts/radii/accent family as the rest of the app, just a different
-  room) with search, a card grid (swaps the flat table for something more
-  browsable), working confidence filter chips (All / Confirmed / Reported
-  / **Needs verification**, the last one doubling as a real research
-  to-do list), and the profile page from bourbon-profile-page.html
-  re-chromed with a back-to-grid breadcrumb. Presentation only &mdash;
-  storage/sync stays the existing Mash Bill Library design. Open
-  questions (a real "Add a bourbon" flow, grid vs. table at scale) are
-  called out rather than resolved.
+  **Sidebar Rail** &mdash; just two icons: **Shelf Talker** (the entire
+  existing app, renamed from an earlier "Build") and **Library**. Queue,
+  History, and Settings never got their own icons because none of the
+  three is a separate top-level screen today &mdash; Queue is already the
+  side panel next to the form, History and Settings are already buttons
+  that open their own dialogs &mdash; so all three stay exactly where and
+  how they already work, just nested inside the one Shelf Talker icon.
+  The Shelf Talker rail icon is a small inline-SVG rendering of an actual
+  printed talker (white card, dark border, a red price block) instead of
+  a generic tool emoji, using the same fixed <code>--ink</code>/
+  <code>--sale-red</code> print colors the real cards use. Settings opens
+  as a real dialog (matching the app's own modal pattern) rather than a
+  content-pane swap; flipping **Bourbon Shelf Talkers** off inside it
+  updates the Shelf Talker form live underneath while the dialog stays
+  open, and the Library icon stays untouched because it never reads that
+  flag. Once inside the Library, it gets a distinct dark "reading room"
+  header band (same fonts/radii/accent family as the rest of the app,
+  just a different room) with search, a card grid (swaps the flat table
+  for something more browsable), working confidence filter chips (All /
+  Confirmed / Reported / **Needs verification**, the last one doubling as
+  a real research to-do list), and the profile page from
+  bourbon-profile-page.html re-chromed with a back-to-grid breadcrumb.
+  Presentation only &mdash; storage/sync stays the existing Mash Bill
+  Library design. Open questions (a real "Add a bourbon" flow, grid vs.
+  table at scale) are called out rather than resolved.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

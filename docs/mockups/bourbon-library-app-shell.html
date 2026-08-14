@@ -119,9 +119,18 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .rail__icon:hover { background: var(--ui-hover); }
 .rail__icon.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
 .rail__icon.is-library:not(.is-active) { color: var(--lib-band-accent); }
-.rail__spacer { flex: 1; }
+.mini-talker-icon { display: block; }
 
 .content-pane { flex: 1; min-width: 0; overflow-y: auto; background: var(--ui-panel); }
+
+/* ---------- Settings modal (matches the real app's own dialog pattern -
+   Settings is a menu item that opens a dialog, not a screen, so it's
+   reached from inside Shelf Talker rather than living on the rail) ---------- */
+.modal-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 1.5rem; z-index: 5; }
+.modal { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); box-shadow: 0 20px 44px var(--ui-shadow); width: 100%; max-width: 480px; max-height: 90%; overflow-y: auto; }
+.modal__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--ui-border); }
+.modal__header h3 { font-size: 1rem; }
+.modal__body { padding: 1.1rem; }
 
 /* ---------- Shelf Talker view (representative slice of the real Talker Builder,
    incl. the Queue side panel and History button that already live on this one
@@ -148,8 +157,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .build-queue__count { font-size: 0.7rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.1rem 0.45rem; border-radius: 999px; }
 .build-queue__item { font-size: 0.78rem; padding: 0.5rem 0.55rem; border-radius: 6px; background: var(--ui-panel); border: 1px solid var(--ui-border); margin-bottom: 0.4rem; }
 
-/* ---------- Settings view ---------- */
-.settings-pad { padding: 1.2rem 1.6rem 1.6rem; max-width: 560px; }
+/* ---------- Settings modal body content ---------- */
 .settings-section h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.6rem; }
 .settings-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
 .settings-row__label { font-size: 0.88rem; font-weight: 700; }
@@ -254,17 +262,17 @@ details.sources[open] summary::before { content: "▾ "; }
     <p>
       Of the three entry points compared last round, <strong>Sidebar Rail</strong> is the pick &mdash; a persistent
       icon rail down the left edge of the whole app, with <strong>Bourbon Library</strong> as one first-class icon
-      alongside the app's existing screen rather than a tab switch or a header button. Queue and History aren't
-      separate rail destinations &mdash; they're already part of the one Shelf Talker screen today (Queue as the
-      side panel next to the form, History as a button that opens its own dialog), so the rail only adds two new
-      icons: <strong>Bourbon Library</strong> and <strong>Settings</strong>. Smaller change than a first read of
-      "add a sidebar" suggests.
+      alongside the app's existing screen rather than a tab switch or a header button. Everything the existing
+      wizard already does &mdash; Manual Entry / Import / Search, the Queue side panel, History, and Settings
+      &mdash; stays together under one <strong>Shelf Talker</strong> icon, reached exactly the way each piece is
+      reached today (Queue as the panel next to the form, History and Settings as buttons that open their own
+      dialogs). The rail itself only ever adds one new thing: <strong>Bourbon Library</strong>.
     </p>
     <p>
-      This version wires the rail up for real: click between <strong>Shelf Talker</strong>,
-      <strong>Library</strong>, and <strong>Settings</strong> to swap the content pane. Flip
-      <strong>Bourbon Shelf Talkers</strong> off in Settings, then check the Shelf Talker tab and the Library icon
-      &mdash; one changes, the other doesn't.
+      This version wires the rail up for real: click between <strong>Shelf Talker</strong> and
+      <strong>Library</strong> to swap the content pane. Open Settings from inside Shelf Talker and flip
+      <strong>Bourbon Shelf Talkers</strong> off, then check the form behind it and the Library icon &mdash; one
+      changes, the other doesn't.
     </p>
   </div>
 
@@ -276,12 +284,31 @@ details.sources[open] summary::before { content: "▾ "; }
     <div class="app-shell">
       <div class="rail" id="rail">
         <div class="rail__brand">STW</div>
-        <button type="button" class="rail__icon" data-view="shelfTalker"><span class="glyph">&#128296;</span><span class="caption">Shelf Talker</span></button>
+        <button type="button" class="rail__icon" data-view="shelfTalker">
+          <span class="glyph">
+            <svg class="mini-talker-icon" viewBox="0 0 22 30" width="18" height="24" aria-hidden="true">
+              <rect x="1" y="1" width="20" height="28" rx="1.5" fill="#ffffff" stroke="var(--ink)" stroke-width="1.6"/>
+              <rect x="4" y="4.5" width="14" height="3" rx="0.6" fill="var(--ink)"/>
+              <rect x="4" y="10" width="11" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+              <rect x="4" y="13" width="8.5" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+              <rect x="4" y="20" width="14" height="6" rx="1" fill="var(--sale-red)"/>
+              <rect x="6.5" y="22.2" width="9" height="1.8" rx="0.5" fill="#ffffff"/>
+            </svg>
+          </span>
+          <span class="caption">Shelf Talker</span>
+        </button>
         <button type="button" class="rail__icon is-library" data-view="library"><span class="glyph">&#129348;</span><span class="caption">Library</span></button>
-        <div class="rail__spacer"></div>
-        <button type="button" class="rail__icon" data-view="settings"><span class="glyph">&#9881;&#65039;</span><span class="caption">Settings</span></button>
       </div>
       <div class="content-pane" id="contentPane"></div>
+    </div>
+    <div class="modal-overlay" id="settingsOverlay" hidden>
+      <div class="modal">
+        <div class="modal__header">
+          <h3>Settings</h3>
+          <button type="button" class="btn btn--small" id="closeSettingsBtn">&times; Close</button>
+        </div>
+        <div class="modal__body" id="settingsModalBody"></div>
+      </div>
     </div>
   </div>
 
@@ -289,26 +316,29 @@ details.sources[open] summary::before { content: "▾ "; }
     <h2>Design notes</h2>
     <div class="notes-grid">
       <div class="notes-card">
-        <h3>Rail ends up smaller than "add a sidebar" implies</h3>
-        <p>Queue is already a side panel on the same screen as the form, and History is already a button that
-        opens a dialog &mdash; neither is a separate top-level screen today, so neither needed its own rail icon.
-        The rail only ever needed three: <strong>Shelf Talker</strong> (the entire existing app, renamed from
-        "Build"), <strong>Library</strong>, and <strong>Settings</strong>. Manual Entry / Import from Website /
-        Search stay exactly as they are, nested inside Shelf Talker.</p>
+        <h3>The rail only ever needed two icons</h3>
+        <p>Queue is already a side panel on the same screen as the form, History is already a button that opens a
+        dialog, and Settings is already a menu item that opens a dialog too &mdash; none of the three is a
+        separate top-level screen today, so none needed its own rail icon. Everything the existing wizard does
+        stays together under one <strong>Shelf Talker</strong> icon (renamed from an earlier "Build"); the rail
+        adds exactly one new thing, <strong>Library</strong>.</p>
       </div>
       <div class="notes-card">
-        <h3>Shelf Talker view now shows Queue + History in place</h3>
-        <p>The mock content pane puts the Queue panel back on the right, right where it lives in the real app
-        today, and a History button back in its usual spot near the tabs &mdash; nothing about either one changes,
-        only the outer chrome around the whole screen (the new rail on the left) does.</p>
+        <h3>Shelf Talker view now shows Queue, History &amp; Settings in place</h3>
+        <p>The mock content pane puts the Queue panel back on the right and a History button back near the tabs,
+        right where both live in the real app today, and adds a Settings&hellip; button next to History that opens
+        a dialog &mdash; matching the real app's own Settings&hellip; menu item rather than inventing a new pattern.
+        Nothing about any of the three changes, only the outer chrome around the whole screen (the new rail on the
+        left) does.</p>
       </div>
     </div>
     <div class="notes-card">
       <h3>Decoupling, now shown where the flag actually lives</h3>
       <p>Last round's mockup floated the Experimental Features switch next to the entry-point comparison. Here it
-      sits in the real Settings screen, where it already lives today &mdash; flip it off, and only the Shelf
-      Talker tab's Mash Bill / Nose-Palate-Finish fields react. The Library rail icon, its content, and its own
-      confidence filters are untouched, because they never read that flag to begin with.</p>
+      sits inside the real Settings dialog, opened from inside Shelf Talker exactly like it is today &mdash; flip
+      it off, and only the Shelf Talker form's Mash Bill / Nose-Palate-Finish fields react live underneath. The
+      Library rail icon, its content, and its own confidence filters are untouched, because they never read that
+      flag to begin with.</p>
     </div>
     <div class="notes-card">
       <h3>Open questions</h3>
@@ -416,7 +446,10 @@ function renderBuild() {
           <button class="build-tab" type="button">Import from Website</button>
           <button class="build-tab" type="button">Search</button>
         </div>
-        <button type="button" class="btn btn--small" title="Search and reprint past shelf talkers">History</button>
+        <div style="display:flex;gap:0.4rem;">
+          <button type="button" class="btn btn--small" title="Search and reprint past shelf talkers">History</button>
+          <button type="button" class="btn btn--small" id="openSettingsBtn">Settings&hellip;</button>
+        </div>
       </div>
       <div class="build-columns">
         <div class="build-form">
@@ -437,37 +470,50 @@ function renderBuild() {
       </div>
     </div>
   `;
+  document.getElementById('openSettingsBtn').addEventListener('click', openSettings);
 }
 
-/* ---------------- Settings view ---------------- */
-function renderSettings() {
-  document.getElementById('contentPane').innerHTML = `
-    <div class="settings-pad">
-      <div class="settings-section">
-        <h4>Experimental Features</h4>
-        <div class="settings-row">
-          <div>
-            <div class="settings-row__label">Bourbon Shelf Talkers</div>
-            <div class="settings-row__caption">Adds Mash Bill, Nose/Palate/Finish, and a Store Pick ribbon to the
-            talker form. Gated here because it changes what prints on a real, customer-facing sign.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="experimentalToggle" ${experimentalOn ? 'checked' : ''}>
-            <span class="switch__track"></span>
-            <span class="switch__thumb"></span>
-          </label>
+/* ---------------- Settings (a dialog reached from inside Shelf Talker,
+   same as the real app's own Settings… menu item - never a rail icon) ---------------- */
+function renderSettingsModalBody() {
+  document.getElementById('settingsModalBody').innerHTML = `
+    <div class="settings-section">
+      <h4>Experimental Features</h4>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row__label">Bourbon Shelf Talkers</div>
+          <div class="settings-row__caption">Adds Mash Bill, Nose/Palate/Finish, and a Store Pick ribbon to the
+          talker form. Gated here because it changes what prints on a real, customer-facing sign.</div>
         </div>
+        <label class="switch">
+          <input type="checkbox" id="experimentalToggle" ${experimentalOn ? 'checked' : ''}>
+          <span class="switch__track"></span>
+          <span class="switch__thumb"></span>
+        </label>
       </div>
-      <div class="settings-note">
-        &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
-        rail on the left no matter how this switch is set. Try it: flip the switch, then click Library.
-      </div>
+    </div>
+    <div class="settings-note">
+      &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
+      rail on the left no matter how this switch is set. Try it: flip the switch, close this dialog, then click
+      Library.
     </div>
   `;
   document.getElementById('experimentalToggle').addEventListener('change', (e) => {
     experimentalOn = e.target.checked;
+    if (activeRailItem === 'shelfTalker') renderBuild();
   });
 }
+function openSettings() {
+  renderSettingsModalBody();
+  document.getElementById('settingsOverlay').hidden = false;
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').hidden = true;
+}
+document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'settingsOverlay') closeSettings();
+});
 
 /* ---------------- Library view ---------------- */
 function matchesFilter(b) {
@@ -629,7 +675,6 @@ function renderRailState() {
 function renderContent() {
   renderRailState();
   if (activeRailItem === 'shelfTalker') renderBuild();
-  else if (activeRailItem === 'settings') renderSettings();
   else if (activeRailItem === 'library') renderLibrary();
 }
 document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
