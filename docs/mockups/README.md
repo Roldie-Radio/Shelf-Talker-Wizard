@@ -156,11 +156,20 @@ browser.
   Preview**, Queue, see <code>.layout</code> in styles.css) and this
   mockup had quietly collapsed to two columns, form and Queue only. Live
   Preview is back as its own column with the same Current Talker / Full
-  Page toggle the real app uses, showing a simplified preview card that
-  still reacts to the same state as the rest of the screen &mdash;
-  Bourbon Shelf Talkers on/off toggles its mash bill bar, and Full Page
-  renders one small card per queued item. Other open questions (a real
-  "Add a bourbon" flow, grid vs. table at scale) also remain.
+  Page toggle the real app uses. Its first pass looked nothing like the
+  real thing, so the preview card and Queue rows were both redone against
+  the actual CSS: the preview card now carries the amber
+  <code>.card__band</code> strip, a 2px ink border, Verdana price type,
+  and an ink-colored <strong>Regular Price</strong> (only a Sale Price is
+  ever red on a real card); Full Page wraps its mini cards in a white
+  sheet boundary instead of a bare grid; and Queue rows now have the
+  colored theme swatch, bold truncating title, muted meta line, and
+  &#8942; kebab button that <code>.queue-item</code> actually has, not a
+  plain text line. Both still react to the rest of the screen's state
+  &mdash; Bourbon Shelf Talkers on/off toggles the mash bill bar, and
+  Full Page's cards come from the same queue data the Queue panel shows.
+  Other open questions (a real "Add a bourbon" flow, grid vs. table at
+  scale) also remain.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

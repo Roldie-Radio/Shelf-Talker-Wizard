@@ -10,6 +10,7 @@
 :root {
   --ink: #1b1b1b;
   --sale-red: #d21f1f;
+  --amber-band: #bd8436;
 
   --ui-bg: #f4f2ee;
   --ui-panel: #ffffff;
@@ -160,18 +161,30 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .preview-toggle { display: inline-flex; gap: 0.2rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.15rem; }
 .preview-toggle button { border: none; background: transparent; padding: 0.28rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
 .preview-toggle button.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
-.preview-stage { display: flex; justify-content: center; padding: 0.4rem 0.4rem 0.6rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 10px; min-height: 200px; align-items: center; }
-.preview-sheet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; padding: 0.5rem; }
-.preview-card { background: #fff; border: 2px solid var(--ink); border-radius: 3px; padding: 0.6rem 0.55rem; width: 140px; display: flex; flex-direction: column; gap: 0.3rem; color: var(--ink); }
-.preview-card--sheet { width: 96px; padding: 0.4rem 0.35rem; gap: 0.2rem; }
-.preview-card__title { font-weight: 800; font-size: 0.7rem; line-height: 1.2; }
-.preview-card--sheet .preview-card__title { font-size: 0.56rem; }
-.preview-card__desc { font-size: 0.58rem; color: #4a4a4a; line-height: 1.25; }
-.preview-card--sheet .preview-card__desc { display: none; }
+.preview-stage { display: flex; justify-content: center; padding: 1rem 0.4rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 10px; min-height: 210px; align-items: center; }
+
+/* ---------- preview card: matches the real .card's own look (see
+   styles.css) closely enough to read as "the actual talker," not a
+   generic placeholder box - amber .card__band up top, 2px ink border,
+   Verdana price row, Regular Price in ink (only a Sale Price is ever
+   red, per .card__sale-price/.card__regular-price). ---------- */
+.preview-card { background: #fff; border: 2px solid var(--ink); border-radius: 2px; width: 150px; overflow: hidden; display: flex; flex-direction: column; color: var(--ink); font-family: Verdana, Geneva, sans-serif; }
+.preview-card__band { height: 13px; background: var(--amber-band); flex: 0 0 auto; }
+.preview-card__body { padding: 0.55rem 0.55rem 0.65rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.preview-card__title { font-weight: 800; font-size: 0.72rem; line-height: 1.25; }
+.preview-card__desc { font-size: 0.58rem; color: #555; line-height: 1.3; }
 .preview-card__mashbar { display: flex; height: 5px; border-radius: 2px; overflow: hidden; margin-top: 0.05rem; }
 .preview-card__mashbar span { height: 100%; }
-.preview-card__price { margin-top: auto; font-weight: 800; font-size: 0.8rem; color: var(--sale-red); }
-.preview-card--sheet .preview-card__price { font-size: 0.64rem; }
+.preview-card__price { margin-top: 0.15rem; font-weight: 800; font-size: 0.76rem; }
+
+.preview-sheet-page { background: #fff; border: 1px solid var(--ui-border); box-shadow: 0 6px 18px var(--ui-shadow); border-radius: 4px; padding: 0.7rem; }
+.preview-sheet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; place-items: center; }
+.preview-card--sheet { width: 92px; }
+.preview-card--sheet .preview-card__band { height: 8px; }
+.preview-card--sheet .preview-card__body { padding: 0.35rem 0.35rem 0.4rem; gap: 0.15rem; }
+.preview-card--sheet .preview-card__title { font-size: 0.54rem; }
+.preview-card--sheet .preview-card__desc { display: none; }
+.preview-card--sheet .preview-card__price { font-size: 0.6rem; }
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; max-width: 420px; }
 .field span { color: var(--ui-ink-soft); }
 .field input { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font-weight: 400; }
@@ -185,7 +198,16 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .build-queue__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
 .build-queue__header h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-muted); }
 .build-queue__count { font-size: 0.7rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.1rem 0.45rem; border-radius: 999px; }
-.build-queue__item { font-size: 0.78rem; padding: 0.5rem 0.55rem; border-radius: 6px; background: var(--ui-panel); border: 1px solid var(--ui-border); margin-bottom: 0.4rem; }
+/* Matches index.html's own .queue-item shape: colored theme swatch,
+   bold truncating title, muted meta line, kebab "more actions" button -
+   not a plain text row. */
+.build-queue__item { display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.45rem 0.5rem; background: var(--ui-panel); margin-bottom: 0.4rem; }
+.build-queue__swatch { width: 6px; align-self: stretch; border-radius: 3px; background: var(--amber-band); flex-shrink: 0; }
+.build-queue__body { flex: 1; min-width: 0; }
+.build-queue__title { font-weight: 700; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.build-queue__meta { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.05rem; }
+.build-queue__menu-btn { flex: 0 0 auto; border: none; background: none; color: var(--ui-muted); font-size: 1rem; line-height: 1; padding: 0.2rem 0.45rem; border-radius: 6px; cursor: pointer; font-family: inherit; }
+.build-queue__menu-btn:hover { color: var(--ui-accent-ink); background: var(--ui-hover); }
 
 /* ---------- Settings view (rail icon -> content pane swap) ---------- */
 .settings-pad { padding: 1.2rem 1.6rem 1.6rem; max-width: 560px; }
@@ -436,13 +458,19 @@ details.sources[open] summary::before { content: "▾ "; }
       Shelf-Talker-specific either way.</p>
     </div>
     <div class="notes-card">
-      <h3>Live Preview: restored, was missing entirely</h3>
+      <h3>Live Preview: restored, then re-styled to actually look right</h3>
       <p>The real Shelf Talker screen (<code>.layout</code> in styles.css) is a three-column grid &mdash; form,
       Live Preview, Queue &mdash; and this mockup's Shelf Talker view had silently collapsed to just two columns.
       Restored as its own middle column with the same Current Talker / Full Page toggle the real app uses; the
-      preview card is a simplified stand-in (title/price/mash-bill-bar), not the actual card renderer, but it
-      reacts to the same state the rest of this view does &mdash; Bourbon Shelf Talkers on/off changes whether the
-      Current Talker preview shows a mash bill bar, and Full Page renders one small card per queued item.</p>
+      preview card is a simplified stand-in, not the actual card renderer, but it now borrows the real
+      <code>.card</code>'s own visual markers instead of a generic box: the amber <code>.card__band</code> strip,
+      a 2px ink border, Verdana price type, and a plain-ink <strong>Regular Price</strong> (real cards only turn
+      the price red for an actual Sale Price, per <code>.card__sale-price</code>/<code>.card__regular-price</code>).
+      Full Page mode wraps its mini cards in a white sheet boundary instead of a loose grid. The Queue list got the
+      same pass &mdash; a colored theme swatch, bold truncating title, muted meta line, and a &#8942; kebab button,
+      matching <code>.queue-item</code> instead of a plain text row. Both still react to the rest of the screen's
+      state: Bourbon Shelf Talkers on/off toggles the mash bill bar, and Full Page's cards come from the same
+      queue data the Queue panel shows.</p>
     </div>
     <div class="notes-card">
       <h3>Open questions</h3>
@@ -543,30 +571,41 @@ const queueItems = [
   { title: "Maker's Mark", size: '750mL', price: '$29.99' },
 ];
 
+function mashBarHtml(cls) {
+  return experimentalOn ? `
+    <div class="${cls}">
+      <span style="width:75%;background:${GRAIN_COLORS.Corn}"></span>
+      <span style="width:13%;background:${GRAIN_COLORS.Rye}"></span>
+      <span style="width:12%;background:${GRAIN_COLORS['Malted Barley']}"></span>
+    </div>` : '';
+}
+
 function previewStageHtml() {
   if (previewMode === 'single') {
-    const mashBar = experimentalOn ? `
-      <div class="preview-card__mashbar">
-        <span style="width:75%;background:${GRAIN_COLORS.Corn}"></span>
-        <span style="width:13%;background:${GRAIN_COLORS.Rye}"></span>
-        <span style="width:12%;background:${GRAIN_COLORS['Malted Barley']}"></span>
-      </div>` : '';
     return `
       <div class="preview-card">
-        <div class="preview-card__title">Buffalo Trace Kentucky Straight Bourbon</div>
-        <div class="preview-card__desc">Kentucky Straight Bourbon Whiskey</div>
-        ${mashBar}
-        <div class="preview-card__price">$27.99</div>
+        <div class="preview-card__band"></div>
+        <div class="preview-card__body">
+          <div class="preview-card__title">Buffalo Trace Kentucky Straight Bourbon</div>
+          <div class="preview-card__desc">Kentucky Straight Bourbon Whiskey</div>
+          ${mashBarHtml('preview-card__mashbar')}
+          <div class="preview-card__price">Regular Price $27.99</div>
+        </div>
       </div>`;
   }
   return `
-    <div class="preview-sheet">
-      ${queueItems.map((q) => `
-        <div class="preview-card preview-card--sheet">
-          <div class="preview-card__title">${q.title}</div>
-          <div class="preview-card__price">${q.price}</div>
-        </div>
-      `).join('')}
+    <div class="preview-sheet-page">
+      <div class="preview-sheet">
+        ${queueItems.map((q) => `
+          <div class="preview-card preview-card--sheet">
+            <div class="preview-card__band"></div>
+            <div class="preview-card__body">
+              <div class="preview-card__title">${q.title}</div>
+              <div class="preview-card__price">${q.price}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
     </div>`;
 }
 
@@ -612,7 +651,16 @@ function renderBuild() {
         </div>
         <div class="build-queue">
           <div class="build-queue__header"><h4>Queue</h4><span class="build-queue__count">${queueItems.length}</span></div>
-          ${queueItems.map((q) => `<div class="build-queue__item">${q.title} &middot; ${q.size} &middot; ${q.price}</div>`).join('')}
+          ${queueItems.map((q) => `
+            <div class="build-queue__item">
+              <div class="build-queue__swatch"></div>
+              <div class="build-queue__body">
+                <div class="build-queue__title">${q.title}</div>
+                <div class="build-queue__meta">${q.size} &middot; ${q.price}</div>
+              </div>
+              <button type="button" class="build-queue__menu-btn" title="More actions">&#8942;</button>
+            </div>
+          `).join('')}
         </div>
       </div>
     </div>
