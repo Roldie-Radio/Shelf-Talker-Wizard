@@ -104,27 +104,28 @@ browser.
   the **Bourbon Library** itself out from under that toggle and out of
   Tools&hellip; into something that reads as its own space within the
   program. Compared three entry points and settled on a persistent
-  **Sidebar Rail** &mdash; Build / Queue / History / Library / Settings as
-  icons down the left edge of the whole app, with Library as one
-  first-class icon rather than a tab switch or a header button; the
-  biggest structural change of the three options, but the one that most
-  reads as "a set of apps living together." The rail is wired up for
+  **Sidebar Rail** &mdash; only three icons though, not five: **Shelf
+  Talker** (the entire existing app, renamed from an earlier "Build"),
+  **Library**, and **Settings**. Queue and History never got their own
+  icons because they aren't separate top-level screens today &mdash; Queue
+  is already the side panel next to the form and History is already a
+  button that opens a dialog, both still exactly where they are, just
+  nested inside the one Shelf Talker icon now. That makes this a smaller
+  change than "add a sidebar" first implied. The rail is wired up for
   real: click between icons to swap the content pane, and flip
   **Bourbon Shelf Talkers** off on the real Settings screen to see only
-  the Build tab's fields react &mdash; the Library icon and its content
-  are untouched, because they never read that flag. Once inside, the
-  Library gets a distinct dark "reading room" header band (same
+  the Shelf Talker tab's fields react &mdash; the Library icon and its
+  content are untouched, because they never read that flag. Once inside,
+  the Library gets a distinct dark "reading room" header band (same
   fonts/radii/accent family as the rest of the app, just a different
   room) with search, a card grid (swaps the flat table for something more
   browsable), working confidence filter chips (All / Confirmed / Reported
   / **Needs verification**, the last one doubling as a real research
   to-do list), and the profile page from bourbon-profile-page.html
   re-chromed with a back-to-grid breadcrumb. Presentation only &mdash;
-  storage/sync stays the existing Mash Bill Library design; Queue/History
-  are placeholder panels since redesigning those screens isn't in scope.
-  Open questions (a real "Add a bourbon" flow, grid vs. table at scale,
-  whether the rail's scope increase across every screen is acceptable)
-  are called out rather than resolved.
+  storage/sync stays the existing Mash Bill Library design. Open
+  questions (a real "Add a bourbon" flow, grid vs. table at scale) are
+  called out rather than resolved.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.
