@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.17',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now tells Bordeaux and Burgundy styles apart, and can match them even when the title never says the grape - real Bordeaux/Burgundy is labeled by chateau/village, not varietal. Cabernet Sauvignon\'s Bordeaux match now specifically means the Cabernet-dominant Left Bank (Médoc, Pauillac, Margaux, Saint-Julien, Saint-Estèphe); Merlot gains its own Right Bank match (Saint-Émilion, Pomerol) it never had before. Pinot Noir\'s Burgundy match splits into Côte de Nuits vs. Côte de Beaune, and Chardonnay gains its first Burgundy matches (Chablis, plus Côte de Beaune whites like Meursault and Puligny-Montrachet) alongside its existing California ones.',
+      ],
+    },
+    {
       version: '3.3.16',
       items: [
         'New (Wine Food Pairings, experimental): Suggest Pairings now tells domestic sub-regions apart by climate instead of lumping them under one state-wide match. Cabernet Sauvignon splits Napa Valley from cooler Sonoma County, plus new Paso Robles and Washington State refinements. Chardonnay and Zinfandel each gain their own warmer-vs-cooler California split for the first time (Napa Valley vs. Sonoma Coast/Russian River Valley for Chardonnay; Lodi vs. Dry Creek Valley for Zinfandel), and Merlot gains a California vs. Washington State refinement. A bare "California" on a Cabernet or Merlot still falls back to its most recognized region (Napa) rather than going unmatched.',

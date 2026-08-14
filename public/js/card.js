@@ -240,7 +240,19 @@ const WINE_PAIRING_RULES = [
   // word "California" before ever reaching the Sonoma entry below it. A
   // title that just says "California" with no county/AVA named still
   // falls through to Napa, the most recognized default.
-  { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv/i,
+  //
+  // The top-level test also carries the Left Bank Bordeaux communes
+  // (Medoc, Pauillac, Margaux, Saint-Julien, Saint-Estephe) - unlike most
+  // varietals, real Bordeaux is labeled by chateau/appellation, not grape,
+  // so a title that never says "Cabernet" still needs to match here.
+  // Deliberately not the bare word "bordeaux" itself, though - that alone
+  // doesn't say which bank, and Cabernet is checked before Merlot below,
+  // so a generic "bordeaux" catch here would wrongly out-run Merlot's own
+  // Right Bank communes (Saint-Emilion, Pomerol) on a title that names
+  // both a specific Right Bank commune and the word "Bordeaux" together
+  // (e.g. "Saint-Emilion, Bordeaux") - the specific communes on both
+  // sides stay disjoint so this can't happen.
+  { id: 'cabernet', label: 'Cabernet Sauvignon', test: /cabernet|\bcab sauv|\bm[eé]doc\b|\bpauillac\b|\bmargaux\b|\bsaint-julien\b|\bsaint-est[eè]phe\b/i,
     pairings: [
       { icon: '🥩', food: 'Grilled Steak' },
       { icon: '🧀', food: 'Aged Cheddar' },
@@ -248,7 +260,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🍖', food: 'Braised Lamb' },
     ],
     regions: [
-      { id: 'bordeaux', label: 'Bordeaux, France', test: /bordeaux|m[eé]doc|pauillac|saint-julien/i,
+      { id: 'bordeaux', label: 'Bordeaux (Left Bank), France', test: /bordeaux|m[eé]doc|pauillac|margaux|saint-julien|saint-est[eè]phe/i,
         swapIndex: 1, swap: { icon: '🧀', food: 'Roquefort' } },
       { id: 'sonoma', label: 'Sonoma County, California', test: /sonoma/i,
         swapIndex: 2, swap: { icon: '🦆', food: 'Seared Duck Breast' } },
@@ -298,7 +310,11 @@ const WINE_PAIRING_RULES = [
       { id: 'dry-creek', label: 'Dry Creek Valley, Sonoma', test: /dry creek|russian river|\bsonoma\b/i,
         swapIndex: 1, swap: { icon: '🌶️', food: 'Peppercorn-Crusted Steak' } },
     ] },
-  { id: 'merlot', label: 'Merlot', test: /merlot/i,
+  // Right Bank Bordeaux (Saint-Emilion, Pomerol) is Merlot-dominant, not
+  // Cabernet - see the comment on the Cabernet rule above for why both
+  // rules' top-level tests carry their own bank's commune names instead
+  // of the bare word "bordeaux".
+  { id: 'merlot', label: 'Merlot', test: /merlot|saint-[eé]milion|pomerol/i,
     pairings: [
       { icon: '🍗', food: 'Roast Chicken' },
       { icon: '🍄', food: 'Mushroom Risotto' },
@@ -306,12 +322,20 @@ const WINE_PAIRING_RULES = [
       { icon: '🍝', food: 'Tomato Pasta' },
     ],
     regions: [
+      { id: 'bordeaux-right-bank', label: 'Bordeaux (Right Bank), France', test: /saint-[eé]milion|pomerol/i,
+        swapIndex: 1, swap: { icon: '🦆', food: "Duck à l'Orange" } },
       { id: 'california', label: 'California', test: /napa|sonoma|california/i,
         swapIndex: 0, swap: { icon: '🍖', food: 'Herb-Roasted Pork Loin' } },
       { id: 'washington', label: 'Washington State', test: /washington|columbia valley/i,
         swapIndex: 3, swap: { icon: '🦌', food: 'Venison Medallions' } },
     ] },
-  { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir/i,
+  // Like Bordeaux, red Burgundy is labeled by village, not grape - the
+  // top-level test carries the unambiguous red-only Cote de Nuits/Cote de
+  // Beaune villages (never used for white Burgundy) so a bare village name
+  // still matches. `regions` below tries those same villages first, then
+  // falls back to the generic "burgundy"/"bourgogne"/"france" catch, kept
+  // last so a specific village always wins its own, more precise label.
+  { id: 'pinot-noir', label: 'Pinot Noir', test: /pinot noir|bourgogne rouge|gevrey-chambertin|vosne-roman[eé]e|chambolle-musigny|nuits-saint-georges|\bvolnay\b|\bpommard\b/i,
     pairings: [
       { icon: '🦆', food: 'Roast Duck' },
       { icon: '🍄', food: 'Wild Mushrooms' },
@@ -319,6 +343,10 @@ const WINE_PAIRING_RULES = [
       { icon: '🧀', food: 'Brie' },
     ],
     regions: [
+      { id: 'cote-de-nuits', label: 'Côte de Nuits, Burgundy', test: /c[oô]te de nuits|gevrey-chambertin|vosne-roman[eé]e|chambolle-musigny|nuits-saint-georges/i,
+        swapIndex: 1, swap: { icon: '🦌', food: 'Braised Venison' } },
+      { id: 'cote-de-beaune', label: 'Côte de Beaune, Burgundy', test: /c[oô]te de beaune|\bvolnay\b|\bpommard\b/i,
+        swapIndex: 1, swap: { icon: '🍒', food: 'Duck with Cherry Sauce' } },
       { id: 'burgundy', label: 'Burgundy, France', test: /burgundy|bourgogne|c[oô]te d.?or|france/i,
         swapIndex: 1, swap: { icon: '🍲', food: 'Coq au Vin' } },
       { id: 'willamette', label: 'Willamette Valley, Oregon', test: /willamette|oregon/i,
@@ -415,7 +443,12 @@ const WINE_PAIRING_RULES = [
       { icon: '🍫', food: 'Dark Chocolate' },
       { icon: '🍕', food: 'Hearty Pizza' },
     ] },
-  { id: 'chardonnay', label: 'Chardonnay', test: /chardonnay/i,
+  // White Burgundy is Chardonnay's own home turf, and (like red Burgundy
+  // and Bordeaux) is labeled by village rather than grape - Chablis is
+  // 100% Chardonnay by AOC rule, and Meursault/Puligny-Montrachet/
+  // Chassagne-Montrachet produce no red, so all four are unambiguous
+  // additions to the top-level test.
+  { id: 'chardonnay', label: 'Chardonnay', test: /chardonnay|bourgogne blanc|\bchablis\b|meursault|puligny-montrachet|chassagne-montrachet/i,
     pairings: [
       { icon: '🦞', food: 'Lobster' },
       { icon: '🍗', food: 'Roast Chicken' },
@@ -423,6 +456,10 @@ const WINE_PAIRING_RULES = [
       { icon: '🌽', food: 'Grilled Corn' },
     ],
     regions: [
+      { id: 'chablis', label: 'Chablis, France', test: /\bchablis\b/i,
+        swapIndex: 3, swap: { icon: '🦪', food: 'Fresh Oysters' } },
+      { id: 'cote-de-beaune', label: 'Côte de Beaune, France', test: /c[oô]te de beaune|meursault|puligny-montrachet|chassagne-montrachet/i,
+        swapIndex: 2, swap: { icon: '🐟', food: 'Sole Meunière' } },
       { id: 'sonoma-coast', label: 'Sonoma Coast, California', test: /sonoma coast|russian river|\bsonoma\b/i,
         swapIndex: 3, swap: { icon: '🐟', food: 'Grilled Halibut' } },
       { id: 'napa', label: 'Napa Valley, California', test: /napa/i,
