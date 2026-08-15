@@ -11,6 +11,10 @@
   // Same, for Settings -> Menu Bar Size (see applyMenuSize below). Must
   // match the key the inline pre-paint script in index.html reads.
   const MENU_SIZE_KEY = 'shelfTalkerMenuSize.v1';
+  // App bar switch, next to History - shows/hides the Queue column so Live
+  // Preview's own 1fr track can claim the freed width. Must match the key
+  // the inline pre-paint script in index.html reads.
+  const QUEUE_COLUMN_KEY = 'shelfTalkerQueueColumnVisible.v1';
   const MENU_SIZES = ['compact', 'comfortable', 'large', 'xlarge'];
   // Settings -> Experimental Features -> Bourbon Shelf Talkers: gates the
   // Nose/Palate/Finish fields and the Distiller.com tasting-notes source in
@@ -1068,6 +1072,7 @@
     findQueueCloseBtn: document.getElementById('findQueueCloseBtn'),
 
     themeToggle: document.getElementById('themeToggle'),
+    queueColumnToggle: document.getElementById('queueColumnToggle'),
     printBtn: document.getElementById('printBtn'),
     printRoot: document.getElementById('printRoot'),
 
@@ -1261,6 +1266,38 @@
       }
     });
   });
+
+  // ---------- Queue column toggle (app bar switch, by History) ----------
+
+  // Same before-first-paint handling as theme/accent above (see the inline
+  // script in index.html): the attribute is already correct on the first
+  // painted frame, this only handles switching it afterwards, remembering
+  // the choice, and re-scaling Live Preview into the width the Queue
+  // column's track just gave up or reclaimed.
+  function queueColumnVisible() {
+    return document.documentElement.getAttribute('data-queue-hidden') !== 'true';
+  }
+
+  function applyQueueColumnVisible(visible) {
+    if (visible) document.documentElement.removeAttribute('data-queue-hidden');
+    else document.documentElement.setAttribute('data-queue-hidden', 'true');
+    if (els.queueColumnToggle) els.queueColumnToggle.checked = visible;
+    rescalePreviewStage();
+  }
+
+  if (els.queueColumnToggle) {
+    els.queueColumnToggle.checked = queueColumnVisible();
+    els.queueColumnToggle.addEventListener('change', () => {
+      const visible = els.queueColumnToggle.checked;
+      applyQueueColumnVisible(visible);
+      try {
+        localStorage.setItem(QUEUE_COLUMN_KEY, String(visible));
+      } catch {
+        // Same as theme/accent: an unavailable store shouldn't break the
+        // click, the choice just won't survive a restart.
+      }
+    });
+  }
 
   // ---------- Menu Bar Size (Settings -> Menu Bar Size) ----------
 
