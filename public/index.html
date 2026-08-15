@@ -776,6 +776,29 @@
             <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
           </div>
           <p class="help-text" id="scanUpcStatus" role="status" aria-live="polite"></p>
+
+          <!-- Same manual "paste an Untappd URL/HTML" fallback as SKU
+               Lookup's own skuUntappdSection above - shown only after a beer
+               scan whose automatic Untappd search came back empty
+               (untappdError in the response). See skuUntappdSection's
+               comment for why this app can never scrape Untappd's own
+               search results directly. -->
+          <div class="reviewer-manager" id="scanUpcUntappdSection" hidden>
+            <p class="help-text">Untappd's automatic search came up empty here - its search results only load in a real browser, so this app can't read them directly. Search for the beer yourself on <a href="https://untappd.com" target="_blank" rel="noopener">untappd.com</a>, open its own page, and paste that page's URL below to fill in the brewery, style, ABV, IBU, and rating.</p>
+            <label class="field">
+              <span>Beer's Untappd URL</span>
+              <input type="url" id="scanUpcUntappdUrl" placeholder="https://untappd.com/b/..." />
+            </label>
+            <button type="button" class="btn btn--primary" id="scanUpcUntappdBtn">Fill from Untappd</button>
+            <p class="help-text" id="scanUpcUntappdStatus" role="status" aria-live="polite"></p>
+
+            <button type="button" class="link-btn" id="scanUpcUntappdHtmlToggle" aria-expanded="false" aria-controls="scanUpcUntappdHtmlSection">Untappd blocking that too? Paste the beer page's HTML instead</button>
+            <div id="scanUpcUntappdHtmlSection" hidden>
+              <p class="help-text">Open the beer's Untappd page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
+              <textarea id="scanUpcUntappdHtmlInput" rows="6" aria-label="Pasted Untappd beer page HTML" placeholder="Paste the Untappd beer page's HTML source here..."></textarea>
+              <button type="button" class="btn btn--primary" id="scanUpcUntappdHtmlBtn">Parse Pasted HTML</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
