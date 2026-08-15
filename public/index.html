@@ -34,6 +34,16 @@
         document.documentElement.setAttribute('data-menu-size', menuSize);
       }
     } catch (e) { /* storage unavailable - stay on the Comfortable default */ }
+    try {
+      // Queue column show/hide (app bar switch next to History, see
+      // applyQueueColumnVisible in app.js) - same before-first-paint
+      // reasoning as theme/accent/menu size above, otherwise a saved
+      // "hidden" choice would flash the Queue column in for one frame on
+      // every launch before the Full Page preview grid widens into it.
+      if (localStorage.getItem('shelfTalkerQueueColumnVisible.v1') === 'false') {
+        document.documentElement.setAttribute('data-queue-hidden', 'true');
+      }
+    } catch (e) { /* storage unavailable - stay on the visible default */ }
   })();
 </script>
 </head>
@@ -198,6 +208,13 @@
     </div>
     <div class="appbar__actions">
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
+      <div class="queue-toggle">
+        <span class="queue-toggle__label" id="queueToggleLabel">Queue column</span>
+        <label class="switch">
+          <input type="checkbox" id="queueColumnToggle" checked aria-labelledby="queueToggleLabel" />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
       <button type="button" id="historyBtn" class="btn" title="Search and reprint past shelf talkers">History</button>
       <button type="button" id="helpBtn" class="btn" title="Help">Help</button>
       <button type="button" id="themeToggle" class="btn btn--icon" aria-pressed="false" title="Switch to dark mode">

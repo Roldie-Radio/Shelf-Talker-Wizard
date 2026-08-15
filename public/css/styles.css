@@ -316,6 +316,18 @@ h1, h2, h3 { margin: 0; }
 .appbar__actions { display: flex; align-items: center; gap: 1rem; }
 .queue-count { font-size: 0.9rem; color: var(--ui-muted); }
 
+/* Show/hide the Queue column (see html[data-queue-hidden] below) - lives in
+   the app bar rather than on the Queue panel itself, since once the column
+   is hidden there'd be nothing left on-screen to click to bring it back. */
+.queue-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 1rem;
+  border-right: 1px solid var(--ui-border);
+}
+.queue-toggle__label { font-size: 0.85rem; color: var(--ui-ink-soft); white-space: nowrap; }
+
 /* ---------- Buttons ---------- */
 
 .btn {
@@ -687,6 +699,14 @@ h1, h2, h3 { margin: 0; }
   padding: 1.25rem 1.5rem 3rem;
   align-items: start;
 }
+
+/* Queue column toggle (app bar switch, see .queue-toggle above) - drops the
+   Queue panel's own track entirely rather than just hiding its contents, so
+   Live Preview's 1fr track claims the freed width. Set on <html> (not
+   .layout) so the pre-paint script in index.html can apply it before first
+   paint, same as data-theme/data-accent/data-menu-size. */
+html[data-queue-hidden="true"] .layout { grid-template-columns: 380px 1fr; }
+html[data-queue-hidden="true"] .panel--queue { display: none; }
 
 .panel {
   background: var(--ui-panel);
@@ -3817,6 +3837,11 @@ h1, h2, h3 { margin: 0; }
   /* Sticky only makes sense beside a scrolling form column; once everything
      is stacked the preview would pin over the queue below it. */
   .panel--preview { position: static; }
+  /* Otherwise this rule's higher specificity (attribute + class) would beat
+     the single-column rule just above and force the 380px/1fr split back
+     in, even though everything else here has already stacked to one
+     column. */
+  html[data-queue-hidden="true"] .layout { grid-template-columns: 1fr; }
 }
 
 /* Below this the app bar's brand block and actions can't share a row: the
