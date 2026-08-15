@@ -48,6 +48,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.1.0',
+      items: [
+        'New (experimental, off by default): Wine Profile for Wine/Spirits Shelf Talkers - five 1-5 dot meters (Fruit, Body, Dry, Acidity, Alcohol) printed under the description, in the same dot style as the Untappd Rating widget on Beer talkers. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (the same varietal list Wine Food Pairings\' Suggest Pairings already uses), then adjust any dot by hand - click a dot to set that category\'s score, or click it again to clear it back to unrated. Turn it on in Settings → Experimental Features → Wine Profile.',
+      ],
+    },
+    {
       version: '4.0.2',
       items: [
         'New: the Bourbon Library\'s pre-loaded starting set nearly doubles, from 14 to 26 bourbons - adding Eagle Rare, W.L. Weller Special Reserve, Larceny, Old Grand-Dad Bonded, Angel\'s Envy, 1792 Small Batch, Rebel Yell, George Dickel Bourbon, Evan Williams Black Label, Old Ezra 7 Year, Wilderness Trail Bottled-in-Bond Wheated, and Very Old Barton. A PC that already auto-seeded the original 14 won\'t pick these up on its own (auto-seed only ever fills a completely empty library) - run `npm run db:seed-bourbon-library` again to add them.',
