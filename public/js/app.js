@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.2.2',
+      items: [
+        'New: the Search tab now opens with one Search field above Search by Name/SKU Lookup/Scan UPC - type a product name, a SKU, or scan a UPC and it detects which and switches to (and runs) the matching lookup automatically, so picking a method first is no longer required day to day. The three panels and their toggle are still there underneath as a manual override.',
+        'New: that field also recognizes our own internal UPC labels ("A" followed by a 7-digit item number, e.g. A0042420) and looks them up as the SKU they encode (42420) rather than treating them as a manufacturer UPC.',
+      ],
+    },
+    {
       version: '4.2.1',
       items: [
         'New: the beer Untappd fallback (SKU Lookup and Scan UPC, shown when the automatic search comes up empty) now has a Search Untappd box above the URL field - type a beer or brewery name and it opens Untappd\'s own search in a new tab, pre-filled with whatever title the automatic search already tried, instead of requiring a trip to untappd.com first.',
