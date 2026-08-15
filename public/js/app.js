@@ -1074,6 +1074,7 @@
     mashBillLibraryFormConfidenceVerifiedInput: document.getElementById('mashBillLibraryFormConfidenceVerifiedInput'),
     mashBillLibraryFormSourceLabel: document.getElementById('mashBillLibraryFormSourceLabel'),
     mashBillLibraryFormSourceUrl: document.getElementById('mashBillLibraryFormSourceUrl'),
+    mashBillLibraryFormSourceTags: document.getElementById('mashBillLibraryFormSourceTags'),
     mashBillLibraryFormAddSourceBtn: document.getElementById('mashBillLibraryFormAddSourceBtn'),
     mashBillLibraryFormSourceList: document.getElementById('mashBillLibraryFormSourceList'),
     mashBillLibraryFormSaveBtn: document.getElementById('mashBillLibraryFormSaveBtn'),
@@ -5380,7 +5381,7 @@
   // both, switching label/button text based on which mode this is in.
   let mashBillLibraryEditingId = null;
   let mashBillLibraryFormGrains = [];
-  let mashBillLibraryFormSources = [];
+  let mashBillLibraryFormReferences = [];
   let mashBillLibrarySyncPollTimer = null;
 
   function renderMashBillLibraryFormGrainList() {
@@ -5392,21 +5393,30 @@
     `).join('');
   }
 
-  // Same rating-chip pattern as the grain list above, just for confidence
-  // source citations ({label, url} - see confidence.sources in server/db.js).
-  function renderMashBillLibraryFormSourceList() {
-    els.mashBillLibraryFormSourceList.innerHTML = mashBillLibraryFormSources.map((s, i) => `
+  // Same rating-chip pattern as the grain list above, just for the
+  // References & Sources citations ({label, url, tags} - see
+  // normalizeReferences in server/db.js).
+  function renderMashBillLibraryFormReferenceList() {
+    els.mashBillLibraryFormSourceList.innerHTML = mashBillLibraryFormReferences.map((r, i) => `
       <div class="rating-chip" data-mashbill-form-source-index="${i}">
-        <span>${escapeHtml(s.label || s.url)}</span>
+        <span>${escapeHtml(r.label || r.url)}${r.tags && r.tags.length ? ` &middot; ${escapeHtml(r.tags.join(', '))}` : ''}</span>
         <button type="button" data-action="remove-mashbill-form-source" title="Remove">&times;</button>
       </div>
     `).join('');
   }
 
+  // Clears the tag picker back to "nothing selected" - called after each
+  // Add (the next source starts untagged) and when the form resets/loads a
+  // different entry (existing references keep their own tags; the picker
+  // only ever drives the *next* one to add).
+  function resetMashBillLibraryFormSourceTags() {
+    els.mashBillLibraryFormSourceTags.querySelectorAll('.toggle-btn').forEach((btn) => btn.classList.remove('is-active'));
+  }
+
   function resetMashBillLibraryForm() {
     mashBillLibraryEditingId = null;
     mashBillLibraryFormGrains = [];
-    mashBillLibraryFormSources = [];
+    mashBillLibraryFormReferences = [];
     els.mashBillLibraryFormTitleInput.value = '';
     els.mashBillLibraryFormDistilleryInput.value = '';
     els.mashBillLibraryFormParentCompanyInput.value = '';
@@ -5421,8 +5431,9 @@
     els.mashBillLibraryFormConfidenceVerifiedInput.value = '';
     els.mashBillLibraryFormSourceLabel.value = '';
     els.mashBillLibraryFormSourceUrl.value = '';
+    resetMashBillLibraryFormSourceTags();
     renderMashBillLibraryFormGrainList();
-    renderMashBillLibraryFormSourceList();
+    renderMashBillLibraryFormReferenceList();
     els.mashBillLibraryFormTitle.textContent = 'Add an entry manually';
     els.mashBillLibraryFormSaveBtn.textContent = 'Add Entry';
     els.mashBillLibraryFormCancelBtn.hidden = true;
@@ -5432,7 +5443,7 @@
   function loadMashBillLibraryEntryIntoForm(entry) {
     mashBillLibraryEditingId = entry.id;
     mashBillLibraryFormGrains = entry.grains.map((g) => ({ grain: g.grain, pct: g.pct }));
-    mashBillLibraryFormSources = (entry.confidence.sources || []).map((s) => ({ label: s.label, url: s.url }));
+    mashBillLibraryFormReferences = (entry.references || []).map((r) => ({ label: r.label, url: r.url, tags: r.tags || [] }));
     els.mashBillLibraryFormTitleInput.value = entry.title;
     els.mashBillLibraryFormDistilleryInput.value = entry.distillery || '';
     els.mashBillLibraryFormParentCompanyInput.value = entry.parentCompany || '';
@@ -5444,8 +5455,9 @@
     els.mashBillLibraryFormConfidenceTier.value = entry.confidence.tier || 'unknown';
     els.mashBillLibraryFormConfidenceNoteInput.value = entry.confidence.note || '';
     els.mashBillLibraryFormConfidenceVerifiedInput.value = entry.confidence.verifiedAt || '';
+    resetMashBillLibraryFormSourceTags();
     renderMashBillLibraryFormGrainList();
-    renderMashBillLibraryFormSourceList();
+    renderMashBillLibraryFormReferenceList();
     els.mashBillLibraryFormTitle.textContent = `Edit "${entry.title}"`;
     els.mashBillLibraryFormSaveBtn.textContent = 'Save Changes';
     els.mashBillLibraryFormCancelBtn.hidden = false;
@@ -5595,26 +5607,34 @@
     renderMashBillLibraryFormGrainList();
   });
 
-  function addMashBillLibraryFormSource() {
+  function addMashBillLibraryFormReference() {
     const label = els.mashBillLibraryFormSourceLabel.value.trim();
     const url = els.mashBillLibraryFormSourceUrl.value.trim();
     if (!url) return;
-    mashBillLibraryFormSources.push({ label, url });
+    const tags = [...els.mashBillLibraryFormSourceTags.querySelectorAll('.toggle-btn.is-active')].map((btn) => btn.dataset.tag);
+    mashBillLibraryFormReferences.push({ label, url, tags });
     els.mashBillLibraryFormSourceLabel.value = '';
     els.mashBillLibraryFormSourceUrl.value = '';
-    renderMashBillLibraryFormSourceList();
+    resetMashBillLibraryFormSourceTags();
+    renderMashBillLibraryFormReferenceList();
   }
-  els.mashBillLibraryFormAddSourceBtn.addEventListener('click', addMashBillLibraryFormSource);
+  els.mashBillLibraryFormAddSourceBtn.addEventListener('click', addMashBillLibraryFormReference);
   els.mashBillLibraryFormSourceUrl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addMashBillLibraryFormSource(); }
+    if (e.key === 'Enter') { e.preventDefault(); addMashBillLibraryFormReference(); }
+  });
+
+  els.mashBillLibraryFormSourceTags.addEventListener('click', (e) => {
+    const btn = e.target.closest('.toggle-btn');
+    if (!btn) return;
+    btn.classList.toggle('is-active');
   });
 
   els.mashBillLibraryFormSourceList.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action="remove-mashbill-form-source"]');
     if (!btn) return;
     const idx = Number(btn.closest('[data-mashbill-form-source-index]').dataset.mashbillFormSourceIndex);
-    mashBillLibraryFormSources.splice(idx, 1);
-    renderMashBillLibraryFormSourceList();
+    mashBillLibraryFormReferences.splice(idx, 1);
+    renderMashBillLibraryFormReferenceList();
   });
 
   els.mashBillLibraryFormCancelBtn.addEventListener('click', resetMashBillLibraryForm);
@@ -5646,9 +5666,9 @@
         confidence: {
           tier: els.mashBillLibraryFormConfidenceTier.value,
           note: els.mashBillLibraryFormConfidenceNoteInput.value.trim(),
-          sources: mashBillLibraryFormSources,
           verifiedAt: els.mashBillLibraryFormConfidenceVerifiedInput.value,
         },
+        references: mashBillLibraryFormReferences,
       };
       const resp = mashBillLibraryEditingId
         ? await fetch(`/api/mashbills/${mashBillLibraryEditingId}`, {
@@ -5819,6 +5839,49 @@
     });
   }
 
+  // Numbered <a class="cite"> markers for a profile-page heading, one per
+  // reference tagged with that section - each jumps down to its numbered
+  // row in referencesSectionHtml's list below. References are numbered by
+  // their position in entry.references, so the same reference always gets
+  // the same marker/anchor regardless of which heading is asking.
+  function citeMarkersHtml(references, tag) {
+    return references
+      .map((r, i) => ({ r, n: i + 1 }))
+      .filter(({ r }) => (r.tags || []).includes(tag))
+      .map(({ n }) => `<a class="cite" href="#ref-${n}" title="Jump to source ${n}">${n}</a>`)
+      .join('');
+  }
+
+  // The unified "References & Sources" section - every citation on the
+  // entry (regardless of which field(s) it backs, see REFERENCE_TAGS in
+  // server/db.js) in one list, so where an entry's information comes from
+  // is never hidden a level down inside just the Mash Bill block.
+  function referencesSectionHtml(entry) {
+    const refs = entry.references || [];
+    if (!refs.length) return '';
+    const rows = refs.map((r, i) => `
+      <div class="ref-row" id="ref-${i + 1}">
+        <div class="ref-row__n">${i + 1}</div>
+        <div class="ref-row__main">
+          ${r.url
+    ? `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.label || r.url)}</a>
+             <span class="ref-row__url">${escapeHtml(r.url)}</span>`
+    : `<span>${escapeHtml(r.label)}</span>`}
+          ${r.tags && r.tags.length ? `<div class="ref-row__tags">${r.tags.map((t) => `<span class="ref-row__tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+    return `
+      <div class="block refs">
+        <div class="refs__head">
+          <h3>References &amp; Sources</h3>
+          <span>${refs.length} source${refs.length === 1 ? '' : 's'} cited</span>
+        </div>
+        ${rows}
+      </div>
+    `;
+  }
+
   function renderBourbonProfile() {
     const entry = mashBillLibraryCache.find((m) => m.id === librarySelectedId);
     if (!entry) {
@@ -5827,15 +5890,10 @@
       return;
     }
     const siblings = mashBillLibraryCache.filter((m) => m.id !== entry.id && entry.distillery && m.distillery === entry.distillery);
-    const sourcesHtml = entry.confidence.sources && entry.confidence.sources.length
-      ? `<details class="conf-sources">
-          <summary>View ${entry.confidence.sources.length} source${entry.confidence.sources.length === 1 ? '' : 's'}</summary>
-          <ul>${entry.confidence.sources.map((s) => `<li><a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.label || s.url)}</a></li>`).join('')}</ul>
-        </details>`
-      : '';
+    const refs = entry.references || [];
     const tastingHtml = (entry.nose || entry.palate || entry.finish) ? `
       <div class="block">
-        <h3>Tasting Notes</h3>
+        <h3>Tasting Notes${citeMarkersHtml(refs, 'Tasting Notes')}</h3>
         <div class="tasting-grid">
           <div class="tasting-card"><h4>Nose</h4><p>${escapeHtml(entry.nose || '—')}</p></div>
           <div class="tasting-card"><h4>Palate</h4><p>${escapeHtml(entry.palate || '—')}</p></div>
@@ -5856,7 +5914,7 @@
       <div class="profile-grid">
         <div>
           <div class="block">
-            <h3>Mash Bill</h3>
+            <h3>Mash Bill${citeMarkersHtml(refs, 'Mash Bill')}</h3>
             ${grainBarHtml(entry.grains)}
             <div class="conf-block">
               <div class="conf-block__row">
@@ -5865,13 +5923,12 @@
               </div>
               ${entry.confidence.note ? `<p class="conf-block__note">${escapeHtml(entry.confidence.note)}</p>` : ''}
               ${entry.confidence.verifiedAt ? `<div class="conf-block__verified">Last verified ${escapeHtml(entry.confidence.verifiedAt)}</div>` : ''}
-              ${sourcesHtml}
             </div>
           </div>
           ${tastingHtml}
         </div>
         <div class="block info-card">
-          <h3>Distillery &amp; Ownership</h3>
+          <h3>Distillery &amp; Ownership${citeMarkersHtml(refs, 'Distillery & Ownership')}</h3>
           <dl>
             <div><dt>Distillery</dt><dd>${escapeHtml(entry.distillery || 'Unknown')}</dd></div>
             ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
@@ -5884,6 +5941,7 @@
             </div>` : ''}
         </div>
       </div>
+      ${referencesSectionHtml(entry)}
     `;
     document.getElementById('libraryEditBtn').addEventListener('click', () => {
       mashBillLibraryModal.open();

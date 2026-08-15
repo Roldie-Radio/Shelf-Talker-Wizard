@@ -876,27 +876,30 @@ test('POST /api/mashbills persists Bourbon Library fields (parent company, tasti
       finish: 'Long and smooth',
       tastingSource: 'Distillery official tasting notes',
       confidence: {
-        tier: 'confirmed', note: 'Publicly confirmed.', sources: [{ label: 'Distillery site', url: 'https://example.com' }], verifiedAt: '2026-01-15',
+        tier: 'confirmed', note: 'Publicly confirmed.', verifiedAt: '2026-01-15',
       },
+      references: [{ label: 'Distillery site', url: 'https://example.com', tags: ['Mash Bill'] }],
     });
     assert.equal(created.status, 201);
     assert.equal(created.body.parentCompany, 'Sazerac Company');
     assert.equal(created.body.category, 'Kentucky Straight Bourbon');
     assert.equal(created.body.nose, 'Vanilla, brown sugar, mint');
     assert.deepEqual(created.body.confidence, {
-      tier: 'confirmed', note: 'Publicly confirmed.', sources: [{ label: 'Distillery site', url: 'https://example.com' }], verifiedAt: '2026-01-15',
+      tier: 'confirmed', note: 'Publicly confirmed.', verifiedAt: '2026-01-15',
     });
+    assert.deepEqual(created.body.references, [{ label: 'Distillery site', url: 'https://example.com', tags: ['Mash Bill'] }]);
 
     const updated = await requestJson(port, 'PUT', `/api/mashbills/${created.body.id}`, {
       confidence: { tier: 'estimated' },
     });
     assert.equal(updated.status, 200);
     assert.deepEqual(updated.body.confidence, {
-      tier: 'estimated', note: '', sources: [], verifiedAt: '',
+      tier: 'estimated', note: '', verifiedAt: '',
     });
     // Fields left off the PUT payload stay untouched.
     assert.equal(updated.body.parentCompany, 'Sazerac Company');
     assert.equal(updated.body.nose, 'Vanilla, brown sugar, mint');
+    assert.deepEqual(updated.body.references, [{ label: 'Distillery site', url: 'https://example.com', tags: ['Mash Bill'] }]);
   }));
 });
 
@@ -918,7 +921,7 @@ test('POST /api/mashbills forwards to the injected mashBillPuller when not isSer
       body: {
         title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined,
         parentCompany: undefined, category: undefined, nose: undefined, palate: undefined, finish: undefined,
-        tastingSource: undefined, confidence: undefined,
+        tastingSource: undefined, confidence: undefined, references: undefined,
       },
     });
   }));

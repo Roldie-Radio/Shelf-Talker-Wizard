@@ -1345,10 +1345,20 @@
             <span>Last Verified (optional)</span>
             <input type="date" id="mashBillLibraryFormConfidenceVerifiedInput" />
           </label>
+
+          <hr class="settings-section-divider" />
+          <h3 class="settings-section-title">References &amp; Sources</h3>
+          <p class="help-text">Where this entry's information comes from. Tag a source with the section(s) it backs so the profile page can link straight to it - leave every tag off if it's a general reference for the whole entry.</p>
           <div class="ratings-builder">
             <input type="text" id="mashBillLibraryFormSourceLabel" placeholder="Source name" aria-label="Source name" />
             <input type="text" id="mashBillLibraryFormSourceUrl" placeholder="https://..." aria-label="Source URL" />
             <button type="button" class="btn btn--small" id="mashBillLibraryFormAddSourceBtn">Add</button>
+          </div>
+          <div class="ref-tag-picker" id="mashBillLibraryFormSourceTags">
+            <button type="button" class="toggle-btn" data-tag="Mash Bill">Mash Bill</button>
+            <button type="button" class="toggle-btn" data-tag="Tasting Notes">Tasting Notes</button>
+            <button type="button" class="toggle-btn" data-tag="Distillery &amp; Ownership">Distillery &amp; Ownership</button>
+            <button type="button" class="toggle-btn" data-tag="Other">Other</button>
           </div>
           <div class="ratings-list" id="mashBillLibraryFormSourceList"></div>
 

@@ -489,11 +489,27 @@ h1, h2, h3 { margin: 0; }
 .conf-block__row { display: flex; align-items: center; gap: 0.6rem; }
 .conf-block__note { font-size: 0.85rem; color: var(--ui-ink-soft); margin: 0.5rem 0 0; line-height: 1.45; }
 .conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
-.conf-sources { margin-top: 0.5rem; font-size: 0.8rem; }
-.conf-sources summary { cursor: pointer; color: var(--ui-accent-ink); font-weight: 600; }
-.conf-sources ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
-.conf-sources li { margin-bottom: 0.2rem; }
-.conf-sources a { color: var(--ui-accent-ink); }
+/* Inline citation marker next to a profile-page heading (see
+   citeMarkersHtml in app.js) - jumps down to its numbered row in the
+   References & Sources block below. */
+.cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  margin-left: 0.3rem;
+  border-radius: 4px;
+  background: var(--ui-code-bg);
+  color: var(--ui-accent-ink);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: 2px;
+  border: 1px solid var(--ui-border);
+}
+.cite:hover { background: var(--ui-accent); color: var(--ui-on-accent); border-color: var(--ui-accent); }
 
 /* Bourbon profile page (renderBourbonProfile in app.js). */
 .profile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
@@ -541,6 +557,46 @@ h1, h2, h3 { margin: 0; }
   text-align: left;
 }
 .sibling-btn:hover { border-color: var(--ui-accent-ink); }
+
+/* Unified "References & Sources" block (referencesSectionHtml in app.js) -
+   every citation on the entry in one place, spanning the full profile
+   width below .profile-grid rather than living inside just one card. */
+.refs__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.refs__head h3 { margin: 0; }
+.refs__head span { font-size: 0.76rem; color: var(--ui-muted); }
+.ref-row {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.6rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--ui-border);
+}
+.ref-row:first-of-type { margin-top: 0.7rem; }
+.ref-row__n { font-size: 0.78rem; font-weight: 700; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+.ref-row__main a { color: var(--ui-accent-ink); font-weight: 600; font-size: 0.87rem; text-decoration: none; }
+.ref-row__main a:hover { text-decoration: underline; }
+.ref-row__main > span { font-size: 0.87rem; font-weight: 600; }
+.ref-row__url {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--ui-muted);
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ref-row__tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.ref-row__tag {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ui-ink-soft);
+  background: var(--ui-panel-alt);
+  border: 1px solid var(--ui-border);
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+}
 
 @media (max-width: 720px) {
   .profile-grid { grid-template-columns: 1fr; }
@@ -1233,6 +1289,13 @@ h1, h2, h3 { margin: 0; }
   color: var(--ui-muted);
 }
 .toggle-btn.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+
+/* References & Sources tag picker (Mash Bill Library form) - deliberately
+   its own class rather than reusing .preview-toggle, which els.previewToggleBtns
+   (Live Preview's Current Talker/Full Page toggle) grabs every .toggle-btn
+   under via a single page-init querySelectorAll - sharing it here rewired
+   clicks on these buttons into that toggle's own click handler instead. */
+.ref-tag-picker { display: flex; gap: 0.3rem; flex-wrap: wrap; }
 
 /* A stand-in for a printed Letter-landscape sheet, laid out at its literal
    printed size - 11in x 8.5in, with the same 0.28in page margin and the
