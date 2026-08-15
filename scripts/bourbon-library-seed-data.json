@@ -36,10 +36,11 @@
     }
   },
   {
-    "title": "Four Roses Single Barrel",
+    "title": "Four Roses Single Barrel Bourbon",
     "distillery": "Four Roses Distillery",
     "parentCompany": "Kirin Holdings Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "25067",
     "grains": [
       {
         "grain": "Corn",
@@ -203,10 +204,11 @@
     }
   },
   {
-    "title": "Maker's Mark",
+    "title": "Maker's Mark Kentucky Bourbon",
     "distillery": "Maker's Mark Distillery",
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
+    "sku": "12039",
     "grains": [
       {
         "grain": "Corn",
@@ -614,10 +616,11 @@
     }
   },
   {
-    "title": "Angel's Envy",
+    "title": "Angel's Envy Bourbon Port Wine Barrels",
     "distillery": "Angel's Envy Distillery",
     "parentCompany": "Bacardi Limited",
     "category": "Kentucky Straight Bourbon (Port Barrel Finished)",
+    "sku": "17040",
     "grains": [
       {
         "grain": "Corn",
@@ -3192,6 +3195,477 @@
     "confidence": {
       "tier": "estimated",
       "note": "Unlike the bourbon and Woodford Reserve Rye, Brown-Forman hasn't published an exact mash bill for Old Forester's rye. This 65/20/15 figure is the commonly-cited trade estimate, not a distillery-confirmed number - replace as soon as better information turns up.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Four Roses Yellow Label",
+    "distillery": "Four Roses Distillery",
+    "parentCompany": "Kirin Holdings Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "5848",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Fresh fruit, floral notes, and a hint of spice.",
+    "palate": "Mellow and balanced, with caramel, ripe fruit, and light spice.",
+    "finish": "Smooth, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Four Roses publicly documents both of its mash bills (this 75/20/5 'B' recipe and a 60/35/5 'E' recipe) across five proprietary yeast strains - ten recipes total - but its standard bottlings are blends across multiple of those recipes, not a single mash bill. The figure shown is the representative recipe, not the whole blend; treat the blend ratio itself as unconfirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Roses - Our Bourbon",
+        "url": "https://fourrosesbourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Four Roses Kentucky Bourbon",
+    "distillery": "Four Roses Distillery",
+    "parentCompany": "Kirin Holdings Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "30295",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Fresh fruit, floral notes, and a hint of spice.",
+    "palate": "Mellow and balanced, with caramel, ripe fruit, and light spice.",
+    "finish": "Smooth, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Four Roses publicly documents both of its mash bills (this 75/20/5 'B' recipe and a 60/35/5 'E' recipe) across five proprietary yeast strains - ten recipes total - but its standard bottlings are blends across multiple of those recipes, not a single mash bill. The figure shown is the representative recipe, not the whole blend; treat the blend ratio itself as unconfirmed. Same product/blend as Four Roses Yellow Label, just this store's name for the larger-format bottle.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Roses - Our Bourbon",
+        "url": "https://fourrosesbourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Four Roses Small Batch Bourbon",
+    "distillery": "Four Roses Distillery",
+    "parentCompany": "Kirin Holdings Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "7510",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Ripe fruit, caramel, and light spice.",
+    "palate": "Fuller and richer than Yellow Label, with vanilla, fruit, and gentle spice.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Four Roses confirms Small Batch is a blend of four specific recipes (OBSK, OESK, OBSO, OESO), drawing on both its published mash bills. Four Roses publicly documents both of its mash bills (this 75/20/5 'B' recipe and a 60/35/5 'E' recipe) across five proprietary yeast strains - ten recipes total - but its standard bottlings are blends across multiple of those recipes, not a single mash bill. The figure shown is the representative recipe, not the whole blend; treat the blend ratio itself as unconfirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Roses - Our Bourbon",
+        "url": "https://fourrosesbourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Four Roses Small Batch Select",
+    "distillery": "Four Roses Distillery",
+    "parentCompany": "Kirin Holdings Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "25754",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 35
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Ripe berries, plum, and pronounced spice.",
+    "palate": "Full-bodied, with red berries, caramel, and a spicy rye kick.",
+    "finish": "Long and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Four Roses confirms Small Batch Select is a blend of four specific recipes (OBSV, OBSK, OESK, OESO) skewed toward its higher-rye 'E' mash bill. Four Roses publicly documents both of its mash bills (this 75/20/5 'B' recipe and a 60/35/5 'E' recipe) across five proprietary yeast strains - ten recipes total - but its standard bottlings are blends across multiple of those recipes, not a single mash bill. The figure shown is the representative recipe, not the whole blend; treat the blend ratio itself as unconfirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Roses - Our Bourbon",
+        "url": "https://fourrosesbourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Maker's Mark 101 Proof",
+    "distillery": "Maker's Mark Distillery",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "27064",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Vanilla, caramel, and soft fruit, more pronounced at higher proof.",
+    "palate": "Smooth and sweet, with baked bread, vanilla, and light spice from the wheat.",
+    "finish": "Warmer and slightly longer than standard Maker's Mark.",
+    "tastingSource": "Maker's Mark Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Maker's Mark publishes this 70/16/14 wheated recipe directly, and it's shared across the entire line - proof, cask strength, and the '46' seared-French-oak-stave finish are all differences applied after distillation, not to the mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Maker's Mark - How It's Made",
+        "url": "https://www.makersmark.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Maker's Mark Cask Strength",
+    "distillery": "Maker's Mark Distillery",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Barrel Proof)",
+    "sku": "6569",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Vanilla, caramel, and soft fruit with real barrel-proof heat.",
+    "palate": "Rich baked bread, vanilla, and wheat spice, undiluted.",
+    "finish": "Long, warm.",
+    "tastingSource": "Maker's Mark Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Maker's Mark publishes this 70/16/14 wheated recipe directly, and it's shared across the entire line - proof, cask strength, and the '46' seared-French-oak-stave finish are all differences applied after distillation, not to the mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Maker's Mark - How It's Made",
+        "url": "https://www.makersmark.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Maker's Mark 46 Kentucky Bourbon",
+    "distillery": "Maker's Mark Distillery",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "13462",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Vanilla, caramel, and toasted spice from seared French oak.",
+    "palate": "Smooth and sweet, with baked bread, vanilla, and richer oak spice than standard Maker's Mark.",
+    "finish": "Soft, slightly sweet, longer finish.",
+    "tastingSource": "Maker's Mark Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Maker's Mark publishes this 70/16/14 wheated recipe directly, and it's shared across the entire line - proof, cask strength, and the '46' seared-French-oak-stave finish are all differences applied after distillation, not to the mash bill. Maker's 46 adds seared French oak staves to the barrel during a finishing period - a barrel-treatment step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Maker's Mark - How It's Made",
+        "url": "https://www.makersmark.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Maker's Mark 46 Private Barrel",
+    "distillery": "Maker's Mark Distillery",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Private Selection)",
+    "sku": "24529",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Vanilla, caramel, and toasted spice from seared French oak.",
+    "palate": "Smooth and sweet, with baked bread, vanilla, and richer oak spice, fuller from single-barrel selection.",
+    "finish": "Soft, slightly sweet, longer finish.",
+    "tastingSource": "Maker's Mark Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Maker's Mark publishes this 70/16/14 wheated recipe directly, and it's shared across the entire line - proof, cask strength, and the '46' seared-French-oak-stave finish are all differences applied after distillation, not to the mash bill. Maker's 46 adds seared French oak staves to the barrel during a finishing period - a barrel-treatment step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Maker's Mark - How It's Made",
+        "url": "https://www.makersmark.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Maker's Mark 46 French Oaked Cask Strength",
+    "distillery": "Maker's Mark Distillery",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Barrel Proof)",
+    "sku": "34853",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Vanilla, caramel, and toasted spice from seared French oak, more intense at barrel proof.",
+    "palate": "Rich baked bread, vanilla, and oak spice, undiluted.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Maker's Mark Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Maker's Mark publishes this 70/16/14 wheated recipe directly, and it's shared across the entire line - proof, cask strength, and the '46' seared-French-oak-stave finish are all differences applied after distillation, not to the mash bill. Maker's 46 adds seared French oak staves to the barrel during a finishing period - a barrel-treatment step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Maker's Mark - How It's Made",
+        "url": "https://www.makersmark.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Angel's Envy Cask Strength",
+    "distillery": "Angel's Envy Distillery",
+    "parentCompany": "Bacardi Limited",
+    "category": "Kentucky Straight Bourbon (Port Barrel Finished, Barrel Proof)",
+    "sku": "2961",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Dried fruit, toffee, and toasted oak with a bolder port-cask sweetness at barrel proof.",
+    "palate": "Caramel and ripe fruit, with tannin and red-wine sweetness, undiluted.",
+    "finish": "Long, fruity, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Angel's Envy has never published a mash bill for its base bourbon, and its defining trait - a finish in used port, rum, or other wine/spirit casks - happens after distillation anyway. This figure is a rough, low-confidence placeholder based on typical Kentucky bourbon proportions, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Angel's Envy Single Barrel Bourbon LOWC",
+    "distillery": "Angel's Envy Distillery",
+    "parentCompany": "Bacardi Limited",
+    "category": "Kentucky Straight Bourbon (Port Barrel Finished, Single Barrel)",
+    "sku": "37315",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Dried fruit, toffee, and toasted oak with a hint of mint from the port finish.",
+    "palate": "Caramel and ripe fruit, with light tannin and red-wine sweetness, full-bodied from single-barrel selection.",
+    "finish": "Smooth, fruity, gently tannic.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Angel's Envy has never published a mash bill for its base bourbon, and its defining trait - a finish in used port, rum, or other wine/spirit casks - happens after distillation anyway. This figure is a rough, low-confidence placeholder based on typical Kentucky bourbon proportions, not a confirmed recipe. This appears to be this store's own private single-barrel pick.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Angel's Envy Triple Oak Cask Finish",
+    "distillery": "Angel's Envy Distillery",
+    "parentCompany": "Bacardi Limited",
+    "category": "Kentucky Straight Bourbon (Triple Cask Finished)",
+    "sku": "37905",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Dried fruit, toasted oak, and layered cask sweetness from three finishing woods.",
+    "palate": "Caramel and ripe fruit with more complex tannin and spice than the standard port-finished release.",
+    "finish": "Long, fruity, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Angel's Envy has never published a mash bill for its base bourbon, and its defining trait - a finish in used port, rum, or other wine/spirit casks - happens after distillation anyway. This figure is a rough, low-confidence placeholder based on typical Kentucky bourbon proportions, not a confirmed recipe. The Triple Oak expression adds two additional cask finishes beyond the standard port barrel.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Angel's Envy Rye Finished Caribbean Cask",
+    "distillery": "Angel's Envy Distillery",
+    "parentCompany": "Bacardi Limited",
+    "category": "Straight Rye Whiskey (Caribbean Rum Cask Finished)",
+    "sku": "1835",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Dried fruit, molasses, and rye spice with a rum-cask sweetness.",
+    "palate": "Brown sugar, tropical fruit, and rye pepper.",
+    "finish": "Warm, sweet, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Angel's Envy Rye is a distinct product from the bourbon line - reported to be a blend of sourced high-rye whiskey components (including MGP-distilled rye) with a portion of Canadian malted rye whiskey, finished in Caribbean rum casks. I don't have a confident grain breakdown for this specific blend; the figure above is a placeholder based on a generic high-rye mash bill, not researched for this product specifically. Needs real research before trusting it.",
       "verifiedAt": ""
     },
     "references": []
