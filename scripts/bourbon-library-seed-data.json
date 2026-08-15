@@ -5266,5 +5266,696 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Barrell Foundation Bourbon",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended)",
+    "sku": "35716",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel, dark fruit, and oak from the multi-source blend.",
+    "palate": "Rich toffee, baking spice, and dried fruit.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; Barrell discloses this specific blend as 7 bourbons aged 5-9 years across Kentucky, Indiana, Tennessee, and Maryland.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Barrell Foundation Double Barrel",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended, Double Barrel Finished)",
+    "sku": "38736",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel, dark fruit, and richer oak from a second barrel finish.",
+    "palate": "Rich toffee, baking spice, and dried fruit, deeper from double barreling.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; Double Barrel takes the Foundation blend through a second barrel finish - a barrel-treatment step on top of the same base blend.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Barrell Bourbon Vantage",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended)",
+    "sku": "32724",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel, dark fruit, and oak from the multi-source blend.",
+    "palate": "Rich toffee, baking spice, and dried fruit.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; Vantage is a different Barrell batch/blend than Foundation, and its own specific derived mash bill isn't confirmed here - using the Foundation figure as a placeholder since Barrell's blends are broadly similar in style, not because this is the actual figure for this batch.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Barrell Bourbon Cigar Blend Bourbon",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended, Cigar Blend Finished)",
+    "sku": "41873",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel, dark fruit, and a rich tobacco-toasted oak note.",
+    "palate": "Rich toffee, baking spice, and dried fruit, deeper from the cigar-blend finish.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; This is a different batch/blend than Foundation with its own finish; using the Foundation figure as a placeholder, not a confirmed number for this specific release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Barrell Bourbon Kentucky Ruby Port Finish",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended, Ruby Port Finished)",
+    "sku": "28250",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel, dark fruit, and a ruby-port sweetness.",
+    "palate": "Rich toffee, baking spice, and red-wine fruit from the port finish.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; This is a different batch/blend than Foundation with its own finish; using the Foundation figure as a placeholder, not a confirmed number for this specific release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Barrell Bourbon 2025 New Year Cask",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended, Limited Release)",
+    "sku": "38406",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel, dark fruit, and oak from the multi-source blend.",
+    "palate": "Rich toffee, baking spice, and dried fruit.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; This is a limited annual release with its own batch/blend; using the Foundation figure as a placeholder, not a confirmed number for this specific release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Barrell Armida Pear, Rum, Amaro Finish",
+    "distillery": "Barrell Craft Spirits (blend, multiple states)",
+    "parentCompany": "Barrell Craft Spirits (independently owned)",
+    "category": "Straight Bourbon (Blended, Pear/Rum/Amaro Cask Finished)",
+    "sku": "27468",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 23
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Layered caramel and dark fruit with pear, rum, and herbal amaro notes.",
+    "palate": "Rich toffee and baking spice, complex from the triple-cask finish.",
+    "finish": "Long, warm, herbal.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Barrell Craft Spirits is a blending house, not a distillery with one mash bill - it blends straight bourbons from multiple states (Kentucky, Indiana, Tennessee, Maryland) at different ages into each batch. The figure above is Barrell's own published \"derived mash bill\" (a weighted average across the blend) for Foundation specifically; Armida is a distinct blend/finish series with its own batch composition; using the Foundation figure as a placeholder, not a confirmed number for this specific release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Foundation - Barrell Craft Spirits",
+        "url": "https://www.barrellbourbon.com/foundation",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Penelope Four Grain Bourbon",
+    "distillery": "Penelope Bourbon (sourced + blended)",
+    "parentCompany": "Penelope Bourbon (independently owned)",
+    "category": "Straight Bourbon (Four Grain)",
+    "sku": "23598",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Rye",
+        "pct": 7
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 3
+      }
+    ],
+    "nose": "Caramel, baking spice, and soft wheat sweetness.",
+    "palate": "Vanilla, brown sugar, and gentle rye spice from the blended mash bills.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Penelope publishes this 75/15/7/3 four-grain mash bill directly - a blend of separately-aged wheat-recipe and rye-recipe bourbons blended together before bottling.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Grain - Penelope Bourbon",
+        "url": "https://shop.penelopebourbon.com/products/penelope-four-grain-straight-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Penelope Four Grain Barrel Strength",
+    "distillery": "Penelope Bourbon (sourced + blended)",
+    "parentCompany": "Penelope Bourbon (independently owned)",
+    "category": "Straight Bourbon (Four Grain, Barrel Strength)",
+    "sku": "24815",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Rye",
+        "pct": 7
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 3
+      }
+    ],
+    "nose": "Caramel, baking spice, and soft wheat sweetness, more intense at barrel strength.",
+    "palate": "Vanilla, brown sugar, and rye spice with real barrel-proof heat.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Penelope publishes this 75/15/7/3 four-grain mash bill directly - a blend of separately-aged wheat-recipe and rye-recipe bourbons blended together before bottling.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Grain - Penelope Bourbon",
+        "url": "https://shop.penelopebourbon.com/products/penelope-four-grain-straight-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Penelope Four Grain Toasted Bourbon",
+    "distillery": "Penelope Bourbon (sourced + blended)",
+    "parentCompany": "Penelope Bourbon (independently owned)",
+    "category": "Straight Bourbon (Four Grain, Toasted Barrel Finished)",
+    "sku": "31645",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Rye",
+        "pct": 7
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 3
+      }
+    ],
+    "nose": "Caramel, baking spice, and a rounder toasted-oak sweetness.",
+    "palate": "Vanilla, brown sugar, and rye spice with deeper toasted oak.",
+    "finish": "Smooth, warm, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Penelope publishes this 75/15/7/3 four-grain mash bill directly - a blend of separately-aged wheat-recipe and rye-recipe bourbons blended together before bottling. This expression adds a toasted-barrel finishing step after blending.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Grain - Penelope Bourbon",
+        "url": "https://shop.penelopebourbon.com/products/penelope-four-grain-straight-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Penelope 7 Year Barrel Strength Bourbon",
+    "distillery": "Penelope Bourbon (sourced + blended)",
+    "parentCompany": "Penelope Bourbon (independently owned)",
+    "category": "Straight Bourbon (Four Grain, Barrel Strength)",
+    "sku": "41338",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Rye",
+        "pct": 7
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 3
+      }
+    ],
+    "nose": "Caramel, baking spice, and soft wheat sweetness, more developed from extra age.",
+    "palate": "Vanilla, brown sugar, and rye spice with real barrel-proof heat.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Penelope publishes this 75/15/7/3 four-grain mash bill directly - a blend of separately-aged wheat-recipe and rye-recipe bourbons blended together before bottling. Using the standard Four Grain mash bill as the base for this older, barrel-strength expression - not independently confirmed for this specific age-stated release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Grain - Penelope Bourbon",
+        "url": "https://shop.penelopebourbon.com/products/penelope-four-grain-straight-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Penelope Wheated Straight Bourbon",
+    "distillery": "Penelope Bourbon (sourced + blended)",
+    "parentCompany": "Penelope Bourbon (independently owned)",
+    "category": "Straight Wheated Bourbon",
+    "sku": "38521",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Rye",
+        "pct": 7
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 3
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel, baked bread, and light rye spice.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Penelope publishes this 74/16/7/3 mash bill directly for its Wheated Straight Bourbon, a separate recipe from the Four Grain line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Penelope Wheated Bourbon - Penelope Bourbon",
+        "url": "https://shop.penelopebourbon.com/products/wheated",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Penelope Cognac Barrel Project X",
+    "distillery": "Penelope Bourbon (sourced + blended)",
+    "parentCompany": "Penelope Bourbon (independently owned)",
+    "category": "Straight Bourbon (Four Grain, Cognac Cask Finished)",
+    "sku": "40169",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Rye",
+        "pct": 7
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 3
+      }
+    ],
+    "nose": "Caramel, baking spice, and a grape-brandy richness from the cognac cask.",
+    "palate": "Vanilla, brown sugar, and rye spice layered with cognac sweetness.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Penelope publishes this 75/15/7/3 four-grain mash bill directly - a blend of separately-aged wheat-recipe and rye-recipe bourbons blended together before bottling. Project X finishes the Four Grain bourbon in cognac casks - using the standard mash bill as the base, though the exact base for this specific limited release isn't independently confirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Four Grain - Penelope Bourbon",
+        "url": "https://shop.penelopebourbon.com/products/penelope-four-grain-straight-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rabbit Hole Cavehill Bourbon",
+    "distillery": "Rabbit Hole Distillery",
+    "parentCompany": "Pernod Ricard",
+    "category": "Kentucky Straight Bourbon (Four Grain Triple Malt)",
+    "sku": "24110",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Malted Wheat",
+        "pct": 10
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      },
+      {
+        "grain": "Honey Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Toasted grain, honey, and dried fruit.",
+    "palate": "Caramel, baking spice, and a malty sweetness from the triple-malt recipe.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Rabbit Hole publishes this mash bill directly for Cavehill, its flagship - corn plus three different malted grains (malted wheat, malted barley, and honey malted barley).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Cavehill - 4 Grain Triple Malt Bourbon - Rabbit Hole Distillery",
+        "url": "https://www.rabbitholedistillery.com/pages/cavehill",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rabbit Hole Heigold Bourbon",
+    "distillery": "Rabbit Hole Distillery",
+    "parentCompany": "Pernod Ricard",
+    "category": "Kentucky Straight Bourbon (High-Rye Double Malt)",
+    "sku": "32132",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Malted Rye",
+        "pct": 25
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Bold rye spice, toasted grain, and citrus.",
+    "palate": "Rye pepper, caramel, and malty sweetness from the double-malt recipe.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Rabbit Hole publishes this mash bill directly for Heigold - corn plus malted rye and malted barley (a \"double malt\" high-rye recipe).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Heigold - High-Rye Double Malt Bourbon - Rabbit Hole Distillery",
+        "url": "https://www.rabbitholedistillery.com/pages/heigold",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rabbit Hole PX Sherry Cask Bourbon",
+    "distillery": "Rabbit Hole Distillery",
+    "parentCompany": "Pernod Ricard",
+    "category": "Kentucky Straight Bourbon (PX Sherry Cask Finished)",
+    "sku": "23432",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Malted Wheat",
+        "pct": 10
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      },
+      {
+        "grain": "Honey Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Toasted grain, honey, and rich dried-fruit sweetness from the PX sherry finish.",
+    "palate": "Caramel, baking spice, and raisin/fig notes layered over the triple-malt base.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Using Cavehill's published triple-malt mash bill as the base, finished afterward in Pedro Xim\u00e9nez sherry casks - a barrel-treatment step, not independently confirmed as this release's exact base blend.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Cavehill - 4 Grain Triple Malt Bourbon - Rabbit Hole Distillery",
+        "url": "https://www.rabbitholedistillery.com/pages/cavehill",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rabbit Hole Boxergrail Rye",
+    "distillery": "Rabbit Hole Distillery",
+    "parentCompany": "Pernod Ricard",
+    "category": "Kentucky Straight Rye Whiskey",
+    "sku": "24111",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, dill, and citrus.",
+    "palate": "Rye spice, brown sugar, and butterscotch.",
+    "finish": "Velvety, long, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Rabbit Hole publishes this 95/5 mash bill directly for Boxergrail.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Rabbit Hole Boxergrail Straight Rye Whiskey - Seelbach's",
+        "url": "https://seelbachs.com/products/r",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   }
 ]
