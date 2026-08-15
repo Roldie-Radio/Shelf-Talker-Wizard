@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.2.0',
+      items: [
+        'New: the beer Untappd fallback (SKU Lookup and Scan UPC, shown when the automatic search comes up empty) now has a Search Untappd box above the URL field - type a beer or brewery name and it opens Untappd\'s own search in a new tab, pre-filled with whatever title the automatic search already tried, instead of requiring a trip to untappd.com first.',
+      ],
+    },
+    {
       version: '4.1.2',
       items: [
         'Added: Hard Seltzer now gets its own color-coded style badge (cyan/teal) instead of falling back to the generic gray "Other" badge, so it reads at a glance same as any beer style.',
