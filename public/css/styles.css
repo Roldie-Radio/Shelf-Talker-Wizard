@@ -314,14 +314,27 @@ h1, h2, h3 { margin: 0; }
    stay full-width siblings above this, unchanged. flex:1/min-height:0 so
    .layout's own flex:1 (and .panel--preview's position:sticky inside it)
    keeps working exactly as it did as a direct child of .app, just one level
-   deeper now. */
-.app-shell { flex: 1; min-height: 0; display: flex; }
+   deeper now. align-items:flex-start (instead of flex's default stretch)
+   is what makes the rail's own height come from its own content/CSS below
+   rather than getting stretched to match whichever of .layout/#libraryView
+   is tallest - the same reason .layout itself uses align-items:start for
+   .panel--preview (see below). Without it, the rail's background/border
+   would grow exactly as tall as the page and scroll away with it. */
+.app-shell { flex: 1; min-height: 0; display: flex; align-items: flex-start; }
 
 /* Icon-only, no visible caption (title="" on each button gives the
    tooltip) - the app's fixed-width layout (.layout's 380px+320px side
    columns) is already tight against Electron's 1024px minWidth (see
    electron/main.js), so this stays as narrow as a comfortable click target
-   allows rather than adding a text label's worth of extra width. */
+   allows rather than adding a text label's worth of extra width.
+
+   position:sticky/top:5.5rem is the same trick .panel--preview below uses
+   to stay put while the page scrolls - same top offset, since both sit
+   just under .menubar+.appbar. height:calc(100vh - 5.5rem) makes it a full
+   viewport-tall bar (not just as tall as its 3 icons) that's still pinned
+   rather than scrolling off with .layout/#libraryView's own content, and
+   overflow:hidden means it never grows its own scrollbar even if a future
+   addition of rail icons ever made a very short window tight. */
 .rail {
   flex: 0 0 auto;
   width: 56px;
@@ -332,6 +345,10 @@ h1, h2, h3 { margin: 0; }
   padding: 0.7rem 0;
   background: var(--ui-panel-alt);
   border-right: 1px solid var(--ui-border);
+  position: sticky;
+  top: 5.5rem;
+  height: calc(100vh - 5.5rem);
+  overflow: hidden;
 }
 .rail__icon {
   width: 42px;
