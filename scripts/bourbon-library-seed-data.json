@@ -8264,5 +8264,319 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Wheel Horse Owensboro KY Bourbon",
+    "distillery": "Owensboro Distilling Company",
+    "parentCompany": "Latitude Beverage Co.",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "32868",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Vanilla, caramel, and light rye spice.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wheel Horse is a partnership between Latitude Beverage Co. and Owensboro Distilling Company, which publishes this 70/21/9 mash bill for the line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wheel Horse Bourbon - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/whiskey-styles/bourbon/owensboro-distilling-company-and-latitude-beverage-co-release-wheel-horse-bourbon/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wheel Horse Cigar Blend Bourbon",
+    "distillery": "Owensboro Distilling Company",
+    "parentCompany": "Latitude Beverage Co.",
+    "category": "Kentucky Straight Bourbon (Cigar Blend Finished)",
+    "sku": "38148",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Vanilla, caramel, and a rich tobacco-toasted oak note.",
+    "palate": "Brown sugar and baking spice, deeper from the cigar-blend finish.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wheel Horse is a partnership between Latitude Beverage Co. and Owensboro Distilling Company, which publishes this 70/21/9 mash bill for the line. The cigar-blend finish is a post-distillation step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wheel Horse Bourbon - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/whiskey-styles/bourbon/owensboro-distilling-company-and-latitude-beverage-co-release-wheel-horse-bourbon/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wheel Horse Double Oak Bourbon",
+    "distillery": "Owensboro Distilling Company",
+    "parentCompany": "Latitude Beverage Co.",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "38462",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Vanilla, caramel, and richer toasted oak.",
+    "palate": "Brown sugar and baking spice, deeper from a second charred barrel.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wheel Horse is a partnership between Latitude Beverage Co. and Owensboro Distilling Company, which publishes this 70/21/9 mash bill for the line. Double Oak takes the whiskey through a second charred barrel - a barrel-treatment step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wheel Horse Bourbon - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/whiskey-styles/bourbon/owensboro-distilling-company-and-latitude-beverage-co-release-wheel-horse-bourbon/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wheel Horse Double Mash Whiskey",
+    "distillery": "Owensboro Distilling Company",
+    "parentCompany": "Latitude Beverage Co.",
+    "category": "Straight Whiskey (Blended)",
+    "sku": "42231",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Vanilla, caramel, and layered grain sweetness.",
+    "palate": "Brown sugar and baking spice with added depth from a second mash bill component.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Wheel Horse is a partnership between Latitude Beverage Co. and Owensboro Distilling Company, which publishes this 70/21/9 mash bill for the line. \"Double Mash\" suggests this specific release blends two different mash bills - the exact second component and blend ratio aren't confirmed here, so this uses the standard Wheel Horse recipe as a placeholder.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wheel Horse Bourbon - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/whiskey-styles/bourbon/owensboro-distilling-company-and-latitude-beverage-co-release-wheel-horse-bourbon/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Seelbach's Double Stack Maple Finish",
+    "distillery": "Sourced (undisclosed distillery, batch-dependent)",
+    "parentCompany": "Seelbach's (independent bottler)",
+    "category": "Straight Bourbon (Maple Cask Finished)",
+    "sku": "42041",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Seelbach's is an independent bottler that sources from multiple undisclosed Kentucky/Indiana distilleries, and its Private Reserve/finished releases use different mash bills batch to batch (documented figures for other batches include 74/18/8, 78/10/12, and 60/36/4) - this specific maple-finished release's source and mash bill aren't identified here. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Seelbach's Private Reserve Amburana Finish Bourbon",
+    "distillery": "Sourced (undisclosed distillery, batch-dependent)",
+    "parentCompany": "Seelbach's (independent bottler)",
+    "category": "Straight Bourbon (Amburana Cask Finished)",
+    "sku": "40882",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same sourcing situation as Seelbach's other Private Reserve releases - mash bill varies batch to batch and isn't identified for this specific Amburana-finished release. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Seelbach's Rathskeller Revival Bourbon",
+    "distillery": "Sourced (undisclosed distillery, batch-dependent)",
+    "parentCompany": "Seelbach's (independent bottler)",
+    "category": "Straight Bourbon",
+    "sku": "42043",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same sourcing situation as Seelbach's other releases - mash bill varies batch to batch and isn't identified for this specific release. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "The Reveries Raven Batch 5",
+    "distillery": "Sourced blend (Kentucky and Indiana distilleries)",
+    "parentCompany": "The Reveries (T8KE, independent bottler)",
+    "category": "Straight Bourbon (Blended)",
+    "sku": "42080",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 78
+      },
+      {
+        "grain": "Rye",
+        "pct": 10
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Rich caramel, dried fruit, and toasted oak from the multi-source blend.",
+    "palate": "Brown sugar, baking spice, and dried fruit, layered from multiple ages/sources.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Raven is a blend of several sourced bourbons that changes batch to batch - Batch 1 was documented as roughly 48% likely-Heaven-Hill (78/10/12, the figure shown), 41% likely-MGP (75/21/4), and 11% a different likely-Heaven-Hill component (75/13/12). Batch 5's exact blend isn't confirmed here, so this uses the largest documented component from an earlier batch as an illustrative placeholder, not a confirmed recipe for this batch.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "The Reveries Rare Release: Raven (Batch 1) Review",
+        "url": "https://mostlybourbon.com/the-reveries-rare-release-raven-batch-1/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "The Reveries LOWC 10 YR Bourbon Barrel",
+    "distillery": "Sourced (undisclosed distillery, single barrel)",
+    "parentCompany": "The Reveries (T8KE, independent bottler)",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "41400",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "The Reveries hand-selects single barrels from multiple sourced distilleries with mash bill varying by barrel - this specific barrel's source/recipe isn't identified here. \"LOWC\" in the name suggests this is this store's own private barrel selection. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "The Reveries The Deep Bourbon",
+    "distillery": "Sourced (undisclosed distillery, single barrel)",
+    "parentCompany": "The Reveries (T8KE, independent bottler)",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "42042",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same sourcing situation as The Reveries' other single-barrel releases - mash bill varies by barrel and isn't identified for this specific release. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
