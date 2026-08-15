@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.1.0',
+      items: [
+        'Fixed: the Shelf Talker/Bourbon Library/Pairing Atlas icons in the left sidebar rail were drawn with the same fixed dark ink used for printed shelf talkers, which nearly disappeared against the rail\'s own dark background in Dark Mode. Each icon now sits on its own light backdrop chip so it stays legible in both themes.',
+      ],
+    },
+    {
       version: '4.0.4',
       items: [
         'Fixed: the Bourbon Library\'s auto-seed on first launch (4.0.1) relied entirely on reaching GitHub over the network - a store PC where that\'s blocked (firewall, content filter, no internet at that moment) was left with a permanently empty library instead of ever getting the pre-loaded bourbons. It now falls back to the same seed data bundled directly into the installer whenever the GitHub fetch fails, so a fresh install always ends up populated regardless of network access - GitHub is only ever a nice-to-have for picking up a newer curated list between releases.',
