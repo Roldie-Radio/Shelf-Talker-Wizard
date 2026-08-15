@@ -863,6 +863,8 @@
     // activateMethod below.
     methodToggleBtns: document.querySelectorAll('.method-toggle .toggle-btn'),
     methodPanels: document.querySelectorAll('.method-panel'),
+    smartSearchInput: document.getElementById('smartSearchInput'),
+    smartSearchHint: document.getElementById('smartSearchHint'),
 
     // Type and Product Type - repeated once per top-level tab (see the
     // shared .type-select/.product-type-select note in index.html) rather
@@ -1485,13 +1487,22 @@
   // Mirrors activateTab's own is-active/hidden-state bookkeeping, just with
   // the role="radio" attributes (aria-checked) that pattern uses instead of
   // role="tab"'s aria-selected.
-  function activateMethod(btn) {
+  // Split from activateMethod below so smart search's routing (see further
+  // down) can switch panels without also triggering the scan-focus side
+  // effect below - stealing focus away from the smart search field mid-scan
+  // or mid-type would send the rest of what's being typed to the wrong
+  // input.
+  function setActiveMethodPanel(btn) {
     els.methodToggleBtns.forEach((b) => {
       const isActive = b === btn;
       b.classList.toggle('is-active', isActive);
       b.setAttribute('aria-checked', String(isActive));
     });
     els.methodPanels.forEach((p) => p.classList.toggle('is-active', p.dataset.methodPanel === btn.dataset.method));
+  }
+
+  function activateMethod(btn) {
+    setActiveMethodPanel(btn);
     focusScanIfActive();
   }
 
@@ -1510,6 +1521,81 @@
 
   els.methodToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => activateMethod(btn));
+  });
+
+  // ---------- Smart search (routes to the method above automatically) ----------
+
+  // One field above the method toggle that guesses which of the three
+  // lookups below applies, so day-to-day use doesn't require picking a
+  // method first: any letters means a product name, a short all-digit
+  // string is a SKU, a long one is a UPC. It drives the three panels above
+  // rather than replacing them - see the comment on #smartSearchFieldWrap
+  // in index.html for why.
+  const SMART_SEARCH_UPC_MIN_DIGITS = 8; // UPC-A/EAN-13 run 12-13 digits, UPC-E 8 - store SKUs here are shorter
+  // Our own self-printed labels barcode the store's SKU as "A" + that SKU
+  // zero-padded to 7 digits (e.g. A0042420 for item 42420) rather than a
+  // real manufacturer UPC, so it needs unwrapping back to a plain SKU
+  // before it can go through the same SKU Lookup a typed 42420 would.
+  const INTERNAL_UPC_RE = /^A(\d{7})$/i;
+  const SMART_SEARCH_HINTS = {
+    name: 'Searching by name…',
+    sku: 'Looks like a SKU. Press Enter, or Look Up SKU below, to search it.',
+    upc: 'Looks like a UPC. Press Enter, or scan again, to look it up.',
+  };
+
+  function detectSmartSearchMode(raw) {
+    const value = raw.trim();
+    if (!value) return null;
+    if (INTERNAL_UPC_RE.test(value)) return 'internalUpc';
+    const digitsOnly = value.replace(/[\s-]/g, '');
+    if (!/^\d+$/.test(digitsOnly)) return 'name';
+    return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
+  }
+
+  function smartSearchMethodBtn(method) {
+    return [...els.methodToggleBtns].find((b) => b.dataset.method === method);
+  }
+
+  function runSmartSearch(rawValue) {
+    const mode = detectSmartSearchMode(rawValue);
+    if (mode === 'internalUpc') {
+      const itemNumber = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
+      els.smartSearchHint.textContent = `Internal UPC for item ${itemNumber}. Press Enter, or Look Up SKU below, to search it.`;
+    } else {
+      els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
+    }
+    if (!mode) return;
+    const targetMethod = mode === 'upc' ? 'scan' : mode === 'sku' || mode === 'internalUpc' ? 'sku' : 'searchName';
+    const targetBtn = smartSearchMethodBtn(targetMethod);
+    if (targetBtn && !targetBtn.classList.contains('is-active')) setActiveMethodPanel(targetBtn);
+    if (mode === 'name') {
+      // Set + dispatch rather than calling runNameSearch directly so Search
+      // by Name's own input handler still runs unchanged - same debounce,
+      // same clearNameSearchSelection() if a prior pick is now stale.
+      els.nameSearchInput.value = rawValue;
+      els.nameSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    } else if (mode === 'sku') {
+      els.skuInput.value = rawValue.trim();
+    } else if (mode === 'internalUpc') {
+      els.skuInput.value = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
+    } else {
+      els.scanUpcInput.value = rawValue.trim();
+    }
+  }
+
+  els.smartSearchInput.addEventListener('input', () => runSmartSearch(els.smartSearchInput.value));
+
+  // A barcode scanner types its code fast and finishes with Enter (see
+  // wireEnterTriggersClick below) - it may land in this field rather than
+  // Scan UPC's own, so Enter here needs to trigger the matching lookup
+  // button itself, not just sync the value like every other keystroke does.
+  els.smartSearchInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const mode = detectSmartSearchMode(els.smartSearchInput.value);
+    runSmartSearch(els.smartSearchInput.value);
+    if (mode === 'sku' || mode === 'internalUpc') els.skuLookupBtn.click();
+    else if (mode === 'upc') els.scanUpcLookupBtn.click();
   });
 
   // ---------- Form mode (Shelf Talker/Display Sign x Small/Large x Wine/Beer) ----------

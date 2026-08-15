@@ -705,6 +705,20 @@
         </div>
         <div class="type-product-divider"></div>
 
+        <!-- Drives the method-toggle/panels below instead of replacing them:
+             letters typed here means a name (routes to Search by Name's live
+             typeahead), a short digit string is a SKU, a long one is a UPC -
+             see detectSmartSearchMode in app.js. Keeping the toggle and its
+             three panels intact means Untappd fallback, the HTML-paste
+             fallback, and keyboard nav all keep working unchanged no matter
+             which way a product got found; the toggle also doubles as a
+             manual override when a digit string is genuinely ambiguous. -->
+        <label class="field" id="smartSearchFieldWrap">
+          <span>Search</span>
+          <input type="text" id="smartSearchInput" autocomplete="off" placeholder="Search by name, SKU, or scan a UPC&hellip;" />
+        </label>
+        <p class="help-text" id="smartSearchHint" role="status" aria-live="polite">&nbsp;</p>
+
         <div class="method-toggle" role="radiogroup" aria-label="Search method" id="searchMethodToggle">
           <button type="button" class="toggle-btn is-active" data-method="searchName" role="radio" aria-checked="true" id="methodSearchNameBtn" aria-controls="methodPanelSearchName">Search by Name</button>
           <button type="button" class="toggle-btn" data-method="sku" role="radio" aria-checked="false" id="methodSkuBtn" aria-controls="methodPanelSku">SKU Lookup</button>
