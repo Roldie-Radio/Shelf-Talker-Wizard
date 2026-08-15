@@ -277,12 +277,19 @@ function getMashBill(id) {
   return rowToMashBill(db.prepare('SELECT * FROM mash_bills WHERE id = ?').get(id));
 }
 
+// Grains used to be required here (GRAINS_REQUIRED) since a mash-bill-less
+// entry was pointless under the original "recall a researched composition"
+// feature. It's a real, useful state now: the Bourbon Library's "Unknown"
+// confidence tier is exactly a tracked product nobody's researched the
+// grains for yet (see docs/mockups/bourbon-profile-page.html's Michter's
+// entry, which has none at all). The Manage Mash Bill Library dialog's own
+// Save button still blocks an empty grain list client-side ("Add at least
+// one grain first", app.js) - that's a UI nudge for *that* form, not a
+// server-side rule every entry must satisfy.
 function validateMashBillInput({ title, grains }) {
   const cleanTitle = (title || '').trim();
   if (!cleanTitle) throw Object.assign(new Error('A product title is required.'), { code: 'TITLE_REQUIRED' });
-  const cleanGrains = normalizeGrains(grains);
-  if (!cleanGrains.length) throw Object.assign(new Error('At least one grain is required.'), { code: 'GRAINS_REQUIRED' });
-  return { cleanTitle, cleanGrains };
+  return { cleanTitle, cleanGrains: normalizeGrains(grains) };
 }
 
 // Create-or-update by title (case-insensitive) - the "Save to Library"

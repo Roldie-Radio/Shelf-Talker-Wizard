@@ -97,7 +97,7 @@ async function handleRequest(req, res) {
 
     return sendJson(res, 404, { error: 'Not found.' });
   } catch (err) {
-    const status = err.code === 'BAD_JSON' || err.code === 'TITLE_REQUIRED' || err.code === 'GRAINS_REQUIRED' ? 400
+    const status = err.code === 'BAD_JSON' || err.code === 'TITLE_REQUIRED' ? 400
       : err.code === 'DUPLICATE_TITLE' ? 409 : 500;
     return sendJson(res, status, { error: err.message || 'Something went wrong.', code: err.code });
   }

@@ -227,11 +227,22 @@ test('upsertMashBill updates the existing entry in place on a repeat save (case-
   });
 });
 
-test('upsertMashBill rejects a missing title or empty grains', () => {
+test('upsertMashBill rejects a missing title', () => {
   withTempDb(() => {
     assert.throws(() => db.upsertMashBill({ title: '', grains: sampleGrains() }), { code: 'TITLE_REQUIRED' });
-    assert.throws(() => db.upsertMashBill({ title: 'Wild Turkey 101', grains: [] }), { code: 'GRAINS_REQUIRED' });
-    assert.throws(() => db.upsertMashBill({ title: 'Wild Turkey 101', grains: [{ grain: '', pct: 90 }] }), { code: 'GRAINS_REQUIRED' });
+  });
+});
+
+// Grains are optional now (see the comment on validateMashBillInput in
+// db.js) - an entry can legitimately track "nothing researched yet" as the
+// Bourbon Library's "Unknown" confidence tier, rather than being forced to
+// have a mash bill to exist at all.
+test('upsertMashBill allows an entry with no grains at all (an "Unknown"-tier Library entry)', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: "Michter's US*1 Bourbon", grains: null });
+    assert.deepEqual(entry.grains, []);
+    const entryWithJunk = db.upsertMashBill({ title: 'Wild Turkey 101', grains: [{ grain: '', pct: 90 }] });
+    assert.deepEqual(entryWithJunk.grains, []);
   });
 });
 

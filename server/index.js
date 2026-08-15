@@ -455,7 +455,7 @@ function createApp({
           title, distillery, grains, source, parentCompany, category, nose, palate, finish, confidence,
         }));
       } catch (err) {
-        return res.status(err.code === 'GRAINS_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+        return res.status(500).json({ error: err.message, code: err.code });
       }
     }
     if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
@@ -482,7 +482,7 @@ function createApp({
         if (!updated) return res.status(404).json({ error: 'No mash bill entry with that id.' });
         return res.json(updated);
       } catch (err) {
-        return res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'GRAINS_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+        return res.status(err.code === 'DUPLICATE_TITLE' ? 409 : 500).json({ error: err.message, code: err.code });
       }
     }
     if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
