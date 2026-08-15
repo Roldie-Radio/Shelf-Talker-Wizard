@@ -856,6 +856,25 @@ test('POST /api/mashbills upserts directly once isServer, requires a title', asy
   }));
 });
 
+test('POST /api/mashbills persists and returns the Bourbon Library profile/confidence fields once isServer', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    const created = await postJson(port, '/api/mashbills', {
+      title: 'Buffalo Trace',
+      grains: [{ grain: 'Corn', pct: 90 }],
+      parentCompany: 'Sazerac',
+      category: 'Straight Bourbon',
+      confidence: { tier: 'reported', note: 'Industry consensus.', verified: '2026-06-01', sources: [{ label: 'Distiller Encyclopedia', url: 'https://example.com' }] },
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.parentCompany, 'Sazerac');
+    assert.equal(created.body.confidence.tier, 'reported');
+
+    const { body } = await getJson(port, '/api/mashbills');
+    assert.equal(body.mashBills[0].category, 'Straight Bourbon');
+  }));
+});
+
 test('POST /api/mashbills forwards to the injected mashBillPuller when not isServer', async () => {
   let forwarded = null;
   const puller = fakeMashBillPuller({
@@ -868,7 +887,14 @@ test('POST /api/mashbills forwards to the injected mashBillPuller when not isSer
     const { status, body } = await postJson(port, '/api/mashbills', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
     assert.equal(status, 201);
     assert.equal(body.title, 'Larceny');
-    assert.deepEqual(forwarded, { method: 'POST', path: '/mashbills', body: { title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined } });
+    assert.deepEqual(forwarded, {
+      method: 'POST',
+      path: '/mashbills',
+      body: {
+        title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined,
+        parentCompany: undefined, category: undefined, nose: undefined, palate: undefined, finish: undefined, confidence: undefined,
+      },
+    });
   }));
 });
 

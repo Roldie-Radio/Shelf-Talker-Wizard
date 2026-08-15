@@ -310,3 +310,74 @@ test('getStats includes the mash bill count', () => {
     assert.equal(db.getStats().mashBills, 2);
   });
 });
+
+// ---------- Bourbon Library profile fields (parent company/category/tasting
+// notes/confidence) added on top of the original mash bill columns above ----------
+
+function sampleConfidence() {
+  return {
+    tier: 'reported',
+    note: 'Multiple independent sources agree, but the distillery has not confirmed it directly.',
+    verified: '2026-06-01',
+    sources: [{ label: 'Distiller Encyclopedia', url: 'https://example.com/buffalo-trace' }],
+  };
+}
+
+test('upsertMashBill stores and returns the profile and confidence fields', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Buffalo Trace',
+      grains: sampleGrains(),
+      parentCompany: 'Sazerac',
+      category: 'Straight Bourbon',
+      nose: 'Vanilla, brown sugar',
+      palate: 'Caramel, oak',
+      finish: 'Long, spicy',
+      confidence: sampleConfidence(),
+    });
+    assert.equal(entry.parentCompany, 'Sazerac');
+    assert.equal(entry.category, 'Straight Bourbon');
+    assert.equal(entry.nose, 'Vanilla, brown sugar');
+    assert.deepEqual(entry.confidence, sampleConfidence());
+  });
+});
+
+test('upsertMashBill defaults profile/confidence fields to blank/unknown when omitted', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Wild Turkey 101', grains: sampleGrains() });
+    assert.equal(entry.parentCompany, '');
+    assert.equal(entry.category, '');
+    assert.deepEqual(entry.confidence, {
+      tier: 'unknown', note: '', verified: '', sources: [],
+    });
+  });
+});
+
+test('updateMashBillById keeps existing profile/confidence fields when the call omits them (partial merge)', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Four Roses',
+      grains: sampleGrains(),
+      parentCompany: 'Kirin',
+      confidence: sampleConfidence(),
+    });
+    // Same shape the Manage Mash Bill Library dialog's Edit action actually
+    // sends today - title/distillery/grains/source only.
+    const updated = db.updateMashBillById(entry.id, { title: 'Four Roses', distillery: 'Four Roses Distillery', grains: sampleGrains() });
+    assert.equal(updated.parentCompany, 'Kirin');
+    assert.deepEqual(updated.confidence, sampleConfidence());
+  });
+});
+
+test('updateMashBillById replaces the whole confidence block when one is provided', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Michter\'s', grains: sampleGrains(), confidence: sampleConfidence() });
+    const updated = db.updateMashBillById(entry.id, {
+      grains: sampleGrains(),
+      confidence: { tier: 'unknown', sources: [] },
+    });
+    assert.deepEqual(updated.confidence, {
+      tier: 'unknown', note: '', verified: '', sources: [],
+    });
+  });
+});

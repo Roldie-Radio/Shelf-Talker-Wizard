@@ -64,6 +64,35 @@ function applySchema(db) {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_mash_bills_title_unique ON mash_bills (title COLLATE NOCASE);
   `);
+
+  // Second wave of mash_bills columns, added via ALTER TABLE (not the CREATE
+  // TABLE above) so a PC with an existing data.db picks them up on its rows
+  // in place instead of losing them to a recreate. They back the read-only
+  // Bourbon Library profile page: parent company/category/tasting notes,
+  // plus a "confidence" block (tier/note/verified date/source citations,
+  // sources as a JSON array - same "structured data in a TEXT column"
+  // precedent printed_talkers.data already uses) describing how directly a
+  // grain composition traces back to the distillery itself, since most of
+  // it is industry-reported rather than officially disclosed. All optional
+  // and additive - existing rows, the sync protocol, and every caller that
+  // only ever sends title/distillery/grains/source are unaffected.
+  const mashBillProfileColumns = {
+    parent_company: 'TEXT',
+    category: 'TEXT',
+    nose: 'TEXT',
+    palate: 'TEXT',
+    finish: 'TEXT',
+    confidence_tier: 'TEXT',
+    confidence_note: 'TEXT',
+    confidence_verified: 'TEXT',
+    confidence_sources: 'TEXT',
+  };
+  const existingColumns = new Set(db.prepare('PRAGMA table_info(mash_bills)').all().map((c) => c.name));
+  for (const [column, type] of Object.entries(mashBillProfileColumns)) {
+    if (!existingColumns.has(column)) {
+      db.exec(`ALTER TABLE mash_bills ADD COLUMN ${column} ${type}`);
+    }
+  }
 }
 
 // Re-derived whenever the configured directory changes (same pattern as
@@ -224,6 +253,17 @@ function rowToMashBill(row) {
     grains: JSON.parse(row.grains),
     source: row.source,
     updatedAt: row.updated_at,
+    parentCompany: row.parent_company || '',
+    category: row.category || '',
+    nose: row.nose || '',
+    palate: row.palate || '',
+    finish: row.finish || '',
+    confidence: {
+      tier: row.confidence_tier || 'unknown',
+      note: row.confidence_note || '',
+      verified: row.confidence_verified || '',
+      sources: row.confidence_sources ? JSON.parse(row.confidence_sources) : [],
+    },
   };
 }
 
@@ -252,8 +292,16 @@ function validateMashBillInput({ title, grains }) {
 // Library dialog's own "+ Add entry manually" uses it too, for the same
 // reason - typing a title that already has an entry merges into it rather
 // than blocking on a "already exists" error.
+// Every profile field below (parent company/category/tasting notes/
+// confidence) is optional and, like distillery above, fully replaced by
+// whatever's passed - omitted means blank, not "leave whatever was there".
+// That's fine for upsertMashBill specifically because every real caller
+// (Save-to-Library, the Manage dialog's Add/Edit form) always sends its
+// complete idea of the entry; updateMashBillById below is the one that
+// needs true partial-merge semantics, for its own reasons (see there).
 function upsertMashBill({
   title, distillery, grains, source,
+  parentCompany, category, nose, palate, finish, confidence,
 }) {
   const db = getDb();
   const { cleanTitle, cleanGrains } = validateMashBillInput({ title, grains });
@@ -264,19 +312,38 @@ function upsertMashBill({
     grains: JSON.stringify(cleanGrains),
     source: source || 'Manual',
     updatedAt: now,
+    parentCompany: (parentCompany || '').trim() || null,
+    category: (category || '').trim() || null,
+    nose: (nose || '').trim() || null,
+    palate: (palate || '').trim() || null,
+    finish: (finish || '').trim() || null,
+    confidenceTier: (confidence && confidence.tier) || null,
+    confidenceNote: (confidence && confidence.note) || null,
+    confidenceVerified: (confidence && confidence.verified) || null,
+    confidenceSources: JSON.stringify((confidence && confidence.sources) || []),
   };
 
   const existing = db.prepare('SELECT id FROM mash_bills WHERE title = ? COLLATE NOCASE').get(cleanTitle);
   if (existing) {
     db.prepare(`
-      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt
+      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt,
+        parent_company = @parentCompany, category = @category, nose = @nose, palate = @palate, finish = @finish,
+        confidence_tier = @confidenceTier, confidence_note = @confidenceNote, confidence_verified = @confidenceVerified, confidence_sources = @confidenceSources
       WHERE id = @id
     `).run({ ...params, id: existing.id });
     return getMashBill(existing.id);
   }
   const info = db.prepare(`
-    INSERT INTO mash_bills (title, distillery, grains, source, updated_at)
-    VALUES (@title, @distillery, @grains, @source, @updatedAt)
+    INSERT INTO mash_bills (
+      title, distillery, grains, source, updated_at,
+      parent_company, category, nose, palate, finish,
+      confidence_tier, confidence_note, confidence_verified, confidence_sources
+    )
+    VALUES (
+      @title, @distillery, @grains, @source, @updatedAt,
+      @parentCompany, @category, @nose, @palate, @finish,
+      @confidenceTier, @confidenceNote, @confidenceVerified, @confidenceSources
+    )
   `).run(params);
   return getMashBill(info.lastInsertRowid);
 }
@@ -287,8 +354,20 @@ function upsertMashBill({
 // entry already owns is a real conflict here, not a merge - the unique
 // index catches it and this surfaces it as DUPLICATE_TITLE rather than
 // letting better-sqlite3's raw constraint error reach the caller.
+// Unlike upsertMashBill's full replace-by-title, this is a true partial
+// merge: any field left out of the call keeps its current value rather
+// than being blanked. That matters now more than it used to - the Manage
+// Mash Bill Library dialog's Edit action only ever sends
+// {title, distillery, grains, source}, and it must not be able to silently
+// wipe out confidence/parent-company/tasting-note data that the Bourbon
+// Library screen (or the seed script) set on that same entry.
+function blankOrKeep(newValue, existingValue) {
+  return newValue !== undefined ? ((newValue || '').trim() || null) : (existingValue || null);
+}
+
 function updateMashBillById(id, {
   title, distillery, grains, source,
+  parentCompany, category, nose, palate, finish, confidence,
 }) {
   const db = getDb();
   const existing = getMashBill(id);
@@ -297,18 +376,42 @@ function updateMashBillById(id, {
     title: title !== undefined ? title : existing.title,
     grains: grains !== undefined ? grains : existing.grains,
   });
+  // confidence is treated as one unit, not merged sub-field by sub-field:
+  // omit it entirely to keep the existing block untouched, or send the
+  // whole replacement block (a partial confidence object would otherwise
+  // leave it ambiguous whether a missing `note`, say, means "clear it" or
+  // "unchanged").
+  const confidenceUpdate = confidence !== undefined ? {
+    confidenceTier: confidence.tier || null,
+    confidenceNote: confidence.note || null,
+    confidenceVerified: confidence.verified || null,
+    confidenceSources: JSON.stringify(confidence.sources || []),
+  } : {
+    confidenceTier: existing.confidence.tier || null,
+    confidenceNote: existing.confidence.note || null,
+    confidenceVerified: existing.confidence.verified || null,
+    confidenceSources: JSON.stringify(existing.confidence.sources || []),
+  };
 
   try {
     db.prepare(`
-      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt
+      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt,
+        parent_company = @parentCompany, category = @category, nose = @nose, palate = @palate, finish = @finish,
+        confidence_tier = @confidenceTier, confidence_note = @confidenceNote, confidence_verified = @confidenceVerified, confidence_sources = @confidenceSources
       WHERE id = @id
     `).run({
       id,
       title: cleanTitle,
-      distillery: distillery !== undefined ? ((distillery || '').trim() || null) : existing.distillery || null,
+      distillery: blankOrKeep(distillery, existing.distillery),
       grains: JSON.stringify(cleanGrains),
       source: source || existing.source,
       updatedAt: nowIso(),
+      parentCompany: blankOrKeep(parentCompany, existing.parentCompany),
+      category: blankOrKeep(category, existing.category),
+      nose: blankOrKeep(nose, existing.nose),
+      palate: blankOrKeep(palate, existing.palate),
+      finish: blankOrKeep(finish, existing.finish),
+      ...confidenceUpdate,
     });
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
