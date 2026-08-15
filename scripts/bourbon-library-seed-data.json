@@ -8578,5 +8578,144 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "TX Texas Straight Bourbon",
+    "distillery": "Firestone & Robertson Distilling Co.",
+    "parentCompany": "Pernod Ricard",
+    "category": "Texas Straight Bourbon (Wheated)",
+    "sku": "19832",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Texas Winter Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "6-Row Distiller's Malt",
+        "pct": 10
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread with a distinct pecan-yeast character.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "TX Whiskey publishes the grain types for its Straight Bourbon (Texas corn, Texas winter wheat, and 6-row distiller's malt, fermented with a proprietary Texas pecan-tree yeast strain) but not exact percentages - the figures above are an illustrative split, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "TX Straight Bourbon Whiskey - distiller.com",
+        "url": "https://distiller.com/spirits/tx-straight-bourbon-whiskey",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "TX Texas Blended Whiskey",
+    "distillery": "Firestone & Robertson Distilling Co.",
+    "parentCompany": "Pernod Ricard",
+    "category": "Blended Whiskey",
+    "sku": "19833",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "TX Blended Whiskey isn't a single-mash-bill straight whiskey - it's roughly 60% corn-based grain neutral spirit blended with straight bourbon and whiskey aged in used bourbon casks. Not reducible to a real mash bill; placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Sipp'n Corn Bourbon Review - TX Blended Whiskey",
+        "url": "https://sippncorn.blogspot.com/2014/03/sippn-corn-bourbon-review-tx-blended.html",
+        "tags": [
+          "Other"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Eleven Jones Bourbon",
+    "distillery": "Sourced (undisclosed distillery)",
+    "parentCompany": "Konrad Beverage Company",
+    "category": "Blended American Whiskey",
+    "sku": "22188",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Eleven Jones is marketed as a blended American whiskey \"matured in only select barrels\" - no public source discloses the source distillery or mash bill. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Frank August Small Batch Kentucky Straight Bourbon",
+    "distillery": "Sourced (undisclosed Kentucky distillery, distilled/aged in Bardstown)",
+    "parentCompany": "Frank August Bourbon Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Small Batch)",
+    "sku": "35969",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Frank August is a non-distilling producer that blends 10-15 barrels per batch from an undisclosed Kentucky distillery (distilled and aged in Bardstown, KY) - some trade writing describes it as high-rye, but no exact percentages are published. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Freedom Fighter 6YR Old Bourbon",
+    "distillery": "Sourced (undisclosed distillery)",
+    "parentCompany": "Freedom Whiskey Company (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "42138",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "No public source discloses the source distillery or mash bill for Freedom Fighter - only that it's a 6-year Kentucky straight bourbon meeting the federal minimum-corn requirement. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
