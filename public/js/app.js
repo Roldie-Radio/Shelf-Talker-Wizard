@@ -48,6 +48,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.2.0',
+      items: [
+        'New (experimental, off by default): Wine Profile for Wine/Spirits Shelf Talkers - five 1-5 dot meters (Fruit, Body, Dry, Acidity, Alcohol) printed under the description, in the same dot style as the Untappd Rating widget on Beer talkers. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (the same varietal list Wine Food Pairings\' Suggest Pairings already uses), then adjust any dot by hand - click a dot to set that category\'s score, or click it again to clear it back to unrated. Turn it on in Settings → Experimental Features → Wine Profile.',
+      ],
+    },
+    {
       version: '4.1.0',
       items: [
         'Fixed: the Shelf Talker/Bourbon Library/Pairing Atlas icons in the left sidebar rail were drawn with the same fixed dark ink used for printed shelf talkers, which nearly disappeared against the rail\'s own dark background in Dark Mode. Each icon now sits on its own light backdrop chip so it stays legible in both themes.',
