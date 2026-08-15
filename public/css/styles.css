@@ -507,7 +507,65 @@ h1, h2, h3 { margin: 0; }
 @media (max-width: 720px) {
   .profile-grid { grid-template-columns: 1fr; }
   .tasting-grid { grid-template-columns: 1fr; }
+  .pairing-infographic { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- The Pairing Atlas ---------- */
+/* Shares .library-view/.library-band/.bourbon-grid/.bourbon-card/
+   .profile-head/.profile-grid/.block/.info-card/.sibling-* with the
+   Bourbon Library above (see #atlasView in index.html and the "Pairing
+   Atlas" section of app.js) - only what's genuinely specific to wine
+   pairings gets its own rules here. */
+
+/* Card-grid preview strip (wineCardHtml) - the same 4 pairing emoji a
+   varietal's profile page shows full-size, shrunk to a one-line taste of
+   the infographic below so the grid itself reads as a browsable set of
+   posters, not a plain list. */
+.wine-card__pairings { font-size: 1.3rem; line-height: 1; display: flex; gap: 0.3rem; }
+
+/* Profile page infographic (pairingInfographicHtml) - a 2x2 poster of the
+   same 4 candidates Suggest Pairings offers, icon-first and large, in
+   place of the Wine Pairing Rules modal's flat reference chips. */
+.pairing-infographic {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+.pairing-infographic__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  text-align: center;
+  padding: 0.8rem 0.4rem;
+  border-radius: 8px;
+  background: var(--ui-panel-sunken);
+  border: 1px solid var(--ui-border);
+}
+.pairing-infographic__icon { font-size: 1.9rem; line-height: 1; }
+.pairing-infographic__food { font-size: 0.78rem; font-weight: 600; line-height: 1.25; }
+
+/* Regional/Sweetness Twists (atlasRefinementListHtml) - one row per
+   sub-entry, its swapped-in pairing shown the same icon-first way as the
+   infographic above rather than the modal's strikethrough/arrow pair, so
+   it still reads as "here's what changes" without the reference-list's
+   before/after clutter. */
+.atlas-region-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.atlas-region-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--ui-panel-sunken);
+  border: 1px solid var(--ui-border);
+}
+.atlas-region-item__label { font-size: 0.85rem; font-weight: 700; }
+.atlas-region-item__swap { display: flex; align-items: center; gap: 0.4rem; font-size: 0.84rem; }
+.atlas-region-item__swap .pairing-infographic__icon { font-size: 1.2rem; }
+.atlas-region-item__was { font-size: 0.72rem; color: var(--ui-muted); }
 
 /* ---------- Layout ---------- */
 

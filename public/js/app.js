@@ -750,6 +750,7 @@
     rail: document.getElementById('rail'),
     railShelfTalkerBtn: document.getElementById('railShelfTalkerBtn'),
     railLibraryBtn: document.getElementById('railLibraryBtn'),
+    railAtlasBtn: document.getElementById('railAtlasBtn'),
     railSettingsBtn: document.getElementById('railSettingsBtn'),
     shelfTalkerView: document.getElementById('shelfTalkerView'),
     libraryView: document.getElementById('libraryView'),
@@ -758,6 +759,12 @@
     libraryChips: document.getElementById('libraryChips'),
     libraryStats: document.getElementById('libraryStats'),
     libraryBody: document.getElementById('libraryBody'),
+    atlasView: document.getElementById('atlasView'),
+    atlasBackLink: document.getElementById('atlasBackLink'),
+    atlasFilterInput: document.getElementById('atlasFilterInput'),
+    atlasChips: document.getElementById('atlasChips'),
+    atlasStats: document.getElementById('atlasStats'),
+    atlasBody: document.getElementById('atlasBody'),
 
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
@@ -5890,6 +5897,221 @@
     });
   }
 
+  // ---------- The Pairing Atlas (rail view) ----------
+  //
+  // A read-focused browse/profile screen over WINE_PAIRING_RULES (a plain
+  // global defined in card.js - same array Suggest Pairings and Tools >
+  // Wine Pairing Rules... already match/render against, so this can't
+  // drift out of sync with what that button actually offers - see the
+  // WINE_PAIRING_RULES comment block in card.js). Unlike that modal, which
+  // is a developer-facing reference (raw match patterns, one flat list),
+  // this is the consumer-facing version: a color-grouped varietal grid and
+  // a per-varietal profile page that renders its pairings as an
+  // infographic instead of a list. Entirely client-side - WINE_PAIRING_RULES
+  // is a static array already loaded with the page, so unlike
+  // renderLibraryView above there's no fetch, and unlike the Bourbon
+  // Library this never writes anything either.
+  //
+  // Filter matching reuses pairingRuleMatchesQuery, defined above for the
+  // Wine Pairing Rules modal's own filter box - same "matches this
+  // varietal's own label/pattern, or any of its region/sweetness
+  // sub-entries'" semantics, so typing "Chablis" or "Trocken" here finds
+  // the same varietal it would in that modal.
+
+  const ATLAS_COLORS = ['Red', 'White', 'Rosé', 'Sparkling', 'Fortified & Dessert'];
+
+  let atlasFilterQuery = '';
+  let atlasColorFilter = 'all';
+  let atlasViewMode = 'grid';
+  let atlasSelectedId = null;
+
+  function atlasMatchesFilter(rule) {
+    return atlasColorFilter === 'all' || rule.color === atlasColorFilter;
+  }
+
+  function atlasMatchesSearch(rule) {
+    return pairingRuleMatchesQuery(rule, atlasFilterQuery.trim().toLowerCase());
+  }
+
+  function renderAtlasChipsAndStats() {
+    const counts = { all: WINE_PAIRING_RULES.length };
+    ATLAS_COLORS.forEach((color) => {
+      counts[color] = WINE_PAIRING_RULES.filter((r) => r.color === color).length;
+    });
+    const chips = [{ key: 'all', label: `All varietals (${counts.all})` }]
+      .concat(ATLAS_COLORS.filter((color) => counts[color] > 0).map((color) => ({ key: color, label: `${color} (${counts[color]})` })));
+    els.atlasChips.innerHTML = chips.map((c) => `
+      <button type="button" class="toggle-btn ${atlasColorFilter === c.key ? 'is-active' : ''}" data-color="${c.key}">${escapeHtml(c.label)}</button>
+    `).join('');
+    els.atlasChips.querySelectorAll('button[data-color]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        atlasColorFilter = btn.dataset.color;
+        renderAtlasChipsAndStats();
+        renderAtlasBody();
+      });
+    });
+    const twists = WINE_PAIRING_RULES.reduce((sum, r) => sum + (r.regions ? r.regions.length : 0) + (r.sweetness ? r.sweetness.length : 0), 0);
+    const pairingsCharted = WINE_PAIRING_RULES.reduce((sum, r) => sum + r.pairings.length, 0);
+    els.atlasStats.innerHTML = `
+      <div class="library-stat"><b>${WINE_PAIRING_RULES.length}</b><span>Varietals</span></div>
+      <div class="library-stat"><b>${new Set(WINE_PAIRING_RULES.map((r) => r.color)).size}</b><span>Wine Colors</span></div>
+      <div class="library-stat"><b>${twists}</b><span>Regional/Sweetness Twists</span></div>
+      <div class="library-stat"><b>${pairingsCharted}</b><span>Pairings Charted</span></div>
+    `;
+  }
+
+  function wineCardHtml(rule) {
+    const regionCount = (rule.regions ? rule.regions.length : 0) + (rule.sweetness ? rule.sweetness.length : 0);
+    return `
+      <button type="button" class="bourbon-card wine-card" data-id="${rule.id}">
+        <div class="bourbon-card__title">${escapeHtml(rule.label)}</div>
+        <div class="wine-card__pairings" aria-hidden="true">${rule.pairings.map((p) => `<span title="${escapeHtml(p.food)}">${escapeHtml(p.icon)}</span>`).join('')}</div>
+        <div class="bourbon-card__footer">
+          <span class="tag">${escapeHtml(rule.color)}</span>
+          <span class="bourbon-card__sub">${regionCount ? `${regionCount} twist${regionCount === 1 ? '' : 's'}` : ''}</span>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderAtlasGrid() {
+    const rows = WINE_PAIRING_RULES.filter((r) => atlasMatchesFilter(r) && atlasMatchesSearch(r));
+    if (!rows.length) {
+      els.atlasBody.innerHTML = '<p class="help-text">No varietals match this search/filter.</p>';
+      return;
+    }
+    els.atlasBody.innerHTML = `<div class="bourbon-grid">${rows.map(wineCardHtml).join('')}</div>`;
+    els.atlasBody.querySelectorAll('.wine-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        atlasSelectedId = btn.dataset.id;
+        atlasViewMode = 'profile';
+        renderAtlasBody();
+      });
+    });
+  }
+
+  // The infographic itself: the same 4 pairings Suggest Pairings offers,
+  // laid out as a 2x2 poster (big icon over its food label) instead of the
+  // Wine Pairing Rules modal's flat chip row - this is the "browse for
+  // ideas" surface, that one's the "check what a button will do" surface.
+  function pairingInfographicHtml(rule) {
+    return `
+      <div class="block">
+        <h3>Pairing Infographic</h3>
+        <div class="pairing-infographic">
+          ${rule.pairings.map((p) => `
+            <div class="pairing-infographic__item">
+              <div class="pairing-infographic__icon">${escapeHtml(p.icon)}</div>
+              <div class="pairing-infographic__food">${escapeHtml(p.food)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <p class="help-text">The same 4 candidates Suggest Pairings (Edit Talker &rarr; Food Pairing Suggestions) offers for ${escapeHtml(rule.label)} - pick up to 3 to print.</p>
+      </div>
+    `;
+  }
+
+  // Regions and sweetness tiers render with the same markup - both are
+  // "narrow down to this sub-entry, swap one slot of the base 4" (see the
+  // WINE_PAIRING_RULES comment block in card.js) - just a different
+  // heading and, for a rule like Riesling that carries both, two separate
+  // blocks rather than one merged list.
+  function atlasRefinementListHtml(rule, list, heading) {
+    if (!list || !list.length) return '';
+    return `
+      <div class="block">
+        <h3>${escapeHtml(heading)}</h3>
+        <div class="atlas-region-list">
+          ${list.map((entry) => `
+            <div class="atlas-region-item">
+              <div class="atlas-region-item__label">${escapeHtml(entry.label)}</div>
+              <div class="atlas-region-item__swap">
+                <span class="pairing-infographic__icon">${escapeHtml(entry.swap.icon)}</span>
+                <span>${escapeHtml(entry.swap.food)}</span>
+                <span class="atlas-region-item__was">in place of ${escapeHtml(rule.pairings[entry.swapIndex].food)}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAtlasProfile() {
+    const rule = WINE_PAIRING_RULES.find((r) => r.id === atlasSelectedId);
+    if (!rule) {
+      atlasViewMode = 'grid';
+      renderAtlasBody();
+      return;
+    }
+    const siblings = WINE_PAIRING_RULES.filter((r) => r.id !== rule.id && r.color === rule.color);
+    els.atlasBody.innerHTML = `
+      <div class="profile-head">
+        <div>
+          <h2>${escapeHtml(rule.label)}</h2>
+          <div class="profile-tags"><span class="tag">${escapeHtml(rule.color)}</span></div>
+        </div>
+      </div>
+      <div class="profile-grid">
+        <div>
+          ${pairingInfographicHtml(rule)}
+          ${atlasRefinementListHtml(rule, rule.regions, 'Regional Twists')}
+          ${atlasRefinementListHtml(rule, rule.sweetness, 'Sweetness Refinements')}
+        </div>
+        <div class="block info-card">
+          <h3>At a Glance</h3>
+          <dl>
+            <div><dt>Color</dt><dd>${escapeHtml(rule.color)}</dd></div>
+            ${rule.regions ? `<div><dt>Regional twists</dt><dd>${rule.regions.length}</dd></div>` : ''}
+            ${rule.sweetness ? `<div><dt>Sweetness tiers</dt><dd>${rule.sweetness.length}</dd></div>` : ''}
+          </dl>
+          ${siblings.length ? `
+            <dt class="info-card__siblings-label">Other ${escapeHtml(rule.color)} varietals</dt>
+            <div class="sibling-list">
+              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(s.label)}</span></button>`).join('')}
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+    els.atlasBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        atlasSelectedId = btn.dataset.id;
+        renderAtlasProfile();
+      });
+    });
+  }
+
+  function renderAtlasBody() {
+    els.atlasBackLink.hidden = atlasViewMode !== 'profile';
+    if (atlasViewMode === 'profile') renderAtlasProfile();
+    else renderAtlasGrid();
+  }
+
+  els.atlasFilterInput.addEventListener('input', (e) => {
+    atlasFilterQuery = e.target.value;
+    atlasViewMode = 'grid';
+    renderAtlasBody();
+  });
+  els.atlasBackLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    atlasViewMode = 'grid';
+    atlasSelectedId = null;
+    renderAtlasBody();
+  });
+
+  // Called every time the rail switches to Atlas (see setActiveView
+  // above). No fetch to await (see the section comment above), so unlike
+  // renderLibraryView this resets and renders synchronously.
+  function renderAtlasView() {
+    atlasViewMode = 'grid';
+    atlasSelectedId = null;
+    atlasColorFilter = 'all';
+    els.atlasFilterInput.value = '';
+    atlasFilterQuery = '';
+    renderAtlasChipsAndStats();
+    renderAtlasBody();
+  }
+
   // Fired once, right as printing is confirmed (see printNow() below) with
   // whatever's in the Queue at that moment - that's exactly what's about to
   // be laid out on the sheet(s). Best-effort: a failure here (e.g. History's
@@ -6290,23 +6512,25 @@
     },
   });
 
-  // ---------- Rail (Shelf Talker / Library / Settings) ----------
+  // ---------- Rail (Shelf Talker / Library / Pairing Atlas / Settings) ----------
   //
-  // Settings isn't a third screen - its rail button just opens the same
-  // settingsModal above, unchanged. Shelf Talker and Library are real
-  // screens: exactly one of els.shelfTalkerView (the existing .layout
-  // three-column form/preview/queue grid, untouched) / els.libraryView is
-  // visible at a time, toggled here rather than with the tabs' full
-  // role="tablist" machinery (see activateTab) - this is a whole-screen
-  // swap, not adjacent panels of one form.
+  // Settings isn't a fourth screen - its rail button just opens the same
+  // settingsModal above, unchanged. Shelf Talker, Library, and Atlas are
+  // real screens: exactly one of els.shelfTalkerView (the existing .layout
+  // three-column form/preview/queue grid, untouched) / els.libraryView /
+  // els.atlasView is visible at a time, toggled here rather than with the
+  // tabs' full role="tablist" machinery (see activateTab) - this is a
+  // whole-screen swap, not adjacent panels of one form.
   let activeRailView = 'shelfTalker';
 
   function setActiveView(view) {
     activeRailView = view;
     els.railShelfTalkerBtn.classList.toggle('is-active', view === 'shelfTalker');
     els.railLibraryBtn.classList.toggle('is-active', view === 'library');
+    els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
     els.shelfTalkerView.hidden = view !== 'shelfTalker';
     els.libraryView.hidden = view !== 'library';
+    els.atlasView.hidden = view !== 'atlas';
     if (view === 'shelfTalker') {
       // The preview stage reads 0 for its own width while
       // els.shelfTalkerView is hidden (display:none), so scalePreview
@@ -6317,11 +6541,14 @@
       rescalePreviewStage();
     } else if (view === 'library') {
       renderLibraryView();
+    } else if (view === 'atlas') {
+      renderAtlasView();
     }
   }
 
   els.railShelfTalkerBtn.addEventListener('click', () => setActiveView('shelfTalker'));
   els.railLibraryBtn.addEventListener('click', () => setActiveView('library'));
+  els.railAtlasBtn.addEventListener('click', () => setActiveView('atlas'));
   els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
   // ---------- Menu bar ----------
