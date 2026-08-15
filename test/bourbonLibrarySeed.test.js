@@ -5,11 +5,14 @@ const os = require('node:os');
 const path = require('node:path');
 
 const db = require('../server/db');
-const { autoSeedBourbonLibrary, maybeAutoSeedBourbonLibrary, GITHUB_SEED_URL } = require('../server/bourbonLibrarySeed');
+const {
+  autoSeedBourbonLibrary, maybeAutoSeedBourbonLibrary, GITHUB_SEED_URL, BUNDLED_SEED_PATH,
+} = require('../server/bourbonLibrarySeed');
 
 // Same throwaway-directory pattern as test/db.test.js, but async - unlike
-// that file's withTempDb, autoSeedBourbonLibrary always awaits a fetch, so
-// there's no synchronous-only call site to preserve here.
+// that file's withTempDb, autoSeedBourbonLibrary always awaits a fetch (or
+// a bundled-file read), so there's no synchronous-only call site to
+// preserve here.
 async function withTempDb(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelf-talker-bourbon-seed-test-'));
   const prev = process.env.SHELF_TALKER_CONFIG_DIR;
@@ -51,7 +54,7 @@ function jsonResponse(body, { ok = true, status = 200 } = {}) {
   return { ok, status, json: async () => body };
 }
 
-test('autoSeedBourbonLibrary seeds from GitHub when the library is empty', () => withTempDb(() => withMockFetch(
+test('autoSeedBourbonLibrary seeds from GitHub when the fetch succeeds', () => withTempDb(() => withMockFetch(
   async (url) => {
     assert.equal(url, GITHUB_SEED_URL);
     return jsonResponse(SAMPLE_ENTRIES);
@@ -59,12 +62,13 @@ test('autoSeedBourbonLibrary seeds from GitHub when the library is empty', () =>
   async () => {
     const result = await autoSeedBourbonLibrary(db);
     assert.equal(result.seeded, 2);
+    assert.equal(result.source, 'GitHub');
     const titles = db.listMashBills().map((m) => m.title).sort();
     assert.deepEqual(titles, ['Buffalo Trace', "Maker's Mark"]);
   },
 )));
 
-test('autoSeedBourbonLibrary skips the fetch entirely when the library already has entries', () => withTempDb(async () => {
+test('autoSeedBourbonLibrary skips entirely when the library already has entries', () => withTempDb(async () => {
   db.upsertMashBill({
     title: 'Already Here',
     distillery: 'Some Distillery',
@@ -82,21 +86,42 @@ test('autoSeedBourbonLibrary skips the fetch entirely when the library already h
   );
 }));
 
-test('autoSeedBourbonLibrary rejects a non-ok response instead of seeding garbage', () => withTempDb(() => withMockFetch(
-  async () => jsonResponse(null, { ok: false, status: 500 }),
+// This is the exact real-world failure this fallback exists for: a store
+// PC where GitHub (or raw.githubusercontent.com specifically) is
+// unreachable - blocked by a firewall/content filter, no internet, DNS
+// failure, timeout, a non-ok HTTP response, anything. The library must
+// still end up populated from the copy bundled into the install.
+test('autoSeedBourbonLibrary falls back to the bundled file when the GitHub fetch fails', () => withTempDb(() => withMockFetch(
+  async () => { throw new Error('simulated network failure'); },
   async () => {
-    await assert.rejects(() => autoSeedBourbonLibrary(db), /500/);
-    assert.equal(db.listMashBills().length, 0);
+    const result = await autoSeedBourbonLibrary(db);
+    assert.equal(result.source, 'the bundled copy');
+    assert.ok(result.seeded > 0);
+
+    const bundled = require(BUNDLED_SEED_PATH); // eslint-disable-line global-require
+    assert.equal(result.seeded, bundled.length);
+    const seededTitles = db.listMashBills().map((m) => m.title).sort();
+    const bundledTitles = bundled.map((e) => e.title).sort();
+    assert.deepEqual(seededTitles, bundledTitles);
   },
 )));
 
-test('maybeAutoSeedBourbonLibrary never throws, even when the fetch fails', () => withTempDb(() => withMockFetch(
+test('autoSeedBourbonLibrary also falls back to the bundled file on a non-ok GitHub response', () => withTempDb(() => withMockFetch(
+  async () => jsonResponse(null, { ok: false, status: 500 }),
+  async () => {
+    const result = await autoSeedBourbonLibrary(db);
+    assert.equal(result.source, 'the bundled copy');
+    assert.ok(result.seeded > 0);
+  },
+)));
+
+test('maybeAutoSeedBourbonLibrary never throws, and still seeds via the bundled fallback when GitHub is unreachable', () => withTempDb(() => withMockFetch(
   async () => { throw new Error('network is down'); },
   async () => {
     assert.doesNotThrow(() => maybeAutoSeedBourbonLibrary(db));
     // Let the fire-and-forget promise chain settle before the temp dir gets
     // torn down out from under it.
     await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(db.listMashBills().length, 0);
+    assert.ok(db.listMashBills().length > 0);
   },
 )));
