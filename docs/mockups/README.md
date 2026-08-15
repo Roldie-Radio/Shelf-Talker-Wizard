@@ -220,4 +220,13 @@ browser.
   gated behind a real Experimental Features toggle here (see
   `wine-pairings-experimental-toggle.html` for that switch pattern) &mdash;
   this mockup uses a plain **Show Wine Profile on this shelf talker**
-  checkbox instead, to keep the focus on the block itself.
+  checkbox instead, to keep the focus on the block itself. **Implemented**
+  in a follow-up to this mockup &mdash; see the README's own Wine Profile
+  section for the shipped behavior. It landed a plain Settings &rarr;
+  Experimental Features &rarr; **Wine Profile** toggle (not the checkbox
+  above) and dropped the mockup's separate keyword table in favor of
+  attaching a `profile` object straight onto each existing
+  `WINE_PAIRING_RULES` entry in `card.js`, so Suggest Profile and Suggest
+  Pairings share one varietal match instead of two lists that could drift
+  apart &mdash; the extension that `color` field's own comment had already
+  flagged as coming later.

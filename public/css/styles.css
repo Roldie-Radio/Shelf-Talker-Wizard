@@ -1026,6 +1026,39 @@ h1, h2, h3 { margin: 0; }
 .custom-pairing-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
 .custom-pairing-row input { flex: 1; margin: 0; }
 
+/* ---------- Wine Profile picker (Settings -> Experimental Features ->
+   Wine Profile) ---------- */
+
+/* One row per category (WINE_PROFILE_CATEGORIES in card.js, rendered by
+   renderProfilePicker in app.js) - a label, 5 clickable dot buttons, and
+   the low/high endpoint captions from that same category entry, so staff
+   always see what 1 vs. 5 means without leaving the field. Gold fill
+   matches .card__profile-dot.is-full/.card__beer-dot.is-full (#f0b429),
+   so the picker reads as a preview of what actually prints. */
+.wine-profile-picker { display: flex; flex-direction: column; gap: 0.15rem; margin: 0.5rem 0; }
+.wine-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.32rem 0;
+  border-bottom: 1px dashed var(--ui-border);
+}
+.wine-profile-row:last-child { border-bottom: none; }
+.wine-profile-row__name { flex: 0 0 4.6rem; font-size: 0.82rem; font-weight: 700; color: var(--ui-ink); }
+.wine-profile-row__dots { display: flex; gap: 0.25rem; flex: 0 0 auto; }
+.wine-profile-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-btn);
+  padding: 0;
+  cursor: pointer;
+}
+.wine-profile-dot:hover { border-color: var(--ui-accent); }
+.wine-profile-dot.is-on { background: #f0b429; border-color: color-mix(in srgb, #f0b429 60%, #000); }
+.wine-profile-row__scale { flex: 1 1 auto; display: flex; justify-content: space-between; gap: 0.4rem; font-size: 0.7rem; color: var(--ui-muted); font-weight: 600; min-width: 0; }
+
 /* ---------- Ratings builder ---------- */
 
 .ratings-field { margin-bottom: 0.85rem; }
@@ -2560,6 +2593,66 @@ h1, h2, h3 { margin: 0; }
   border-top: 1px solid rgba(220,185,104,0.5);
   border-bottom: 1px solid rgba(220,185,104,0.5);
 }
+
+/* Wine Profile - Fruit/Body/Dry/Acidity/Alcohol 1-5 dot meters (see
+   buildWineProfileHtml in card.js). Wine/Spirits Shelf Talkers only (not
+   Beer, not Quarter Size - same isBeer/isQuarter guards as Nose/Palate/
+   Finish below), sitting directly under the description, above Mash
+   Bill/Flavor/Ratings - gated behind Settings -> Experimental Features ->
+   Wine Profile (see applyExperimentalWineProfile in app.js).
+
+   Laid out as one horizontal strip (5 equal columns, each a label over its
+   own row of 5 dots) rather than 5 stacked full-width rows like
+   .card__beer-rating's single Untappd meter below - a wine talker can
+   already be carrying Mash Bill/Flavor notes, Ratings, Awards, and Food
+   Pairing chips underneath this, so the strip trades a little column width
+   for a lot of vertical space back. Scaled by --price-fit like every other
+   optional block here, so fitCardText()'s last-resort whole-card shrink
+   (see card.js) covers this too. */
+.card__profile {
+  flex: 0 0 auto;
+  margin-top: calc(var(--w) * 0.03 * var(--price-fit, 1));
+  padding-top: calc(var(--w) * 0.022 * var(--price-fit, 1));
+  border-top: 1px solid #e5ddd0;
+}
+.card__profile-label {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  text-align: center;
+  margin-bottom: calc(var(--w) * 0.016 * var(--price-fit, 1));
+}
+.card__profile-row { display: flex; justify-content: space-between; gap: calc(var(--w) * 0.01); }
+.card__profile-item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--w) * 0.008 * var(--price-fit, 1));
+}
+.card__profile-name {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  font-size: calc(var(--w) * 0.02 * var(--price-fit, 1));
+  line-height: 1.1;
+  text-align: center;
+}
+.card__profile-dots { display: flex; gap: calc(var(--w) * 0.005); }
+.card__profile-dot {
+  flex-shrink: 0;
+  width: calc(var(--w) * 0.024 * var(--price-fit, 1));
+  height: calc(var(--w) * 0.024 * var(--price-fit, 1));
+  border-radius: 50%;
+  background: #ddd6cc;
+}
+.card__profile-dot.is-full { background: #f0b429; }
 
 /* Nose/Palate/Finish - spirits tasting notes (see buildFlavorHtml in
    card.js). Wine/Spirits Shelf Talkers only (not Beer, not Quarter Size -

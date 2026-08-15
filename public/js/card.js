@@ -236,9 +236,15 @@ function buildFlavorHtml(talker) {
 // `color` (Red / White / Rosé / Sparkling / Fortified & Dessert) is metadata
 // only - detectWinePairings never reads it, it plays no part in matching.
 // It exists for The Pairing Atlas (see the "Pairing Atlas" section of
-// app.js), whose varietal grid groups/filters by it, and is the first field
-// on each rule meant to grow into a fuller flavor-profile picture later
-// (body, sweetness, tannin...) without touching the matching logic above.
+// app.js), whose varietal grid groups/filters by it, and was the first
+// field on each rule meant to grow into a fuller flavor-profile picture
+// later (body, sweetness, tannin...) without touching the matching logic
+// above. `profile` below is that picture arriving: a
+// {fruit, body, dry, acidity, alcohol} object (each 1-5) representative of
+// the varietal, feeding the Wine Profile field's Suggest Profile button
+// (see suggestWineProfile/buildWineProfileHtml below) the same way `color`
+// feeds the Pairing Atlas - metadata alongside the matching rule, not part
+// of it.
 const WINE_PAIRING_RULES = [
   // Napa's own test is deliberately the only one of the four California/
   // Washington entries with a bare `california` fallback, and is ordered
@@ -260,6 +266,7 @@ const WINE_PAIRING_RULES = [
   // (e.g. "Saint-Emilion, Bordeaux") - the specific communes on both
   // sides stay disjoint so this can't happen.
   { id: 'cabernet', label: 'Cabernet Sauvignon', color: 'Red', test: /cabernet|\bcab sauv|\bm[eé]doc\b|\bpauillac\b|\bmargaux\b|\bsaint-julien\b|\bsaint-est[eè]phe\b/i,
+    profile: { fruit: 3, body: 5, dry: 5, acidity: 3, alcohol: 4 },
     pairings: [
       { icon: '🥩', food: 'Grilled Steak' },
       { icon: '🧀', food: 'Aged Cheddar' },
@@ -283,6 +290,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🔥', food: 'Smoked Brisket' } },
     ] },
   { id: 'malbec', label: 'Malbec', color: 'Red', test: /malbec/i,
+    profile: { fruit: 4, body: 4, dry: 5, acidity: 2, alcohol: 4 },
     pairings: [
       { icon: '🥩', food: 'Grilled Meats' },
       { icon: '🌶️', food: 'BBQ Ribs' },
@@ -300,6 +308,7 @@ const WINE_PAIRING_RULES = [
   // Cabernet rule above) it's ordered last among them to keep that
   // fallback from preempting a more specific region match.
   { id: 'syrah', label: 'Syrah / Shiraz', color: 'Red', test: /syrah|shiraz/i,
+    profile: { fruit: 4, body: 5, dry: 5, acidity: 2, alcohol: 5 },
     pairings: [
       { icon: '🥩', food: 'Peppered Steak' },
       { icon: '🍖', food: 'Game Meats' },
@@ -317,6 +326,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 1, swap: { icon: '🦘', food: 'Kangaroo & Native Pepper' } },
     ] },
   { id: 'zinfandel', label: 'Zinfandel', color: 'Red', test: /zinfandel|\bzin\b/i,
+    profile: { fruit: 5, body: 4, dry: 4, acidity: 2, alcohol: 5 },
     pairings: [
       { icon: '🍖', food: 'BBQ Ribs' },
       { icon: '🌭', food: 'Spicy Sausage' },
@@ -334,6 +344,7 @@ const WINE_PAIRING_RULES = [
   // rules' top-level tests carry their own bank's commune names instead
   // of the bare word "bordeaux".
   { id: 'merlot', label: 'Merlot', color: 'Red', test: /merlot|saint-[eé]milion|pomerol/i,
+    profile: { fruit: 4, body: 3, dry: 5, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🍗', food: 'Roast Chicken' },
       { icon: '🍄', food: 'Mushroom Risotto' },
@@ -355,6 +366,7 @@ const WINE_PAIRING_RULES = [
   // falls back to the generic "burgundy"/"bourgogne"/"france" catch, kept
   // last so a specific village always wins its own, more precise label.
   { id: 'pinot-noir', label: 'Pinot Noir', color: 'Red', test: /pinot noir|bourgogne rouge|gevrey-chambertin|vosne-roman[eé]e|chambolle-musigny|nuits-saint-georges|\bvolnay\b|\bpommard\b/i,
+    profile: { fruit: 4, body: 2, dry: 5, acidity: 4, alcohol: 3 },
     pairings: [
       { icon: '🦆', food: 'Roast Duck' },
       { icon: '🍄', food: 'Wild Mushrooms' },
@@ -372,6 +384,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🌰', food: 'Hazelnut Torte' } },
     ] },
   { id: 'nebbiolo', label: 'Nebbiolo', color: 'Red', test: /nebbiolo|barolo|barbaresco|gattinara|roero/i,
+    profile: { fruit: 2, body: 4, dry: 5, acidity: 5, alcohol: 4 },
     pairings: [
       { icon: '🥩', food: 'Braised Short Rib' },
       { icon: '🍄', food: 'Wild Mushroom Risotto' },
@@ -392,6 +405,7 @@ const WINE_PAIRING_RULES = [
   // Montepulciano rule's own bare `montepulciano` regex would otherwise
   // mismatch it.
   { id: 'sangiovese', label: 'Sangiovese', color: 'Red', test: /sangiovese|chianti|brunello|vino nobile|rosso di montalcino/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 5, alcohol: 3 },
     pairings: [
       { icon: '🍝', food: 'Tomato Ragù' },
       { icon: '🧀', food: 'Aged Pecorino' },
@@ -405,6 +419,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🐗', food: 'Wild Boar Ragù' } },
     ] },
   { id: 'montepulciano', label: 'Montepulciano d\'Abruzzo', test: /montepulciano/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🍝', food: 'Arrabbiata Pasta' },
       { icon: '🌭', food: 'Grilled Sausage' },
@@ -412,6 +427,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🥩', food: 'Lamb Skewers' },
     ] },
   { id: 'primitivo', label: 'Primitivo', color: 'Red', test: /primitivo/i,
+    profile: { fruit: 4, body: 4, dry: 5, acidity: 2, alcohol: 4 },
     pairings: [
       { icon: '🥩', food: 'Grilled Lamb' },
       { icon: '🍝', food: 'Orecchiette & Sausage' },
@@ -419,6 +435,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🫒', food: 'Salumi & Olives' },
     ] },
   { id: 'barbera', label: 'Barbera', color: 'Red', test: /barbera/i,
+    profile: { fruit: 3, body: 2, dry: 5, acidity: 5, alcohol: 3 },
     pairings: [
       { icon: '🍄', food: 'Agnolotti del Plin' },
       { icon: '🧀', food: 'Charcuterie Board' },
@@ -432,6 +449,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 2, swap: { icon: '🐟', food: 'Bagna Cauda' } },
     ] },
   { id: 'pinotage', label: 'Pinotage', color: 'Red', test: /pinotage/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 3, alcohol: 4 },
     pairings: [
       { icon: '🔥', food: 'South African Braai' },
       { icon: '🌭', food: 'Boerewors' },
@@ -439,6 +457,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🍖', food: 'Bobotie' },
     ] },
   { id: 'xinomavro', label: 'Xinomavro', color: 'Red', test: /xinomavro|\bnaoussa\b/i,
+    profile: { fruit: 2, body: 3, dry: 5, acidity: 5, alcohol: 3 },
     pairings: [
       { icon: '🍖', food: 'Slow-Roasted Lamb' },
       { icon: '🍅', food: 'Tomato-Braised Beef' },
@@ -446,6 +465,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🫒', food: 'Olive Tapenade' },
     ] },
   { id: 'agiorgitiko', label: 'Agiorgitiko', color: 'Red', test: /agiorgitiko|\bnemea\b/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🍆', food: 'Moussaka' },
       { icon: '🥩', food: 'Grilled Lamb' },
@@ -453,6 +473,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🍝', food: 'Pastitsio' },
     ] },
   { id: 'tempranillo', label: 'Tempranillo', color: 'Red', test: /tempranillo|\brioja\b|ribera del duero/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🐑', food: 'Roast Lamb' },
       { icon: '🥓', food: 'Jamón Ibérico' },
@@ -466,6 +487,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 0, swap: { icon: '🥩', food: 'Chuletón' } },
     ] },
   { id: 'garnacha', label: 'Garnacha / Grenache', color: 'Red', test: /garnacha|grenache/i,
+    profile: { fruit: 4, body: 3, dry: 5, acidity: 2, alcohol: 4 },
     pairings: [
       { icon: '🌭', food: 'Grilled Sausage' },
       { icon: '🧀', food: 'Manchego' },
@@ -479,6 +501,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 0, swap: { icon: '🥩', food: 'Char-Grilled Lamb' } },
     ] },
   { id: 'red-blend', label: 'Red Blend', color: 'Red', test: /red blend|meritage/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🧀', food: 'Cheese Board' },
       { icon: '🥩', food: 'Grilled Meats' },
@@ -491,6 +514,7 @@ const WINE_PAIRING_RULES = [
   // Chassagne-Montrachet produce no red, so all four are unambiguous
   // additions to the top-level test.
   { id: 'chardonnay', label: 'Chardonnay', color: 'White', test: /chardonnay|bourgogne blanc|\bchablis\b|meursault|puligny-montrachet|chassagne-montrachet/i,
+    profile: { fruit: 3, body: 3, dry: 5, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🦞', food: 'Lobster' },
       { icon: '🍗', food: 'Roast Chicken' },
@@ -508,6 +532,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 2, swap: { icon: '🧈', food: 'Butter-Basted Scallops' } },
     ] },
   { id: 'sauvignon-blanc', label: 'Sauvignon Blanc', color: 'White', test: /sauvignon blanc/i,
+    profile: { fruit: 4, body: 1, dry: 5, acidity: 5, alcohol: 2 },
     pairings: [
       { icon: '🥗', food: 'Fresh Salad' },
       { icon: '🐐', food: 'Goat Cheese' },
@@ -521,6 +546,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 2, swap: { icon: '🥝', food: 'Green-Lipped Mussels' } },
     ] },
   { id: 'semillon', label: 'Semillon', color: 'White', test: /s[eé]millon/i,
+    profile: { fruit: 3, body: 3, dry: 4, acidity: 3, alcohol: 3 },
     pairings: [
       { icon: '🦪', food: 'Fresh Oysters' },
       { icon: '🍤', food: 'Fried Calamari' },
@@ -534,6 +560,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🦆', food: 'Foie Gras' } },
     ] },
   { id: 'chenin-blanc', label: 'Chenin Blanc', color: 'White', test: /chenin blanc/i,
+    profile: { fruit: 3, body: 2, dry: 4, acidity: 4, alcohol: 3 },
     pairings: [
       { icon: '🍗', food: 'Roast Chicken' },
       { icon: '🍤', food: 'Shrimp Curry' },
@@ -547,6 +574,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🍑', food: 'Poached Pear' } },
     ] },
   { id: 'assyrtiko', label: 'Assyrtiko', color: 'White', test: /assyrtiko|santorini/i,
+    profile: { fruit: 2, body: 2, dry: 5, acidity: 5, alcohol: 3 },
     pairings: [
       { icon: '🐙', food: 'Grilled Octopus' },
       { icon: '🦪', food: 'Fresh Oysters' },
@@ -554,6 +582,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🐟', food: 'Grilled Sea Bass' },
     ] },
   { id: 'retsina', label: 'Retsina', color: 'White', test: /retsina/i,
+    profile: { fruit: 2, body: 1, dry: 5, acidity: 4, alcohol: 2 },
     pairings: [
       { icon: '🐙', food: 'Grilled Octopus' },
       { icon: '🫒', food: 'Greek Meze' },
@@ -561,6 +590,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🍗', food: 'Souvlaki' },
     ] },
   { id: 'pinot-grigio', label: 'Pinot Grigio / Gris', color: 'White', test: /pinot grigio|pinot gris/i,
+    profile: { fruit: 2, body: 1, dry: 5, acidity: 4, alcohol: 2 },
     pairings: [
       { icon: '🐟', food: 'Light Seafood' },
       { icon: '🥗', food: 'Garden Salad' },
@@ -585,6 +615,7 @@ const WINE_PAIRING_RULES = [
   // swaps slot 0 or 2 and `sweetness` only ever swaps slot 1 or 3, so the
   // two tiers can never silently overwrite each other's slot.
   { id: 'riesling', label: 'Riesling', color: 'White', test: /riesling/i,
+    profile: { fruit: 4, body: 2, dry: 2, acidity: 4, alcohol: 2 },
     pairings: [
       { icon: '🌶️', food: 'Spicy Asian' },
       { icon: '🍑', food: 'Fruit & Cheese' },
@@ -616,6 +647,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🧀', food: 'Blue Cheese' } },
     ] },
   { id: 'albarino', label: 'Albariño', color: 'White', test: /albari[nñ]o|alvarinho/i,
+    profile: { fruit: 3, body: 2, dry: 5, acidity: 4, alcohol: 3 },
     pairings: [
       { icon: '🦪', food: 'Oysters' },
       { icon: '🐙', food: 'Grilled Octopus' },
@@ -629,6 +661,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 3, swap: { icon: '🐟', food: 'Bacalhau Fritters' } },
     ] },
   { id: 'verdejo', label: 'Verdejo', color: 'White', test: /verdejo|\brueda\b/i,
+    profile: { fruit: 3, body: 2, dry: 5, acidity: 4, alcohol: 3 },
     pairings: [
       { icon: '🥗', food: 'Fresh Salad' },
       { icon: '🐟', food: 'Grilled Fish' },
@@ -645,6 +678,7 @@ const WINE_PAIRING_RULES = [
   // resolves to the more specific Albariño match; this rule only catches
   // Vinho Verde titles that never name a grape at all.
   { id: 'vinho-verde', label: 'Vinho Verde', color: 'White', test: /vinho verde/i,
+    profile: { fruit: 2, body: 1, dry: 5, acidity: 4, alcohol: 1 },
     pairings: [
       { icon: '🦐', food: 'Grilled Shrimp' },
       { icon: '🫒', food: 'Portuguese Tapas' },
@@ -652,6 +686,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🐟', food: 'Grilled Sardines' },
     ] },
   { id: 'douro-red', label: 'Douro Red', color: 'Red', test: /\bdouro\b|touriga nacional|touriga franca/i,
+    profile: { fruit: 4, body: 4, dry: 5, acidity: 3, alcohol: 4 },
     pairings: [
       { icon: '🥩', food: 'Bife à Portuguesa' },
       { icon: '🍲', food: 'Cozido à Portuguesa' },
@@ -659,6 +694,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🌭', food: 'Alheira Sausage' },
     ] },
   { id: 'port', label: 'Port', color: 'Fortified & Dessert', test: /\bport\b|\bporto\b/i,
+    profile: { fruit: 5, body: 5, dry: 1, acidity: 2, alcohol: 5 },
     pairings: [
       { icon: '🧀', food: 'Blue Cheese' },
       { icon: '🍫', food: 'Dark Chocolate' },
@@ -666,6 +702,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🫐', food: 'Fig & Walnut Tart' },
     ] },
   { id: 'moscato', label: 'Moscato', color: 'Fortified & Dessert', test: /moscato/i,
+    profile: { fruit: 5, body: 1, dry: 1, acidity: 2, alcohol: 1 },
     pairings: [
       { icon: '🍰', food: 'Light Dessert' },
       { icon: '🍑', food: 'Fresh Fruit' },
@@ -673,6 +710,7 @@ const WINE_PAIRING_RULES = [
       { icon: '🥐', food: 'Pastries' },
     ] },
   { id: 'sparkling', label: 'Champagne / Sparkling', color: 'Sparkling', test: /champagne|sparkling|prosecco|\bcava\b|franciacorta/i,
+    profile: { fruit: 3, body: 1, dry: 4, acidity: 5, alcohol: 2 },
     pairings: [
       { icon: '🍟', food: 'Fried Appetizers' },
       { icon: '🦪', food: 'Oysters' },
@@ -688,6 +726,7 @@ const WINE_PAIRING_RULES = [
         swapIndex: 1, swap: { icon: '🥓', food: 'Jamón Ibérico' } },
     ] },
   { id: 'rose', label: 'Rosé', color: 'Rosé', test: /ros[eé]/i,
+    profile: { fruit: 3, body: 1, dry: 4, acidity: 4, alcohol: 2 },
     pairings: [
       { icon: '🧺', food: 'Charcuterie' },
       { icon: '🍤', food: 'Grilled Shrimp' },
@@ -741,6 +780,76 @@ function buildPairingsHtml(talker) {
     <div class="card__pairings">
       <div class="card__pairings-label">Pairs Well With</div>
       <div class="card__pairings-row">${chipsHtml}</div>
+    </div>
+  `;
+}
+
+// Wine Profile - Fruit/Body/Dry/Acidity/Alcohol, each a 1-5 dot meter
+// (see the .card__profile CSS block for the printed strip layout). Shared
+// with app.js's Wine Profile field (a plain global, same convention as
+// WINE_PAIRING_RULES/detectWinePairings) so the picker's row order/labels
+// and the printed card can never drift apart. `low`/`high` are the
+// endpoint captions shown as help text next to each picker in the form -
+// never printed on the card itself, same split the category guide in the
+// original mockup used.
+const WINE_PROFILE_CATEGORIES = [
+  { id: 'fruit', name: 'Fruit', low: 'Subtle', high: 'Jammy' },
+  { id: 'body', name: 'Body', low: 'Light', high: 'Full' },
+  { id: 'dry', name: 'Dry', low: 'Bone Dry', high: 'Sweet' },
+  { id: 'acidity', name: 'Acidity', low: 'Low', high: 'High' },
+  { id: 'alcohol', name: 'Alcohol', low: 'Low', high: 'High' },
+];
+
+// Suggest Profile (Edit Talker -> Wine Profile field, see app.js) reuses
+// detectWinePairings' own varietal match rather than re-running a second,
+// separate keyword search - the two features agree on what a title
+// detects because they're the same lookup, not two lists that could drift
+// apart. Only the top-level varietal's `profile` is used today - a
+// region/sweetness match still refines the printed pairing label and
+// candidates (see detectWinePairings) but not the suggested profile
+// values, since e.g. Riesling's Trocken vs. Kabinett sweetness tiers would
+// need genuinely different Dry scores to be worth wiring up; left as a
+// later refinement, same spirit as the `color` field's own comment above
+// WINE_PAIRING_RULES. Returns null on no match, same as
+// detectWinePairings.
+function suggestWineProfile(text) {
+  const haystack = text ? String(text) : '';
+  const varietal = WINE_PAIRING_RULES.find(({ test }) => test.test(haystack));
+  return varietal && varietal.profile ? varietal : null;
+}
+
+// Renders talker.wineProfile ({fruit, body, dry, acidity, alcohol}, each
+// 0-5, set by the Wine Profile field's dot pickers - see app.js) as one
+// horizontal strip: 5 equal columns, each a label over its own row of 5
+// dots. Deliberately not 5 stacked full-width rows like
+// buildBeerRatingHtml's single Untappd meter above - a wine talker can
+// already be carrying Mash Bill/Flavor notes, Ratings, Awards, and Food
+// Pairing chips below this, so the strip trades a little column width for
+// a lot of vertical space back. 0 means "not rated" for that category (all
+// 5 dots empty), not "worst possible" - same convention
+// buildBeerRatingHtml's N/A state uses for an unrated beer. Renders
+// nothing at all if every category is still 0 (an untouched field), same
+// "only ever renders what's already there, no detection of its own" rule
+// buildPairingsHtml/buildFlavorHtml follow.
+function buildWineProfileHtml(talker) {
+  const profile = talker.wineProfile || {};
+  const hasAnyRating = WINE_PROFILE_CATEGORIES.some((cat) => Number(profile[cat.id]) > 0);
+  if (!hasAnyRating) return '';
+  const itemsHtml = WINE_PROFILE_CATEGORIES.map((cat) => {
+    const raw = Number(profile[cat.id]);
+    const val = Number.isFinite(raw) ? Math.max(0, Math.min(5, raw)) : 0;
+    const dots = Array.from({ length: 5 }, (_, i) => `<span class="card__profile-dot ${i < val ? 'is-full' : ''}"></span>`).join('');
+    return `
+      <div class="card__profile-item">
+        <div class="card__profile-name">${escapeHtml(cat.name)}</div>
+        <div class="card__profile-dots">${dots}</div>
+      </div>
+    `;
+  }).join('');
+  return `
+    <div class="card__profile">
+      <div class="card__profile-label">Wine Profile</div>
+      <div class="card__profile-row">${itemsHtml}</div>
     </div>
   `;
 }
@@ -1678,6 +1787,12 @@ function buildCardElement(talker) {
   // the instant the toggle goes off, and shows them again the instant it
   // goes back on, same "hidden, never deleted" behavior as Bourbon above.
   const experimentalPairings = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalPairings);
+  // Same gate, same reasoning, published by applyExperimentalWineProfile in
+  // app.js - a talker that already has dots picked stops printing the Wine
+  // Profile strip the instant the toggle goes off, and shows it again the
+  // instant it goes back on, same "hidden, never deleted" behavior as
+  // Bourbon/Pairings above.
+  const experimentalWineProfile = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalWineProfile);
   const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
   // Wine/Spirits-only, same experimentalBourbon/isQuarter guard as Mash
@@ -1722,6 +1837,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
+      ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${(isBeer || !experimentalBourbon) ? '' : buildMashBillHtml(talker)}
       ${(isBeer || !experimentalBourbon) ? '' : buildFlavorHtml(talker)}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
