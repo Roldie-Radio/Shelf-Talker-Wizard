@@ -6790,5 +6790,384 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "Garrison Brothers Small Batch Bourbon",
+    "distillery": "Garrison Brothers Distillery",
+    "parentCompany": "Garrison Brothers Distillery (independently owned)",
+    "category": "Texas Straight Bourbon (Wheated)",
+    "sku": "30644",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 11
+      }
+    ],
+    "nose": "Vanilla, caramel, and Texas-grown corn sweetness.",
+    "palate": "Rich caramel, baked bread, and soft wheat spice.",
+    "finish": "Warm, moderately long.",
+    "tastingSource": "Garrison Brothers Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Garrison Brothers publishes this 74/15/11 wheated mash bill directly - Texas-grown white corn, estate-grown soft red winter wheat, and Canadian malted barley, using their sweet mash process.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Small Batch - Garrison Brothers Distillery",
+        "url": "https://www.garrisonbros.com/our-babies/small-batch/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Garrison Brothers Sonora Bourbon",
+    "distillery": "Garrison Brothers Distillery",
+    "parentCompany": "Garrison Brothers Distillery (independently owned)",
+    "category": "Texas Straight Bourbon (Wheated, Barrel Proof)",
+    "sku": "40948",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Wheat",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 11
+      }
+    ],
+    "nose": "Vanilla, caramel, and Texas-grown corn sweetness, more intense at barrel proof.",
+    "palate": "Rich caramel, baked bread, and wheat spice with real barrel-proof heat.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Garrison Brothers Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Garrison Brothers publishes this 74/15/11 wheated mash bill directly - Texas-grown white corn, estate-grown soft red winter wheat, and Canadian malted barley, using their sweet mash process.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Small Batch - Garrison Brothers Distillery",
+        "url": "https://www.garrisonbros.com/our-babies/small-batch/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chattanooga Whiskey Straight Bourbon Whiskey",
+    "distillery": "Chattanooga Whiskey",
+    "parentCompany": "Chattanooga Whiskey (independently owned)",
+    "category": "Straight Bourbon (High Malt)",
+    "sku": "39630",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 51
+      },
+      {
+        "grain": "Malted Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Caramel Malted Barley",
+        "pct": 15
+      },
+      {
+        "grain": "Honey Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Toasted grain, honey, and caramel malt sweetness.",
+    "palate": "Malty richness, rye spice, and caramel from the high-malt recipe.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Chattanooga Whiskey confirms a 51% corn / 49% specialty malt split (malted rye, caramel malted barley, and honey malted barley) for its core high-malt bourbon - the internal breakdown across those three malts shown here is an illustrative approximation, since Chattanooga doesn't publish the exact ratio between them.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Mash Bills - Chattanooga Whiskey",
+        "url": "https://chattanoogawhiskey.com/mashbills/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chattanooga Whiskey Straight Bourbon Bottled in Bond",
+    "distillery": "Chattanooga Whiskey",
+    "parentCompany": "Chattanooga Whiskey (independently owned)",
+    "category": "Straight Bourbon (High Malt, Bottled-in-Bond)",
+    "sku": "40272",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 51
+      },
+      {
+        "grain": "Malted Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Caramel Malted Barley",
+        "pct": 15
+      },
+      {
+        "grain": "Honey Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Toasted grain, honey, and caramel malt sweetness, carried by 100 proof.",
+    "palate": "Malty richness, rye spice, and caramel.",
+    "finish": "Long, warm, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Chattanooga Whiskey confirms a 51% corn / 49% specialty malt split (malted rye, caramel malted barley, and honey malted barley) for its core high-malt bourbon - the internal breakdown across those three malts shown here is an illustrative approximation, since Chattanooga doesn't publish the exact ratio between them.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Mash Bills - Chattanooga Whiskey",
+        "url": "https://chattanoogawhiskey.com/mashbills/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chattanooga Whiskey High Malt Whiskey Triple Islay Cask Finish",
+    "distillery": "Chattanooga Whiskey",
+    "parentCompany": "Chattanooga Whiskey (independently owned)",
+    "category": "Straight Bourbon (High Malt, Islay Cask Finished)",
+    "sku": "40271",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 51
+      },
+      {
+        "grain": "Malted Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Caramel Malted Barley",
+        "pct": 15
+      },
+      {
+        "grain": "Honey Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Toasted grain, honey, and a smoky peat note from the Islay cask finish.",
+    "palate": "Malty richness and caramel layered with peat smoke.",
+    "finish": "Long, smoky, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Chattanooga Whiskey confirms a 51% corn / 49% specialty malt split (malted rye, caramel malted barley, and honey malted barley) for its core high-malt bourbon - the internal breakdown across those three malts shown here is an illustrative approximation, since Chattanooga doesn't publish the exact ratio between them. This expression adds a finishing period in casks that previously held Islay Scotch, a barrel-treatment step rather than a different base mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Mash Bills - Chattanooga Whiskey",
+        "url": "https://chattanoogawhiskey.com/mashbills/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Stranahan's Blue Peak Colorado Whiskey",
+    "distillery": "Stranahan's Colorado Whiskey Distillery",
+    "parentCompany": "Proximo Spirits",
+    "category": "American Single Malt Whiskey",
+    "sku": "29496",
+    "grains": [
+      {
+        "grain": "Malted Barley",
+        "pct": 100
+      }
+    ],
+    "nose": "Toasted grain, honey, and dried fruit.",
+    "palate": "Malty sweetness, caramel, and light spice from virgin oak aging.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Stranahan's confirms its whole line is 100% malted barley (four Colorado-area barleys), aged in virgin oak - Blue Peak is a specific batch/expression of that same single malt base.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Stranahan's Colorado Whiskey - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Stranahan's_Colorado_Whiskey",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Tin Cup 10 Year Colorado Whiskey",
+    "distillery": "MGP of Indiana, cut and blended at Stranahan's (Colorado)",
+    "parentCompany": "Proximo Spirits",
+    "category": "Blended Straight Bourbon",
+    "sku": "23613",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and caramel with a hint of malt.",
+    "palate": "Black pepper, cinnamon, and brown sugar, softened by a splash of single malt.",
+    "finish": "Spicy and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Tin Cup is mostly MGP of Indiana's high-rye bourbon (75/21/4, the figure shown) blended with a small amount of Stranahan's single malt whiskey and cut with Colorado water at the Stranahan's facility - the exact blend ratio isn't published.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Tincup American Whiskey Review - The Whiskey Jug",
+        "url": "https://thewhiskeyjug.com/american-whiskey/tin-cup-american-whiskey-review/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hillrock Solera Aged Bourbon",
+    "distillery": "Hillrock Estate Distillery",
+    "parentCompany": "Hillrock Estate Distillery (independently owned)",
+    "category": "Straight Bourbon (Solera Aged, Sherry Cask Finished)",
+    "sku": "19189",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 32
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Rye spice, dried fruit, and toasted oak.",
+    "palate": "Caramel, baking spice, and nutty sherry richness from the Oloroso finish.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Hillrock reports a 63/37 corn/rye split (using their own estate-grown rye) for the Solera bourbon; a small malted barley portion is assumed for fermentation but not separately confirmed. The whiskey passes through a solera system averaging about 6 years old, finished in 20-year Oloroso sherry casks.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Hillrock Estate Solera Aged Bourbon - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/hillrock-estate-solera-aged-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hillrock Double Cask BIB Bourbon",
+    "distillery": "Hillrock Estate Distillery",
+    "parentCompany": "Hillrock Estate Distillery (independently owned)",
+    "category": "Straight Bourbon (Bottled-in-Bond, Double Cask)",
+    "sku": "38025",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 32
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Rye spice, dried fruit, and toasted oak, carried by 100 proof.",
+    "palate": "Caramel and baking spice, deeper from a second cask finish.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Using Hillrock's reported 63/37 corn/rye Solera bourbon recipe as the likely base, though Double Cask BIB isn't confirmed to share that exact mash bill - treat as an estimate.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Hillrock Estate Solera Aged Bourbon - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/hillrock-estate-solera-aged-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hillrock Single Malt Whiskey",
+    "distillery": "Hillrock Estate Distillery",
+    "parentCompany": "Hillrock Estate Distillery (independently owned)",
+    "category": "American Single Malt Whiskey",
+    "sku": "7385",
+    "grains": [
+      {
+        "grain": "Malted Barley",
+        "pct": 100
+      }
+    ],
+    "nose": "Toasted grain, honey, and dried fruit.",
+    "palate": "Malty sweetness and gentle oak spice.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Single malt whiskey is by definition 100% malted barley - Hillrock's own estate-grown/malted barley program is well documented, though this exact expression's specific recipe details aren't independently confirmed here.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
