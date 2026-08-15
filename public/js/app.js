@@ -41,6 +41,14 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.0.0',
+      items: [
+        'New: Bourbon Library - a permanent sidebar section for browsing every bourbon in the shared Mash Bill Library, with Mash Bill Confidence scoring and a profile page per bottle.',
+        'New: The Pairing Atlas - a permanent sidebar section for browsing wine varietals and their food pairings as illustrated infographics, grouped and filterable by color (Red, White, Rosé, Sparkling, Fortified & Dessert). Built on the same Wine Food Pairings data Suggest Pairings and Tools > Wine Pairing Rules… already use, so it can\'t drift out of sync with what those already offer.',
+        'Changed: Navigation moves to a persistent icon rail on the left - Shelf Talker, Bourbon Library, and The Pairing Atlas each get their own icon, with Settings folded in at the bottom - replacing the separate Settings/Queue/History buttons that used to live in the app bar.',
+      ],
+    },
+    {
       version: '3.3.21',
       items: [
         'New: Large Display Signs now have a Case Price field (optional) - prints bottom-right in the same Verdana 11pt bold styling as Regular Price. Not shown for Shelf Talkers or Small Display Signs, which have no room for it.',
