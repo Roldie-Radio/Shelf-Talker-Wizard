@@ -3239,6 +3239,19 @@ h1, h2, h3 { margin: 0; }
    price exactly except for its red color, since this price isn't on sale. */
 .sign__regular-price--solo { font-size: calc(var(--w) * var(--sign-text) * 0.0257 * var(--price-fit, 1)); }
 
+/* Case Price - Large Display Signs only (see fCasePrice in index.html and
+   buildSignPriceRowHtml in card.js), an optional per-case cost. Prints in
+   the same Verdana 11pt bold styling as .sign__regular-price's own base
+   rule above - a second, equally-weighted price line rather than its own
+   distinct treatment. */
+.sign__case-price { font-weight: 800; font-family: Verdana, Geneva, sans-serif; font-size: calc(var(--w) * var(--sign-text) * 0.0128 * var(--price-fit, 1)); }
+
+/* Wraps Case Price whenever the price row's own right-hand slot is already
+   spoken for by the Regular Price (i.e. there's a Sale Price too) - a
+   second row directly under the price row, right-aligned to land in the
+   same bottom-right corner it would have shared the row with otherwise. */
+.sign__case-price-row { display: flex; justify-content: flex-end; width: 100%; flex: 0 0 auto; }
+
 /* Small Super Sale sign's price number - same WordArt look as
    .sign__supersale-text above (bold italic sans, red fill, black
    outline, no drop shadow), in place of the plain Arial Black every

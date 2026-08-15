@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '3.3.21',
+      items: [
+        'New: Large Display Signs now have a Case Price field (optional) - prints bottom-right in the same Verdana 11pt bold styling as Regular Price. Not shown for Shelf Talkers or Small Display Signs, which have no room for it.',
+      ],
+    },
+    {
       version: '3.3.20',
       items: [
         'New: Tools → Wine Pairing Rules… now has a filter box - type a varietal, region, or keyword to narrow the list down instead of scrolling through all 30+ entries. Matches against every region and sweetness refinement too, not just each rule\'s own name, so searching "Chablis" or "Trocken" finds the Chardonnay or Riesling rule that keyword belongs to.',
@@ -861,6 +867,8 @@
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
     salePrice: document.getElementById('fSalePrice'),
+    casePriceField: document.getElementById('casePriceField'),
+    casePrice: document.getElementById('fCasePrice'),
     talkerSizeField: document.getElementById('talkerSizeField'),
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
@@ -1444,6 +1452,12 @@
     const isLargeSign = isSign && !isSmallSign;
     els.superSaleFontSizeField.hidden = els.talkerType.value !== 'supersale' || isLargeSign;
 
+    // Case Price only ever prints on a Large Display Sign (see
+    // buildSignPriceRowHtml in card.js) - Shelf Talkers and Small Display
+    // Signs have no bottom-right slot for it, so the field stays out of the
+    // way for those, same as Awards/Store Pick/etc. above.
+    els.casePriceField.hidden = !isLargeSign;
+
     // The "CLOSEOUT!!" badge renders on the Shelf Talker card and on both
     // Display Sign sizes (see buildPricingHtml/buildSignMetaRowHtml/
     // buildSmallSignBodyHtml in card.js), so unlike Super Sale above there's
@@ -1579,6 +1593,7 @@
       theme: els.theme.value,
       price: els.price.value.trim(),
       salePrice: els.salePrice.value.trim(),
+      casePrice: els.casePrice.value.trim(),
       talkerType: els.talkerType.value,
       isChilled: els.chilled.checked,
       superSaleFontSize: els.superSaleFontSize.value.trim(),
@@ -1629,6 +1644,7 @@
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
     els.salePrice.value = talker.salePrice || '';
+    els.casePrice.value = talker.casePrice || '';
     // 'chilled' used to be a 4th Talker Style option, mutually exclusive
     // with Closeout/Super Sale (see the isChilled migration just below) -
     // an older saved/imported talker carrying that value maps onto plain
@@ -2871,6 +2887,7 @@
     if (!talker.size) return 'Please enter a size/unit.';
     if (!talker.price || Number.isNaN(Number(talker.price))) return 'Please enter a valid regular price.';
     if (talker.salePrice && Number.isNaN(Number(talker.salePrice))) return 'Sale price must be a number.';
+    if (talker.casePrice && Number.isNaN(Number(talker.casePrice))) return 'Case price must be a number.';
     return null;
   }
 
