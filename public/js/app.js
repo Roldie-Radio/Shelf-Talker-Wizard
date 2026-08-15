@@ -690,6 +690,21 @@
   // ---------- Elements ----------
 
   const els = {
+    // Persistent rail (Shelf Talker / Library / Settings) and the two
+    // screens it switches between - see the "Rail" section further down
+    // for the click handling.
+    rail: document.getElementById('rail'),
+    railShelfTalkerBtn: document.getElementById('railShelfTalkerBtn'),
+    railLibraryBtn: document.getElementById('railLibraryBtn'),
+    railSettingsBtn: document.getElementById('railSettingsBtn'),
+    shelfTalkerView: document.getElementById('shelfTalkerView'),
+    libraryView: document.getElementById('libraryView'),
+    libraryBackLink: document.getElementById('libraryBackLink'),
+    libraryFilterInput: document.getElementById('libraryFilterInput'),
+    libraryChips: document.getElementById('libraryChips'),
+    libraryStats: document.getElementById('libraryStats'),
+    libraryBody: document.getElementById('libraryBody'),
+
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
@@ -946,10 +961,23 @@
     mashBillLibraryFormTitle: document.getElementById('mashBillLibraryFormTitle'),
     mashBillLibraryFormTitleInput: document.getElementById('mashBillLibraryFormTitleInput'),
     mashBillLibraryFormDistilleryInput: document.getElementById('mashBillLibraryFormDistilleryInput'),
+    mashBillLibraryFormParentCompanyInput: document.getElementById('mashBillLibraryFormParentCompanyInput'),
+    mashBillLibraryFormCategoryInput: document.getElementById('mashBillLibraryFormCategoryInput'),
     mashBillLibraryFormGrain: document.getElementById('mashBillLibraryFormGrain'),
     mashBillLibraryFormPct: document.getElementById('mashBillLibraryFormPct'),
     mashBillLibraryFormAddGrainBtn: document.getElementById('mashBillLibraryFormAddGrainBtn'),
     mashBillLibraryFormGrainList: document.getElementById('mashBillLibraryFormGrainList'),
+    mashBillLibraryFormNoseInput: document.getElementById('mashBillLibraryFormNoseInput'),
+    mashBillLibraryFormPalateInput: document.getElementById('mashBillLibraryFormPalateInput'),
+    mashBillLibraryFormFinishInput: document.getElementById('mashBillLibraryFormFinishInput'),
+    mashBillLibraryFormTastingSourceInput: document.getElementById('mashBillLibraryFormTastingSourceInput'),
+    mashBillLibraryFormConfidenceTier: document.getElementById('mashBillLibraryFormConfidenceTier'),
+    mashBillLibraryFormConfidenceNoteInput: document.getElementById('mashBillLibraryFormConfidenceNoteInput'),
+    mashBillLibraryFormConfidenceVerifiedInput: document.getElementById('mashBillLibraryFormConfidenceVerifiedInput'),
+    mashBillLibraryFormSourceLabel: document.getElementById('mashBillLibraryFormSourceLabel'),
+    mashBillLibraryFormSourceUrl: document.getElementById('mashBillLibraryFormSourceUrl'),
+    mashBillLibraryFormAddSourceBtn: document.getElementById('mashBillLibraryFormAddSourceBtn'),
+    mashBillLibraryFormSourceList: document.getElementById('mashBillLibraryFormSourceList'),
     mashBillLibraryFormSaveBtn: document.getElementById('mashBillLibraryFormSaveBtn'),
     mashBillLibraryFormCancelBtn: document.getElementById('mashBillLibraryFormCancelBtn'),
     mashBillLibraryFormStatus: document.getElementById('mashBillLibraryFormStatus'),
@@ -5206,6 +5234,7 @@
   // both, switching label/button text based on which mode this is in.
   let mashBillLibraryEditingId = null;
   let mashBillLibraryFormGrains = [];
+  let mashBillLibraryFormSources = [];
   let mashBillLibrarySyncPollTimer = null;
 
   function renderMashBillLibraryFormGrainList() {
@@ -5217,13 +5246,37 @@
     `).join('');
   }
 
+  // Same rating-chip pattern as the grain list above, just for confidence
+  // source citations ({label, url} - see confidence.sources in server/db.js).
+  function renderMashBillLibraryFormSourceList() {
+    els.mashBillLibraryFormSourceList.innerHTML = mashBillLibraryFormSources.map((s, i) => `
+      <div class="rating-chip" data-mashbill-form-source-index="${i}">
+        <span>${escapeHtml(s.label || s.url)}</span>
+        <button type="button" data-action="remove-mashbill-form-source" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
   function resetMashBillLibraryForm() {
     mashBillLibraryEditingId = null;
     mashBillLibraryFormGrains = [];
+    mashBillLibraryFormSources = [];
     els.mashBillLibraryFormTitleInput.value = '';
     els.mashBillLibraryFormDistilleryInput.value = '';
+    els.mashBillLibraryFormParentCompanyInput.value = '';
+    els.mashBillLibraryFormCategoryInput.value = '';
     els.mashBillLibraryFormPct.value = '';
+    els.mashBillLibraryFormNoseInput.value = '';
+    els.mashBillLibraryFormPalateInput.value = '';
+    els.mashBillLibraryFormFinishInput.value = '';
+    els.mashBillLibraryFormTastingSourceInput.value = '';
+    els.mashBillLibraryFormConfidenceTier.value = 'unknown';
+    els.mashBillLibraryFormConfidenceNoteInput.value = '';
+    els.mashBillLibraryFormConfidenceVerifiedInput.value = '';
+    els.mashBillLibraryFormSourceLabel.value = '';
+    els.mashBillLibraryFormSourceUrl.value = '';
     renderMashBillLibraryFormGrainList();
+    renderMashBillLibraryFormSourceList();
     els.mashBillLibraryFormTitle.textContent = 'Add an entry manually';
     els.mashBillLibraryFormSaveBtn.textContent = 'Add Entry';
     els.mashBillLibraryFormCancelBtn.hidden = true;
@@ -5233,9 +5286,20 @@
   function loadMashBillLibraryEntryIntoForm(entry) {
     mashBillLibraryEditingId = entry.id;
     mashBillLibraryFormGrains = entry.grains.map((g) => ({ grain: g.grain, pct: g.pct }));
+    mashBillLibraryFormSources = (entry.confidence.sources || []).map((s) => ({ label: s.label, url: s.url }));
     els.mashBillLibraryFormTitleInput.value = entry.title;
     els.mashBillLibraryFormDistilleryInput.value = entry.distillery || '';
+    els.mashBillLibraryFormParentCompanyInput.value = entry.parentCompany || '';
+    els.mashBillLibraryFormCategoryInput.value = entry.category || '';
+    els.mashBillLibraryFormNoseInput.value = entry.nose || '';
+    els.mashBillLibraryFormPalateInput.value = entry.palate || '';
+    els.mashBillLibraryFormFinishInput.value = entry.finish || '';
+    els.mashBillLibraryFormTastingSourceInput.value = entry.tastingSource || '';
+    els.mashBillLibraryFormConfidenceTier.value = entry.confidence.tier || 'unknown';
+    els.mashBillLibraryFormConfidenceNoteInput.value = entry.confidence.note || '';
+    els.mashBillLibraryFormConfidenceVerifiedInput.value = entry.confidence.verifiedAt || '';
     renderMashBillLibraryFormGrainList();
+    renderMashBillLibraryFormSourceList();
     els.mashBillLibraryFormTitle.textContent = `Edit "${entry.title}"`;
     els.mashBillLibraryFormSaveBtn.textContent = 'Save Changes';
     els.mashBillLibraryFormCancelBtn.hidden = false;
@@ -5385,6 +5449,28 @@
     renderMashBillLibraryFormGrainList();
   });
 
+  function addMashBillLibraryFormSource() {
+    const label = els.mashBillLibraryFormSourceLabel.value.trim();
+    const url = els.mashBillLibraryFormSourceUrl.value.trim();
+    if (!url) return;
+    mashBillLibraryFormSources.push({ label, url });
+    els.mashBillLibraryFormSourceLabel.value = '';
+    els.mashBillLibraryFormSourceUrl.value = '';
+    renderMashBillLibraryFormSourceList();
+  }
+  els.mashBillLibraryFormAddSourceBtn.addEventListener('click', addMashBillLibraryFormSource);
+  els.mashBillLibraryFormSourceUrl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addMashBillLibraryFormSource(); }
+  });
+
+  els.mashBillLibraryFormSourceList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-mashbill-form-source"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-mashbill-form-source-index]').dataset.mashbillFormSourceIndex);
+    mashBillLibraryFormSources.splice(idx, 1);
+    renderMashBillLibraryFormSourceList();
+  });
+
   els.mashBillLibraryFormCancelBtn.addEventListener('click', resetMashBillLibraryForm);
 
   els.mashBillLibraryFormSaveBtn.addEventListener('click', async () => {
@@ -5405,6 +5491,18 @@
         distillery: els.mashBillLibraryFormDistilleryInput.value.trim(),
         grains: mashBillLibraryFormGrains,
         source: 'Manual',
+        parentCompany: els.mashBillLibraryFormParentCompanyInput.value.trim(),
+        category: els.mashBillLibraryFormCategoryInput.value.trim(),
+        nose: els.mashBillLibraryFormNoseInput.value.trim(),
+        palate: els.mashBillLibraryFormPalateInput.value.trim(),
+        finish: els.mashBillLibraryFormFinishInput.value.trim(),
+        tastingSource: els.mashBillLibraryFormTastingSourceInput.value.trim(),
+        confidence: {
+          tier: els.mashBillLibraryFormConfidenceTier.value,
+          note: els.mashBillLibraryFormConfidenceNoteInput.value.trim(),
+          sources: mashBillLibraryFormSources,
+          verifiedAt: els.mashBillLibraryFormConfidenceVerifiedInput.value,
+        },
       };
       const resp = mashBillLibraryEditingId
         ? await fetch(`/api/mashbills/${mashBillLibraryEditingId}`, {
@@ -5443,6 +5541,248 @@
       els.mashBillLibrarySyncNowBtn.disabled = false;
     }
   });
+
+  // ---------- Bourbon Library (rail view) ----------
+  //
+  // A read-focused browse/profile screen over the same mash_bills data the
+  // dialog above manages - search, a confidence-tier filter, a card grid,
+  // and a profile page per entry. Editing still goes through the dialog
+  // above (see the profile page's own "Edit in Library" button); this
+  // section never writes anything, only reads mashBillLibraryCache.
+
+  const CONFIDENCE_TIER_META = {
+    confirmed: {
+      label: 'Confirmed', dots: 4, colorVar: '--ui-good', tintVar: '--ui-good-tint',
+    },
+    reported: {
+      label: 'Reported', dots: 3, colorVar: '--ui-warn', tintVar: '--ui-warn-tint',
+    },
+    estimated: {
+      label: 'Estimated', dots: 2, colorVar: '--ui-low', tintVar: '--ui-low-tint',
+    },
+    unknown: {
+      label: 'Unknown', dots: 0, colorVar: '--ui-muted', tintVar: '--ui-code-bg',
+    },
+  };
+
+  function confidenceTierMeta(tier) {
+    return CONFIDENCE_TIER_META[tier] || CONFIDENCE_TIER_META.unknown;
+  }
+
+  function confidenceBadgeHtml(tier) {
+    const meta = confidenceTierMeta(tier);
+    return `<span class="conf-badge" style="color:var(${meta.colorVar});background:var(${meta.tintVar});">${escapeHtml(meta.label)}</span>`;
+  }
+
+  function confidenceMeterHtml(tier) {
+    const meta = confidenceTierMeta(tier);
+    const dots = [0, 1, 2, 3].map((i) => `<span class="${i < meta.dots ? 'is-on' : ''}"></span>`).join('');
+    return `<span class="conf-meter" style="color:var(${meta.colorVar});">${dots}</span>`;
+  }
+
+  // Same grain colors the printed card's own Mash Bill bar uses
+  // (MASH_BILL_GRAIN_COLORS is a plain global defined in card.js - see the
+  // WINE_PAIRING_RULES comment elsewhere in this file for the same
+  // cross-script convention), so a bourbon's card-grid/profile-page bar
+  // here always matches what would print on its talker.
+  function grainBarHtml(grains) {
+    if (!grains || !grains.length) return '<div class="grain-bar grain-bar--empty"></div>';
+    const segs = grains.map((g) => `<span style="width:${g.pct}%;background:${MASH_BILL_GRAIN_COLORS[g.grain] || MASH_BILL_GRAIN_FALLBACK_COLOR}"></span>`).join('');
+    return `<div class="grain-bar">${segs}</div>`;
+  }
+
+  let libraryFilterQuery = '';
+  let libraryTierFilter = 'all';
+  let libraryViewMode = 'grid';
+  let librarySelectedId = null;
+
+  function libraryMatchesFilter(entry) {
+    const tier = entry.confidence.tier;
+    if (libraryTierFilter === 'confirmed') return tier === 'confirmed';
+    if (libraryTierFilter === 'reported') return tier === 'reported';
+    if (libraryTierFilter === 'needs') return tier === 'estimated' || tier === 'unknown';
+    return true;
+  }
+
+  function libraryMatchesSearch(entry) {
+    const q = libraryFilterQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (entry.title || '').toLowerCase().includes(q)
+      || (entry.distillery || '').toLowerCase().includes(q)
+      || (entry.parentCompany || '').toLowerCase().includes(q);
+  }
+
+  function renderLibraryChipsAndStats() {
+    const counts = {
+      all: mashBillLibraryCache.length,
+      confirmed: mashBillLibraryCache.filter((m) => m.confidence.tier === 'confirmed').length,
+      reported: mashBillLibraryCache.filter((m) => m.confidence.tier === 'reported').length,
+      needs: mashBillLibraryCache.filter((m) => m.confidence.tier === 'estimated' || m.confidence.tier === 'unknown').length,
+    };
+    const chips = [
+      { key: 'all', label: `All bourbons (${counts.all})` },
+      { key: 'confirmed', label: `Confirmed (${counts.confirmed})` },
+      { key: 'reported', label: `Reported (${counts.reported})` },
+      { key: 'needs', label: `Needs verification (${counts.needs})` },
+    ];
+    els.libraryChips.innerHTML = chips.map((c) => `
+      <button type="button" class="toggle-btn ${libraryTierFilter === c.key ? 'is-active' : ''}" data-tier="${c.key}">${escapeHtml(c.label)}</button>
+    `).join('');
+    els.libraryChips.querySelectorAll('button[data-tier]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        libraryTierFilter = btn.dataset.tier;
+        renderLibraryChipsAndStats();
+        renderLibraryBody();
+      });
+    });
+    els.libraryStats.innerHTML = `
+      <div class="library-stat"><b>${mashBillLibraryCache.length}</b><span>Bourbons</span></div>
+      <div class="library-stat"><b>${new Set(mashBillLibraryCache.map((m) => m.distillery).filter(Boolean)).size}</b><span>Distilleries</span></div>
+      <div class="library-stat"><b>${new Set(mashBillLibraryCache.map((m) => m.parentCompany).filter(Boolean)).size}</b><span>Parent companies</span></div>
+      <div class="library-stat"><b>${counts.needs}</b><span>Need verification</span></div>
+    `;
+  }
+
+  function bourbonCardHtml(entry) {
+    return `
+      <button type="button" class="bourbon-card" data-id="${entry.id}">
+        <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
+        <div class="bourbon-card__sub">${escapeHtml(entry.distillery || 'Distillery unknown')}</div>
+        ${grainBarHtml(entry.grains)}
+        <div class="bourbon-card__footer">
+          <span class="bourbon-card__sub">${escapeHtml(entry.category || '')}</span>
+          ${confidenceBadgeHtml(entry.confidence.tier)}
+        </div>
+      </button>
+    `;
+  }
+
+  function renderLibraryGrid() {
+    const rows = mashBillLibraryCache.filter((m) => libraryMatchesFilter(m) && libraryMatchesSearch(m));
+    if (!rows.length) {
+      els.libraryBody.innerHTML = '<p class="help-text">No bourbons match this search/filter.</p>';
+      return;
+    }
+    els.libraryBody.innerHTML = `<div class="bourbon-grid">${rows.map(bourbonCardHtml).join('')}</div>`;
+    els.libraryBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySelectedId = Number(btn.dataset.id);
+        libraryViewMode = 'profile';
+        renderLibraryBody();
+      });
+    });
+  }
+
+  function renderBourbonProfile() {
+    const entry = mashBillLibraryCache.find((m) => m.id === librarySelectedId);
+    if (!entry) {
+      libraryViewMode = 'grid';
+      renderLibraryBody();
+      return;
+    }
+    const siblings = mashBillLibraryCache.filter((m) => m.id !== entry.id && entry.distillery && m.distillery === entry.distillery);
+    const sourcesHtml = entry.confidence.sources && entry.confidence.sources.length
+      ? `<details class="conf-sources">
+          <summary>View ${entry.confidence.sources.length} source${entry.confidence.sources.length === 1 ? '' : 's'}</summary>
+          <ul>${entry.confidence.sources.map((s) => `<li><a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.label || s.url)}</a></li>`).join('')}</ul>
+        </details>`
+      : '';
+    const tastingHtml = (entry.nose || entry.palate || entry.finish) ? `
+      <div class="block">
+        <h3>Tasting Notes</h3>
+        <div class="tasting-grid">
+          <div class="tasting-card"><h4>Nose</h4><p>${escapeHtml(entry.nose || '—')}</p></div>
+          <div class="tasting-card"><h4>Palate</h4><p>${escapeHtml(entry.palate || '—')}</p></div>
+          <div class="tasting-card"><h4>Finish</h4><p>${escapeHtml(entry.finish || '—')}</p></div>
+        </div>
+        ${entry.tastingSource ? `<div class="tasting-source">Source: ${escapeHtml(entry.tastingSource)}</div>` : ''}
+      </div>` : '';
+
+    els.libraryBody.innerHTML = `
+      <div class="profile-head">
+        <div>
+          <h2>${escapeHtml(entry.title)}</h2>
+          <p class="profile-head__by">${escapeHtml(entry.distillery || 'Distillery unknown')}${entry.parentCompany ? ` &middot; <strong>${escapeHtml(entry.parentCompany)}</strong>` : ''}</p>
+          ${entry.category ? `<div class="profile-tags"><span class="tag">${escapeHtml(entry.category)}</span></div>` : ''}
+        </div>
+        <button type="button" class="btn btn--small" id="libraryEditBtn">Edit in Library</button>
+      </div>
+      <div class="profile-grid">
+        <div>
+          <div class="block">
+            <h3>Mash Bill</h3>
+            ${grainBarHtml(entry.grains)}
+            <div class="conf-block">
+              <div class="conf-block__row">
+                ${confidenceBadgeHtml(entry.confidence.tier)}
+                ${confidenceMeterHtml(entry.confidence.tier)}
+              </div>
+              ${entry.confidence.note ? `<p class="conf-block__note">${escapeHtml(entry.confidence.note)}</p>` : ''}
+              ${entry.confidence.verifiedAt ? `<div class="conf-block__verified">Last verified ${escapeHtml(entry.confidence.verifiedAt)}</div>` : ''}
+              ${sourcesHtml}
+            </div>
+          </div>
+          ${tastingHtml}
+        </div>
+        <div class="block info-card">
+          <h3>Distillery &amp; Ownership</h3>
+          <dl>
+            <div><dt>Distillery</dt><dd>${escapeHtml(entry.distillery || 'Unknown')}</dd></div>
+            ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
+            ${entry.category ? `<div><dt>Style</dt><dd>${escapeHtml(entry.category)}</dd></div>` : ''}
+          </dl>
+          ${siblings.length ? `
+            <dt class="info-card__siblings-label">Other ${escapeHtml(entry.distillery)} entries</dt>
+            <div class="sibling-list">
+              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(s.title)}</span>${confidenceBadgeHtml(s.confidence.tier)}</button>`).join('')}
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+    document.getElementById('libraryEditBtn').addEventListener('click', () => {
+      mashBillLibraryModal.open();
+      loadMashBillLibraryEntryIntoForm(entry);
+    });
+    els.libraryBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySelectedId = Number(btn.dataset.id);
+        renderBourbonProfile();
+      });
+    });
+  }
+
+  function renderLibraryBody() {
+    els.libraryBackLink.hidden = libraryViewMode !== 'profile';
+    if (libraryViewMode === 'profile') renderBourbonProfile();
+    else renderLibraryGrid();
+  }
+
+  els.libraryFilterInput.addEventListener('input', (e) => {
+    libraryFilterQuery = e.target.value;
+    libraryViewMode = 'grid';
+    renderLibraryBody();
+  });
+  els.libraryBackLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    libraryViewMode = 'grid';
+    librarySelectedId = null;
+    renderLibraryBody();
+  });
+
+  // Called every time the rail switches to Library (see setActiveView
+  // above) - re-fetches so the screen reflects the shared library's actual
+  // current state rather than whatever this client happened to have cached
+  // from the last recall banner check.
+  function renderLibraryView() {
+    fetchMashBillLibrary().then(() => {
+      libraryViewMode = 'grid';
+      librarySelectedId = null;
+      els.libraryFilterInput.value = '';
+      libraryFilterQuery = '';
+      renderLibraryChipsAndStats();
+      renderLibraryBody();
+    });
+  }
 
   // Fired once, right as printing is confirmed (see printNow() below) with
   // whatever's in the Queue at that moment - that's exactly what's about to
@@ -5843,6 +6183,40 @@
       els.experimentalPairingsCheckbox.checked = experimentalPairingsEnabled;
     },
   });
+
+  // ---------- Rail (Shelf Talker / Library / Settings) ----------
+  //
+  // Settings isn't a third screen - its rail button just opens the same
+  // settingsModal above, unchanged. Shelf Talker and Library are real
+  // screens: exactly one of els.shelfTalkerView (the existing .layout
+  // three-column form/preview/queue grid, untouched) / els.libraryView is
+  // visible at a time, toggled here rather than with the tabs' full
+  // role="tablist" machinery (see activateTab) - this is a whole-screen
+  // swap, not adjacent panels of one form.
+  let activeRailView = 'shelfTalker';
+
+  function setActiveView(view) {
+    activeRailView = view;
+    els.railShelfTalkerBtn.classList.toggle('is-active', view === 'shelfTalker');
+    els.railLibraryBtn.classList.toggle('is-active', view === 'library');
+    els.shelfTalkerView.hidden = view !== 'shelfTalker';
+    els.libraryView.hidden = view !== 'library';
+    if (view === 'shelfTalker') {
+      // The preview stage reads 0 for its own width while
+      // els.shelfTalkerView is hidden (display:none), so scalePreview
+      // silently no-ops on it - but the global window resize handler below
+      // still fires no matter which screen is showing, leaving the cached
+      // scale stale for whenever this screen becomes visible again. Same
+      // fix as an actual window resize: just rescale now that it's visible.
+      rescalePreviewStage();
+    } else if (view === 'library') {
+      renderLibraryView();
+    }
+  }
+
+  els.railShelfTalkerBtn.addEventListener('click', () => setActiveView('shelfTalker'));
+  els.railLibraryBtn.addEventListener('click', () => setActiveView('library'));
+  els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
   // ---------- Menu bar ----------
   //

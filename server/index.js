@@ -441,21 +441,40 @@ function createApp({
     });
   });
 
+  // Bourbon Library fields (parent company, category, tasting notes, and
+  // the Mash Bill Confidence block) beyond the original
+  // title/distillery/grains/source - see mashBillOptionalFieldParams in
+  // db.js for how an omitted (undefined) one leaves whatever's already
+  // saved alone rather than blanking it out.
+  function mashBillOptionalFields(body) {
+    const {
+      parentCompany, category, nose, palate, finish, tastingSource, confidence,
+    } = body || {};
+    return {
+      parentCompany, category, nose, palate, finish, tastingSource, confidence,
+    };
+  }
+
   app.post('/api/mashbills', async (req, res) => {
     const { title, distillery, grains, source } = req.body || {};
+    const optional = mashBillOptionalFields(req.body);
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'A product title is required.' });
     }
     if (getServerConfig().isServer) {
       try {
-        return res.status(201).json(upsertMashBill({ title, distillery, grains, source }));
+        return res.status(201).json(upsertMashBill({
+          title, distillery, grains, source, ...optional,
+        }));
       } catch (err) {
         return res.status(err.code === 'GRAINS_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
       }
     }
     if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
     try {
-      const result = await mashBillPuller.forwardWrite('POST', '/mashbills', { title, distillery, grains, source });
+      const result = await mashBillPuller.forwardWrite('POST', '/mashbills', {
+        title, distillery, grains, source, ...optional,
+      });
       res.status(result.status).json(result.data);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
@@ -464,9 +483,12 @@ function createApp({
 
   app.put('/api/mashbills/:id', async (req, res) => {
     const { title, distillery, grains, source } = req.body || {};
+    const optional = mashBillOptionalFields(req.body);
     if (getServerConfig().isServer) {
       try {
-        const updated = updateMashBillById(Number(req.params.id), { title, distillery, grains, source });
+        const updated = updateMashBillById(Number(req.params.id), {
+          title, distillery, grains, source, ...optional,
+        });
         if (!updated) return res.status(404).json({ error: 'No mash bill entry with that id.' });
         return res.json(updated);
       } catch (err) {
@@ -475,7 +497,9 @@ function createApp({
     }
     if (!mashBillPuller) return res.status(503).json({ error: 'Mash bill syncing is not set up on this PC.' });
     try {
-      const result = await mashBillPuller.forwardWrite('PUT', `/mashbills/${Number(req.params.id)}`, { title, distillery, grains, source });
+      const result = await mashBillPuller.forwardWrite('PUT', `/mashbills/${Number(req.params.id)}`, {
+        title, distillery, grains, source, ...optional,
+      });
       res.status(result.status).json(result.data);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });

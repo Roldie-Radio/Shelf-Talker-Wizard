@@ -856,6 +856,50 @@ test('POST /api/mashbills upserts directly once isServer, requires a title', asy
   }));
 });
 
+// Route-level check that the Bourbon Library fields (parentCompany,
+// category, nose/palate/finish, tastingSource, confidence) actually reach
+// db.js rather than being silently dropped by this route's own
+// destructuring - db.test.js already covers upsertMashBill/rowToMashBill
+// in depth, this just confirms the wiring in between.
+test('POST /api/mashbills persists Bourbon Library fields (parent company, tasting notes, confidence), PUT updates them', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+
+    const created = await postJson(port, '/api/mashbills', {
+      title: 'Buffalo Trace',
+      distillery: 'Buffalo Trace Distillery',
+      grains: [{ grain: 'Corn', pct: 90 }],
+      parentCompany: 'Sazerac Company',
+      category: 'Kentucky Straight Bourbon',
+      nose: 'Vanilla, brown sugar, mint',
+      palate: 'Brown sugar and spice',
+      finish: 'Long and smooth',
+      tastingSource: 'Distillery official tasting notes',
+      confidence: {
+        tier: 'confirmed', note: 'Publicly confirmed.', sources: [{ label: 'Distillery site', url: 'https://example.com' }], verifiedAt: '2026-01-15',
+      },
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.parentCompany, 'Sazerac Company');
+    assert.equal(created.body.category, 'Kentucky Straight Bourbon');
+    assert.equal(created.body.nose, 'Vanilla, brown sugar, mint');
+    assert.deepEqual(created.body.confidence, {
+      tier: 'confirmed', note: 'Publicly confirmed.', sources: [{ label: 'Distillery site', url: 'https://example.com' }], verifiedAt: '2026-01-15',
+    });
+
+    const updated = await requestJson(port, 'PUT', `/api/mashbills/${created.body.id}`, {
+      confidence: { tier: 'estimated' },
+    });
+    assert.equal(updated.status, 200);
+    assert.deepEqual(updated.body.confidence, {
+      tier: 'estimated', note: '', sources: [], verifiedAt: '',
+    });
+    // Fields left off the PUT payload stay untouched.
+    assert.equal(updated.body.parentCompany, 'Sazerac Company');
+    assert.equal(updated.body.nose, 'Vanilla, brown sugar, mint');
+  }));
+});
+
 test('POST /api/mashbills forwards to the injected mashBillPuller when not isServer', async () => {
   let forwarded = null;
   const puller = fakeMashBillPuller({
@@ -868,7 +912,15 @@ test('POST /api/mashbills forwards to the injected mashBillPuller when not isSer
     const { status, body } = await postJson(port, '/api/mashbills', { title: 'Larceny', grains: [{ grain: 'Corn', pct: 68 }] });
     assert.equal(status, 201);
     assert.equal(body.title, 'Larceny');
-    assert.deepEqual(forwarded, { method: 'POST', path: '/mashbills', body: { title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined } });
+    assert.deepEqual(forwarded, {
+      method: 'POST',
+      path: '/mashbills',
+      body: {
+        title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined,
+        parentCompany: undefined, category: undefined, nose: undefined, palate: undefined, finish: undefined,
+        tastingSource: undefined, confidence: undefined,
+      },
+    });
   }));
 });
 

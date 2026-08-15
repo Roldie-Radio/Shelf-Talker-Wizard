@@ -59,6 +59,18 @@
   --ui-code-bg: #f0ece3;
   --ui-danger: #c81a1a;
 
+  /* Mash Bill Confidence tiers (Bourbon Library profile page, see
+     renderBourbonProfile in app.js) - three semantic tones, deliberately
+     separate from --ui-danger (that one still just means delete/error
+     everywhere else) and distinct enough from --ui-accent's own gold that a
+     "Reported"/"Estimated" badge doesn't read as an accent-colored button. */
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+  --ui-low: #a8391a;
+  --ui-low-tint: rgba(168, 57, 26, 0.1);
+
   --radius: 10px;
   color-scheme: light;
 
@@ -118,6 +130,12 @@
   --ui-danger-tint: rgba(255, 107, 107, 0.14);
   --ui-code-bg: #302c28;
   --ui-danger: #ff8f8f;
+  --ui-good: #6fcf74;
+  --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #d68a3a;
+  --ui-warn-tint: rgba(214, 138, 58, 0.14);
+  --ui-low: #e88f5f;
+  --ui-low-tint: rgba(232, 143, 95, 0.14);
   color-scheme: dark;
 }
 
@@ -289,6 +307,190 @@ h1, h2, h3 { margin: 0; }
 
 .btn--icon { display: inline-flex; align-items: center; gap: 0.4rem; }
 .theme-toggle__icon { font-size: 1rem; line-height: 1; }
+
+/* ---------- App shell: persistent rail ---------- */
+
+/* Wraps .layout and #libraryView side by side with .rail - .menubar/.appbar
+   stay full-width siblings above this, unchanged. flex:1/min-height:0 so
+   .layout's own flex:1 (and .panel--preview's position:sticky inside it)
+   keeps working exactly as it did as a direct child of .app, just one level
+   deeper now. */
+.app-shell { flex: 1; min-height: 0; display: flex; }
+
+/* Icon-only, no visible caption (title="" on each button gives the
+   tooltip) - the app's fixed-width layout (.layout's 380px+320px side
+   columns) is already tight against Electron's 1024px minWidth (see
+   electron/main.js), so this stays as narrow as a comfortable click target
+   allows rather than adding a text label's worth of extra width. */
+.rail {
+  flex: 0 0 auto;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0;
+  background: var(--ui-panel-alt);
+  border-right: 1px solid var(--ui-border);
+}
+.rail__icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--ui-ink-soft);
+}
+.rail__icon:hover { background: var(--ui-hover); }
+.rail__icon.is-active { background: var(--ui-accent); }
+.rail__icon-svg { width: 20px; height: 27px; display: block; }
+.rail__icon-glyph { font-size: 1.15rem; line-height: 1; }
+.rail__spacer { flex: 1; }
+
+/* ---------- Bourbon Library ---------- */
+
+.library-view { flex: 1; min-width: 0; overflow-y: auto; }
+.library-band { background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); padding: 1.1rem 1.5rem; }
+.library-band__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.library-brand { display: flex; align-items: center; gap: 0.7rem; }
+.library-brand__icon { width: 38px; height: 38px; border-radius: 9px; background: var(--ui-accent); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.library-brand__icon svg { width: 22px; height: 30px; }
+.library-brand__name { font-size: 1.15rem; font-weight: 800; }
+.library-brand__tag { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.library-back { font-size: 0.85rem; font-weight: 600; color: var(--ui-accent-ink); text-decoration: none; }
+.library-back:hover { text-decoration: underline; }
+.library-search { margin-top: 1rem; }
+.library-search input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-field);
+  color: var(--ui-ink);
+}
+.library-chips { display: flex; gap: 0.4rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.library-stats { display: flex; gap: 1.4rem; margin-top: 0.9rem; flex-wrap: wrap; }
+.library-stat { display: flex; flex-direction: column; }
+.library-stat b { font-size: 1.05rem; }
+.library-stat span { font-size: 0.7rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.library-body { padding: 1.3rem 1.5rem 2rem; }
+
+/* Bourbon Library - card grid (see bourbonCardHtml/renderLibraryGrid in
+   app.js). A real grid, unlike .history-list's flat rows, since these are
+   meant to be scanned visually like a shelf, not read top-to-bottom. */
+.bourbon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.9rem;
+}
+.bourbon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-panel);
+  border-radius: 10px;
+  padding: 0.85rem 0.9rem;
+}
+.bourbon-card:hover { border-color: var(--ui-accent-ink); background: var(--ui-hover); }
+.bourbon-card__title { font-size: 0.98rem; font-weight: 700; }
+.bourbon-card__sub { font-size: 0.78rem; color: var(--ui-muted); }
+.bourbon-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.1rem; }
+
+/* Mash Bill grain proportion bar - same colors/data as the printed talker's
+   own bar (see grainBarHtml/MASH_BILL_GRAIN_COLORS), just a plain flex bar
+   here instead of the print version's calc(var(--w)...) sizing. */
+.grain-bar { display: flex; width: 100%; height: 7px; border-radius: 4px; overflow: hidden; background: var(--ui-code-bg); }
+.grain-bar span { height: 100%; }
+.grain-bar--empty { background: var(--ui-code-bg); }
+
+/* Mash Bill Confidence tiers - badge (grid card + profile header), a 4-dot
+   meter (profile only), and the fuller note/sources block on the profile
+   page. Colors come from the --ui-good/--ui-warn/--ui-low tier tokens
+   above, applied inline per-entry (see confidenceBadgeHtml et al). */
+.conf-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.conf-meter { display: inline-flex; gap: 0.2rem; }
+.conf-meter span { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-border); }
+.conf-meter span.is-on { background: currentColor; }
+.conf-block { margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid var(--ui-border); }
+.conf-block__row { display: flex; align-items: center; gap: 0.6rem; }
+.conf-block__note { font-size: 0.85rem; color: var(--ui-ink-soft); margin: 0.5rem 0 0; line-height: 1.45; }
+.conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
+.conf-sources { margin-top: 0.5rem; font-size: 0.8rem; }
+.conf-sources summary { cursor: pointer; color: var(--ui-accent-ink); font-weight: 600; }
+.conf-sources ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+.conf-sources li { margin-bottom: 0.2rem; }
+.conf-sources a { color: var(--ui-accent-ink); }
+
+/* Bourbon profile page (renderBourbonProfile in app.js). */
+.profile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.profile-head h2 { margin: 0; font-size: 1.4rem; }
+.profile-head__by { margin: 0.2rem 0 0; color: var(--ui-muted); font-size: 0.9rem; }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: var(--ui-code-bg);
+  color: var(--ui-ink-soft);
+}
+.profile-grid { display: grid; grid-template-columns: 1fr 280px; gap: 1.2rem; align-items: start; }
+.block { border: 1px solid var(--ui-border); background: var(--ui-panel); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.block h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.tasting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+.tasting-card h4 { margin: 0 0 0.25rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ui-muted); }
+.tasting-card p { margin: 0; font-size: 0.86rem; line-height: 1.45; }
+.tasting-source { margin-top: 0.6rem; font-size: 0.74rem; color: var(--ui-muted); }
+.info-card dl { margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.info-card dl > div { display: flex; justify-content: space-between; gap: 0.8rem; }
+.info-card dt { color: var(--ui-muted); font-size: 0.82rem; }
+.info-card dd { margin: 0; font-weight: 600; font-size: 0.82rem; text-align: right; }
+.info-card__siblings-label { display: block; margin: 0.9rem 0 0.45rem; color: var(--ui-muted); font-size: 0.82rem; }
+.sibling-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.sibling-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-panel-sunken);
+  border-radius: 7px;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.sibling-btn:hover { border-color: var(--ui-accent-ink); }
+
+@media (max-width: 720px) {
+  .profile-grid { grid-template-columns: 1fr; }
+  .tasting-grid { grid-template-columns: 1fr; }
+}
 
 /* ---------- Layout ---------- */
 
@@ -3265,7 +3467,15 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- Responsive ---------- */
 
-@media (max-width: 1100px) {
+/* 1100px + the rail's own 56px width (see .rail above) - the rail eats
+   into the same horizontal budget .layout's fixed 380px/320px side columns
+   already competed for, so the window range just above the old 1100px
+   threshold needs to collapse to one column too now, not just the range
+   below it. Electron's own minWidth (1024, see electron/main.js) is below
+   even the old threshold, so the 3-column grid was already never reachable
+   at the app's true minimum width - this only affects the "comfortable but
+   not full-size" range in between. */
+@media (max-width: 1156px) {
   .layout { grid-template-columns: 1fr; }
   /* Sticky only makes sense beside a scrolling form column; once everything
      is stacked the preview would pin over the queue below it. */

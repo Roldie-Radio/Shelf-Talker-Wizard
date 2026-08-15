@@ -156,7 +156,39 @@
     </div>
   </header>
 
-  <main class="layout no-print">
+  <!-- Persistent left icon rail (Shelf Talker / Library / Settings) - see
+       the "Rail" section of app.js for the click handling. Shelf Talker and
+       Library swap which of .layout/#libraryView is visible; Settings is
+       not a third screen, its button just opens the existing #settingsOverlay
+       modal below, same as it's always been reachable from Tools -> Settings.
+       Icon-only (no visible caption, title="" gives the tooltip instead) to
+       keep the width this adds to the app's existing fixed-column layout as
+       small as possible - see the min-width note on .rail in styles.css. -->
+  <div class="app-shell">
+    <nav class="rail no-print" id="rail" aria-label="Sections">
+      <button type="button" class="rail__icon is-active" id="railShelfTalkerBtn" data-view="shelfTalker" title="Shelf Talker">
+        <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+          <rect x="1" y="1" width="20" height="28" rx="1.5" fill="#ffffff" stroke="var(--ink)" stroke-width="1.6"/>
+          <rect x="4" y="4.5" width="14" height="3" rx="0.6" fill="var(--ink)"/>
+          <rect x="4" y="10" width="11" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+          <rect x="4" y="13" width="8.5" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+          <rect x="4" y="20" width="14" height="6" rx="1" fill="var(--sale-red)"/>
+          <rect x="6.5" y="22.2" width="9" height="1.8" rx="0.5" fill="#ffffff"/>
+        </svg>
+      </button>
+      <button type="button" class="rail__icon" id="railLibraryBtn" data-view="library" title="Bourbon Library">
+        <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+          <path d="M7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 Z" fill="var(--ui-accent)"/>
+          <path d="M7.5,1.5 C6.5,2.2 6.3,3 6.5,3.5 C6.7,4.5 8,7 8.5,9 C9,10.5 7,11.5 7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 C15,11.5 13,10.5 13.5,9 C14,7 15.3,4.5 15.5,3.5 C15.7,3 15.5,2.2 14.5,1.5 Z" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="rail__spacer"></div>
+      <button type="button" class="rail__icon" id="railSettingsBtn" title="Settings">
+        <span class="rail__icon-glyph" aria-hidden="true">&#9881;&#65039;</span>
+      </button>
+    </nav>
+
+  <main class="layout no-print" id="shelfTalkerView">
 
     <section class="panel panel--form">
       <div class="tabs" role="tablist" aria-label="How to add a product">
@@ -757,6 +789,41 @@
 
   </main>
 
+  <!-- Bourbon Library - a read-focused screen over the Mash Bill Library's
+       own data (see server/db.js's mash_bills table). Rendered entirely by
+       renderLibraryView/renderBourbonProfile in app.js; editing an entry
+       still goes through the existing #mashBillLibraryOverlay dialog below,
+       reached from a profile page's own "Edit in Library" button - this
+       view is a browsing surface on top of that data, not a second editing
+       UI for it. Hidden by default; the rail toggles it with .layout. -->
+  <section class="library-view no-print" id="libraryView" hidden>
+    <div class="library-band">
+      <div class="library-band__top">
+        <div class="library-brand">
+          <div class="library-brand__icon">
+            <svg viewBox="0 0 22 30" aria-hidden="true">
+              <path d="M7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 Z" fill="var(--ui-on-accent)"/>
+              <path d="M7.5,1.5 C6.5,2.2 6.3,3 6.5,3.5 C6.7,4.5 8,7 8.5,9 C9,10.5 7,11.5 7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 C15,11.5 13,10.5 13.5,9 C14,7 15.3,4.5 15.5,3.5 C15.7,3 15.5,2.2 14.5,1.5 Z" fill="none" stroke="var(--ui-on-accent)" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="library-brand__name">Bourbon Library</div>
+            <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+        <a href="#" class="library-back" id="libraryBackLink" hidden>&larr; All bourbons</a>
+      </div>
+      <div class="library-search">
+        <input type="search" id="libraryFilterInput" aria-label="Search the Bourbon Library" placeholder="Search by name, distillery, or parent company&hellip;" />
+      </div>
+      <div class="library-chips" id="libraryChips"></div>
+      <div class="library-stats" id="libraryStats"></div>
+    </div>
+    <div class="library-body" id="libraryBody"></div>
+  </section>
+
+  </div><!-- /.app-shell -->
+
   <section id="printRoot" class="print-only"></section>
 
   <div id="queueItemMenu" class="queue-item-menu no-print" hidden>
@@ -1136,6 +1203,16 @@
               <input type="text" id="mashBillLibraryFormDistilleryInput" maxlength="80" placeholder="Four Roses" />
             </label>
           </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Parent Company (optional)</span>
+              <input type="text" id="mashBillLibraryFormParentCompanyInput" maxlength="80" placeholder="Sazerac Company" />
+            </label>
+            <label class="field">
+              <span>Category (optional)</span>
+              <input type="text" id="mashBillLibraryFormCategoryInput" maxlength="60" placeholder="Kentucky Straight Bourbon" />
+            </label>
+          </div>
           <div class="ratings-builder">
             <select id="mashBillLibraryFormGrain" aria-label="Grain">
               <option value="Corn">Corn</option>
@@ -1149,6 +1226,54 @@
             <button type="button" class="btn btn--small" id="mashBillLibraryFormAddGrainBtn">Add</button>
           </div>
           <div class="ratings-list" id="mashBillLibraryFormGrainList"></div>
+
+          <!-- Bourbon Library profile page fields (see renderBourbonProfile
+               in app.js) - all optional, same "leave blank if you don't
+               know it yet" philosophy as the rest of this form. -->
+          <label class="field">
+            <span>Nose (optional)</span>
+            <textarea id="mashBillLibraryFormNoseInput" rows="2" maxlength="300" placeholder="Vanilla, brown sugar, mint"></textarea>
+          </label>
+          <label class="field">
+            <span>Palate (optional)</span>
+            <textarea id="mashBillLibraryFormPalateInput" rows="2" maxlength="300" placeholder="Brown sugar and spice, oak"></textarea>
+          </label>
+          <label class="field">
+            <span>Finish (optional)</span>
+            <textarea id="mashBillLibraryFormFinishInput" rows="2" maxlength="300" placeholder="Long, smooth, and pleasant"></textarea>
+          </label>
+          <label class="field">
+            <span>Tasting Notes Source (optional)</span>
+            <input type="text" id="mashBillLibraryFormTastingSourceInput" maxlength="120" placeholder="Distillery official tasting notes" />
+          </label>
+
+          <hr class="settings-section-divider" />
+          <h3 class="settings-section-title">Mash Bill Confidence</h3>
+          <p class="help-text">How sure are we this mash bill is right? Confirmed (distillery-stated), Reported (widely cited but not distillery-confirmed), Estimated (a guess based on similar bourbons), or Unknown (nothing to go on yet).</p>
+          <label class="field">
+            <span>Confidence Tier</span>
+            <select id="mashBillLibraryFormConfidenceTier">
+              <option value="unknown">Unknown</option>
+              <option value="estimated">Estimated</option>
+              <option value="reported">Reported</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Confidence Note (optional)</span>
+            <textarea id="mashBillLibraryFormConfidenceNoteInput" rows="2" maxlength="300" placeholder="Mash bill #1 is publicly confirmed by the distillery."></textarea>
+          </label>
+          <label class="field">
+            <span>Last Verified (optional)</span>
+            <input type="date" id="mashBillLibraryFormConfidenceVerifiedInput" />
+          </label>
+          <div class="ratings-builder">
+            <input type="text" id="mashBillLibraryFormSourceLabel" placeholder="Source name" aria-label="Source name" />
+            <input type="text" id="mashBillLibraryFormSourceUrl" placeholder="https://..." aria-label="Source URL" />
+            <button type="button" class="btn btn--small" id="mashBillLibraryFormAddSourceBtn">Add</button>
+          </div>
+          <div class="ratings-list" id="mashBillLibraryFormSourceList"></div>
+
           <div class="reviewer-manager__add">
             <button type="button" class="btn btn--small btn--primary" id="mashBillLibraryFormSaveBtn">Add Entry</button>
             <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormCancelBtn" hidden>Cancel</button>
