@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.2.0',
+      items: [
+        'New: the beer Untappd fallback (SKU Lookup and Scan UPC, shown when the automatic search comes up empty) now has a Search Untappd box above the URL field - type a beer or brewery name and it opens Untappd\'s own search in a new tab, pre-filled with whatever title the automatic search already tried, instead of requiring a trip to untappd.com first.',
+      ],
+    },
+    {
       version: '4.1.2',
       items: [
         'Added: Hard Seltzer now gets its own color-coded style badge (cyan/teal) instead of falling back to the generic gray "Other" badge, so it reads at a glance same as any beer style.',
@@ -978,6 +984,8 @@
     skuHtmlInput: document.getElementById('skuHtmlInput'),
     skuHtmlBtn: document.getElementById('skuHtmlBtn'),
     skuUntappdSection: document.getElementById('skuUntappdSection'),
+    skuUntappdSearchInput: document.getElementById('skuUntappdSearchInput'),
+    skuUntappdSearchBtn: document.getElementById('skuUntappdSearchBtn'),
     skuUntappdUrl: document.getElementById('skuUntappdUrl'),
     skuUntappdBtn: document.getElementById('skuUntappdBtn'),
     skuUntappdStatus: document.getElementById('skuUntappdStatus'),
@@ -991,6 +999,8 @@
     scanUpcStatus: document.getElementById('scanUpcStatus'),
     scanUpcSaveBtn: document.getElementById('scanUpcSaveBtn'),
     scanUpcUntappdSection: document.getElementById('scanUpcUntappdSection'),
+    scanUpcUntappdSearchInput: document.getElementById('scanUpcUntappdSearchInput'),
+    scanUpcUntappdSearchBtn: document.getElementById('scanUpcUntappdSearchBtn'),
     scanUpcUntappdUrl: document.getElementById('scanUpcUntappdUrl'),
     scanUpcUntappdBtn: document.getElementById('scanUpcUntappdBtn'),
     scanUpcUntappdStatus: document.getElementById('scanUpcUntappdStatus'),
@@ -3070,6 +3080,7 @@
   // section further down) rather than anything on this tab itself.
 
   wireEnterTriggersClick(els.scanUpcInput, els.scanUpcLookupBtn);
+  wireUntappdSearch(els.scanUpcUntappdSearchInput, els.scanUpcUntappdSearchBtn);
 
   // Fills the same fields applySkuLookupProduct does. Wine/Spirits gets
   // whatever columns the export file happened to have (see upcCatalog.js's
@@ -3119,6 +3130,7 @@
     // left over from a previous scan's attempt at it. Same pattern as
     // applySkuLookupProduct's own skuUntappdSection handling above.
     els.scanUpcUntappdSection.hidden = !(isBeer && data.untappdError);
+    els.scanUpcUntappdSearchInput.value = data.title || '';
     els.scanUpcUntappdUrl.value = '';
     els.scanUpcUntappdStatus.textContent = '';
     els.scanUpcUntappdHtmlInput.value = '';
@@ -3694,9 +3706,28 @@
     });
   }
 
+  // "Search Untappd" box on the manual fallback (SKU Lookup and Scan UPC
+  // both have one - see skuUntappdSection/scanUpcUntappdSection in
+  // index.html) - just opens Untappd's own search in a new tab. No network
+  // request of its own: Untappd's search results only render client-side,
+  // so this app can't read them back either way (same reason the "paste
+  // the beer's Untappd URL" field sits right below it).
+  function wireUntappdSearch(input, button) {
+    button.addEventListener('click', () => {
+      const query = input.value.trim();
+      if (!query) {
+        input.focus();
+        return;
+      }
+      window.open(`https://untappd.com/search?q=${encodeURIComponent(query)}`, '_blank', 'noopener');
+    });
+    wireEnterTriggersClick(input, button);
+  }
+
   // ---------- SKU lookup ----------
 
   wireEnterTriggersClick(els.skuInput, els.skuLookupBtn);
+  wireUntappdSearch(els.skuUntappdSearchInput, els.skuUntappdSearchBtn);
 
   // Fills the same fields the Import tab's applyImportedProduct fills, plus
   // price/size for a beer entry - unlike Untappd (a rating/check-in site
@@ -3747,6 +3778,7 @@
     // Untappd URL/HTML" fallback below only then, and clear out anything
     // left over from a previous SKU's attempt at it.
     els.skuUntappdSection.hidden = !(isBeer && data.untappdError);
+    els.skuUntappdSearchInput.value = data.title || '';
     els.skuUntappdUrl.value = '';
     els.skuUntappdStatus.textContent = '';
     els.skuUntappdHtmlInput.value = '';
