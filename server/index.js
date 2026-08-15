@@ -18,6 +18,8 @@ const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
 const { createExportServeServer, createExportPuller } = require('./exportSync');
 const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
+const { maybeAutoSeedBourbonLibrary } = require('./bourbonLibrarySeed');
+const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
 
 // The LAN discovery beacon and the export-sync/mash-bill-sync serve/pull
@@ -673,6 +675,10 @@ function start(port) {
         mashBillServeServer.start();
       }
       console.log(`Shelf Talker Wizard running at http://localhost:${resolvedPort}`);
+      // Fire-and-forget: never delays the server coming up, and a PC with
+      // no internet (or GitHub unreachable) just stays empty and retries
+      // on its next launch - see bourbonLibrarySeed.js.
+      maybeAutoSeedBourbonLibrary(db);
       resolve(server);
     });
     server.on('error', reject);
