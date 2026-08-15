@@ -1,6 +1,6 @@
 [
   {
-    "title": "Buffalo Trace",
+    "title": "Buffalo Trace Bourbon",
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
@@ -46,7 +46,7 @@
     }
   },
   {
-    "title": "Blanton's Single Barrel",
+    "title": "Blanton's The Original Bourbon",
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
@@ -316,7 +316,7 @@
     }
   },
   {
-    "title": "Eagle Rare 10 Year",
+    "title": "Eagle Rare Single Barrel Bourbon",
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
@@ -574,5 +574,205 @@
       "sources": [],
       "verifiedAt": ""
     }
+  },
+  {
+    "title": "Benchmark Full Proof Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 90 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 2 }
+    ],
+    "nose": "Vanilla, caramel, and toasted oak with a burst of cinnamon spice.",
+    "palate": "Rich brown sugar and oak, with barrel-proof heat carrying the spice further than standard Benchmark.",
+    "finish": "Warm, oaky, and moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Benchmark is Sazerac's entry-level bourbon brand, distilled at Buffalo Trace on the same low-rye Mash Bill #1 used for Buffalo Trace and Eagle Rare - Sazerac confirms the shared mash bill family but, as with those brands, doesn't publish exact percentages to consumers.",
+      "verifiedAt": ""
+    },
+    "references": [
+      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+    ]
+  },
+  {
+    "title": "Benchmark Single Barrel Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 90 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 2 }
+    ],
+    "nose": "Honey, vanilla, and light oak spice.",
+    "palate": "Caramel and toffee with a soft, honeyed sweetness from single-barrel selection.",
+    "finish": "Smooth, moderate, and gently warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same Mash Bill #1 as the rest of the Benchmark line and Buffalo Trace itself - Sazerac confirms the shared recipe but doesn't publish exact percentages to consumers.",
+      "verifiedAt": ""
+    },
+    "references": [
+      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+    ]
+  },
+  {
+    "title": "Benchmark Small Batch Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 90 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 2 }
+    ],
+    "nose": "Caramel corn, vanilla, and a light touch of oak.",
+    "palate": "Mild brown sugar sweetness with gentle oak and a hint of spice.",
+    "finish": "Short to moderate, easy and mellow.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same Mash Bill #1 as the rest of the Benchmark line and Buffalo Trace itself - Sazerac confirms the shared recipe but doesn't publish exact percentages to consumers.",
+      "verifiedAt": ""
+    },
+    "references": [
+      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+    ]
+  },
+  {
+    "title": "E.H. Taylor Single Barrel Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "grains": [
+      { "grain": "Corn", "pct": 90 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 2 }
+    ],
+    "nose": "Rich oak, vanilla, and baked apple.",
+    "palate": "Brown sugar and toffee with warm baking spice, bottled-in-bond weight.",
+    "finish": "Long, oaky, with a touch of black pepper.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "The Colonel E.H. Taylor line is drawn from Buffalo Trace's low-rye Mash Bill #1, the same family as Buffalo Trace and Eagle Rare - Sazerac confirms the shared mash bill but, as with those brands, doesn't publish exact percentages to consumers.",
+      "verifiedAt": ""
+    },
+    "references": [
+      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+    ]
+  },
+  {
+    "title": "Elmer T. Lee Single Barrel Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Rye", "pct": 15 },
+      { "grain": "Malted Barley", "pct": 10 }
+    ],
+    "nose": "Caramel, vanilla, and light oak.",
+    "palate": "Honeyed sweetness with oak spice and a hint of citrus.",
+    "finish": "Smooth, warm, and moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Elmer T. Lee is drawn from Buffalo Trace's second, higher-rye mash bill - the same recipe family as Blanton's and Rock Hill Farms - but Sazerac has never published its exact percentages any more than it has for Mash Bill #1. This figure mirrors the range most often cited for that family; treat it as an estimate, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Rock Hill Farms Single Barrel Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Rye", "pct": 15 },
+      { "grain": "Malted Barley", "pct": 10 }
+    ],
+    "nose": "Vanilla, oak, and dried fruit.",
+    "palate": "Rich toffee and baking spice, full-bodied.",
+    "finish": "Long, warm, and oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Rock Hill Farms shares Blanton's and Elmer T. Lee's higher-rye mash bill family - Sazerac has never published its exact percentages. This figure mirrors the range most often cited for that family; treat it as an estimate, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Buffalo Trace Rye Recipe Kosher Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon (Kosher for Passover)",
+    "grains": [
+      { "grain": "Corn", "pct": 90 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 2 }
+    ],
+    "nose": "Vanilla, brown sugar, and mint, consistent with standard Buffalo Trace.",
+    "palate": "Brown sugar and spice over oak and toffee.",
+    "finish": "Long, smooth, and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "An annual limited, kosher-for-Passover-certified run of Buffalo Trace's standard low-rye Mash Bill #1 (same recipe as Buffalo Trace Bourbon itself) - certification changes the production process, not the grain recipe. Sazerac confirms the shared mash bill but doesn't publish exact percentages to consumers.",
+      "verifiedAt": ""
+    },
+    "references": [
+      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+    ]
+  },
+  {
+    "title": "Buffalo Trace Wheat Recipe Kosher Bourbon",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Wheated Bourbon (Kosher for Passover)",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Red Winter Wheat", "pct": 16 },
+      { "grain": "Malted Barley", "pct": 9 }
+    ],
+    "nose": "Honey, ripe banana, and warm baking spice.",
+    "palate": "Soft wheat sweetness and brown sugar, no rye bite.",
+    "finish": "Smooth, mellow, and moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "An annual limited, kosher-for-Passover-certified run of Buffalo Trace's wheated mash bill (the same recipe family behind W.L. Weller and Pappy Van Winkle) - Sazerac has never published its exact percentages. This figure mirrors the ratio most frequently cited for that mash bill family; treat it as an estimate, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Sazerac Straight Rye Whiskey",
+    "distillery": "MGP of Indiana (Lawrenceburg, IN)",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Rye Whiskey",
+    "grains": [
+      { "grain": "Rye", "pct": 95 },
+      { "grain": "Malted Barley", "pct": 5 }
+    ],
+    "nose": "Mint, black pepper, and dried fruit.",
+    "palate": "Brown sugar, cherry, and cinnamon spice.",
+    "finish": "Dry, peppery, and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Sazerac Rye has long been sourced from MGP of Indiana's well-documented 95/5 rye mash bill, the same recipe behind numerous other sourced rye brands - Sazerac itself has expanded its own rye production at Buffalo Trace in recent years, so current-bottle sourcing may be shifting away from MGP, but that transition isn't publicly confirmed batch-by-batch.",
+      "verifiedAt": ""
+    },
+    "references": [
+      { "label": "MGP Ingredients - Distillery Products", "url": "https://www.mgpingredients.com", "tags": ["Mash Bill", "Distillery & Ownership"] }
+    ]
   }
 ]
