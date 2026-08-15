@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.1.2',
+      items: [
+        'Added: Hard Seltzer now gets its own color-coded style badge (cyan/teal) instead of falling back to the generic gray "Other" badge, so it reads at a glance same as any beer style.',
+      ],
+    },
+    {
       version: '4.1.1',
       items: [
         'New: Bourbon Library entries now have a References & Sources section - citations (name, link, and which part of the entry they back: Mash Bill, Tasting Notes, Distillery & Ownership, or Other) live in one unified list per bourbon instead of only inside the Mash Bill Confidence block. The profile page drops a numbered marker next to each sourced heading that jumps straight to its citation.',
