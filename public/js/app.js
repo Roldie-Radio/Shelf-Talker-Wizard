@@ -26,6 +26,13 @@
   // suggestion engine (WINE_PAIRING_RULES in card.js), so it stays opt-in
   // rather than showing up for every store the moment it ships.
   const EXPERIMENTAL_PAIRINGS_KEY = 'shelfTalkerExperimentalPairings.v1';
+  // Settings -> Experimental Features -> Wine Profile: gates the Wine
+  // Profile field (see applyExperimentalWineProfile below) and the 1-5 dot
+  // meter strip it prints (buildWineProfileHtml in card.js). Off by
+  // default, same reasoning as Bourbon/Pairings above - Suggest Profile's
+  // varietal values (the `profile` field on WINE_PAIRING_RULES in card.js)
+  // are representative, not gospel, so this stays opt-in.
+  const EXPERIMENTAL_PROFILE_KEY = 'shelfTalkerExperimentalProfile.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -663,6 +670,17 @@
       time" pattern as currentRatings above. */
   let currentMashBill = [];
 
+  /** Wine Profile dot values currently attached to whatever's in the form -
+      one 0-5 integer per WINE_PROFILE_CATEGORIES entry (card.js), 0 meaning
+      "not rated yet". Always carries all five keys (never partial) so
+      renderProfilePicker below can render every row unconditionally. */
+  function emptyWineProfile() {
+    const profile = {};
+    WINE_PROFILE_CATEGORIES.forEach((cat) => { profile[cat.id] = 0; });
+    return profile;
+  }
+  let currentProfile = emptyWineProfile();
+
   let currentSignType = 'talker'; // 'talker' | 'sign'
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
@@ -685,6 +703,15 @@
   let experimentalPairingsEnabled = false;
   try {
     experimentalPairingsEnabled = localStorage.getItem(EXPERIMENTAL_PAIRINGS_KEY) === 'true';
+  } catch {
+    // Same as above - stays at its off-by-default value.
+  }
+
+  // Settings -> Experimental Features -> Wine Profile - same pattern as
+  // experimentalBourbonEnabled/experimentalPairingsEnabled above.
+  let experimentalProfileEnabled = false;
+  try {
+    experimentalProfileEnabled = localStorage.getItem(EXPERIMENTAL_PROFILE_KEY) === 'true';
   } catch {
     // Same as above - stays at its off-by-default value.
   }
@@ -863,6 +890,10 @@
     nose: document.getElementById('fNose'),
     palate: document.getElementById('fPalate'),
     finish: document.getElementById('fFinish'),
+    profileField: document.getElementById('profileField'),
+    suggestProfileBtn: document.getElementById('suggestProfileBtn'),
+    profileSuggestStatus: document.getElementById('profileSuggestStatus'),
+    profilePicker: document.getElementById('profilePicker'),
     pairingsField: document.getElementById('pairingsField'),
     suggestPairingsBtn: document.getElementById('suggestPairingsBtn'),
     pairingsSuggestStatus: document.getElementById('pairingsSuggestStatus'),
@@ -1095,6 +1126,7 @@
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
     experimentalBourbonCheckbox: document.getElementById('experimentalBourbonCheckbox'),
     experimentalPairingsCheckbox: document.getElementById('experimentalPairingsCheckbox'),
+    experimentalProfileCheckbox: document.getElementById('experimentalProfileCheckbox'),
 
     menuBar: document.getElementById('menuBar'),
   };
@@ -1301,6 +1333,32 @@
     }
   });
 
+  // ---------- Experimental Features (Settings -> Wine Profile) ----------
+  //
+  // Same shape as applyExperimentalPairings right above: one switch gates
+  // the Wine Profile field (applyFormMode's profileField line) and, via
+  // window.ShelfTalkerSettings, whether card.js prints the Wine Profile
+  // dot strip (buildWineProfileHtml). Nothing here is ever deleted:
+  // readForm/fillForm don't check this flag, so dots already picked on a
+  // talker round-trip through a save untouched and reappear the instant
+  // the toggle goes back on.
+  function applyExperimentalWineProfile(enabled) {
+    experimentalProfileEnabled = enabled;
+    window.ShelfTalkerSettings.experimentalWineProfile = enabled;
+    els.experimentalProfileCheckbox.checked = enabled;
+    applyFormMode();
+    if (previewMode === 'single') renderPreview();
+  }
+
+  els.experimentalProfileCheckbox.addEventListener('change', () => {
+    applyExperimentalWineProfile(els.experimentalProfileCheckbox.checked);
+    try {
+      localStorage.setItem(EXPERIMENTAL_PROFILE_KEY, String(els.experimentalProfileCheckbox.checked));
+    } catch {
+      // Same as theme/accent above - the choice just won't survive a restart.
+    }
+  });
+
   // ---------- Tabs ----------
 
   function activateTab(tab) {
@@ -1456,6 +1514,11 @@
     // its own Settings -> Experimental Features -> Wine Food Pairings
     // toggle (see applyExperimentalPairings).
     els.pairingsField.hidden = isBeer || isSign || !experimentalPairingsEnabled;
+    // Same rule/reasoning again - printed onto the .card only
+    // (buildWineProfileHtml in card.js), gated behind its own Settings ->
+    // Experimental Features -> Wine Profile toggle (see
+    // applyExperimentalWineProfile).
+    els.profileField.hidden = isBeer || isSign || !experimentalProfileEnabled;
     els.beerFields.hidden = !isBeer || isSmallSign;
 
     // The store never runs a Super Sale on beer, so the option isn't just
@@ -1636,6 +1699,7 @@
       palate: els.palate.value.trim(),
       finish: els.finish.value.trim(),
       pairings: currentPairings.slice(),
+      wineProfile: { ...currentProfile },
       sku: els.sku.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
@@ -1722,6 +1786,12 @@
     // whatever the previous one left showing.
     renderPairingSuggestions(null);
     els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
+    // Same "always all five keys, default to 0/unrated" shape emptyWineProfile
+    // establishes - a talker saved before this field existed (or one with a
+    // partial/malformed wineProfile) just falls back to 0 per missing key.
+    currentProfile = { ...emptyWineProfile(), ...(talker.wineProfile || {}) };
+    renderProfilePicker();
+    els.profileSuggestStatus.textContent = 'Type a Product Title, then click Suggest Profile.';
     els.sku.value = talker.sku || '';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
@@ -1765,6 +1835,9 @@
     renderPairingsList();
     renderPairingSuggestions(null);
     els.pairingsSuggestStatus.textContent = 'Type a Product Title, then click Suggest Pairings.';
+    currentProfile = emptyWineProfile();
+    renderProfilePicker();
+    els.profileSuggestStatus.textContent = 'Type a Product Title, then click Suggest Profile.';
     currentMashBill = [];
     renderMashBillList();
     // "Save to Library" is per-editing-session state, not part of the
@@ -2183,6 +2256,65 @@
     renderPairingsList();
     refreshPreview();
   });
+
+  // ---------- Wine Profile (Settings -> Experimental Features -> Wine
+  // Profile) ----------
+  //
+  // WINE_PROFILE_CATEGORIES/suggestWineProfile are plain globals defined in
+  // card.js (same convention as WINE_PAIRING_RULES/detectWinePairings right
+  // above, which this file already calls directly) - card.js's <script>
+  // tag loads before this one's, see index.html.
+
+  // Builds all 5 rows fresh from WINE_PROFILE_CATEGORIES every time
+  // currentProfile changes, rather than patching individual dots in place -
+  // simpler, and cheap enough at 5 rows x 5 dots. Delegated click handling
+  // below (one listener on the container, not one per dot) is what keeps a
+  // full re-render from needing to re-wire anything.
+  function renderProfilePicker() {
+    els.profilePicker.innerHTML = WINE_PROFILE_CATEGORIES.map((cat) => {
+      const val = currentProfile[cat.id] || 0;
+      const dotsHtml = Array.from({ length: 5 }, (_, i) => {
+        const n = i + 1;
+        return `<button type="button" class="wine-profile-dot ${n <= val ? 'is-on' : ''}" data-cat="${cat.id}" data-val="${n}" aria-label="${escapeHtml(cat.name)} ${n} of 5"></button>`;
+      }).join('');
+      return `
+        <div class="wine-profile-row">
+          <div class="wine-profile-row__name">${escapeHtml(cat.name)}</div>
+          <div class="wine-profile-row__dots">${dotsHtml}</div>
+          <div class="wine-profile-row__scale"><span>${escapeHtml(cat.low)}</span><span>${escapeHtml(cat.high)}</span></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  els.profilePicker.addEventListener('click', (e) => {
+    const btn = e.target.closest('.wine-profile-dot');
+    if (!btn) return;
+    const cat = btn.dataset.cat;
+    const val = Number(btn.dataset.val);
+    // Clicking the dot that's already the top of the current rating clears
+    // that category back to 0 (unrated) instead of just re-confirming the
+    // same value - the only way to get back to "not rated" once a category
+    // has been set, short of re-suggesting or resetting the whole form.
+    currentProfile[cat] = currentProfile[cat] === val ? 0 : val;
+    renderProfilePicker();
+    refreshPreview();
+  });
+
+  function suggestProfile() {
+    const rule = suggestWineProfile(els.title.value);
+    if (rule) {
+      currentProfile = { ...rule.profile };
+      renderProfilePicker();
+      refreshPreview();
+      els.profileSuggestStatus.textContent = `Detected ${rule.label} - adjust any dot below, or click Suggest Profile again after changing the title.`;
+    } else if (els.title.value.trim()) {
+      els.profileSuggestStatus.textContent = 'No matching varietal found in the title - set the dots manually below.';
+    } else {
+      els.profileSuggestStatus.textContent = 'Type a Product Title, then click Suggest Profile.';
+    }
+  }
+  els.suggestProfileBtn.addEventListener('click', suggestProfile);
 
   // ---------- Preview ----------
 
@@ -6530,6 +6662,7 @@
       applyMenuSize(currentMenuSize());
       els.experimentalBourbonCheckbox.checked = experimentalBourbonEnabled;
       els.experimentalPairingsCheckbox.checked = experimentalPairingsEnabled;
+      els.experimentalProfileCheckbox.checked = experimentalProfileEnabled;
     },
   });
 
@@ -7048,6 +7181,13 @@
   // above for why the two need to move together.
   applyExperimentalBourbon(experimentalBourbonEnabled);
   applyExperimentalPairings(experimentalPairingsEnabled);
+  applyExperimentalWineProfile(experimentalProfileEnabled);
+  // Unlike pairingsList/ratingsList (legitimately empty until something's
+  // added), the Wine Profile picker always shows all 5 rows - needs one
+  // explicit render on load, since resetForm()/fillForm() (the only other
+  // callers of renderProfilePicker) don't run until the form is actually
+  // submitted or a queued talker is opened for editing.
+  renderProfilePicker();
   applyFontSizeDefaults();
   renderReviewerSelect();
   renderQueue();
