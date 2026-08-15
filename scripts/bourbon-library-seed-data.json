@@ -7824,5 +7824,246 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Bomberger's 2026 Small Batch Bourbon",
+    "distillery": "Michter's Distillery",
+    "parentCompany": "Michter's Distillery, LLC (Chatham Imports)",
+    "category": "Kentucky Straight Bourbon (Limited Legacy Series Release)",
+    "sku": "35223",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Michter's keeps its sourcing and mash bills secretive across the board, including this Legacy Series release - recent Bomberger's releases reportedly include some malted rye in the grain bill, but exact percentages aren't disclosed. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Shenk's 2026 Small Batch Bourbon",
+    "distillery": "Michter's Distillery",
+    "parentCompany": "Michter's Distillery, LLC (Chatham Imports)",
+    "category": "Kentucky Sour Mash Whiskey (Limited Legacy Series Release)",
+    "sku": "35222",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Shenk's is actually labeled Kentucky Sour Mash Whiskey, not bourbon - a rye-forward recipe with caramel malted barley, made using the traditional sour mash (setback) process. Michter's doesn't disclose exact percentages. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Blade and Bow Bourbon",
+    "distillery": "Sourced blend (Diageo, undisclosed distilleries)",
+    "parentCompany": "Diageo",
+    "category": "Kentucky Straight Bourbon (Blended, Solera System)",
+    "sku": "26681",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Diageo won't confirm or deny a four-grain (corn/rye/wheat/malted barley) mash bill for standard Blade and Bow, and won't name the source distilleries beyond general area references (Louisville and Frankfort). A small solera-system component traces back to old Stitzel-Weller stock, but that's a tiny fraction of the blend. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Blade and Bow 22 Year",
+    "distillery": "Sourced blend (Diageo, undisclosed distilleries)",
+    "parentCompany": "Diageo",
+    "category": "Kentucky Straight Bourbon (Limited Release)",
+    "sku": "27659",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 78
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 7
+      }
+    ],
+    "nose": "Rich oak, dried fruit, and vanilla from extended age.",
+    "palate": "Caramel, baking spice, and dark fruit.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Diageo has disclosed a range for this specific limited release - approximately 15% rye and 7-10% malted barley, with the rest corn. The figure shown uses the low end of that malted barley range.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Blade and Bow 22 Year Old Bourbon Review",
+        "url": "https://www.whiskeyinmyweddingring.com/reviews/blade-and-bow-22-year-old-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Joseph Magnus Bourbon Sherry and Cognac",
+    "distillery": "Sourced blend (primarily MGP of Indiana)",
+    "parentCompany": "Jos. A. Magnus & Co.",
+    "category": "Straight Bourbon (Triple Cask Finished)",
+    "sku": "22945",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and dried fruit with a rich sherry/cognac sweetness.",
+    "palate": "Caramel, baking spice, and grape-brandy richness from the triple-cask finish.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Joseph Magnus built its reputation on large lots of 8-9 year MGP of Indiana bourbon, then triple-cask finishes it in used Oloroso sherry, Pedro Ximenez sherry, and cognac casks - the exact current blend/mash bill isn't officially disclosed. Using MGP's high-rye recipe as a placeholder.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Joseph Magnus Straight Bourbon Whiskey - Jos. A. Magnus",
+        "url": "https://josephmagnus.com/spirits/joseph-magnus-bourbon/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Joseph Magnus Cigar Blend Bourbon",
+    "distillery": "Sourced blend (MGP of Indiana + Barton 1792)",
+    "parentCompany": "Jos. A. Magnus & Co.",
+    "category": "Straight Bourbon (Blended)",
+    "sku": "23634",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and a rich tobacco-toasted oak note.",
+    "palate": "Caramel and baking spice, deeper and more complex from the multi-source blend.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Rumored (not officially confirmed by Joseph Magnus) to blend four sourced bourbons: a 9-year MGP (60/36/4), a 14-16 year Barton (74/18/8), a 20-year MGP (75/21/4), and a 10-year Joseph Magnus Triple Cask component (75/21/4). Using the most-cited MGP figure as a representative placeholder, not a confirmed single recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Joseph Magnus Murray Hill Club Bourbon",
+    "distillery": "Sourced blend (primarily MGP of Indiana)",
+    "parentCompany": "Jos. A. Magnus & Co.",
+    "category": "Straight Bourbon",
+    "sku": "22850",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and caramel.",
+    "palate": "Brown sugar, oak spice, and dried fruit.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "A private-selection Joseph Magnus expression - using the same MGP-sourcing placeholder as the brand's other bourbons, since the exact blend for this specific release isn't disclosed.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Kentucky Owl Batch 11YR Rye Mardi Gras",
+    "distillery": "Sourced blend (Kentucky/Indiana, undisclosed distilleries)",
+    "parentCompany": "Stoli Group",
+    "category": "Kentucky Straight Rye Whiskey (Blended, Limited Release)",
+    "sku": "33555",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "This is a Kentucky Owl \"Batch\" rye release (a blend of aged sourced ryes), distinct from Kentucky Owl's separate \"The Wiseman\" rye (which does carry a confirmed 95% rye mash bill) - the Batch program's blend components and mash bill aren't disclosed. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Stoli Group's Kentucky Owl releases The Wiseman Straight Rye Whiskey",
+        "url": "https://www.prnewswire.com/news-releases/stoli-groups-kentucky-owl-releases-the-wiseman-straight-rye-whiskey-301513375.html",
+        "tags": [
+          "Other"
+        ]
+      }
+    ]
   }
 ]
