@@ -647,10 +647,11 @@
     }
   },
   {
-    "title": "1792 Small Batch",
+    "title": "Ridgemont 1792 Small Batch Bourbon",
     "distillery": "Barton 1792 Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "4934",
     "grains": [
       {
         "grain": "Corn",
@@ -8062,6 +8063,204 @@
         "url": "https://www.prnewswire.com/news-releases/stoli-groups-kentucky-owl-releases-the-wiseman-straight-rye-whiskey-301513375.html",
         "tags": [
           "Other"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Ridgemont 1792 Bottled in Bond Bourbon",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "sku": "20615",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Vanilla, brown sugar, and mint over toasted oak, carried by 100 proof.",
+    "palate": "Black pepper and dried fruit with vanilla and warm oak spice.",
+    "finish": "Long, warm, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Sazerac markets 1792 as a higher-rye bourbon but hasn't published exact percentages for the Barton 1792 Distillery's recipe. This 74/18/8 figure is an approximation drawn from whiskey trade writing, not a distillery-confirmed number.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Ridgemont Reserve 1792 Barrel Full Proof",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon (Full/Barrel Proof)",
+    "sku": "13092",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Vanilla, brown sugar, and mint, more intense at full proof.",
+    "palate": "Black pepper and dried fruit with vanilla and warm oak spice, undiluted.",
+    "finish": "Long, hot, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Sazerac markets 1792 as a higher-rye bourbon but hasn't published exact percentages for the Barton 1792 Distillery's recipe. This 74/18/8 figure is an approximation drawn from whiskey trade writing, not a distillery-confirmed number.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Old Elk Cigar Cut Punch Cut Vol 1",
+    "distillery": "Old Elk Distillery",
+    "parentCompany": "Old Elk Distillery (independently owned)",
+    "category": "Straight Wheated Bourbon (Cigar Blend Finished)",
+    "sku": "38090",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 51
+      },
+      {
+        "grain": "Wheat",
+        "pct": 45
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Honey, vanilla, and a rich tobacco-toasted oak note.",
+    "palate": "Wheat sweetness and caramel, deeper from the cigar-blend finish.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Old Elk publishes this 51/45/4 high-wheat mash bill directly for its wheated bourbon line - Cigar Cut Punch Cut takes that same base through an additional finishing step.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Elk Distillery",
+        "url": "https://www.oldelk.com/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Elk Single Barrel 7 Year Wheat Whiskey - LOWC Pick",
+    "distillery": "Old Elk Distillery",
+    "parentCompany": "Old Elk Distillery (independently owned)",
+    "category": "Straight Wheat Whiskey (Single Barrel)",
+    "sku": "34854",
+    "grains": [
+      {
+        "grain": "Wheat",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat bread.",
+    "palate": "Sweet wheat cereal, caramel, and light spice, fuller from single-barrel selection.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Old Elk publishes this 95/5 mash bill directly for its Straight Wheat Whiskey. \"LOWC\" in the name suggests this is this store's own private barrel selection.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Elk Distillery",
+        "url": "https://www.oldelk.com/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Provenance Straight Bourbon 7 Year",
+    "distillery": "Sourced from a Bardstown, KY distillery (undisclosed, likely Bardstown Bourbon Company)",
+    "parentCompany": "Middleburg Barrel Company",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "40875",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Provenance (Middleburg Barrel Company) hand-selects casks from Kentucky distilleries but doesn't publish mash bills - this 7-year expression is disclosed only as \"distilled in Bardstown, KY,\" which strongly suggests Bardstown Bourbon Company without confirming it outright. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Middleburg Barrel Company Releases 1787 Provenance Bourbon - Fred Minnick",
+        "url": "https://www.fredminnick.com/2025/09/08/middleburg-barrel-company-releases-1787-provenance-bourbon/",
+        "tags": [
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Provenance Straight Bourbon 14 Year",
+    "distillery": "Sourced from a Frankfort, KY distillery (undisclosed, likely Buffalo Trace or Castle & Key)",
+    "parentCompany": "Middleburg Barrel Company",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "40876",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same brand and sourcing approach as the 7 Year - disclosed only as \"distilled in Frankfort, KY,\" which could point to Buffalo Trace or Castle & Key without confirming either. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Middleburg Barrel Company Releases 1787 Provenance Bourbon - Fred Minnick",
+        "url": "https://www.fredminnick.com/2025/09/08/middleburg-barrel-company-releases-1787-provenance-bourbon/",
+        "tags": [
+          "Distillery & Ownership"
         ]
       }
     ]
