@@ -307,10 +307,11 @@
     }
   },
   {
-    "title": "Jim Beam White Label",
+    "title": "Jim Beam Bourbon",
     "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
+    "sku": "12035",
     "grains": [
       {
         "grain": "Corn",
@@ -342,10 +343,11 @@
     }
   },
   {
-    "title": "Knob Creek",
+    "title": "Knob Creek 9 Year Small Batch Bourbon",
     "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
+    "sku": "11390",
     "grains": [
       {
         "grain": "Corn",
@@ -377,10 +379,11 @@
     }
   },
   {
-    "title": "Basil Hayden's",
+    "title": "Basil Hayden's Bourbon",
     "distillery": "Jim Beam Distillery (Clermont, KY)",
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
+    "sku": "14524",
     "grains": [
       {
         "grain": "Corn",
@@ -1854,6 +1857,730 @@
     "confidence": {
       "tier": "unknown",
       "note": "Placeholder only - grain composition for this specialty label has not been researched yet. The single-grain listing above is a non-answer, not a finding; replace it (and the tasting notes) once someone confirms the actual recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Jim Beam Black 7 Year Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "10213",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and dark caramel.",
+    "palate": "Full-bodied caramel and brown sugar, more oak than standard Jim Beam.",
+    "finish": "Long, warm, woody.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Jim Beam Black Double Aged Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "3896",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and dark caramel.",
+    "palate": "Full-bodied caramel and brown sugar, more oak than standard Jim Beam.",
+    "finish": "Long, warm, woody.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family. This is an older label name for the same Jim Beam Black expression.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Jim Beam Devil's Cut Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "16138",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Rich oak, vanilla, and caramel.",
+    "palate": "Bold oak and brown sugar, from extra wood-extracted whiskey blended back in.",
+    "finish": "Long, warm, woody.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family. Devil's Cut adds whiskey extracted from spent barrel wood back into the blend - a post-distillation process, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Jim Beam Double Oak Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "13570",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toasted oak, vanilla, and caramel.",
+    "palate": "Rich oak and brown sugar from a second charred-barrel finish.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family. Double Oak is finished in a second charred barrel after the first maturation - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Baker's 7 Year Single Barrel Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "25805",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and dried fruit.",
+    "palate": "Caramel and baking spice, full-bodied from single-barrel selection.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family. Baker's is part of Beam's Small Batch Collection alongside Knob Creek, Basil Hayden's, and Booker's.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Booker's Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Barrel Proof, Rotating Batch)",
+    "sku": "32118",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Rich oak, vanilla, and dark caramel with real barrel-proof heat.",
+    "palate": "Bold caramel, oak spice, and dried fruit, undiluted.",
+    "finish": "Long, hot, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family. Booker's is bottled uncut and unfiltered straight from the barrel, so proof and exact flavor vary batch to batch even though the mash bill doesn't.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Knob Creek 12 Year 100 Proof Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "25603",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Rich oak, caramel, and brown sugar.",
+    "palate": "Full-bodied maple, nutmeg, and charred oak, deeper than standard Knob Creek.",
+    "finish": "Long, warm, woody.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Knob Creek Bourbon Store Barrel",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "39735",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Rich oak, caramel, and brown sugar.",
+    "palate": "Full-bodied maple, nutmeg, and charred oak from single-barrel store selection.",
+    "finish": "Long, warm, woody.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared across the Jim Beam/Knob Creek/Baker's/Booker's family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Basil Hayden's Toast Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Toasted Barrel Finished)",
+    "sku": "29989",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Black pepper, mint, and a rounder toasted-oak sweetness.",
+    "palate": "Light-bodied but spicy, with rye pepper, honey, and toasted oak.",
+    "finish": "Peppery, clean, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory hasn't published exact figures for this recipe either, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for Beam's high-rye family (Basil Hayden's, Old Grand-Dad). The toasted-barrel finish happens after distillation and doesn't change the base mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Basil Hayden's - Our Bourbon",
+        "url": "https://www.basilhaydens.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Basil Hayden's 10 Year Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "23107",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Black pepper, mint, and light citrus, more developed oak from extra age.",
+    "palate": "Light-bodied but spicy, with rye pepper, honey, and nutmeg.",
+    "finish": "Peppery and clean, longer than standard Basil Hayden's.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory hasn't published exact figures for this recipe either, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for Beam's high-rye family (Basil Hayden's, Old Grand-Dad).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Basil Hayden's - Our Bourbon",
+        "url": "https://www.basilhaydens.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Grand-Dad Bourbon",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "12043",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Black pepper, rye spice, and vanilla.",
+    "palate": "Rye heat with oak, caramel, and a touch of citrus.",
+    "finish": "Warm and peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Old Grand-Dad's standard 80-proof bottling shares Beam's high-rye mash bill with Old Grand-Dad Bonded and Basil Hayden's - Beam Suntory hasn't published exact figures for this recipe either, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for Beam's high-rye family (Basil Hayden's, Old Grand-Dad).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Grand-Dad - Our Bourbon",
+        "url": "https://www.oldgranddad.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Grand-Dad 114 Proof",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Barrel Proof)",
+    "sku": "722",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Bold black pepper, rye spice, and vanilla.",
+    "palate": "Intense rye heat with oak, caramel, and dried fruit at barrel-proof strength.",
+    "finish": "Long, hot, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same high-rye mash bill as the rest of the Old Grand-Dad line, bottled at higher (114) proof - Beam Suntory hasn't published exact figures for this recipe either, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for Beam's high-rye family (Basil Hayden's, Old Grand-Dad).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Grand-Dad - Our Bourbon",
+        "url": "https://www.oldgranddad.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Grand-Dad 114 7 Year Single Barrel",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Barrel Proof, Single Barrel)",
+    "sku": "41612",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Bold black pepper, rye spice, and vanilla, more developed from extra age.",
+    "palate": "Intense rye heat with oak, caramel, and dried fruit, full-bodied from single-barrel selection.",
+    "finish": "Long, hot, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same high-rye mash bill as the rest of the Old Grand-Dad line - Beam Suntory hasn't published exact figures for this recipe either, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for Beam's high-rye family (Basil Hayden's, Old Grand-Dad).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Grand-Dad - Our Bourbon",
+        "url": "https://www.oldgranddad.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Basil Hayden's Malted Rye",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Malted Rye)",
+    "sku": "35542",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Rye",
+        "pct": 20
+      }
+    ],
+    "nose": "Baking spice, dark fruit, and toasted grain.",
+    "palate": "Rich rye spice layered with malt sweetness, distinct from standard Basil Hayden's.",
+    "finish": "Warm, spicy, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "A newer Beam expression that substitutes malted rye for part of the grain bill instead of standard (unmalted) rye - Beam Suntory hasn't published the exact split. This figure is a rough placeholder reflecting the 'malted rye' concept, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Basil Hayden's Dark Rye",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Blended Straight Whiskey (Bourbon/Canadian Rye Blend)",
+    "sku": "20454",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Dark fruit, baking spice, and a hint of port sweetness.",
+    "palate": "Rye spice and dried fruit with a soft, wine-like sweetness from the port influence.",
+    "finish": "Warm, fruity, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Dark Rye isn't a single mash bill - it's a blend of Basil Hayden's own high-rye bourbon with Canadian rye whiskey and a touch of port wine. The grains above reflect only the bourbon component; treat this entry as informational rather than a true single-mash-bill recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Knob Creek Rye Small Batch 7 Year",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Rye Whiskey",
+    "sku": "35500",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Mint, dill, and black pepper.",
+    "palate": "Rye spice, caramel, and a hint of cherry.",
+    "finish": "Dry, peppery, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory's standard rye whiskey mash bill sits close to the legal 51% rye minimum (51/37/12) - the figure most consistently cited across whiskey trade writing for Old Overholt, A. Overholt, and Knob Creek Rye.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "A. Overholt Straight Rye Whiskey",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Straight Rye Whiskey",
+    "sku": "37814",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Mint, black pepper, and light citrus.",
+    "palate": "Rye spice and brown sugar, lighter-bodied.",
+    "finish": "Dry, peppery, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory's standard rye whiskey mash bill sits close to the legal 51% rye minimum (51/37/12) - the figure most consistently cited across whiskey trade writing for Old Overholt, A. Overholt, and Knob Creek Rye. A. Overholt is Beam's value-tier rye alongside Old Overholt, believed to share the same recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Old Overholt 4YR Straight Rye Whiskey",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Straight Rye Whiskey",
+    "sku": "15328",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Mint, black pepper, and light citrus.",
+    "palate": "Rye spice and brown sugar, lighter-bodied.",
+    "finish": "Dry, peppery, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory's standard rye whiskey mash bill sits close to the legal 51% rye minimum (51/37/12) - the figure most consistently cited across whiskey trade writing for Old Overholt, A. Overholt, and Knob Creek Rye.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Old Overholt Straight Rye Bonded",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Straight Rye Whiskey (Bottled-in-Bond)",
+    "sku": "20830",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Mint, black pepper, and dried fruit.",
+    "palate": "Rye spice and brown sugar, carried by 100 proof.",
+    "finish": "Dry, peppery, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory's standard rye whiskey mash bill sits close to the legal 51% rye minimum (51/37/12) - the figure most consistently cited across whiskey trade writing for Old Overholt, A. Overholt, and Knob Creek Rye.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Old Overholt Straight Rye Whiskey 114",
+    "distillery": "Jim Beam Distillery (Clermont/Boston, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Straight Rye Whiskey (Barrel Proof)",
+    "sku": "30786",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Bold mint, black pepper, and dried fruit.",
+    "palate": "Intense rye spice and brown sugar at barrel-proof strength.",
+    "finish": "Long, hot, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Beam Suntory's standard rye whiskey mash bill sits close to the legal 51% rye minimum (51/37/12) - the figure most consistently cited across whiskey trade writing for Old Overholt, A. Overholt, and Knob Creek Rye.",
       "verifiedAt": ""
     },
     "references": []
