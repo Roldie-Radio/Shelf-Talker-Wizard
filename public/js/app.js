@@ -1012,7 +1012,6 @@
     importHtmlInput: document.getElementById('importHtmlInput'),
     importHtmlBtn: document.getElementById('importHtmlBtn'),
 
-    nameSearchInput: document.getElementById('nameSearchInput'),
     nameSearchSpinner: document.getElementById('nameSearchSpinner'),
     nameSearchResults: document.getElementById('nameSearchResults'),
     nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
@@ -1546,15 +1545,26 @@
     } else {
       els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
     }
+    if (mode !== 'name') {
+      // Leaving name mode (or clearing the field) - any in-flight/rendered
+      // name search is now stale, same as if the old separate Product Name
+      // field had been cleared.
+      clearTimeout(nameSearchDebounce);
+      if (nameSearchSelectedProduct) clearNameSearchSelection();
+      closeNameSearchResults();
+    }
     if (!mode) return;
     const targetMethod = mode === 'upc' ? 'scan' : mode === 'sku' || mode === 'internalUpc' ? 'sku' : 'searchName';
     if (targetMethod !== activeSearchMethod) setActiveMethodPanel(targetMethod);
     if (mode === 'name') {
-      // Set + dispatch rather than calling runNameSearch directly so Search
-      // by Name's own input handler still runs unchanged - same debounce,
-      // same clearNameSearchSelection() if a prior pick is now stale.
-      els.nameSearchInput.value = rawValue;
-      els.nameSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      // Picking a result sets this field's value to that product's title too
+      // (see selectNameSearchProduct) - without clearing the prior selection
+      // here, editing that text afterward would leave a stale "selected"
+      // product (and an enabled Add to Queue button) that no longer matches
+      // what's actually typed.
+      if (nameSearchSelectedProduct) clearNameSearchSelection();
+      clearTimeout(nameSearchDebounce);
+      nameSearchDebounce = setTimeout(() => runNameSearch(rawValue), 200);
     } else if (mode === 'sku') {
       els.skuInput.value = rawValue.trim();
     } else if (mode === 'internalUpc') {
@@ -1566,13 +1576,42 @@
 
   els.smartSearchInput.addEventListener('input', () => runSmartSearch(els.smartSearchInput.value));
 
+  els.smartSearchInput.addEventListener('focus', () => {
+    if (nameSearchResults.length && detectSmartSearchMode(els.smartSearchInput.value) === 'name') {
+      renderNameSearchResults();
+    }
+  });
+
   // A barcode scanner types its code fast and finishes with Enter (see
   // wireEnterTriggersClick below) - it may land in this field rather than
   // Scan UPC's own, so Enter here needs to trigger the matching lookup
-  // button itself, not just sync the value like every other keystroke does.
+  // button itself when scanning/SKU. When Search by Name's results dropdown
+  // is open, arrow keys move through it and Enter picks the highlighted row
+  // instead - the same keyboard nav the old separate Product Name field had.
   els.smartSearchInput.addEventListener('keydown', (e) => {
+    const resultsOpen = !els.nameSearchResults.hidden && nameSearchResults.length;
+    if (resultsOpen && e.key === 'ArrowDown') {
+      e.preventDefault();
+      nameSearchFocusIndex = Math.min(nameSearchFocusIndex + 1, nameSearchResults.length - 1);
+      renderNameSearchResults();
+      return;
+    }
+    if (resultsOpen && e.key === 'ArrowUp') {
+      e.preventDefault();
+      nameSearchFocusIndex = Math.max(nameSearchFocusIndex - 1, 0);
+      renderNameSearchResults();
+      return;
+    }
+    if (resultsOpen && e.key === 'Escape') {
+      closeNameSearchResults();
+      return;
+    }
     if (e.key !== 'Enter') return;
     e.preventDefault();
+    if (resultsOpen && nameSearchResults[nameSearchFocusIndex]) {
+      selectNameSearchProduct(nameSearchResults[nameSearchFocusIndex]);
+      return;
+    }
     const mode = detectSmartSearchMode(els.smartSearchInput.value);
     runSmartSearch(els.smartSearchInput.value);
     if (mode === 'sku' || mode === 'internalUpc') els.skuLookupBtn.click();
@@ -4649,9 +4688,9 @@
   // faster one for whatever staff picked next and clobber it - same
   // "newest wins" guard nameSearchAbortController gives the ranked list
   // above, but that AbortController is about to be reused for a fresh
-  // keystroke search the moment a result's clicked (see els.nameSearchInput's
-  // 'input' listener clearing the prior selection), so this pick's own
-  // in-flight Untappd request needs a guard that isn't tied to it.
+  // keystroke search the moment a result's clicked (see runSmartSearch's
+  // clearNameSearchSelection() call above), so this pick's own in-flight
+  // Untappd request needs a guard that isn't tied to it.
   let nameSearchSelectToken = 0;
 
   // Below this many characters, a search isn't run at all - a 1-character
@@ -4663,16 +4702,16 @@
   function closeNameSearchResults() {
     els.nameSearchResults.hidden = true;
     els.nameSearchResults.innerHTML = '';
-    els.nameSearchInput.setAttribute('aria-expanded', 'false');
-    els.nameSearchInput.removeAttribute('aria-activedescendant');
+    els.smartSearchInput.setAttribute('aria-expanded', 'false');
+    els.smartSearchInput.removeAttribute('aria-activedescendant');
     nameSearchFocusIndex = -1;
   }
 
   function renderNameSearchResults() {
     if (!nameSearchResults.length) {
-      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.nameSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Edit Talker.</div>`;
+      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.smartSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Edit Talker.</div>`;
       els.nameSearchResults.hidden = false;
-      els.nameSearchInput.setAttribute('aria-expanded', 'true');
+      els.smartSearchInput.setAttribute('aria-expanded', 'true');
       return;
     }
     els.nameSearchResults.innerHTML = nameSearchResults.map((p, i) => {
@@ -4691,11 +4730,11 @@
       `;
     }).join('');
     els.nameSearchResults.hidden = false;
-    els.nameSearchInput.setAttribute('aria-expanded', 'true');
+    els.smartSearchInput.setAttribute('aria-expanded', 'true');
     if (nameSearchFocusIndex >= 0) {
-      els.nameSearchInput.setAttribute('aria-activedescendant', `nameSearchResult-${nameSearchFocusIndex}`);
+      els.smartSearchInput.setAttribute('aria-activedescendant', `nameSearchResult-${nameSearchFocusIndex}`);
     } else {
-      els.nameSearchInput.removeAttribute('aria-activedescendant');
+      els.smartSearchInput.removeAttribute('aria-activedescendant');
     }
   }
 
@@ -4908,9 +4947,9 @@
     // re-enable Save for a selection that no longer exists.
     clearNameSearchSelection();
     nameSearchResults = [];
-    els.nameSearchInput.value = '';
+    els.smartSearchInput.value = '';
     els.nameSearchStatus.textContent = message || 'Added to queue! Search for the next product.';
-    els.nameSearchInput.focus();
+    els.smartSearchInput.focus();
     return true;
   }
 
@@ -4926,7 +4965,7 @@
   async function selectNameSearchProduct(product) {
     const myToken = ++nameSearchSelectToken;
     nameSearchSelectedProduct = product;
-    els.nameSearchInput.value = product.title;
+    els.smartSearchInput.value = product.title;
     closeNameSearchResults();
     els.nameSearchSaveBtn.disabled = false;
     const isBeer = currentCategory === 'beer';
@@ -5009,40 +5048,10 @@
     }
   }
 
-  els.nameSearchInput.addEventListener('input', () => {
-    // Picking a result sets the input's value to that product's title too
-    // (see selectNameSearchProduct) - without clearing the prior selection
-    // here, editing that text afterward would leave a stale "selected"
-    // product (and an enabled Add to Queue button) that no longer matches
-    // what's actually typed.
-    if (nameSearchSelectedProduct) clearNameSearchSelection();
-    clearTimeout(nameSearchDebounce);
-    nameSearchDebounce = setTimeout(() => runNameSearch(els.nameSearchInput.value), 200);
-  });
-
-  els.nameSearchInput.addEventListener('focus', () => {
-    if (nameSearchResults.length && els.nameSearchInput.value.trim().length >= NAME_SEARCH_MIN_CHARS) {
-      renderNameSearchResults();
-    }
-  });
-
-  els.nameSearchInput.addEventListener('keydown', (e) => {
-    if (els.nameSearchResults.hidden || !nameSearchResults.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      nameSearchFocusIndex = Math.min(nameSearchFocusIndex + 1, nameSearchResults.length - 1);
-      renderNameSearchResults();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      nameSearchFocusIndex = Math.max(nameSearchFocusIndex - 1, 0);
-      renderNameSearchResults();
-    } else if (e.key === 'Enter' && nameSearchResults[nameSearchFocusIndex]) {
-      e.preventDefault();
-      selectNameSearchProduct(nameSearchResults[nameSearchFocusIndex]);
-    } else if (e.key === 'Escape') {
-      closeNameSearchResults();
-    }
-  });
+  // Typing, focus, and arrow/Enter/Escape keyboard nav for this combobox are
+  // all wired on els.smartSearchInput itself now (see runSmartSearch and its
+  // neighboring focus/keydown listeners above) - this field is the only
+  // entry point, there's no separate Product Name input anymore.
 
   els.nameSearchResults.addEventListener('click', (e) => {
     const row = e.target.closest('.search-result');
@@ -5052,7 +5061,7 @@
   });
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('#nameSearchFieldWrap')) closeNameSearchResults();
+    if (!e.target.closest('#smartSearchFieldWrap')) closeNameSearchResults();
   });
 
   els.nameSearchSaveBtn.addEventListener('click', () => addNameSearchToQueue());

@@ -988,15 +988,15 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .help-text { font-size: 0.85rem; color: var(--ui-muted); margin: 0 0 0.75rem; }
 .help-text code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; }
 
-/* ---------- Search by Name ---------- */
+/* ---------- Smart search / Search by Name ---------- */
 
-/* #nameSearchFieldWrap is the .field itself - the results dropdown below is
+/* #smartSearchFieldWrap is the .field itself - the results dropdown below is
    positioned relative to it, not to the input alone, so it lines up under
    the full field width including its label row. It's a plain div rather
    than a <label> wrapping the whole thing (see the note in index.html) so a
    click on a result row can't implicitly refocus the input via label
    activation and reopen the dropdown right after a selection closes it. */
-#nameSearchFieldWrap { position: relative; }
+#smartSearchFieldWrap { position: relative; }
 
 .search-input-row { position: relative; }
 /* Room for .search-spinner below, so a long typed query doesn't run under it. */
@@ -1017,7 +1017,7 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   .search-spinner { animation: none; }
 }
 
-/* Anchored under the search field itself (see #nameSearchFieldWrap above),
+/* Anchored under the search field itself (see #smartSearchFieldWrap above),
    not a modal - staff keep typing and picking without ever leaving the tab,
    same as every other lookup here. */
 .search-results {

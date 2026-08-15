@@ -709,42 +709,40 @@
         <div class="type-product-divider"></div>
 
         <!-- Drives the panels below instead of replacing them: letters typed
-             here means a name (routes to Search by Name's live typeahead), a
-             short digit string is a SKU, a long one is a UPC - see
-             detectSmartSearchMode in app.js. Keeping the three panels intact
-             means Untappd fallback, the HTML-paste fallback, and keyboard
-             nav all keep working unchanged no matter which way a product got
-             found. There's no manual method picker anymore - this field is
-             the only entry point, and it always guesses right from what's
-             typed/scanned. -->
-        <label class="field" id="smartSearchFieldWrap">
-          <span>Search</span>
-          <input type="text" id="smartSearchInput" autocomplete="off" placeholder="Search by name, SKU, or scan a UPC&hellip;" />
-        </label>
+             here means a name, a short digit string is a SKU, a long one is
+             a UPC - see detectSmartSearchMode in app.js. For a name, this
+             field doubles as Search by Name's own live-typeahead combobox
+             (results dropdown + spinner right below it, driven by
+             runSmartSearch/runNameSearch in app.js) rather than proxying
+             into a separate "Product Name" field the way it used to -
+             there's no reason to duplicate the box when this is the only
+             entry point anyway. Keeping the sku/scan panels intact below
+             means their own Untappd fallback, HTML-paste fallback, and
+             fields keep working unchanged no matter which way a product got
+             found.
+             Deliberately a plain div, not a <label> wrapping everything the
+             way other .field elements are (compare Store SKU below) - a
+             <label> forwards a click anywhere inside it, including on a
+             result row below, to its associated control as an implicit
+             focus+click (see the labeled-control activation behavior in the
+             HTML spec). That would refocus #smartSearchInput on every result
+             click and immediately re-open the dropdown via the focus
+             handler, right after selecting a result closed it. The
+             <label for="smartSearchInput"> just below keeps the same
+             click-the-text-to-focus convenience without that side effect,
+             since it's now a sibling of the results dropdown, not an
+             ancestor of it. -->
+        <div class="field" id="smartSearchFieldWrap">
+          <label for="smartSearchInput"><span>Search</span></label>
+          <div class="search-input-row">
+            <input type="text" id="smartSearchInput" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nameSearchResults" aria-autocomplete="list" placeholder="Search by name, SKU, or scan a UPC&hellip;" />
+            <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
+          </div>
+          <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
+        </div>
         <p class="help-text" id="smartSearchHint" role="status" aria-live="polite">&nbsp;</p>
 
         <div class="method-panel is-active" data-method-panel="searchName" id="methodPanelSearchName">
-          <p class="help-text">Search your store's inventory by product name. This reads the same WinePOS export file Scan UPC uses &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
-          <!-- Deliberately a plain div, not a <label> wrapping everything the
-               way other .field elements are (compare Store SKU below) - a
-               <label> forwards a click anywhere inside it, including on a
-               result row below, to its associated control as an implicit
-               focus+click (see the labeled-control activation behavior in the
-               HTML spec). That would refocus #nameSearchInput on every result
-               click and immediately re-open the dropdown via the focus
-               handler below, right after selecting a result closed it. The
-               <label for="nameSearchInput"> just below keeps the same
-               click-the-text-to-focus convenience without that side effect,
-               since it's now a sibling of the results dropdown, not an
-               ancestor of it. -->
-          <div class="field" id="nameSearchFieldWrap">
-            <label for="nameSearchInput"><span>Product Name</span></label>
-            <div class="search-input-row">
-              <input type="text" id="nameSearchInput" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nameSearchResults" aria-autocomplete="list" placeholder="Start typing a product name&hellip;" />
-              <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
-            </div>
-            <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
-          </div>
           <div id="nameSearchSelectedWrap"></div>
           <div class="form-actions">
             <!-- Same "Add to Queue" pattern as SKU Lookup/Scan UPC's own save
