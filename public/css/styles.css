@@ -779,13 +779,10 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .tab-panel { display: none; }
 .tab-panel.is-active { display: block; }
 
-/* Search's own method chooser (Search by Name / SKU Lookup / Scan UPC) -
-   one level down from .tabs above, switching which .method-panel is
-   visible inside the Search tab-panel rather than which tab-panel is
-   visible. Same toggle-btn pills Manual Entry already used for e.g. Shelf
-   Talkers vs. Display Signs, not a second, nested .tabs strip - see
-   activateMethod in app.js. */
-.method-toggle { display: flex; gap: 0.3rem; margin-bottom: 1rem; }
+/* Search's three sub-panels (Search by Name / SKU Lookup / Scan UPC) - one
+   level down from .tabs above. Which .method-panel is visible inside the
+   Search tab-panel is picked automatically from smart search's own
+   detection, not a manual chooser - see setActiveMethodPanel in app.js. */
 .method-panel { display: none; }
 .method-panel.is-active { display: block; }
 

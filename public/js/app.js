@@ -864,11 +864,10 @@
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
-    // Search's own method chooser (Search by Name / SKU Lookup / Scan UPC) -
-    // one level down from the three tabs above, switching which
-    // .method-panel is visible inside the Search tab-panel. See
-    // activateMethod below.
-    methodToggleBtns: document.querySelectorAll('.method-toggle .toggle-btn'),
+    // Search's three sub-panels (Search by Name / SKU Lookup / Scan UPC) -
+    // one level down from the three tabs above. Which one is visible inside
+    // the Search tab-panel is decided automatically from what's typed into
+    // smartSearchInput - see setActiveMethodPanel/runSmartSearch below.
     methodPanels: document.querySelectorAll('.method-panel'),
     smartSearchInput: document.getElementById('smartSearchInput'),
     smartSearchHint: document.getElementById('smartSearchHint'),
@@ -1485,32 +1484,18 @@
     });
   });
 
-  // ---------- Search's own method chooser ----------
+  // ---------- Search's panel switching ----------
 
   // Search by Name, SKU Lookup, and Scan UPC used to be three separate
   // top-level tabs (each its own .tab/.tab-panel, handled by activateTab
-  // above); they're now one level down, as a radiogroup of .toggle-btns
-  // inside the Search tab-panel switching which .method-panel is visible.
-  // Mirrors activateTab's own is-active/hidden-state bookkeeping, just with
-  // the role="radio" attributes (aria-checked) that pattern uses instead of
-  // role="tab"'s aria-selected.
-  // Split from activateMethod below so smart search's routing (see further
-  // down) can switch panels without also triggering the scan-focus side
-  // effect below - stealing focus away from the smart search field mid-scan
-  // or mid-type would send the rest of what's being typed to the wrong
-  // input.
-  function setActiveMethodPanel(btn) {
-    els.methodToggleBtns.forEach((b) => {
-      const isActive = b === btn;
-      b.classList.toggle('is-active', isActive);
-      b.setAttribute('aria-checked', String(isActive));
-    });
-    els.methodPanels.forEach((p) => p.classList.toggle('is-active', p.dataset.methodPanel === btn.dataset.method));
-  }
+  // above), then a manually-picked radiogroup of buttons one level down;
+  // there's no manual picker anymore, so which .method-panel is visible is
+  // decided entirely by smart search's own detection below.
+  let activeSearchMethod = 'searchName';
 
-  function activateMethod(btn) {
-    setActiveMethodPanel(btn);
-    focusScanIfActive();
+  function setActiveMethodPanel(method) {
+    activeSearchMethod = method;
+    els.methodPanels.forEach((p) => p.classList.toggle('is-active', p.dataset.methodPanel === method));
   }
 
   // Scan UPC is meant for walking up and scanning immediately - put the
@@ -1521,23 +1506,17 @@
   // needs this: a scanner is the only "device" that starts typing without
   // clicking anything first.
   function focusScanIfActive() {
-    const activeMethod = [...els.methodToggleBtns].find((b) => b.classList.contains('is-active'));
     const searchTabActive = document.querySelector('.tab[data-tab="search"]').classList.contains('is-active');
-    if (searchTabActive && activeMethod && activeMethod.dataset.method === 'scan') els.scanUpcInput.focus();
+    if (searchTabActive && activeSearchMethod === 'scan') els.scanUpcInput.focus();
   }
 
-  els.methodToggleBtns.forEach((btn) => {
-    btn.addEventListener('click', () => activateMethod(btn));
-  });
+  // ---------- Smart search (routes to the panel above automatically) ----------
 
-  // ---------- Smart search (routes to the method above automatically) ----------
-
-  // One field above the method toggle that guesses which of the three
-  // lookups below applies, so day-to-day use doesn't require picking a
-  // method first: any letters means a product name, a short all-digit
-  // string is a SKU, a long one is a UPC. It drives the three panels above
-  // rather than replacing them - see the comment on #smartSearchFieldWrap
-  // in index.html for why.
+  // The only entry point into Search - guesses which of the three lookups
+  // below applies, so day-to-day use doesn't require picking a method: any
+  // letters means a product name, a short all-digit string is a SKU, a long
+  // one is a UPC. It drives the three panels below rather than replacing
+  // them - see the comment on #smartSearchFieldWrap in index.html for why.
   const SMART_SEARCH_UPC_MIN_DIGITS = 8; // UPC-A/EAN-13 run 12-13 digits, UPC-E 8 - store SKUs here are shorter
   // Our own self-printed labels barcode the store's SKU as "A" + that SKU
   // zero-padded to 7 digits (e.g. A0042420 for item 42420) rather than a
@@ -1559,10 +1538,6 @@
     return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
   }
 
-  function smartSearchMethodBtn(method) {
-    return [...els.methodToggleBtns].find((b) => b.dataset.method === method);
-  }
-
   function runSmartSearch(rawValue) {
     const mode = detectSmartSearchMode(rawValue);
     if (mode === 'internalUpc') {
@@ -1573,8 +1548,7 @@
     }
     if (!mode) return;
     const targetMethod = mode === 'upc' ? 'scan' : mode === 'sku' || mode === 'internalUpc' ? 'sku' : 'searchName';
-    const targetBtn = smartSearchMethodBtn(targetMethod);
-    if (targetBtn && !targetBtn.classList.contains('is-active')) setActiveMethodPanel(targetBtn);
+    if (targetMethod !== activeSearchMethod) setActiveMethodPanel(targetMethod);
     if (mode === 'name') {
       // Set + dispatch rather than calling runNameSearch directly so Search
       // by Name's own input handler still runs unchanged - same debounce,

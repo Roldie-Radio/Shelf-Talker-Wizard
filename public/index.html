@@ -675,15 +675,18 @@
       </div>
 
       <!-- Search by Name, SKU Lookup, and Scan UPC used to be three separate
-           top-level tabs; they're now one Search tab with a method chooser
-           (below Type/Product Type, same as every other tab) picking which
-           of the three .method-panels beneath it is visible - see
-           activateMethod in app.js. Each keeps its own fields/status/
-           fallbacks exactly as before, just nested one level deeper; none
-           of the three has its own Type/Product Type control anymore, since
-           the pair above now covers all three. Eyebrow + divider match
-           Manual Entry's copy of this row - see the note there, including
-           why these are div.field rather than <label> now. -->
+           top-level tabs; they're now one Search tab with a single smart
+           search field (below Type/Product Type, same as every other tab)
+           auto-detecting which of the three .method-panels beneath it should
+           be visible - see setActiveMethodPanel/runSmartSearch in app.js.
+           There's no manual method picker anymore; the field's own
+           name/SKU/UPC detection is the only way to switch. Each panel keeps
+           its own fields/status/fallbacks exactly as before, just nested one
+           level deeper; none of the three has its own Type/Product Type
+           control anymore, since the pair above now covers all three.
+           Eyebrow + divider match Manual Entry's copy of this row - see the
+           note there, including why these are div.field rather than <label>
+           now. -->
       <div class="tab-panel" data-panel="search" id="panelSearch" role="tabpanel" aria-labelledby="tabSearch" tabindex="0">
         <div class="type-product-eyebrow">Sets the template for everything below</div>
         <div class="field-row type-product-row">
@@ -705,25 +708,20 @@
         </div>
         <div class="type-product-divider"></div>
 
-        <!-- Drives the method-toggle/panels below instead of replacing them:
-             letters typed here means a name (routes to Search by Name's live
-             typeahead), a short digit string is a SKU, a long one is a UPC -
-             see detectSmartSearchMode in app.js. Keeping the toggle and its
-             three panels intact means Untappd fallback, the HTML-paste
-             fallback, and keyboard nav all keep working unchanged no matter
-             which way a product got found; the toggle also doubles as a
-             manual override when a digit string is genuinely ambiguous. -->
+        <!-- Drives the panels below instead of replacing them: letters typed
+             here means a name (routes to Search by Name's live typeahead), a
+             short digit string is a SKU, a long one is a UPC - see
+             detectSmartSearchMode in app.js. Keeping the three panels intact
+             means Untappd fallback, the HTML-paste fallback, and keyboard
+             nav all keep working unchanged no matter which way a product got
+             found. There's no manual method picker anymore - this field is
+             the only entry point, and it always guesses right from what's
+             typed/scanned. -->
         <label class="field" id="smartSearchFieldWrap">
           <span>Search</span>
           <input type="text" id="smartSearchInput" autocomplete="off" placeholder="Search by name, SKU, or scan a UPC&hellip;" />
         </label>
         <p class="help-text" id="smartSearchHint" role="status" aria-live="polite">&nbsp;</p>
-
-        <div class="method-toggle" role="radiogroup" aria-label="Search method" id="searchMethodToggle">
-          <button type="button" class="toggle-btn is-active" data-method="searchName" role="radio" aria-checked="true" id="methodSearchNameBtn" aria-controls="methodPanelSearchName">Search by Name</button>
-          <button type="button" class="toggle-btn" data-method="sku" role="radio" aria-checked="false" id="methodSkuBtn" aria-controls="methodPanelSku">SKU Lookup</button>
-          <button type="button" class="toggle-btn" data-method="scan" role="radio" aria-checked="false" id="methodScanBtn" aria-controls="methodPanelScan">Scan UPC</button>
-        </div>
 
         <div class="method-panel is-active" data-method-panel="searchName" id="methodPanelSearchName">
           <p class="help-text">Search your store's inventory by product name. This reads the same WinePOS export file Scan UPC uses &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
@@ -1248,7 +1246,7 @@
         <ul>
           <li><strong>Edit Talker</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field. <strong>Case Price</strong> (Large Display only, optional) prints bottom-right in the same bold style as Regular Price &mdash; Shelf Talkers and Small Display Signs have no room for it, so the field is hidden for those.</li>
           <li><strong>Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
-          <li><strong>Search</strong> &mdash; pick a method (<strong>Search by Name</strong>, <strong>SKU Lookup</strong>, or <strong>Scan UPC</strong>) and look the product up instead of typing everything by hand. See "Searching, by name, SKU, or UPC" below.</li>
+          <li><strong>Search</strong> &mdash; type a name, SKU, or UPC into one box and look the product up instead of typing everything by hand; it figures out which of the three you meant. See "Searching, by name, SKU, or UPC" below.</li>
         </ul>
 
         <h3>Talker sizes and styles</h3>
@@ -1266,7 +1264,7 @@
         <p>Either way, review the fields, then click <strong>Add to Queue</strong> &mdash; a field the importer can't find just comes back blank. Fetching keeps you on the Website tab and keeps whatever Type/Talker Size you had selected, so you can paste another URL and repeat without re-picking anything. If a beer import reports Untappd blocked the request, wait a bit and try again, or enter the details by hand.</p>
 
         <h3>Searching, by name, SKU, or UPC</h3>
-        <p>The <strong>Search</strong> tab covers three lookup methods, picked with the row of buttons under Type/Product Type: <strong>Search by Name</strong>, <strong>SKU Lookup</strong>, and <strong>Scan UPC</strong>. All three share the Type and Product Type dropdowns above them instead of asking again per method.</p>
+        <p>The <strong>Search</strong> tab covers three lookup methods &mdash; <strong>Search by Name</strong>, <strong>SKU Lookup</strong>, and <strong>Scan UPC</strong> &mdash; behind a single search box under Type/Product Type: type a product name, a store SKU, or scan/type a UPC, and it detects which one you meant and switches automatically. All three share the Type and Product Type dropdowns above them instead of asking again per method.</p>
 
         <h3>Searching by product name</h3>
         <p>The <strong>Search by Name</strong> method looks products up by title instead of a SKU or UPC &mdash; useful when you know roughly what you're looking for but not its number. Like <strong>Scan UPC</strong> below, the matching itself reads the same product file WinePOS exports on this PC and never goes out to the internet, so it needs that export set up first (the same <strong>Advanced &rarr; Export File Settings&hellip;</strong> one-time setup). Start typing a product name and a list of the closest matches appears underneath the box, ranked so the best match is first &mdash; use the mouse, or &uarr;/&darr; and Enter, to pick one. Picking a result fills in the title, size, vintage, and price right away, same as the other lookup methods. For a <strong>Beer</strong> result, picking it also kicks off a quick Untappd search using that title &mdash; the same lookup <strong>SKU Lookup</strong> and <strong>Scan UPC</strong> already run for beer &mdash; and fills in the brewery, style, ABV, IBU, and rating a WinePOS export doesn't carry; the status line shows "Searching Untappd..." while that runs, and says so if Untappd has no match, same as those two methods. Review the fields, then click <strong>Add to Queue</strong>. If nothing close enough turns up, the list says so &mdash; add the item manually instead.</p>
