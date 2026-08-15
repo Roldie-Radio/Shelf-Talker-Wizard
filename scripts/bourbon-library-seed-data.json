@@ -6429,5 +6429,366 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Calumet 8YR Kentucky Bourbon",
+    "distillery": "Undisclosed Kentucky distillery (Western Spirits Beverage Co.)",
+    "parentCompany": "Western Spirits Beverage Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "35185",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Vanilla, caramel, and light rye spice.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Calumet Farm bourbon is produced by Western Spirits Beverage Company at an undisclosed partner Kentucky distillery (not distilled at the historic Calumet Farm itself), using this reported 74/18/8 high-rye mash bill across the line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Calumet Farm - FAQ",
+        "url": "https://www.calumetbourbon.com/faq",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Calumet 10YR Kentucky Bourbon",
+    "distillery": "Undisclosed Kentucky distillery (Western Spirits Beverage Co.)",
+    "parentCompany": "Western Spirits Beverage Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "33297",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Vanilla, caramel, and rye spice, more developed from extra age.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Long, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Calumet Farm bourbon is produced by Western Spirits Beverage Company at an undisclosed partner Kentucky distillery (not distilled at the historic Calumet Farm itself), using this reported 74/18/8 high-rye mash bill across the line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Calumet Farm - FAQ",
+        "url": "https://www.calumetbourbon.com/faq",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Calumet 15YR Single Rack Black Bourbon",
+    "distillery": "Undisclosed Kentucky distillery (Western Spirits Beverage Co.)",
+    "parentCompany": "Western Spirits Beverage Company",
+    "category": "Kentucky Straight Bourbon (Single Rack)",
+    "sku": "29148",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Rich vanilla, caramel, and deep oak from extended age.",
+    "palate": "Brown sugar, baking spice, and dried fruit.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Calumet Farm bourbon is produced by Western Spirits Beverage Company at an undisclosed partner Kentucky distillery (not distilled at the historic Calumet Farm itself), using this reported 74/18/8 high-rye mash bill across the line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Calumet Farm - FAQ",
+        "url": "https://www.calumetbourbon.com/faq",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Calumet Farm 18YR Decanter Bourbon",
+    "distillery": "Undisclosed Kentucky distillery (Western Spirits Beverage Co.)",
+    "parentCompany": "Western Spirits Beverage Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "39324",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Rich vanilla, caramel, and deep oak from extended age.",
+    "palate": "Brown sugar, baking spice, and dried fruit.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Calumet Farm bourbon is produced by Western Spirits Beverage Company at an undisclosed partner Kentucky distillery (not distilled at the historic Calumet Farm itself), using this reported 74/18/8 high-rye mash bill across the line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Calumet Farm - FAQ",
+        "url": "https://www.calumetbourbon.com/faq",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Calumet Farm Kentucky Bourbon",
+    "distillery": "Undisclosed Kentucky distillery (Western Spirits Beverage Co.)",
+    "parentCompany": "Western Spirits Beverage Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "1917",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Vanilla, caramel, and light rye spice.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Calumet Farm bourbon is produced by Western Spirits Beverage Company at an undisclosed partner Kentucky distillery (not distilled at the historic Calumet Farm itself), using this reported 74/18/8 high-rye mash bill across the line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Calumet Farm - FAQ",
+        "url": "https://www.calumetbourbon.com/faq",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Carter Straight Bourbon Whiskey Small Batch 18",
+    "distillery": "Sourced blend (undisclosed distilleries, batch-dependent)",
+    "parentCompany": "Old Carter Whiskey Co. (independently owned)",
+    "category": "Straight Bourbon (Small Batch, Cask Strength)",
+    "sku": "42086",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Old Carter sources every release from undisclosed distilleries and mash bills, and the blend composition genuinely changes batch to batch (confirmed sourcing has included Indiana/MGP and Tennessee whiskey in other batches, but not confirmed for this specific batch 18). Placeholder only, not a finding - would need the specific batch's own disclosure to fill in accurately.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Blood Oath Bourbon Pact #11",
+    "distillery": "Sourced blend of 3 Kentucky bourbons (undisclosed distilleries)",
+    "parentCompany": "Luxco (MGP Ingredients)",
+    "category": "Kentucky Straight Bourbon (Blended)",
+    "sku": "39679",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Blood Oath blends three sourced Kentucky bourbons of different ages and mash bill styles (historically a mix of high-rye, wheated, and standard recipes) into each numbered \"Pact\" - Luxco explicitly does not disclose the grain percentages or exact source distilleries for any Pact, including this one. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Blood Oath Pact 12",
+    "distillery": "Sourced blend of 3 Kentucky bourbons (undisclosed distilleries)",
+    "parentCompany": "Luxco (MGP Ingredients)",
+    "category": "Kentucky Straight Bourbon (Blended)",
+    "sku": "42265",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same as Pact #11 - Luxco blends three sourced Kentucky bourbons per Pact and doesn't disclose grain percentages or source distilleries for any release. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Rare Character Limited Release Bourbon",
+    "distillery": "Sourced blend (multiple distilleries, Kentucky/Tennessee/Indiana)",
+    "parentCompany": "Rare Character Whiskey Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Limited Release)",
+    "sku": "39339",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Rare Character sources from multiple distilleries and uses different mash bills across its various single-barrel and limited releases (a published bottle-code system distinguishes them), but this specific SKU's code/mash bill isn't identified here. Placeholder only, not a finding - matching this store's actual bottle against Rare Character's own bottle-code guide would resolve it.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Rare Character Limited Release Kentucky Straight Whiskey",
+    "distillery": "Sourced blend (multiple distilleries, Kentucky/Tennessee/Indiana)",
+    "parentCompany": "Rare Character Whiskey Co. (independently owned)",
+    "category": "Kentucky Straight Whiskey (Limited Release)",
+    "sku": "40791",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same sourcing/bottle-code situation as Rare Character's other limited releases - this specific SKU's mash bill isn't identified here. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Rare Character PLT-038",
+    "distillery": "Sourced blend (multiple distilleries, Kentucky/Tennessee/Indiana)",
+    "parentCompany": "Rare Character Whiskey Co. (independently owned)",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "41017",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "\"PLT-038\" is a Rare Character bottle code - the brand publishes a bottle-code guide that decodes source/mash bill per code, but that specific mapping isn't identified here. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Rare Character Pride of Anderson County",
+    "distillery": "Sourced blend (multiple distilleries, Kentucky/Tennessee/Indiana)",
+    "parentCompany": "Rare Character Whiskey Co. (independently owned)",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "42135",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "\"Anderson County\" in the name suggests Kentucky sourcing (likely Wild Turkey or Four Roses, both located in Anderson County, KY), but this isn't confirmed - Rare Character's exact source/mash bill per release isn't identified here. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
