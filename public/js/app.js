@@ -794,6 +794,9 @@
     shelfTalkerView: document.getElementById('shelfTalkerView'),
     libraryView: document.getElementById('libraryView'),
     libraryBackLink: document.getElementById('libraryBackLink'),
+    librarySyncDot: document.getElementById('librarySyncDot'),
+    librarySyncStatus: document.getElementById('librarySyncStatus'),
+    librarySyncNowBtn: document.getElementById('librarySyncNowBtn'),
     libraryFilterInput: document.getElementById('libraryFilterInput'),
     libraryChips: document.getElementById('libraryChips'),
     libraryStats: document.getElementById('libraryStats'),
@@ -5767,6 +5770,7 @@
   let libraryTierFilter = 'all';
   let libraryViewMode = 'grid';
   let librarySelectedId = null;
+  let librarySyncPollTimer = null;
 
   function libraryMatchesFilter(entry) {
     const tier = entry.confidence.tier;
@@ -5979,18 +5983,56 @@
     renderLibraryBody();
   });
 
+  // Reflects mashBillSync.js's own status (same data describeMashBillSyncStatus
+  // already renders for the Mash Bill Library dialog) directly on the Library
+  // screen's header band, so staff don't have to open that dialog just to see
+  // whether this PC's copy is current. The Server PC itself has nothing to
+  // pull, so it gets the dot but no Sync Now button.
+  function updateLibrarySyncUI(sync) {
+    els.librarySyncStatus.textContent = describeMashBillSyncStatus(sync);
+    const isServer = !!(sync && sync.isServer);
+    const isCurrent = !isServer && sync && sync.lastSyncedAt && !sync.lastError;
+    els.librarySyncDot.classList.toggle('is-stale', !isServer && !isCurrent);
+    els.librarySyncNowBtn.hidden = isServer;
+  }
+
+  // Forces an immediate pull instead of waiting up to ~30s for the puller's
+  // own interval - same pattern as the Mash Bill Library dialog's own Sync
+  // Now button, just reusing mashBillLibraryCache directly since this screen
+  // reads from it too.
+  els.librarySyncNowBtn.addEventListener('click', async () => {
+    els.librarySyncNowBtn.disabled = true;
+    els.librarySyncDot.classList.add('is-syncing');
+    els.librarySyncStatus.textContent = 'Syncing...';
+    try {
+      const resp = await fetch('/api/mashbills/sync-now', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not sync right now.');
+      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
+      renderLibraryChipsAndStats();
+      renderLibraryBody();
+      updateLibrarySyncUI(data.sync);
+    } catch (err) {
+      els.librarySyncStatus.textContent = withServerPcHint(err.message) || 'Could not sync right now.';
+    } finally {
+      els.librarySyncDot.classList.remove('is-syncing');
+      els.librarySyncNowBtn.disabled = false;
+    }
+  });
+
   // Called every time the rail switches to Library (see setActiveView
   // above) - re-fetches so the screen reflects the shared library's actual
   // current state rather than whatever this client happened to have cached
   // from the last recall banner check.
   function renderLibraryView() {
-    fetchMashBillLibrary().then(() => {
+    fetchMashBillLibrary().then((data) => {
       libraryViewMode = 'grid';
       librarySelectedId = null;
       els.libraryFilterInput.value = '';
       libraryFilterQuery = '';
       renderLibraryChipsAndStats();
       renderLibraryBody();
+      updateLibrarySyncUI(data && data.sync);
     });
   }
 
@@ -6622,6 +6664,8 @@
 
   function setActiveView(view) {
     activeRailView = view;
+    clearInterval(librarySyncPollTimer);
+    librarySyncPollTimer = null;
     els.railShelfTalkerBtn.classList.toggle('is-active', view === 'shelfTalker');
     els.railLibraryBtn.classList.toggle('is-active', view === 'library');
     els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
@@ -6643,6 +6687,16 @@
       rescalePreviewStage();
     } else if (view === 'library') {
       renderLibraryView();
+      // Keeps the sync status line (dot + timestamp) live while staff stay
+      // on this screen, since a sync can happen in the background on its
+      // own ~30s timer at any point - same "poll while open" pattern the
+      // Mash Bill Library dialog uses for its own sync status line. Doesn't
+      // re-render the grid itself, so browsing/a selected profile isn't
+      // disrupted mid-poll.
+      librarySyncPollTimer = setInterval(async () => {
+        const data = await fetchMashBillLibrary();
+        if (data) updateLibrarySyncUI(data.sync);
+      }, 5000);
     } else if (view === 'atlas') {
       renderAtlasView();
     }
