@@ -7394,5 +7394,435 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Boone County Amburana Cask Bourbon",
+    "distillery": "Boone County Distilling Co.",
+    "parentCompany": "Boone County Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Amburana Cask Finished)",
+    "sku": "35907",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Toasted grain, warm baking spice, and a distinctive cinnamon-clove sweetness from the Amburana wood.",
+    "palate": "Caramel and brown sugar layered with exotic Amburana spice.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Boone County Distilling reports this 75/21/4 mash bill for its core small batch line, with cask finishes applied afterward. Amburana (a Brazilian hardwood) finishing is a post-distillation barrel-treatment step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Boone County Small Batch Bourbon - distiller.com",
+        "url": "https://distiller.com/spirits/boone-county-small-batch-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Boone County Caribbean Rum Cask Bourbon",
+    "distillery": "Boone County Distilling Co.",
+    "parentCompany": "Boone County Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Rum Cask Finished)",
+    "sku": "37375",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Caramel, oak, and a tropical rum-cask sweetness.",
+    "palate": "Brown sugar and baking spice with molasses notes from the rum finish.",
+    "finish": "Warm, sweet, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Boone County Distilling reports this 75/21/4 mash bill for its core small batch line, with cask finishes applied afterward. The rum-cask finish is a post-distillation step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Boone County Small Batch Bourbon - distiller.com",
+        "url": "https://distiller.com/spirits/boone-county-small-batch-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Boone County Chicory Cask Bourbon",
+    "distillery": "Boone County Distilling Co.",
+    "parentCompany": "Boone County Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Chicory Finished)",
+    "sku": "37374",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Toasted grain, nutty chicory, and burnt-sugar sweetness.",
+    "palate": "Caramel and oak with a distinctive roasted-chicory bitterness.",
+    "finish": "Long, nutty, moderately sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Boone County Distilling reports this 75/21/4 mash bill for its core small batch line, with cask finishes applied afterward. Chicory infusion is a post-distillation flavoring step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Boone County Small Batch Bourbon - distiller.com",
+        "url": "https://distiller.com/spirits/boone-county-small-batch-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Augusta Buckner's 13 Year Cask Strength Single Barrel",
+    "distillery": "Augusta Distillery",
+    "parentCompany": "Augusta Distillery (independently owned)",
+    "category": "Kentucky Straight Bourbon (Single Barrel, Cask Strength)",
+    "sku": "40212",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Rich oak, vanilla, and dark caramel from extended age.",
+    "palate": "Bold brown sugar, oak spice, and dried fruit at cask strength.",
+    "finish": "Long, hot, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Augusta Distillery's going-forward standard mash bill is reported as 75/20/5 - not officially confirmed for this specific single-barrel/small-batch expression, but it's the distillery's own stated standard recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Augusta Distillery Crafts World-Class Bourbons - Forbes",
+        "url": "https://www.forbes.com/sites/joemicallef/2024/08/08/how-augusta-distillery-crafts-world-class-bourbons/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Augusta Old Route 8YR Single Barrel",
+    "distillery": "Augusta Distillery",
+    "parentCompany": "Augusta Distillery (independently owned)",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "37468",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Vanilla, caramel, and light rye spice.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Augusta Distillery's going-forward standard mash bill is reported as 75/20/5 - not officially confirmed for this specific single-barrel/small-batch expression, but it's the distillery's own stated standard recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Augusta Distillery Crafts World-Class Bourbons - Forbes",
+        "url": "https://www.forbes.com/sites/joemicallef/2024/08/08/how-augusta-distillery-crafts-world-class-bourbons/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Augusta Small Batch Bourbon Cask Strength",
+    "distillery": "Augusta Distillery",
+    "parentCompany": "Augusta Distillery (independently owned)",
+    "category": "Kentucky Straight Bourbon (Small Batch, Cask Strength)",
+    "sku": "41403",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Vanilla, caramel, and rye spice, more intense at cask strength.",
+    "palate": "Brown sugar, oak, and baking spice with real barrel-proof heat.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Augusta Distillery's going-forward standard mash bill is reported as 75/20/5 - not officially confirmed for this specific single-barrel/small-batch expression, but it's the distillery's own stated standard recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Augusta Distillery Crafts World-Class Bourbons - Forbes",
+        "url": "https://www.forbes.com/sites/joemicallef/2024/08/08/how-augusta-distillery-crafts-world-class-bourbons/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Augusta Distillery Cask Strength Wheated Bourbon",
+    "distillery": "Augusta Distillery",
+    "parentCompany": "Augusta Distillery (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon (Single Barrel, Cask Strength)",
+    "sku": "41438",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Wheat",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread with real barrel-proof heat, no rye bite.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Augusta publishes this 70/21/9 mash bill directly for its Wheated Single Barrel line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Augusta Distillery Crafts World-Class Bourbons - Forbes",
+        "url": "https://www.forbes.com/sites/joemicallef/2024/08/08/how-augusta-distillery-crafts-world-class-bourbons/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "NULU Single Private Barrel Bourbon",
+    "distillery": "MGP of Indiana (sourced, single barrel)",
+    "parentCompany": "Prohibition Craft Spirits (NuLu Whiskey Co.)",
+    "category": "Straight Bourbon (Single Barrel, Private Selection)",
+    "sku": "29682",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and caramel, fuller from single-barrel selection.",
+    "palate": "Black pepper, cinnamon, and brown sugar.",
+    "finish": "Spicy and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "NuLu is an independent bottler sourcing single barrels from MGP of Indiana across multiple mash bills (high-rye 75/21/4, higher-rye 60/36/4, and wheated 51/45/4 all appear in their program) - this store's specific barrel pick isn't identified here, so the standard high-rye figure is used as a placeholder rather than a confirmed match.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Single Barrel Program - Nulu Whiskey Co.",
+        "url": "https://nuluwhiskies.com/single-barrel-program",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Redwood Empire Emerald Giant Cask Strength",
+    "distillery": "Redwood Empire Whiskey (blend of MGP-sourced and house-distilled California rye)",
+    "parentCompany": "Redwood Empire Whiskey (independently owned)",
+    "category": "Straight Rye Whiskey (Cask Strength)",
+    "sku": "35719",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 92
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      },
+      {
+        "grain": "Wheat",
+        "pct": 3
+      }
+    ],
+    "nose": "Mint, dill, and dried fruit.",
+    "palate": "Bold rye spice, brown sugar, and light wheat sweetness at barrel-proof strength.",
+    "finish": "Long, hot, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Redwood Empire publishes this 92/5/3 mash bill for Emerald Giant, a blend of MGP of Indiana-sourced rye and their own California-distilled rye, aged 4-7 years.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Emerald Giant - Redwood Empire Whiskey",
+        "url": "https://redwoodempirewhiskey.com/whiskey/emerald-giant-rye/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Redwood Empire Lost Monarch Cask Strength",
+    "distillery": "Redwood Empire Whiskey (blend of bourbon and rye whiskeys)",
+    "parentCompany": "Redwood Empire Whiskey (independently owned)",
+    "category": "Blended Straight Whiskey (Cask Strength)",
+    "sku": "35068",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 55
+      },
+      {
+        "grain": "Corn",
+        "pct": 45
+      }
+    ],
+    "nose": "Rye spice and caramel layered with bourbon sweetness from the blend.",
+    "palate": "Brown sugar, oak, and rye pepper.",
+    "finish": "Long, warm, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Lost Monarch is a 55%-rye-whiskey / 45%-bourbon blend (by volume, not a single mash bill) of whiskeys aged 3-14 years, at least partly MGP-sourced. The figure above is illustrative of that blend ratio, not a real grain recipe - Redwood Empire's own site confirms this 55/45 whiskey-type split.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Lost Monarch - Redwood Empire Whiskey",
+        "url": "https://redwoodempirewhiskey.com/whiskey/small-batch-craft-whiskey-blend/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Redwood Empire Pipe Dream Toasted",
+    "distillery": "Redwood Empire Whiskey (blend, aged 4-14 years)",
+    "parentCompany": "Redwood Empire Whiskey (independently owned)",
+    "category": "Straight Bourbon (Triple Toasted Oak Finished)",
+    "sku": "41180",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Wheat",
+        "pct": 5
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Toasted oak, vanilla, and light rye spice.",
+    "palate": "Caramel and baking spice layered across French, Hungarian, and Garryana oak toasting.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Redwood Empire publishes approximately this mash bill for Pipe Dream, a blend of bourbons aged 4-14 years finished across three different toasted oak varieties (French, Hungarian, and Garryana).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Pipe Dream - Redwood Empire Whiskey",
+        "url": "https://redwoodempirewhiskey.com/whiskey/pipe-dream-bourbon/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   }
 ]
