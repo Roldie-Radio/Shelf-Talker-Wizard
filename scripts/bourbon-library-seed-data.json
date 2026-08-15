@@ -3669,5 +3669,365 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "New Riff Bourbon Bottled and Bond",
+    "distillery": "New Riff Distillery",
+    "parentCompany": "New Riff Distilling (independently owned)",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "sku": "26547",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 65
+      },
+      {
+        "grain": "Rye",
+        "pct": 30
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Rye spice, vanilla, and orchard fruit.",
+    "palate": "Baking spice, caramel, and a distinct rye bite, carried by 100 proof.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "New Riff Distilling official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "New Riff is unusually transparent for a craft distillery and publishes this 65/30/5 mash bill directly.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "New Riff Distilling - Our Whiskey",
+        "url": "https://www.newriffdistilling.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "New Riff Kentucky 8YR",
+    "distillery": "New Riff Distillery",
+    "parentCompany": "New Riff Distilling (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "37180",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 65
+      },
+      {
+        "grain": "Rye",
+        "pct": 30
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Rye spice, vanilla, and orchard fruit, more developed from extra age.",
+    "palate": "Baking spice, caramel, and rye bite with deeper oak.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "New Riff Distilling official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "New Riff is unusually transparent for a craft distillery and publishes this 65/30/5 mash bill directly.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "New Riff Distilling - Our Whiskey",
+        "url": "https://www.newriffdistilling.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "New Riff Kentucky Single Malt 7 Yr",
+    "distillery": "New Riff Distillery",
+    "parentCompany": "New Riff Distilling (independently owned)",
+    "category": "Kentucky Single Malt Whiskey",
+    "sku": "35890",
+    "grains": [
+      {
+        "grain": "Malted Barley",
+        "pct": 100
+      }
+    ],
+    "nose": "Toasted grain, honey, and light fruit.",
+    "palate": "Malty sweetness, caramel, and gentle spice.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "New Riff Distilling official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "New Riff's single malt line is 100% malted barley - also published directly by the distillery, separate from its bourbon mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "New Riff Distilling - Our Whiskey",
+        "url": "https://www.newriffdistilling.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Willett 4 Year Small Batch Bourbon",
+    "distillery": "Willett Distillery / Kentucky Bourbon Distillers",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Bourbon (Small Batch)",
+    "sku": "42273",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "KBD/Willett has historically blended sourced whiskey from multiple distilleries, and even after building its own pot stills in 2012 it doesn't disclose which bottlings are house-distilled, sourced, or blended, or in what proportions. The single-grain listing above is a placeholder, not a finding - needs real research (or a direct answer from the distillery) before trusting it.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Willett 8YR Bourbon",
+    "distillery": "Willett Distillery / Kentucky Bourbon Distillers",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "40603",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same sourcing opacity as the rest of the Willett bourbon line - KBD doesn't disclose which bottlings are house-distilled, sourced, or blended. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Willett Pot Still Reserve Bourbon",
+    "distillery": "Willett Distillery / Kentucky Bourbon Distillers",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "8232",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same sourcing opacity as the rest of the Willett bourbon line - KBD doesn't disclose which bottlings are house-distilled, sourced, or blended. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Willett Small Batch 4YR Rye",
+    "distillery": "Willett Distillery / Kentucky Bourbon Distillers",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Rye Whiskey",
+    "sku": "24627",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, dill, and black pepper.",
+    "palate": "Bold rye spice and brown sugar.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Willett's rye has historically been sourced from MGP of Indiana's well-documented 95/5 rye mash bill, but Willett has since added its own house rye distillation and doesn't disclose current sourcing per bottling - treat this as a lower-confidence guess based on its known history, not a confirmed current recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Noah's Mill Bourbon",
+    "distillery": "Kentucky Bourbon Distillers (Willett family)",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Bourbon (Small Batch, Barrel Proof)",
+    "sku": "8202",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Noah's Mill is a KBD small-batch bourbon blended from barrels of undisclosed age/source, bottled at high (114.3) proof - not reducible to a single mash bill without real research into current sourcing. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Rowan's Creek Bourbon",
+    "distillery": "Kentucky Bourbon Distillers (Willett family)",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Bourbon (Barrel Proof)",
+    "sku": "8203",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same KBD sourcing opacity as Noah's Mill - a blended small-batch bourbon whose current mash bill/sourcing isn't disclosed. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Old Bardstown Estate Bourbon",
+    "distillery": "Kentucky Bourbon Distillers (Willett family)",
+    "parentCompany": "Willett family (Kulsveen family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "42274",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "KBD's value-tier brand - sourcing and mash bill not disclosed. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Smooth Ambler Old Scout Straight Bourbon",
+    "distillery": "Smooth Ambler Spirits (sourced from MGP of Indiana)",
+    "parentCompany": "Smooth Ambler Spirits (Pernod Ricard)",
+    "category": "Straight Bourbon",
+    "sku": "36406",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and caramel.",
+    "palate": "Black pepper, cinnamon, and brown sugar.",
+    "finish": "Spicy and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Old Scout is sourced from MGP of Indiana's well-documented 75/21/4 high-rye bourbon recipe - the same mash bill behind Redemption Bourbon, extensively cited across whiskey trade writing.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Smooth Ambler Contradiction Rye",
+    "distillery": "Smooth Ambler Spirits (blend of sourced and house-distilled rye)",
+    "parentCompany": "Smooth Ambler Spirits (Pernod Ricard)",
+    "category": "Straight Rye Whiskey (Small Batch Blend)",
+    "sku": "36407",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 76
+      },
+      {
+        "grain": "Corn",
+        "pct": 19
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Rye spice, dill, and dried fruit from the blend of sources.",
+    "palate": "Layered rye pepper, vanilla, and brown sugar, more complex than a single-source rye.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Contradiction Rye is a small-batch blend of four different rye whiskies: two undisclosed Tennessee-distilled ryes (51% and 70% rye mash bills), one from MGP of Indiana (95% rye), and one from Smooth Ambler's own stills (88% rye). The figure above is an approximate blended average across those four components, not a single confirmed recipe - treat it as illustrative only.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Contradiction Rye Whiskey - Smooth Ambler",
+        "url": "https://smoothambler.com/contradiction-rye-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      },
+      {
+        "label": "Smooth Ambler Contradiction Rye (Batch 8) Review - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/smooth-ambler-contradiction-rye-batch-8",
+        "tags": [
+          "Mash Bill",
+          "Other"
+        ]
+      }
+    ]
   }
 ]
