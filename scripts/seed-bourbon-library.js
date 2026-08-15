@@ -4,17 +4,18 @@
 // run more than once: upsertMashBill matches by title, so re-running this
 // just refreshes the same five entries rather than duplicating them.
 //
-// These five are a deliberately mixed set of real, publicly-known bourbons
-// - Confirmed, Reported, and Estimated all appear (see confidence.tier
+// These 14 are a deliberately mixed set of real, publicly-known bourbons -
+// Confirmed, Reported, and Estimated all appear (see confidence.tier
 // below), because that mix is what the Mash Bill Confidence system exists
 // to represent honestly. None of these percentages are invented for this
-// app: Four Roses is the one distillery here that actually publishes exact
-// mash bill numbers, so it's the only "confirmed" entry; the rest are the
-// figures most consistently cited across whiskey trade writing for
-// distilleries (Buffalo Trace, MGP) that don't publish theirs, with that
-// caveat spelled out in each entry's confidence note rather than presented
-// as fact. Treat this as a starting point for staff to correct and expand,
-// not a finished reference.
+// app: Four Roses, Maker's Mark, Woodford Reserve, and Old Forester are the
+// distilleries here that actually publish their mash bill numbers, so
+// those are the "confirmed" entries; the rest are the figures most
+// consistently cited across whiskey trade writing (and, for a few, on-record
+// master-distiller interviews) for distilleries that don't publish theirs
+// to consumers, with that caveat spelled out in each entry's confidence
+// note rather than presented as fact. Treat this as a starting point for
+// staff to correct and expand, not a finished reference.
 
 const { upsertMashBill, closeDb } = require('../server/db');
 
@@ -127,6 +128,211 @@ const ENTRIES = [
       sources: [
         { label: 'MGP Ingredients - Distillery Products', url: 'https://www.mgpingredients.com' },
       ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Wild Turkey 101',
+    distillery: 'Wild Turkey Distilling Co.',
+    parentCompany: 'Campari Group',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 75 },
+      { grain: 'Rye', pct: 13 },
+      { grain: 'Malted Barley', pct: 12 },
+    ],
+    nose: 'Toffee, vanilla, and a burst of pepper spice.',
+    palate: 'Bold and full-bodied, with brown sugar, oak, and baking spice.',
+    finish: 'Long, dry, and peppery.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    confidence: {
+      tier: 'reported',
+      note: "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated.",
+      sources: [
+        { label: 'Wild Turkey Distilling Co. - Our Bourbon', url: 'https://www.wildturkeybourbon.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: "Maker's Mark",
+    distillery: "Maker's Mark Distillery",
+    parentCompany: 'Beam Suntory',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 70 },
+      { grain: 'Red Winter Wheat', pct: 16 },
+      { grain: 'Malted Barley', pct: 14 },
+    ],
+    nose: 'Vanilla, caramel, and a soft fruity sweetness with no rye bite.',
+    palate: 'Smooth and sweet, with baked bread, vanilla, and light spice from the wheat.',
+    finish: 'Soft, slightly sweet, and mellow.',
+    tastingSource: "Maker's Mark Distillery official product notes",
+    confidence: {
+      tier: 'confirmed',
+      note: "Maker's Mark is one of the small handful of distilleries that states its exact mash bill publicly - this 70/16/14 wheated recipe (wheat standing in for rye) is published directly by the distillery, not inferred from trade writing.",
+      sources: [
+        { label: "Maker's Mark - How It's Made", url: 'https://www.makersmark.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Woodford Reserve Distiller\'s Select',
+    distillery: 'Woodford Reserve Distillery',
+    parentCompany: 'Brown-Forman Corporation',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 72 },
+      { grain: 'Rye', pct: 18 },
+      { grain: 'Malted Barley', pct: 10 },
+    ],
+    nose: 'Dried fruit, vanilla, mint, and toasted oak.',
+    palate: 'Rich and layered, with cocoa, cinnamon, and ripe fruit.',
+    finish: 'Long, warm, and slightly smoky.',
+    tastingSource: 'Woodford Reserve Distillery official product notes',
+    confidence: {
+      tier: 'confirmed',
+      note: "Brown-Forman publishes this 72/18/10 mash bill directly for Woodford Reserve - it's the same base recipe (Brown-Forman's higher-rye mash bill) used across several of the company's bourbon brands.",
+      sources: [
+        { label: 'Woodford Reserve - Our Process', url: 'https://www.woodfordreserve.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Old Forester 86 Proof',
+    distillery: 'Old Forester Distillery',
+    parentCompany: 'Brown-Forman Corporation',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 72 },
+      { grain: 'Rye', pct: 18 },
+      { grain: 'Malted Barley', pct: 10 },
+    ],
+    nose: 'Brown sugar, orange peel, and mint.',
+    palate: 'Rich caramel and vanilla with a spicy rye backbone.',
+    finish: 'Warm and moderately long.',
+    tastingSource: 'Old Forester Distillery official product notes',
+    confidence: {
+      tier: 'confirmed',
+      note: "Old Forester shares Brown-Forman's 72/18/10 mash bill with Woodford Reserve - the company has been open about using the same base recipe across its bourbon brands, with barrel treatment and proofing driving the difference between them.",
+      sources: [
+        { label: 'Old Forester - Our Whiskey', url: 'https://www.oldforester.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Jim Beam White Label',
+    distillery: 'Jim Beam Distillery (Clermont/Boston, KY)',
+    parentCompany: 'Beam Suntory',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 75 },
+      { grain: 'Rye', pct: 13 },
+      { grain: 'Malted Barley', pct: 12 },
+    ],
+    nose: 'Vanilla, oak, and a hint of banana.',
+    palate: 'Light-bodied, with caramel, vanilla, and mild spice.',
+    finish: 'Short to moderate, slightly peppery.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    confidence: {
+      tier: 'reported',
+      note: "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared by several Beam-produced brands (this one, Knob Creek, Booker's, and others).",
+      sources: [
+        { label: 'Jim Beam - Our Bourbon', url: 'https://www.jimbeam.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Knob Creek',
+    distillery: 'Jim Beam Distillery (Clermont/Boston, KY)',
+    parentCompany: 'Beam Suntory',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 75 },
+      { grain: 'Rye', pct: 13 },
+      { grain: 'Malted Barley', pct: 12 },
+    ],
+    nose: 'Rich oak, caramel, and brown sugar.',
+    palate: 'Full-bodied, with maple, nutmeg, and charred oak.',
+    finish: 'Long, warm, and woody.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    confidence: {
+      tier: 'reported',
+      note: "Knob Creek is drawn from Jim Beam's standard 75/13/12 mash bill (the same recipe as Jim Beam White Label), aged longer and bottled at higher proof - Beam Suntory hasn't published exact figures to consumers, but this ratio is the one consistently cited for the whole Beam standard-bourbon family.",
+      sources: [
+        { label: 'Knob Creek - Our Story', url: 'https://www.knobcreek.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: "Basil Hayden's",
+    distillery: 'Jim Beam Distillery (Clermont, KY)',
+    parentCompany: 'Beam Suntory',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 63 },
+      { grain: 'Rye', pct: 27 },
+      { grain: 'Malted Barley', pct: 10 },
+    ],
+    nose: 'Black pepper, mint, and light citrus.',
+    palate: 'Light-bodied but spicy, with rye pepper, honey, and nutmeg.',
+    finish: 'Peppery and clean, moderate length.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    confidence: {
+      tier: 'reported',
+      note: "Basil Hayden's uses Beam's high-rye mash bill, the same recipe shared with Old Grand-Dad - not published in exact form by Beam Suntory, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for that recipe family.",
+      sources: [
+        { label: "Basil Hayden's - Our Bourbon", url: 'https://www.basilhaydens.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Elijah Craig Small Batch',
+    distillery: 'Heaven Hill Distillery',
+    parentCompany: 'Heaven Hill Brands (Shapira family, privately held)',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 75 },
+      { grain: 'Rye', pct: 13 },
+      { grain: 'Malted Barley', pct: 12 },
+    ],
+    nose: 'Vanilla, toasted oak, and caramel corn.',
+    palate: 'Smoky oak, nutmeg, and butterscotch.',
+    finish: 'Long, spicy, and slightly smoky.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    confidence: {
+      tier: 'reported',
+      note: "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and distinct from the wheated mash bill behind Larceny.",
+      sources: [
+        { label: 'Elijah Craig - Our Whiskey', url: 'https://elijahcraig.com' },
+      ],
+      verifiedAt: '',
+    },
+  },
+  {
+    title: 'Bulleit Bourbon',
+    distillery: 'Bulleit Distilling Co. (formerly sourced from Four Roses)',
+    parentCompany: 'Diageo',
+    category: 'Kentucky Straight Bourbon',
+    grains: [
+      { grain: 'Corn', pct: 68 },
+      { grain: 'Rye', pct: 28 },
+      { grain: 'Malted Barley', pct: 4 },
+    ],
+    nose: 'Nutmeg, oak, and green apple.',
+    palate: 'Bold rye spice with vanilla, maple, and a touch of citrus.',
+    finish: 'Long, dry, and spicy.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    confidence: {
+      tier: 'estimated',
+      note: "Diageo has described Bulleit as a high-rye bourbon but hasn't published exact percentages, and production has shifted over time from Four Roses-distilled stock to Diageo's own Bulleit Distilling Co. at the Stitzel-Weller site - this 68/28/4 figure is the ratio most consistently cited in whiskey trade writing, treat it as an approximation rather than a confirmed recipe.",
+      sources: [],
       verifiedAt: '',
     },
   },
