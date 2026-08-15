@@ -842,6 +842,16 @@
     untappdPickerOthersBlock: document.getElementById('untappdPickerOthersBlock'),
     untappdPickerUseRecBtn: document.getElementById('untappdPickerUseRecBtn'),
     untappdPickerStatus: document.getElementById('untappdPickerStatus'),
+
+    untappdFallbackOverlay: document.getElementById('untappdFallbackOverlay'),
+    untappdFallbackCloseBtn: document.getElementById('untappdFallbackCloseBtn'),
+    untappdFallbackUrl: document.getElementById('untappdFallbackUrl'),
+    untappdFallbackBtn: document.getElementById('untappdFallbackBtn'),
+    untappdFallbackStatus: document.getElementById('untappdFallbackStatus'),
+    untappdFallbackHtmlToggle: document.getElementById('untappdFallbackHtmlToggle'),
+    untappdFallbackHtmlSection: document.getElementById('untappdFallbackHtmlSection'),
+    untappdFallbackHtmlInput: document.getElementById('untappdFallbackHtmlInput'),
+    untappdFallbackHtmlBtn: document.getElementById('untappdFallbackHtmlBtn'),
     untappdConfirmOverlay: document.getElementById('untappdConfirmOverlay'),
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
     untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
@@ -951,6 +961,7 @@
     nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
     nameSearchSaveBtn: document.getElementById('nameSearchSaveBtn'),
     nameSearchStatus: document.getElementById('nameSearchStatus'),
+    nameSearchUntappdFallbackBtn: document.getElementById('nameSearchUntappdFallbackBtn'),
 
     skuHelpText: document.getElementById('skuHelpText'),
     skuInput: document.getElementById('skuInput'),
@@ -962,19 +973,13 @@
     skuHtmlUrl: document.getElementById('skuHtmlUrl'),
     skuHtmlInput: document.getElementById('skuHtmlInput'),
     skuHtmlBtn: document.getElementById('skuHtmlBtn'),
-    skuUntappdSection: document.getElementById('skuUntappdSection'),
-    skuUntappdUrl: document.getElementById('skuUntappdUrl'),
-    skuUntappdBtn: document.getElementById('skuUntappdBtn'),
-    skuUntappdStatus: document.getElementById('skuUntappdStatus'),
-    skuUntappdHtmlToggle: document.getElementById('skuUntappdHtmlToggle'),
-    skuUntappdHtmlSection: document.getElementById('skuUntappdHtmlSection'),
-    skuUntappdHtmlInput: document.getElementById('skuUntappdHtmlInput'),
-    skuUntappdHtmlBtn: document.getElementById('skuUntappdHtmlBtn'),
+    skuUntappdFallbackBtn: document.getElementById('skuUntappdFallbackBtn'),
 
     scanUpcInput: document.getElementById('scanUpcInput'),
     scanUpcLookupBtn: document.getElementById('scanUpcLookupBtn'),
     scanUpcStatus: document.getElementById('scanUpcStatus'),
     scanUpcSaveBtn: document.getElementById('scanUpcSaveBtn'),
+    scanUpcUntappdFallbackBtn: document.getElementById('scanUpcUntappdFallbackBtn'),
 
     exportSettingsOverlay: document.getElementById('exportSettingsOverlay'),
     exportSettingsCloseBtn: document.getElementById('exportSettingsCloseBtn'),
@@ -2983,7 +2988,7 @@
     // next SKU instead of still showing the one that was just added.
     els.skuInput.value = '';
     els.skuStatus.textContent = message || 'Added to queue! Enter another SKU to look up the next one.';
-    els.skuUntappdSection.hidden = true;
+    els.skuUntappdFallbackBtn.hidden = true;
     return true;
   }
 
@@ -3086,6 +3091,7 @@
     }
     els.scanUpcInput.value = '';
     els.scanUpcStatus.textContent = message || 'Added to queue! Scan the next one.';
+    els.scanUpcUntappdFallbackBtn.hidden = true;
     els.scanUpcInput.focus();
     return true;
   }
@@ -3099,6 +3105,10 @@
     }
     els.scanUpcLookupBtn.disabled = true;
     els.scanUpcStatus.textContent = isBeer ? 'Looking up UPC...' : 'Looking up UPC and checking the store site for a description...';
+    // Cleared out here rather than left to whichever branch below decides -
+    // a fresh lookup starting should never leave a previous UPC's fallback
+    // trigger sitting there pointed at stale readForm() state.
+    els.scanUpcUntappdFallbackBtn.hidden = true;
 
     try {
       const resp = await fetch('/api/upc-lookup', {
@@ -3129,8 +3139,9 @@
         if (picked) {
           addScannedUpcToQueue('Added to queue! Scan the next one.');
         } else {
+          els.scanUpcUntappdFallbackBtn.hidden = false;
           els.scanUpcStatus.textContent = 'Found it. Untappd had more than one possible match and none was picked - '
-            + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
+            + 'brewery/style/ABV/rating are blank. Try filling in from an Untappd link below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -3145,10 +3156,11 @@
         // store/description error could still show up here.
         const otherProblems = scanUpcProblems(data);
         const suffix = otherProblems ? ` ${otherProblems}` : '';
+        if (!confirmed) els.scanUpcUntappdFallbackBtn.hidden = false;
         els.scanUpcStatus.textContent = confirmed
           ? `Found it!${suffix} Review the fields, then click "Add to Queue".`
           : `Found it. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
-            + 'Review the fields, then click "Add to Queue".';
+            + 'Try filling in from an Untappd link below, or review the fields and add it as-is.';
         return;
       }
 
@@ -3159,7 +3171,10 @@
         // description) came back with nothing, or failed outright - don't
         // silently queue a result staff haven't had a chance to see was
         // incomplete. The fields stay filled in with whatever did resolve;
-        // Add to Queue below still works once they've been reviewed.
+        // Add to Queue below still works once they've been reviewed. Beer
+        // whose Untappd step specifically is what failed also gets the
+        // manual link fallback offered, same as SKU Lookup/Search by Name.
+        if (isBeer && data.untappdError) els.scanUpcUntappdFallbackBtn.hidden = false;
         els.scanUpcStatus.textContent = `Found it. ${problems} Review the fields, then click "Add to Queue".`;
       } else {
         // Every field the lookup needed is filled, with nothing left
@@ -3582,22 +3597,16 @@
     // Unlike applyImportedProduct, deliberately stays on the SKU Lookup tab
     // instead of switching to Manual Entry - the Live Preview panel already
     // updates live regardless of which tab is active, and for beer, staying
-    // put keeps the Untappd fallback section (right below) in view so staff
+    // put keeps the Untappd fallback trigger (right below) in view so staff
     // can use it immediately instead of switching tabs first.
 
     // Untappd's own search only ever fails for beer (see untappdError's
     // origin in enrichBeerFromUntappd) - offer the manual "paste the beer's
-    // Untappd URL/HTML" fallback below only then, and clear out anything
-    // left over from a previous SKU's attempt at it.
-    els.skuUntappdSection.hidden = !(isBeer && data.untappdError);
-    els.skuUntappdUrl.value = '';
-    els.skuUntappdStatus.textContent = '';
-    els.skuUntappdHtmlInput.value = '';
-    els.skuUntappdHtmlSection.hidden = true;
-    els.skuUntappdHtmlToggle.setAttribute('aria-expanded', 'false');
+    // Untappd URL/HTML" fallback (see openUntappdFallback) only then.
+    els.skuUntappdFallbackBtn.hidden = !(isBeer && data.untappdError);
   }
 
-  // Merges Untappd fields (from the manual URL/HTML fallback below) into
+  // Merges Untappd fields (from the manual URL/HTML fallback modal) into
   // whatever's already in the form - readForm()/fillForm() round-trip
   // rather than a fresh applySkuLookupProduct call, since by this point
   // staff may have already hand-edited fields the initial lookup filled in,
@@ -4027,9 +4036,9 @@
           // out) - reveal the same manual "paste an Untappd URL" fallback a
           // plain miss already offers below, rather than leaving no way
           // forward but Manual Entry.
-          els.skuUntappdSection.hidden = false;
+          els.skuUntappdFallbackBtn.hidden = false;
           els.skuStatus.textContent = 'Loaded from the store. Untappd had more than one possible match and none was picked - '
-            + 'try the Untappd URL box below, or review the fields and add it as-is.';
+            + 'try filling in from an Untappd link below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -4041,9 +4050,9 @@
         if (confirmed) {
           els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
         } else {
-          els.skuUntappdSection.hidden = false;
+          els.skuUntappdFallbackBtn.hidden = false;
           els.skuStatus.textContent = 'Loaded from the store. Not the right beer - brewery/style/ABV/rating left blank. '
-            + 'Try the Untappd URL box below, or review the fields and add it as-is.';
+            + 'Try filling in from an Untappd link below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -4094,9 +4103,9 @@
         if (picked) {
           addSkuLookupToQueue('Loaded from pasted HTML and added to queue! Enter another SKU to look up the next one.');
         } else {
-          els.skuUntappdSection.hidden = false;
+          els.skuUntappdFallbackBtn.hidden = false;
           els.skuStatus.textContent = 'Loaded from pasted HTML. Untappd had more than one possible match and none was picked - '
-            + 'try the Untappd URL box below, or review the fields and add it as-is.';
+            + 'try filling in from an Untappd link below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -4106,9 +4115,9 @@
         if (confirmed) {
           els.skuStatus.textContent = 'Loaded from pasted HTML! Review the fields, then click "Add to Queue".';
         } else {
-          els.skuUntappdSection.hidden = false;
+          els.skuUntappdFallbackBtn.hidden = false;
           els.skuStatus.textContent = 'Loaded from pasted HTML. Not the right beer - brewery/style/ABV/rating left blank. '
-            + 'Try the Untappd URL box below, or review the fields and add it as-is.';
+            + 'Try filling in from an Untappd link below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -4122,21 +4131,55 @@
     }
   });
 
-  // Manual fallback for a beer lookup whose automatic Untappd search came
-  // back empty (see applySkuLookupProduct's untappdError check above) -
-  // confirmed against a real beer that Untappd's search results only
-  // render client-side (an Algolia widget), so this app can never scrape
-  // them directly no matter the query. The beer's own page is a normal
-  // server-rendered page, though, so staff search Untappd themselves and
-  // hand this that page's URL.
-  els.skuUntappdBtn.addEventListener('click', async () => {
-    const untappdUrl = els.skuUntappdUrl.value.trim();
+  // Manual "paste an Untappd URL/HTML" fallback for a beer lookup whose
+  // automatic Untappd search came back empty or was declined - confirmed
+  // against a real beer that Untappd's search results only render
+  // client-side (an Algolia widget), so this app can never scrape them
+  // directly no matter which of the three search methods asked or what
+  // query it used. The beer's own page is a normal server-rendered page,
+  // though, so staff search Untappd themselves and hand this that page's
+  // URL. One shared modal (#untappdFallbackOverlay) rather than a copy per
+  // tab - see openUntappdFallback below - since /api/untappd-lookup and
+  // applyUntappdFields (readForm()/fillForm() round-trip, defined above)
+  // are already tab-agnostic; each tab's own trigger button just supplies
+  // where the "filled in!" status message belongs once the modal closes.
+  let untappdFallbackOnFilled = null;
+
+  const untappdFallbackModal = createModal({
+    overlay: els.untappdFallbackOverlay,
+    closeBtns: [els.untappdFallbackCloseBtn],
+  });
+
+  function openUntappdFallback(onFilled) {
+    untappdFallbackOnFilled = onFilled;
+    els.untappdFallbackUrl.value = '';
+    els.untappdFallbackStatus.textContent = '';
+    els.untappdFallbackHtmlInput.value = '';
+    els.untappdFallbackHtmlSection.hidden = true;
+    els.untappdFallbackHtmlToggle.setAttribute('aria-expanded', 'false');
+    untappdFallbackModal.open();
+    els.untappdFallbackUrl.focus();
+  }
+
+  // Common tail for both the URL fetch and the pasted-HTML parse below:
+  // merges the result into the form, hands the "filled in!" message to
+  // whichever tab opened the modal, and closes it - success only, each
+  // caller's own catch block leaves the modal open so staff can retry.
+  function finishUntappdFallback(data, loadedFrom) {
+    applyUntappdFields(data);
+    const message = `Filled in from ${loadedFrom}! Review the fields, then click "Add to Queue".`;
+    if (untappdFallbackOnFilled) untappdFallbackOnFilled(message);
+    untappdFallbackModal.close();
+  }
+
+  els.untappdFallbackBtn.addEventListener('click', async () => {
+    const untappdUrl = els.untappdFallbackUrl.value.trim();
     if (!untappdUrl) {
-      els.skuUntappdStatus.textContent = "Enter the beer's Untappd URL first.";
+      els.untappdFallbackStatus.textContent = "Enter the beer's Untappd URL first.";
       return;
     }
-    els.skuUntappdBtn.disabled = true;
-    els.skuUntappdStatus.textContent = 'Reading that Untappd page...';
+    els.untappdFallbackBtn.disabled = true;
+    els.untappdFallbackStatus.textContent = 'Reading that Untappd page...';
 
     try {
       const resp = await fetch('/api/untappd-lookup', {
@@ -4147,47 +4190,70 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
 
-      applyUntappdFields(data);
-      els.skuUntappdStatus.textContent = 'Filled in from Untappd! Review the fields, then click "Add to Queue".';
+      finishUntappdFallback(data, 'Untappd');
     } catch (err) {
-      els.skuUntappdStatus.textContent = err.message || 'Something went wrong reading that Untappd page.';
+      els.untappdFallbackStatus.textContent = err.message || 'Something went wrong reading that Untappd page.';
     } finally {
-      els.skuUntappdBtn.disabled = false;
+      els.untappdFallbackBtn.disabled = false;
     }
   });
 
   // "Untappd blocking that too? Paste the beer page's HTML instead" - same
   // paste-HTML pattern as skuHtmlToggle above, one level deeper.
-  els.skuUntappdHtmlToggle.addEventListener('click', () => {
-    els.skuUntappdHtmlSection.hidden = !els.skuUntappdHtmlSection.hidden;
-    els.skuUntappdHtmlToggle.setAttribute('aria-expanded', String(!els.skuUntappdHtmlSection.hidden));
+  els.untappdFallbackHtmlToggle.addEventListener('click', () => {
+    els.untappdFallbackHtmlSection.hidden = !els.untappdFallbackHtmlSection.hidden;
+    els.untappdFallbackHtmlToggle.setAttribute('aria-expanded', String(!els.untappdFallbackHtmlSection.hidden));
   });
 
-  els.skuUntappdHtmlBtn.addEventListener('click', async () => {
-    const html = els.skuUntappdHtmlInput.value;
+  els.untappdFallbackHtmlBtn.addEventListener('click', async () => {
+    const html = els.untappdFallbackHtmlInput.value;
     if (!html.trim()) {
-      els.skuUntappdStatus.textContent = "Paste the beer page's HTML first.";
+      els.untappdFallbackStatus.textContent = "Paste the beer page's HTML first.";
       return;
     }
-    els.skuUntappdHtmlBtn.disabled = true;
-    els.skuUntappdStatus.textContent = 'Reading pasted HTML...';
+    els.untappdFallbackHtmlBtn.disabled = true;
+    els.untappdFallbackStatus.textContent = 'Reading pasted HTML...';
 
     try {
       const resp = await fetch('/api/untappd-lookup-html', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current: readForm(), html, url: els.skuUntappdUrl.value.trim() }),
+        body: JSON.stringify({ current: readForm(), html, url: els.untappdFallbackUrl.value.trim() }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not read that pasted HTML.');
 
-      applyUntappdFields(data);
-      els.skuUntappdStatus.textContent = 'Filled in from pasted HTML! Review the fields, then click "Add to Queue".';
+      finishUntappdFallback(data, 'pasted HTML');
     } catch (err) {
-      els.skuUntappdStatus.textContent = err.message || 'Something went wrong reading that HTML.';
+      els.untappdFallbackStatus.textContent = err.message || 'Something went wrong reading that HTML.';
     } finally {
-      els.skuUntappdHtmlBtn.disabled = false;
+      els.untappdFallbackHtmlBtn.disabled = false;
     }
+  });
+
+  // Each tab's own trigger button just opens the shared modal with a
+  // callback that writes the "filled in!" message to that tab's own status
+  // line and clears its own trigger button (same reset addSkuLookupToQueue
+  // already did for SKU Lookup's version of this).
+  els.skuUntappdFallbackBtn.addEventListener('click', () => {
+    openUntappdFallback((message) => {
+      els.skuStatus.textContent = message;
+      els.skuUntappdFallbackBtn.hidden = true;
+    });
+  });
+
+  els.scanUpcUntappdFallbackBtn.addEventListener('click', () => {
+    openUntappdFallback((message) => {
+      els.scanUpcStatus.textContent = message;
+      els.scanUpcUntappdFallbackBtn.hidden = true;
+    });
+  });
+
+  els.nameSearchUntappdFallbackBtn.addEventListener('click', () => {
+    openUntappdFallback((message) => {
+      els.nameSearchStatus.textContent = message;
+      els.nameSearchUntappdFallbackBtn.hidden = true;
+    });
   });
 
   // ---------- Search by Name ----------
@@ -4482,6 +4548,7 @@
     nameSearchResults = [];
     els.nameSearchInput.value = '';
     els.nameSearchStatus.textContent = message || 'Added to queue! Search for the next product.';
+    els.nameSearchUntappdFallbackBtn.hidden = true;
     els.nameSearchInput.focus();
     return true;
   }
@@ -4508,6 +4575,10 @@
     nameSearchPriceMode = isBeer && productHasPackPrice(product) ? 'pack' : 'unit';
     applyNameSearchProduct(product, isBeer, nameSearchPriceMode);
     renderNameSearchSelected();
+    // Cleared here rather than left to whichever branch below decides - a
+    // fresh pick starting should never leave a previous pick's fallback
+    // trigger sitting there pointed at stale readForm() state.
+    els.nameSearchUntappdFallbackBtn.hidden = true;
 
     if (!isBeer) {
       els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
@@ -4547,7 +4618,9 @@
           // picker branches above.
           addNameSearchToQueue('Found it and added to queue! Search for the next product.');
         } else {
-          els.nameSearchStatus.textContent = 'Found it! Untappd had more than one possible match and none was picked - review the fields, then click "Add to Queue".';
+          els.nameSearchUntappdFallbackBtn.hidden = false;
+          els.nameSearchStatus.textContent = 'Found it! Untappd had more than one possible match and none was picked - '
+            + 'try filling in from an Untappd link below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -4561,18 +4634,23 @@
           renderNameSearchSelected();
         });
         if (myToken !== nameSearchSelectToken) return;
+        if (!confirmed) els.nameSearchUntappdFallbackBtn.hidden = false;
         els.nameSearchStatus.textContent = confirmed
           ? 'Found it! Review the fields, then click "Add to Queue".'
-          : 'Found it! Not the right beer - brewery/style/ABV/rating left blank. Review the fields, then click "Add to Queue".';
+          : 'Found it! Not the right beer - brewery/style/ABV/rating left blank. '
+            + 'Try filling in from an Untappd link below, or review the fields and add it as-is.';
         return;
       }
 
       applyNameSearchProduct(data, true, nameSearchPriceMode);
       renderNameSearchSelected();
-      els.nameSearchStatus.textContent = `Found it! Untappd: ${data.untappdError}`;
+      els.nameSearchUntappdFallbackBtn.hidden = false;
+      els.nameSearchStatus.textContent = `Found it! Untappd: ${data.untappdError} Try filling in from an Untappd link below, or review the fields and add it as-is.`;
     } catch (err) {
       if (myToken !== nameSearchSelectToken) return;
-      els.nameSearchStatus.textContent = `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`;
+      els.nameSearchUntappdFallbackBtn.hidden = false;
+      els.nameSearchStatus.textContent = `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'} `
+        + 'Try filling in from an Untappd link below, or review the fields and add it as-is.';
     } finally {
       if (myToken === nameSearchSelectToken) {
         els.nameSearchSpinner.hidden = true;

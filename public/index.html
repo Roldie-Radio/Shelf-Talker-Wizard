@@ -702,6 +702,10 @@
             <button type="button" class="btn btn--primary" id="nameSearchSaveBtn" disabled>Add to Queue</button>
           </div>
           <p class="help-text" id="nameSearchStatus" role="status" aria-live="polite"></p>
+
+          <!-- Same "paste an Untappd link instead" fallback SKU Lookup offers
+               - see its own comment for when this is shown. -->
+          <button type="button" class="link-btn" id="nameSearchUntappdFallbackBtn" hidden>Fill in the brewery/style/ABV/rating from an Untappd link instead</button>
         </div>
 
         <div class="method-panel" data-method-panel="sku" id="methodPanelSku">
@@ -733,26 +737,12 @@
           </div>
 
           <!-- Shown only after a beer lookup whose automatic Untappd search
-               came back empty (untappdError in the response) - Untappd's own
-               search results only render client-side, so this app can never
-               scrape them directly. Staff search Untappd themselves in a real
-               browser instead and hand this the beer's own page. -->
-          <div class="reviewer-manager" id="skuUntappdSection" hidden>
-            <p class="help-text">Untappd's automatic search came up empty here - its search results only load in a real browser, so this app can't read them directly. Search for the beer yourself on <a href="https://untappd.com" target="_blank" rel="noopener">untappd.com</a>, open its own page, and paste that page's URL below to fill in the brewery, style, ABV, IBU, and rating.</p>
-            <label class="field">
-              <span>Beer's Untappd URL</span>
-              <input type="url" id="skuUntappdUrl" placeholder="https://untappd.com/b/..." />
-            </label>
-            <button type="button" class="btn btn--primary" id="skuUntappdBtn">Fill from Untappd</button>
-            <p class="help-text" id="skuUntappdStatus" role="status" aria-live="polite"></p>
-
-            <button type="button" class="link-btn" id="skuUntappdHtmlToggle" aria-expanded="false" aria-controls="skuUntappdHtmlSection">Untappd blocking that too? Paste the beer page's HTML instead</button>
-            <div id="skuUntappdHtmlSection" hidden>
-              <p class="help-text">Open the beer's Untappd page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
-              <textarea id="skuUntappdHtmlInput" rows="6" aria-label="Pasted Untappd beer page HTML" placeholder="Paste the Untappd beer page's HTML source here..."></textarea>
-              <button type="button" class="btn btn--primary" id="skuUntappdHtmlBtn">Parse Pasted HTML</button>
-            </div>
-          </div>
+               came back empty or was declined (untappdError in the response,
+               a picker tie backed out of, or "not the right beer" on the
+               single-match confirm) - opens the shared #untappdFallbackOverlay
+               modal (see openUntappdFallback in app.js) so staff can paste in
+               the beer's own Untappd page instead. -->
+          <button type="button" class="link-btn" id="skuUntappdFallbackBtn" hidden>Fill in the brewery/style/ABV/rating from an Untappd link instead</button>
         </div>
 
         <!-- Looks products up by the manufacturer UPC printed on the bottle,
@@ -776,6 +766,10 @@
             <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
           </div>
           <p class="help-text" id="scanUpcStatus" role="status" aria-live="polite"></p>
+
+          <!-- Same "paste an Untappd link instead" fallback SKU Lookup offers
+               - see its own comment for when this is shown. -->
+          <button type="button" class="link-btn" id="scanUpcUntappdFallbackBtn" hidden>Fill in the brewery/style/ABV/rating from an Untappd link instead</button>
         </div>
       </div>
     </section>
@@ -983,6 +977,42 @@
       <div class="modal__footer">
         <button type="button" class="btn" id="untappdPickerCancelBtn">None of these / Cancel</button>
         <button type="button" class="btn btn--primary" id="untappdPickerUseRecBtn">Use Recommended Pick</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual "paste an Untappd URL/HTML" fallback for a beer lookup whose
+       automatic Untappd search came up empty or was declined (untappdError,
+       or staff backing out of untappdPickerOverlay above / saying "not the
+       right beer" to the single-match confirm below) - Untappd's own search
+       results only render client-side, so this app can never scrape them
+       directly no matter which of the three search methods asked. Staff
+       search Untappd themselves in a real browser and hand this the beer's
+       own page instead. Shared by Scan UPC, SKU Lookup, and Search by Name
+       (see openUntappdFallback in app.js) rather than three copies of this
+       same form - each tab's own trigger button just opens this with a
+       callback for where its result's status message belongs. -->
+  <div id="untappdFallbackOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="untappdFallbackTitle">
+      <div class="modal__header">
+        <h2 id="untappdFallbackTitle">Fill from Untappd</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="untappdFallbackCloseBtn">&times; Close</button>
+      </div>
+      <div class="untappd-picker-body">
+        <p class="help-text">Untappd's automatic search came up empty here - its search results only load in a real browser, so this app can't read them directly. Search for the beer yourself on <a href="https://untappd.com" target="_blank" rel="noopener">untappd.com</a>, open its own page, and paste that page's URL below to fill in the brewery, style, ABV, IBU, and rating.</p>
+        <label class="field">
+          <span>Beer's Untappd URL</span>
+          <input type="url" id="untappdFallbackUrl" placeholder="https://untappd.com/b/..." />
+        </label>
+        <button type="button" class="btn btn--primary" id="untappdFallbackBtn">Fill from Untappd</button>
+        <p class="help-text" id="untappdFallbackStatus" role="status" aria-live="polite"></p>
+
+        <button type="button" class="link-btn" id="untappdFallbackHtmlToggle" aria-expanded="false" aria-controls="untappdFallbackHtmlSection">Untappd blocking that too? Paste the beer page's HTML instead</button>
+        <div id="untappdFallbackHtmlSection" hidden>
+          <p class="help-text">Open the beer's Untappd page, right-click anywhere on it and choose "View Page Source" (or press Ctrl/Cmd+U), then select all and copy. Paste it below.</p>
+          <textarea id="untappdFallbackHtmlInput" rows="6" aria-label="Pasted Untappd beer page HTML" placeholder="Paste the Untappd beer page's HTML source here..."></textarea>
+          <button type="button" class="btn btn--primary" id="untappdFallbackHtmlBtn">Parse Pasted HTML</button>
+        </div>
       </div>
     </div>
   </div>
