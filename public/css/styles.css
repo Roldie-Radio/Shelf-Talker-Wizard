@@ -67,6 +67,12 @@
   --ui-danger-tint: rgba(210, 31, 31, 0.08);
   --ui-code-bg: #f0ece3;
   --ui-danger: #c81a1a;
+  /* Brighter than --ui-danger specifically for the delete-talker button on
+     the Live Preview card (see .card__delete-badge below) - that button
+     needs to read as an urgent, distinct action against a busy card, where
+     --ui-danger's tint-friendly red is too close to --sale-red already
+     printed on the talker itself. */
+  --ui-danger-bright: #ff2323;
 
   /* Mash Bill Confidence tiers (Bourbon Library profile page, see
      renderBourbonProfile in app.js) - three semantic tones, deliberately
@@ -139,6 +145,7 @@
   --ui-danger-tint: rgba(255, 107, 107, 0.14);
   --ui-code-bg: #302c28;
   --ui-danger: #ff8f8f;
+  --ui-danger-bright: #ff4d4d;
   --ui-good: #6fcf74;
   --ui-good-tint: rgba(111, 207, 116, 0.12);
   --ui-warn: #d68a3a;
@@ -1345,21 +1352,21 @@ h1, h2, h3 { margin: 0; }
 }
 .card__edit-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 50%;
+  left: 50%;
   background: var(--ui-accent);
   color: var(--ui-on-accent);
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   border-radius: 999px;
-  padding: 3px 7px 3px 6px;
+  padding: 5px 12px;
   opacity: 0;
-  transform: scale(0.85);
+  transform: translate(-50%, -50%) scale(0.85);
   transition: opacity 0.12s ease, transform 0.12s ease;
   pointer-events: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
   white-space: nowrap;
   z-index: 1;
 }
@@ -1368,7 +1375,123 @@ h1, h2, h3 { margin: 0; }
 .sign.is-editable:hover .card__edit-badge,
 .sign.is-editable:focus-visible .card__edit-badge {
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Delete-talker button that appears in the card's top-right corner
+   alongside the edit badge above - a small circular "X" styled with real
+   button depth (gradient fill + inset highlight/shadow) since, unlike the
+   edit badge, this is a destructive action and needs to read as a pressable
+   control rather than a passive label. Clicking it doesn't delete outright;
+   it swaps in .card__delete-confirm (below) since deletion can't be undone. */
+.card__delete-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #ffffff66;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ff4b4b 0%, var(--ui-danger-bright) 55%, #e01414 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.12s ease, transform 0.12s ease, filter 0.08s ease;
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    inset 0 -2px 3px rgba(0,0,0,0.25);
+  z-index: 1;
+}
+.card.is-editable:hover .card__delete-badge,
+.card.is-editable:focus-visible .card__delete-badge,
+.sign.is-editable:hover .card__delete-badge,
+.sign.is-editable:focus-visible .card__delete-badge {
+  opacity: 1;
   transform: scale(1);
+}
+.card__delete-badge:hover {
+  filter: brightness(1.08);
+  transform: scale(1.06);
+}
+.card__delete-badge:active {
+  transform: scale(0.94);
+  filter: brightness(0.96);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(0,0,0,0.15),
+    inset 0 1px 3px rgba(0,0,0,0.35);
+}
+.card__delete-badge svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 0.5px rgba(0,0,0,0.3));
+}
+
+/* Confirm-delete overlay, shown in place of the card's own content once
+   .card__delete-badge is clicked (see makeSheetPreviewEditable in app.js).
+   Sits above the click-to-edit affordance so a confirming card can't also
+   be clicked into edit mode underneath it. */
+.card__delete-confirm {
+  position: absolute;
+  inset: 0;
+  background: rgba(27, 27, 27, 0.85);
+  color: #fff;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 0 14px;
+  z-index: 2;
+  cursor: default;
+}
+.card__delete-confirm.is-open { display: flex; }
+
+/* Once the confirm overlay is open, hide the edit/delete badges underneath
+   it rather than relying on the overlay's own opacity to mask them - at
+   0.85 alpha they were still faintly visible through it. */
+.card.is-confirming-delete .card__edit-badge,
+.card.is-confirming-delete .card__delete-badge,
+.sign.is-confirming-delete .card__edit-badge,
+.sign.is-confirming-delete .card__delete-badge {
+  opacity: 0 !important;
+}
+.card__delete-confirm p {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.card__delete-confirm-row { display: flex; gap: 8px; }
+.card__delete-confirm button {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.card__delete-confirm-cancel {
+  background: transparent;
+  border-color: rgba(255,255,255,0.5);
+  color: #fff;
+}
+.card__delete-confirm-delete {
+  background: var(--ui-danger-bright);
+  color: #fff;
 }
 
 /* Auto-arrange preview: unlike the grid above (one uniform card/sign

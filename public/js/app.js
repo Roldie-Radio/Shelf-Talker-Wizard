@@ -2428,10 +2428,56 @@
       el.appendChild(badge);
       el.addEventListener('click', () => startEdit(talker.id));
       el.addEventListener('keydown', (e) => {
+        if (e.target !== el) return; // ignore bubbling from the delete/confirm buttons below
         if (e.key !== 'Enter' && e.key !== ' ') return;
         e.preventDefault();
         startEdit(talker.id);
       });
+
+      const deleteLabel = `Delete ${talker.title || 'this talker'}`;
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'card__delete-badge';
+      deleteBtn.setAttribute('aria-label', deleteLabel);
+      deleteBtn.title = deleteLabel;
+      deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18"/></svg>';
+
+      const confirm = document.createElement('div');
+      confirm.className = 'card__delete-confirm';
+      const confirmText = document.createElement('p');
+      confirmText.textContent = `Delete "${talker.title || 'this talker'}"?`;
+      const confirmRow = document.createElement('div');
+      confirmRow.className = 'card__delete-confirm-row';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'card__delete-confirm-cancel';
+      cancelBtn.textContent = 'Cancel';
+      const confirmDeleteBtn = document.createElement('button');
+      confirmDeleteBtn.type = 'button';
+      confirmDeleteBtn.className = 'card__delete-confirm-delete';
+      confirmDeleteBtn.textContent = 'Delete';
+      confirmRow.append(cancelBtn, confirmDeleteBtn);
+      confirm.append(confirmText, confirmRow);
+
+      // Every click target here stops propagation so it never bubbles up to
+      // el's own click-to-edit listener above.
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirm.classList.add('is-open');
+        el.classList.add('is-confirming-delete');
+      });
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirm.classList.remove('is-open');
+        el.classList.remove('is-confirming-delete');
+      });
+      confirmDeleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteTalker(talker.id);
+      });
+      confirm.addEventListener('click', (e) => e.stopPropagation());
+
+      el.append(deleteBtn, confirm);
     });
   }
 
