@@ -5957,5 +5957,477 @@
         ]
       }
     ]
+  },
+  {
+    "title": "High West Bourbon",
+    "distillery": "High West Distillery (sourced blend, MGP + undisclosed Kentucky)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Bourbon",
+    "sku": "6606",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Vanilla, caramel, and orchard fruit from the blend.",
+    "palate": "Rye spice, brown sugar, and oak from the layered sources.",
+    "finish": "Warm, moderate, complex.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "High West blends this from at least three sourced bourbons: a 2-year MGP of Indiana bourbon (75/21/4, the figure shown), a 6-year Kentucky bourbon, and a 13-year Kentucky bourbon - the other two components' exact mash bills aren't disclosed. High West doesn't distill its own bourbon at scale, so this is a sourced blend, not a single house recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West American Prairie Bourbon Review - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/high-west-american-prairie-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West Bourye Whiskey",
+    "distillery": "High West Distillery (sourced blend, bourbon + rye)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Whiskey (Bourbon/Rye Blend)",
+    "sku": "39048",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Caramel, vanilla, and rye spice from the bourbon/rye blend.",
+    "palate": "Brown sugar and oak layered with rye pepper.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Bourye blends straight bourbon and straight rye whiskeys together - High West hasn't published the exact components or ratio for this blend. Using the MGP high-rye bourbon figure as an illustrative placeholder, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West American Prairie Bourbon Review - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/high-west-american-prairie-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West Campfire",
+    "distillery": "High West Distillery (sourced blend, bourbon + rye + Scotch)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Whiskey (Bourbon/Rye/Peated Scotch Blend)",
+    "sku": "32505",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Smoky peat layered over caramel and rye spice - unusual for an American whiskey.",
+    "palate": "Bourbon sweetness, rye pepper, and campfire smoke from the peated Scotch component.",
+    "finish": "Long, smoky, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Campfire is a three-way blend across whiskey categories: straight bourbon (historically MGP's 75/20/5 recipe), straight rye (MGP's 95/5), and peated Scotch single malt. It isn't reducible to one mash bill - the figure shown reflects only the bourbon component, and the overall blend ratio isn't published.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West American Prairie Bourbon Review - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/high-west-american-prairie-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West Double Rye Whiskey 92 Proof",
+    "distillery": "High West Distillery (sourced blend, MGP + house)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Rye Whiskey",
+    "sku": "16994",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, black pepper, and citrus.",
+    "palate": "Rye spice and brown sugar with a malted-rye richness.",
+    "finish": "Long, dry, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Double Rye blends a young (2-year) MGP rye (95/5, the figure shown) with an older (2-7 year) High West house-distilled rye (80% rye/20% malted rye). The overall blend ratio isn't published.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West Rendezvous Rye Review - The Whiskey Shelf",
+        "url": "https://www.thewhiskeyshelf.com/high-west-rendezvous-rye-review/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West Rendezvous Whiskey 92 Proof",
+    "distillery": "High West Distillery (sourced blend, MGP + Barton)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Rye Whiskey",
+    "sku": "32026",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, dill, and dried fruit from the blend.",
+    "palate": "Rye spice, caramel, and butterscotch layered across sources.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Rendezvous Rye blends straight ryes from two sources: MGP of Indiana (95/5, the figure shown) and Barton 1792 Distillery (two different Barton rye mash bills, 53/37/10 and 80/10/10), aged 5-19 years. The overall blend ratio across these components isn't published.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West Rendezvous Rye Review - The Whiskey Shelf",
+        "url": "https://www.thewhiskeyshelf.com/high-west-rendezvous-rye-review/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West Midwinter Nights Dram Rye",
+    "distillery": "High West Distillery (sourced blend, MGP + Barton)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Rye Whiskey (Port Cask Finished)",
+    "sku": "5268",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, dried fruit, and a port-cask sweetness.",
+    "palate": "Rye spice and caramel layered with red-wine richness from the port finish.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Rendezvous Rye blends straight ryes from two sources: MGP of Indiana (95/5, the figure shown) and Barton 1792 Distillery (two different Barton rye mash bills, 53/37/10 and 80/10/10), aged 5-19 years. The overall blend ratio across these components isn't published. Midwinter Night's Dram takes this same Rendezvous Rye blend through an additional port cask finish.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West Rendezvous Rye Review - The Whiskey Shelf",
+        "url": "https://www.thewhiskeyshelf.com/high-west-rendezvous-rye-review/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West Oloroso Sherry Finish",
+    "distillery": "High West Distillery (sourced blend, MGP + Barton)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Rye Whiskey (Oloroso Sherry Cask Finished)",
+    "sku": "38132",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, dried fruit, and a nutty sherry sweetness.",
+    "palate": "Rye spice and caramel layered with Oloroso sherry richness.",
+    "finish": "Long, warm, nutty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Rendezvous Rye blends straight ryes from two sources: MGP of Indiana (95/5, the figure shown) and Barton 1792 Distillery (two different Barton rye mash bills, 53/37/10 and 80/10/10), aged 5-19 years. The overall blend ratio across these components isn't published. This expression takes the same Rendezvous Rye blend through an Oloroso sherry cask finish.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West Rendezvous Rye Review - The Whiskey Shelf",
+        "url": "https://www.thewhiskeyshelf.com/high-west-rendezvous-rye-review/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "High West The Prisoner's Share",
+    "distillery": "High West Distillery (sourced blend, MGP + Barton)",
+    "parentCompany": "Constellation Brands",
+    "category": "Blended Straight Rye Whiskey (Wine Cask Finished)",
+    "sku": "39598",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, dried fruit, and a red-wine sweetness.",
+    "palate": "Rye spice and caramel layered with dark fruit from the wine-cask finish.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Rendezvous Rye blends straight ryes from two sources: MGP of Indiana (95/5, the figure shown) and Barton 1792 Distillery (two different Barton rye mash bills, 53/37/10 and 80/10/10), aged 5-19 years. The overall blend ratio across these components isn't published. A collaboration with The Prisoner Wine Company - this expression finishes the same Rendezvous Rye blend in red wine casks.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "High West Rendezvous Rye Review - The Whiskey Shelf",
+        "url": "https://www.thewhiskeyshelf.com/high-west-rendezvous-rye-review/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Widow Jane 10YR Bourbon Brooklyn NY",
+    "distillery": "Widow Jane (Kentucky-sourced, undisclosed distillery)",
+    "parentCompany": "Widow Jane Distillery (Mark Anthony Brands)",
+    "category": "Straight Bourbon",
+    "sku": "10212",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Toasted corn, caramel, and dried fruit.",
+    "palate": "Rich vanilla, oak spice, and brown sugar.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Widow Jane sources this from an undisclosed Kentucky distillery (labeled only \"Kentucky Bourbon\") - this 75/21/4 figure has been reported for a Widow Jane bourbon expression, but the specific distillery and exact recipe for this age-stated release aren't confirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Widow Jane Baby Jane Bourbon - distiller.com",
+        "url": "https://distiller.com/spirits/widow-jane-baby-jane-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Widow Jane 13YR Bourbon Brooklyn NY",
+    "distillery": "Widow Jane (Kentucky-sourced, undisclosed distillery)",
+    "parentCompany": "Widow Jane Distillery (Mark Anthony Brands)",
+    "category": "Straight Bourbon",
+    "sku": "30370",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Toasted corn, caramel, and dried fruit, more developed from extra age.",
+    "palate": "Rich vanilla, oak spice, and brown sugar.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Same sourcing opacity as the 10 Year - an undisclosed Kentucky distillery. Using the same placeholder figure, not a confirmed recipe for this specific age-stated release.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Widow Jane 15YR The Vaults Bourbon",
+    "distillery": "Widow Jane (Kentucky-sourced, undisclosed distillery)",
+    "parentCompany": "Widow Jane Distillery (Mark Anthony Brands)",
+    "category": "Straight Bourbon",
+    "sku": "30556",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Toasted corn, caramel, and rich dried fruit from extended age.",
+    "palate": "Deep vanilla, oak spice, and brown sugar.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Same sourcing opacity as the rest of the age-stated Widow Jane line - an undisclosed Kentucky distillery. Placeholder figure, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Widow Jane Baby Jane",
+    "distillery": "Widow Jane Distillery (Brooklyn, NY - house distilled)",
+    "parentCompany": "Widow Jane Distillery (Mark Anthony Brands)",
+    "category": "Straight Bourbon (Heirloom Corn)",
+    "sku": "37278",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Rye",
+        "pct": 10
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Sweet toasted corn, vanilla, and light oak.",
+    "palate": "Caramel and gentle rye spice from Widow Jane's own heirloom corn.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Widow Jane publishes this 80/10/10 mash bill for Baby Jane, distilled using the distillery's own heirloom corn hybrid (Bloody Butcher x Wapsie Valley) grown near their Brooklyn site.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Widow Jane Baby Jane Bourbon - distiller.com",
+        "url": "https://distiller.com/spirits/widow-jane-baby-jane-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Widow Jane Decadence Bourbon",
+    "distillery": "Widow Jane (Kentucky-sourced, undisclosed distillery)",
+    "parentCompany": "Widow Jane Distillery (Mark Anthony Brands)",
+    "category": "Straight Bourbon (Maple Cask Finished)",
+    "sku": "33105",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Toasted corn, caramel, and rich maple sweetness.",
+    "palate": "Vanilla, oak spice, and toffee from the maple-cask finish.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Decadence is a blend of straight bourbons built on Widow Jane's 10 Year as a base, finished in barrels that formerly held Crown Maple syrup (Hudson Valley, NY) - not a sherry finish despite similar naming to some other brands' releases. Using the same undisclosed-Kentucky-sourcing placeholder as the 10 Year; not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Widow Jane Decadence - Widow Jane",
+        "url": "https://widowjane.com/whiskey/decadence",
+        "tags": [
+          "Mash Bill",
+          "Other"
+        ]
+      }
+    ]
   }
 ]
