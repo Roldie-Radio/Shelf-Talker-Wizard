@@ -527,6 +527,30 @@ h1, h2, h3 { margin: 0; }
 }
 .cite:hover { background: var(--ui-accent); color: var(--ui-on-accent); border-color: var(--ui-accent); }
 
+/* Bourbon profile page (renderBourbonProfile in app.js). The breadcrumb
+   sits directly above the title - the "All bourbons" exit used to live as
+   a small text link in the header band above, which scrolled out of view
+   on longer profiles and wasn't obvious as a back control in the first
+   place. */
+.library-crumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; margin-bottom: 0.9rem; }
+.library-crumb button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ui-accent-ink);
+  background: var(--ui-code-bg);
+  border: none;
+  border-radius: 6px;
+  padding: 0.32rem 0.65rem 0.32rem 0.5rem;
+  cursor: pointer;
+}
+.library-crumb button:hover { background: var(--ui-hover); }
+.library-crumb__sep { color: var(--ui-muted); }
+.library-crumb__current { color: var(--ui-muted); font-weight: 600; }
+
 /* Bourbon profile page (renderBourbonProfile in app.js). */
 .profile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
 .profile-head h2 { margin: 0; font-size: 1.4rem; }

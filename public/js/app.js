@@ -799,7 +799,6 @@
     appBar: document.getElementById('appBar'),
     shelfTalkerView: document.getElementById('shelfTalkerView'),
     libraryView: document.getElementById('libraryView'),
-    libraryBackLink: document.getElementById('libraryBackLink'),
     librarySyncDot: document.getElementById('librarySyncDot'),
     librarySyncStatus: document.getElementById('librarySyncStatus'),
     librarySyncNowBtn: document.getElementById('librarySyncNowBtn'),
@@ -6061,6 +6060,11 @@
       </div>` : '';
 
     els.libraryBody.innerHTML = `
+      <div class="library-crumb">
+        <button type="button" id="libraryCrumbBack"><span aria-hidden="true">&larr;</span> Bourbon Library</button>
+        <span class="library-crumb__sep">/</span>
+        <span class="library-crumb__current">${escapeHtml(entry.title)}</span>
+      </div>
       <div class="profile-head">
         <div>
           <h2>${escapeHtml(entry.title)}</h2>
@@ -6105,6 +6109,11 @@
       mashBillLibraryModal.open();
       loadMashBillLibraryEntryIntoForm(entry);
     });
+    document.getElementById('libraryCrumbBack').addEventListener('click', () => {
+      libraryViewMode = 'grid';
+      librarySelectedId = null;
+      renderLibraryBody();
+    });
     els.libraryBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         librarySelectedId = Number(btn.dataset.id);
@@ -6114,7 +6123,6 @@
   }
 
   function renderLibraryBody() {
-    els.libraryBackLink.hidden = libraryViewMode !== 'profile';
     if (libraryViewMode === 'profile') renderBourbonProfile();
     else renderLibraryGrid();
   }
@@ -6122,12 +6130,6 @@
   els.libraryFilterInput.addEventListener('input', (e) => {
     libraryFilterQuery = e.target.value;
     libraryViewMode = 'grid';
-    renderLibraryBody();
-  });
-  els.libraryBackLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    libraryViewMode = 'grid';
-    librarySelectedId = null;
     renderLibraryBody();
   });
 
