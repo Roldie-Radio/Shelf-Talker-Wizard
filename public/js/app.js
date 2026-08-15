@@ -760,6 +760,7 @@
     railLibraryBtn: document.getElementById('railLibraryBtn'),
     railAtlasBtn: document.getElementById('railAtlasBtn'),
     railSettingsBtn: document.getElementById('railSettingsBtn'),
+    appBar: document.getElementById('appBar'),
     shelfTalkerView: document.getElementById('shelfTalkerView'),
     libraryView: document.getElementById('libraryView'),
     libraryBackLink: document.getElementById('libraryBackLink'),
@@ -6539,6 +6540,11 @@
     els.shelfTalkerView.hidden = view !== 'shelfTalker';
     els.libraryView.hidden = view !== 'library';
     els.atlasView.hidden = view !== 'atlas';
+    // The Library and Atlas screens render their own header band (name,
+    // search, stats) the moment they're shown - the "Shelf Talker Wizard"
+    // app bar above it would just be a second, redundant header, so it
+    // only shows on the Shelf Talker screen that actually needs it.
+    els.appBar.hidden = view !== 'shelfTalker';
     if (view === 'shelfTalker') {
       // The preview stage reads 0 for its own width while
       // els.shelfTalkerView is hidden (display:none), so scalePreview

@@ -167,7 +167,15 @@ html, body {
 
 h1, h2, h3 { margin: 0; }
 
-.app { min-height: 100vh; display: flex; flex-direction: column; }
+/* Row, not column: .rail is the first child (see index.html) and .app-main
+   (menu bar/app bar/screens) is the second, so the rail sits beside that
+   whole column rather than below it - see .rail below for why. */
+.app { min-height: 100vh; display: flex; }
+
+/* Everything that isn't the rail - menu bar, app bar, and whichever of
+   .layout/#libraryView/#atlasView is active - stacked in its own column so
+   it scrolls independently of .rail beside it. */
+.app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
 /* ---------- Menu bar ---------- */
 
@@ -310,16 +318,14 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- App shell: persistent rail ---------- */
 
-/* Wraps .layout and #libraryView side by side with .rail - .menubar/.appbar
-   stay full-width siblings above this, unchanged. flex:1/min-height:0 so
-   .layout's own flex:1 (and .panel--preview's position:sticky inside it)
-   keeps working exactly as it did as a direct child of .app, just one level
-   deeper now. align-items:flex-start (instead of flex's default stretch)
-   is what makes the rail's own height come from its own content/CSS below
-   rather than getting stretched to match whichever of .layout/#libraryView
-   is tallest - the same reason .layout itself uses align-items:start for
-   .panel--preview (see below). Without it, the rail's background/border
-   would grow exactly as tall as the page and scroll away with it. */
+/* Wraps .layout and #libraryView/#atlasView side by side - .menubar/.appbar
+   stay full-width siblings above this, inside .app-main. flex:1/min-height:0
+   so .layout's own flex:1 (and .panel--preview's position:sticky inside it)
+   keeps working exactly as it did as a direct child of .app-main, just one
+   level deeper now. align-items:flex-start (instead of flex's default
+   stretch) is what makes each screen's own height come from its own
+   content rather than the group getting stretched to match whichever of
+   .layout/#libraryView/#atlasView is tallest. */
 .app-shell { flex: 1; min-height: 0; display: flex; align-items: flex-start; }
 
 /* Icon-only, no visible caption (title="" on each button gives the
@@ -328,13 +334,17 @@ h1, h2, h3 { margin: 0; }
    electron/main.js), so this stays as narrow as a comfortable click target
    allows rather than adding a text label's worth of extra width.
 
-   position:sticky/top:5.5rem is the same trick .panel--preview below uses
-   to stay put while the page scrolls - same top offset, since both sit
-   just under .menubar+.appbar. height:calc(100vh - 5.5rem) makes it a full
-   viewport-tall bar (not just as tall as its 3 icons) that's still pinned
-   rather than scrolling off with .layout/#libraryView's own content, and
-   overflow:hidden means it never grows its own scrollbar even if a future
-   addition of rail icons ever made a very short window tight. */
+   A sibling of .app-main (see index.html), not nested inside it, so it can
+   be pinned for the full window height, flush against the menu bar, with
+   position:sticky/top:0/height:100vh - rather than guessing at
+   .menubar+.appbar's combined height the way this used to (a hardcoded
+   top:5.5rem that was already short at the default Menu Bar Size, and fell
+   further behind at Large/Extra Large or once the app bar wrapped to two
+   lines at narrow widths - see the max-width:720px rule far below - letting
+   the rail, and the Settings icon riding at its bottom, drift out from
+   under the header instead of staying pinned to it). overflow:hidden means
+   it never grows its own scrollbar even if a future addition of rail icons
+   ever made a very short window tight. */
 .rail {
   flex: 0 0 auto;
   width: 56px;
@@ -346,8 +356,8 @@ h1, h2, h3 { margin: 0; }
   background: var(--ui-panel-alt);
   border-right: 1px solid var(--ui-border);
   position: sticky;
-  top: 5.5rem;
-  height: calc(100vh - 5.5rem);
+  top: 0;
+  height: 100vh;
   overflow: hidden;
 }
 .rail__icon {
