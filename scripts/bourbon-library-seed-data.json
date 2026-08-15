@@ -314,5 +314,265 @@
       "sources": [],
       "verifiedAt": ""
     }
+  },
+  {
+    "title": "Eagle Rare 10 Year",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 90 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 2 }
+    ],
+    "nose": "Toffee, orange peel, and leather with a light herbal note.",
+    "palate": "Cocoa, honey, and candied orange over toasted oak.",
+    "finish": "Dry, woody, and pleasantly long.",
+    "tastingSource": "Buffalo Trace Distillery official product notes",
+    "confidence": {
+      "tier": "reported",
+      "note": "Eagle Rare is drawn from the same low-rye Mash Bill #1 as Buffalo Trace itself - Sazerac confirms the shared recipe but, as with Buffalo Trace, doesn't publish exact percentages to consumers. This 90/8/2 figure is the one most consistently cited across whiskey trade writing for that mash bill.",
+      "sources": [
+        { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com" }
+      ],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "W.L. Weller Special Reserve",
+    "distillery": "Buffalo Trace Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Wheated Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Red Winter Wheat", "pct": 16 },
+      { "grain": "Malted Barley", "pct": 9 }
+    ],
+    "nose": "Caramel, vanilla, and orange blossom honey.",
+    "palate": "Soft brown sugar and baked bread, with light wheat sweetness instead of rye spice.",
+    "finish": "Smooth, mellow, and moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Weller uses Buffalo Trace's wheated mash bill (wheat standing in for rye) - the same recipe behind Pappy Van Winkle - but Sazerac has never published its exact percentages. This 75/16/9 figure is the ratio most frequently cited across whiskey trade writing, not a distillery-confirmed number.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Larceny Small Batch",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Wheated Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 68 },
+      { "grain": "Wheat", "pct": 20 },
+      { "grain": "Malted Barley", "pct": 12 }
+    ],
+    "nose": "Brown sugar, ripe banana, and honeysuckle.",
+    "palate": "Caramel and vanilla with a soft, bready wheat sweetness.",
+    "finish": "Gentle, mellow, and moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Larceny is built from Heaven Hill's wheated mash bill (wheat standing in for rye), distinct from the standard recipe behind Elijah Craig - Heaven Hill hasn't published exact figures to consumers, so this 68/20/12 ratio is an approximation drawn from whiskey trade writing, not a confirmed number.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Old Grand-Dad Bonded",
+    "distillery": "Jim Beam Distillery (Clermont, KY)",
+    "parentCompany": "Beam Suntory",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "grains": [
+      { "grain": "Corn", "pct": 63 },
+      { "grain": "Rye", "pct": 27 },
+      { "grain": "Malted Barley", "pct": 10 }
+    ],
+    "nose": "Black pepper, rye spice, and vanilla.",
+    "palate": "Bold rye heat with oak, caramel, and a touch of citrus, carried by its 100 proof.",
+    "finish": "Long, warm, and peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Old Grand-Dad shares Beam's high-rye mash bill with Basil Hayden's, bonded at 100 proof instead of Basil Hayden's lower proof - not published in exact form by Beam Suntory, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for that recipe family.",
+      "sources": [
+        { "label": "Old Grand-Dad - Our Bourbon", "url": "https://www.oldgranddad.com" }
+      ],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Angel's Envy",
+    "distillery": "Angel's Envy Distillery",
+    "parentCompany": "Bacardi Limited",
+    "category": "Kentucky Straight Bourbon (Port Barrel Finished)",
+    "grains": [
+      { "grain": "Corn", "pct": 72 },
+      { "grain": "Rye", "pct": 18 },
+      { "grain": "Malted Barley", "pct": 10 }
+    ],
+    "nose": "Dried fruit, toffee, and toasted oak with a hint of mint from the port finish.",
+    "palate": "Caramel and ripe fruit, with light tannin and red-wine sweetness from the port cask.",
+    "finish": "Smooth, fruity, and gently tannic.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Angel's Envy has never published a mash bill for its base bourbon (distilled at its own Louisville site since 2016, sourced before that), and its defining trait - a finish in tawny port pipes - happens after distillation anyway. This 72/18/10 figure is a rough, low-confidence placeholder based on typical Kentucky bourbon proportions, not a confirmed recipe.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "1792 Small Batch",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 74 },
+      { "grain": "Rye", "pct": 18 },
+      { "grain": "Malted Barley", "pct": 8 }
+    ],
+    "nose": "Vanilla, brown sugar, and mint over toasted oak.",
+    "palate": "Black pepper and dried fruit, with vanilla and warm oak spice.",
+    "finish": "Long, warm, and peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Sazerac markets 1792 as a higher-rye bourbon but hasn't published exact percentages for the Barton 1792 Distillery's recipe. This 74/18/8 figure is an approximation drawn from whiskey trade writing, not a distillery-confirmed number.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Rebel Yell",
+    "distillery": "Lux Row Distillers",
+    "parentCompany": "Luxco (MGP Ingredients)",
+    "category": "Kentucky Straight Wheated Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 68 },
+      { "grain": "Wheat", "pct": 20 },
+      { "grain": "Malted Barley", "pct": 12 }
+    ],
+    "nose": "Honey, caramel, and light oak.",
+    "palate": "Soft wheat sweetness with vanilla and brown sugar, no rye bite.",
+    "finish": "Smooth, mellow, short to moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Rebel Yell has always been a wheated bourbon (wheat standing in for rye) - historically sourced, now distilled at Lux Row Distillers - but Luxco hasn't published its exact recipe. This figure is a rough estimate based on the wheated-mash-bill ratios most commonly reported for the category, not a confirmed number.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "George Dickel Bourbon",
+    "distillery": "Cascade Hollow Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 84 },
+      { "grain": "Rye", "pct": 8 },
+      { "grain": "Malted Barley", "pct": 8 }
+    ],
+    "nose": "Caramel, ripe banana, and oak.",
+    "palate": "Brown sugar, baking spice, and vanilla.",
+    "finish": "Warm, smooth, and moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Cascade Hollow's standard Tennessee whiskey mash bill (this 84/8/8 corn-heavy recipe) is the one Diageo discloses for the distillery in general; the Bourbon expression skips the charcoal-mellowing (Lincoln County Process) step so it can legally be sold as bourbon, but a bourbon-specific mash bill split hasn't been separately published.",
+      "sources": [
+        { "label": "George Dickel - Our Whisky", "url": "https://www.georgedickel.com" }
+      ],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Evan Williams Black Label",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Rye", "pct": 13 },
+      { "grain": "Malted Barley", "pct": 12 }
+    ],
+    "nose": "Vanilla, caramel corn, and light oak.",
+    "palate": "Brown sugar and oak with a hint of banana.",
+    "finish": "Short to moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Evan Williams is drawn from Heaven Hill's standard (non-wheated) bourbon mash bill, the same recipe family as Elijah Craig - Heaven Hill doesn't publish exact percentages to consumers, but this 75/13/12 ratio is the one consistently cited across whiskey trade writing.",
+      "sources": [
+        { "label": "Evan Williams - Our Bourbon", "url": "https://www.evanwilliams.com" }
+      ],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Old Ezra 7 Year Barrel Strength",
+    "distillery": "Lux Row Distillers",
+    "parentCompany": "Luxco (MGP Ingredients)",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Rye", "pct": 13 },
+      { "grain": "Malted Barley", "pct": 12 }
+    ],
+    "nose": "Intense oak, dark fruit, and rye spice.",
+    "palate": "Bold caramel and black pepper, with dried fruit and real barrel-proof heat.",
+    "finish": "Long, hot, and spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Old Ezra has historically been sourced from Heaven Hill's standard non-wheated mash bill (the same recipe family as Elijah Craig and Evan Williams), though Luxco doesn't confirm this directly. Treat this 75/13/12 figure as an approximation based on its known sourcing history, not a confirmed recipe.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Wilderness Trail Bottled-in-Bond Wheated",
+    "distillery": "Wilderness Trail Distillery",
+    "parentCompany": "Wilderness Trail Distillery (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon (Bottled-in-Bond)",
+    "grains": [
+      { "grain": "Corn", "pct": 64 },
+      { "grain": "Wheat", "pct": 24 },
+      { "grain": "Malted Barley", "pct": 12 }
+    ],
+    "nose": "Honey, vanilla, and warm baking spice.",
+    "palate": "Soft wheat sweetness, caramel, and light oak.",
+    "finish": "Smooth, mellow, and moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Wilderness Trail's founders (both former food scientists) have discussed using a high-wheat mash bill and their own proprietary sweet mash process in interviews, but haven't published exact percentages. This figure is a rough estimate based on those interviews and general wheated-bourbon proportions, not a confirmed recipe.",
+      "sources": [],
+      "verifiedAt": ""
+    }
+  },
+  {
+    "title": "Very Old Barton",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "grains": [
+      { "grain": "Corn", "pct": 75 },
+      { "grain": "Rye", "pct": 15 },
+      { "grain": "Malted Barley", "pct": 10 }
+    ],
+    "nose": "Corn sweetness, vanilla, and light oak.",
+    "palate": "Caramel and baking spice over a simple oak backbone.",
+    "finish": "Moderate and slightly dry.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Very Old Barton is Barton 1792 Distillery's value-tier bourbon - Sazerac hasn't published its mash bill, and it isn't confirmed to share 1792 Small Batch's recipe. This figure is a rough placeholder based on typical Kentucky bourbon proportions, not a confirmed number - replace as soon as better information turns up.",
+      "sources": [],
+      "verifiedAt": ""
+    }
   }
 ]

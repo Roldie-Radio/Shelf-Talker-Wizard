@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.0.2',
+      items: [
+        'New: the Bourbon Library\'s pre-loaded starting set nearly doubles, from 14 to 26 bourbons - adding Eagle Rare, W.L. Weller Special Reserve, Larceny, Old Grand-Dad Bonded, Angel\'s Envy, 1792 Small Batch, Rebel Yell, George Dickel Bourbon, Evan Williams Black Label, Old Ezra 7 Year, Wilderness Trail Bottled-in-Bond Wheated, and Very Old Barton. A PC that already auto-seeded the original 14 won\'t pick these up on its own (auto-seed only ever fills a completely empty library) - run `npm run db:seed-bourbon-library` again to add them.',
+      ],
+    },
+    {
       version: '4.0.1',
       items: [
         'Fixed: the Bourbon Library now arrives pre-loaded with 14 popular bourbons (Buffalo Trace, Four Roses Single Barrel, Maker\'s Mark, Woodford Reserve, and others) the first time it launches on a PC, instead of showing up empty. It auto-seeds itself from this project\'s own GitHub repo in the background on startup - no manual setup step, and it never touches a library that already has entries (including one you\'ve cleared out on purpose).',
