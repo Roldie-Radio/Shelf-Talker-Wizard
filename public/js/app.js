@@ -4743,6 +4743,7 @@
     ['#b03b6c', '#ffffff', 'SOUR', 'Tart, tangy, fruited'],
     ['#58913b', '#ffffff', 'CIDER', 'Crisp apple, not a beer'],
     ['#653b72', '#ffffff', 'MEAD', 'Honey wine, not a beer'],
+    ['#189aad', '#ffffff', 'HARD SELTZER', 'Light, fizzy, not a beer'],
     ['#ddd6cc', '#3b2415', 'OTHER', 'Unique or mixed styles'],
   ];
 
