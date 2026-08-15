@@ -1142,6 +1142,7 @@
     mashBillLibraryFormDistilleryInput: document.getElementById('mashBillLibraryFormDistilleryInput'),
     mashBillLibraryFormParentCompanyInput: document.getElementById('mashBillLibraryFormParentCompanyInput'),
     mashBillLibraryFormCategoryInput: document.getElementById('mashBillLibraryFormCategoryInput'),
+    mashBillLibraryFormSkuInput: document.getElementById('mashBillLibraryFormSkuInput'),
     mashBillLibraryFormGrain: document.getElementById('mashBillLibraryFormGrain'),
     mashBillLibraryFormPct: document.getElementById('mashBillLibraryFormPct'),
     mashBillLibraryFormAddGrainBtn: document.getElementById('mashBillLibraryFormAddGrainBtn'),
@@ -5875,6 +5876,7 @@
     els.mashBillLibraryFormDistilleryInput.value = '';
     els.mashBillLibraryFormParentCompanyInput.value = '';
     els.mashBillLibraryFormCategoryInput.value = '';
+    els.mashBillLibraryFormSkuInput.value = '';
     els.mashBillLibraryFormPct.value = '';
     els.mashBillLibraryFormNoseInput.value = '';
     els.mashBillLibraryFormPalateInput.value = '';
@@ -5902,6 +5904,7 @@
     els.mashBillLibraryFormDistilleryInput.value = entry.distillery || '';
     els.mashBillLibraryFormParentCompanyInput.value = entry.parentCompany || '';
     els.mashBillLibraryFormCategoryInput.value = entry.category || '';
+    els.mashBillLibraryFormSkuInput.value = entry.sku || '';
     els.mashBillLibraryFormNoseInput.value = entry.nose || '';
     els.mashBillLibraryFormPalateInput.value = entry.palate || '';
     els.mashBillLibraryFormFinishInput.value = entry.finish || '';
@@ -6113,6 +6116,7 @@
         source: 'Manual',
         parentCompany: els.mashBillLibraryFormParentCompanyInput.value.trim(),
         category: els.mashBillLibraryFormCategoryInput.value.trim(),
+        sku: els.mashBillLibraryFormSkuInput.value.trim(),
         nose: els.mashBillLibraryFormNoseInput.value.trim(),
         palate: els.mashBillLibraryFormPalateInput.value.trim(),
         finish: els.mashBillLibraryFormFinishInput.value.trim(),
@@ -6393,6 +6397,7 @@
             <div><dt>Distillery</dt><dd>${escapeHtml(entry.distillery || 'Unknown')}</dd></div>
             ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
             ${entry.category ? `<div><dt>Style</dt><dd>${escapeHtml(entry.category)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.distillery)} entries</dt>

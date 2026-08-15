@@ -4,10 +4,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "15614",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Vanilla, brown sugar, and mint with a subtle spiciness.",
     "palate": "Brown sugar and spice, balanced with oak, toffee, and dark fruit.",
@@ -17,7 +27,10 @@
       "tier": "reported",
       "note": "Buffalo Trace Distillery confirms it uses two mash bills but does not publish exact percentages to consumers. This low-rye recipe (used for Buffalo Trace, Eagle Rare, and others in that family) is the figure most consistently cited across whiskey trade writing, not an official distillery number.",
       "sources": [
-        { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com" }
+        {
+          "label": "Buffalo Trace Distillery - Our Process",
+          "url": "https://www.buffalotracedistillery.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -28,9 +41,18 @@
     "parentCompany": "Kirin Holdings Company",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 60 },
-      { "grain": "Rye", "pct": 35 },
-      { "grain": "Malted Barley", "pct": 5 }
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 35
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
     ],
     "nose": "Ripe berries, plum, and spice.",
     "palate": "Full-bodied and mellow, with red berries, caramel, and a spicy rye kick.",
@@ -40,7 +62,10 @@
       "tier": "confirmed",
       "note": "Four Roses is unusually transparent about its process, publicly documenting both of its mash bills (a 75/20/5 recipe and this 60/35/5 high-rye recipe) and which of its ten bourbon recipes go into each product. Single Barrel is built from recipe OBSV - this mash bill with the V yeast strain.",
       "sources": [
-        { "label": "Four Roses - Our Bourbon", "url": "https://fourrosesbourbon.com" }
+        {
+          "label": "Four Roses - Our Bourbon",
+          "url": "https://fourrosesbourbon.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -50,10 +75,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "12017",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 15 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Nutty, with hints of citrus, honey, and vanilla.",
     "palate": "Rich caramel and toffee balanced with dried fruit and a hint of spice.",
@@ -72,9 +107,18 @@
     "parentCompany": "Michter's Distillery, LLC (Chatham Imports)",
     "category": "Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 72 },
-      { "grain": "Rye", "pct": 21 },
-      { "grain": "Malted Barley", "pct": 7 }
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 7
+      }
     ],
     "nose": "Caramel, vanilla, and light fruit.",
     "palate": "Butterscotch, brown sugar, and oak.",
@@ -93,9 +137,18 @@
     "parentCompany": "Deutsch Family Wine & Spirits",
     "category": "Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 21 },
-      { "grain": "Malted Barley", "pct": 4 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
     ],
     "nose": "Rye spice, vanilla, and caramel.",
     "palate": "Black pepper, cinnamon, and brown sugar.",
@@ -105,7 +158,10 @@
       "tier": "reported",
       "note": "Redemption is a sourced whiskey distilled at MGP of Indiana, which doesn't publish mash bills directly to consumers. This 75/21/4 'high-rye bourbon' recipe is one of the most extensively and consistently documented mash bills in whiskey writing, since it's the base for many sourced brands beyond just Redemption.",
       "sources": [
-        { "label": "MGP Ingredients - Distillery Products", "url": "https://www.mgpingredients.com" }
+        {
+          "label": "MGP Ingredients - Distillery Products",
+          "url": "https://www.mgpingredients.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -116,9 +172,18 @@
     "parentCompany": "Campari Group",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 13 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Toffee, vanilla, and a burst of pepper spice.",
     "palate": "Bold and full-bodied, with brown sugar, oak, and baking spice.",
@@ -128,7 +193,10 @@
       "tier": "reported",
       "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated.",
       "sources": [
-        { "label": "Wild Turkey Distilling Co. - Our Bourbon", "url": "https://www.wildturkeybourbon.com" }
+        {
+          "label": "Wild Turkey Distilling Co. - Our Bourbon",
+          "url": "https://www.wildturkeybourbon.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -139,9 +207,18 @@
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 70 },
-      { "grain": "Red Winter Wheat", "pct": 16 },
-      { "grain": "Malted Barley", "pct": 14 }
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
     ],
     "nose": "Vanilla, caramel, and a soft fruity sweetness with no rye bite.",
     "palate": "Smooth and sweet, with baked bread, vanilla, and light spice from the wheat.",
@@ -151,7 +228,10 @@
       "tier": "confirmed",
       "note": "Maker's Mark is one of the small handful of distilleries that states its exact mash bill publicly - this 70/16/14 wheated recipe (wheat standing in for rye) is published directly by the distillery, not inferred from trade writing.",
       "sources": [
-        { "label": "Maker's Mark - How It's Made", "url": "https://www.makersmark.com" }
+        {
+          "label": "Maker's Mark - How It's Made",
+          "url": "https://www.makersmark.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -162,9 +242,18 @@
     "parentCompany": "Brown-Forman Corporation",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 72 },
-      { "grain": "Rye", "pct": 18 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Dried fruit, vanilla, mint, and toasted oak.",
     "palate": "Rich and layered, with cocoa, cinnamon, and ripe fruit.",
@@ -174,7 +263,10 @@
       "tier": "confirmed",
       "note": "Brown-Forman publishes this 72/18/10 mash bill directly for Woodford Reserve - it's the same base recipe (Brown-Forman's higher-rye mash bill) used across several of the company's bourbon brands.",
       "sources": [
-        { "label": "Woodford Reserve - Our Process", "url": "https://www.woodfordreserve.com" }
+        {
+          "label": "Woodford Reserve - Our Process",
+          "url": "https://www.woodfordreserve.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -185,9 +277,18 @@
     "parentCompany": "Brown-Forman Corporation",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 72 },
-      { "grain": "Rye", "pct": 18 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Brown sugar, orange peel, and mint.",
     "palate": "Rich caramel and vanilla with a spicy rye backbone.",
@@ -197,7 +298,10 @@
       "tier": "confirmed",
       "note": "Old Forester shares Brown-Forman's 72/18/10 mash bill with Woodford Reserve - the company has been open about using the same base recipe across its bourbon brands, with barrel treatment and proofing driving the difference between them.",
       "sources": [
-        { "label": "Old Forester - Our Whiskey", "url": "https://www.oldforester.com" }
+        {
+          "label": "Old Forester - Our Whiskey",
+          "url": "https://www.oldforester.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -208,9 +312,18 @@
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 13 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Vanilla, oak, and a hint of banana.",
     "palate": "Light-bodied, with caramel, vanilla, and mild spice.",
@@ -220,7 +333,10 @@
       "tier": "reported",
       "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared by several Beam-produced brands (this one, Knob Creek, Booker's, and others).",
       "sources": [
-        { "label": "Jim Beam - Our Bourbon", "url": "https://www.jimbeam.com" }
+        {
+          "label": "Jim Beam - Our Bourbon",
+          "url": "https://www.jimbeam.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -231,9 +347,18 @@
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 13 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Rich oak, caramel, and brown sugar.",
     "palate": "Full-bodied, with maple, nutmeg, and charred oak.",
@@ -243,7 +368,10 @@
       "tier": "reported",
       "note": "Knob Creek is drawn from Jim Beam's standard 75/13/12 mash bill (the same recipe as Jim Beam White Label), aged longer and bottled at higher proof - Beam Suntory hasn't published exact figures to consumers, but this ratio is the one consistently cited for the whole Beam standard-bourbon family.",
       "sources": [
-        { "label": "Knob Creek - Our Story", "url": "https://www.knobcreek.com" }
+        {
+          "label": "Knob Creek - Our Story",
+          "url": "https://www.knobcreek.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -254,9 +382,18 @@
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 63 },
-      { "grain": "Rye", "pct": 27 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Black pepper, mint, and light citrus.",
     "palate": "Light-bodied but spicy, with rye pepper, honey, and nutmeg.",
@@ -266,7 +403,10 @@
       "tier": "reported",
       "note": "Basil Hayden's uses Beam's high-rye mash bill, the same recipe shared with Old Grand-Dad - not published in exact form by Beam Suntory, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for that recipe family.",
       "sources": [
-        { "label": "Basil Hayden's - Our Bourbon", "url": "https://www.basilhaydens.com" }
+        {
+          "label": "Basil Hayden's - Our Bourbon",
+          "url": "https://www.basilhaydens.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -277,9 +417,18 @@
     "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 13 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Vanilla, toasted oak, and caramel corn.",
     "palate": "Smoky oak, nutmeg, and butterscotch.",
@@ -289,7 +438,10 @@
       "tier": "reported",
       "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and distinct from the wheated mash bill behind Larceny.",
       "sources": [
-        { "label": "Elijah Craig - Our Whiskey", "url": "https://elijahcraig.com" }
+        {
+          "label": "Elijah Craig - Our Whiskey",
+          "url": "https://elijahcraig.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -300,9 +452,18 @@
     "parentCompany": "Diageo",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 68 },
-      { "grain": "Rye", "pct": 28 },
-      { "grain": "Malted Barley", "pct": 4 }
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Rye",
+        "pct": 28
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
     ],
     "nose": "Nutmeg, oak, and green apple.",
     "palate": "Bold rye spice with vanilla, maple, and a touch of citrus.",
@@ -320,10 +481,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "5961",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Toffee, orange peel, and leather with a light herbal note.",
     "palate": "Cocoa, honey, and candied orange over toasted oak.",
@@ -333,7 +504,10 @@
       "tier": "reported",
       "note": "Eagle Rare is drawn from the same low-rye Mash Bill #1 as Buffalo Trace itself - Sazerac confirms the shared recipe but, as with Buffalo Trace, doesn't publish exact percentages to consumers. This 90/8/2 figure is the one most consistently cited across whiskey trade writing for that mash bill.",
       "sources": [
-        { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com" }
+        {
+          "label": "Buffalo Trace Distillery - Our Process",
+          "url": "https://www.buffalotracedistillery.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -344,9 +518,18 @@
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Wheated Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Red Winter Wheat", "pct": 16 },
-      { "grain": "Malted Barley", "pct": 9 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
     ],
     "nose": "Caramel, vanilla, and orange blossom honey.",
     "palate": "Soft brown sugar and baked bread, with light wheat sweetness instead of rye spice.",
@@ -365,9 +548,18 @@
     "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
     "category": "Kentucky Straight Wheated Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 68 },
-      { "grain": "Wheat", "pct": 20 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Brown sugar, ripe banana, and honeysuckle.",
     "palate": "Caramel and vanilla with a soft, bready wheat sweetness.",
@@ -386,9 +578,18 @@
     "parentCompany": "Beam Suntory",
     "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
     "grains": [
-      { "grain": "Corn", "pct": 63 },
-      { "grain": "Rye", "pct": 27 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 63
+      },
+      {
+        "grain": "Rye",
+        "pct": 27
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Black pepper, rye spice, and vanilla.",
     "palate": "Bold rye heat with oak, caramel, and a touch of citrus, carried by its 100 proof.",
@@ -398,7 +599,10 @@
       "tier": "reported",
       "note": "Old Grand-Dad shares Beam's high-rye mash bill with Basil Hayden's, bonded at 100 proof instead of Basil Hayden's lower proof - not published in exact form by Beam Suntory, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for that recipe family.",
       "sources": [
-        { "label": "Old Grand-Dad - Our Bourbon", "url": "https://www.oldgranddad.com" }
+        {
+          "label": "Old Grand-Dad - Our Bourbon",
+          "url": "https://www.oldgranddad.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -409,9 +613,18 @@
     "parentCompany": "Bacardi Limited",
     "category": "Kentucky Straight Bourbon (Port Barrel Finished)",
     "grains": [
-      { "grain": "Corn", "pct": 72 },
-      { "grain": "Rye", "pct": 18 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Dried fruit, toffee, and toasted oak with a hint of mint from the port finish.",
     "palate": "Caramel and ripe fruit, with light tannin and red-wine sweetness from the port cask.",
@@ -430,9 +643,18 @@
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 74 },
-      { "grain": "Rye", "pct": 18 },
-      { "grain": "Malted Barley", "pct": 8 }
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
     ],
     "nose": "Vanilla, brown sugar, and mint over toasted oak.",
     "palate": "Black pepper and dried fruit, with vanilla and warm oak spice.",
@@ -451,9 +673,18 @@
     "parentCompany": "Luxco (MGP Ingredients)",
     "category": "Kentucky Straight Wheated Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 68 },
-      { "grain": "Wheat", "pct": 20 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Honey, caramel, and light oak.",
     "palate": "Soft wheat sweetness with vanilla and brown sugar, no rye bite.",
@@ -472,9 +703,18 @@
     "parentCompany": "Diageo",
     "category": "Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 84 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 8 }
+      {
+        "grain": "Corn",
+        "pct": 84
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
     ],
     "nose": "Caramel, ripe banana, and oak.",
     "palate": "Brown sugar, baking spice, and vanilla.",
@@ -484,7 +724,10 @@
       "tier": "reported",
       "note": "Cascade Hollow's standard Tennessee whiskey mash bill (this 84/8/8 corn-heavy recipe) is the one Diageo discloses for the distillery in general; the Bourbon expression skips the charcoal-mellowing (Lincoln County Process) step so it can legally be sold as bourbon, but a bourbon-specific mash bill split hasn't been separately published.",
       "sources": [
-        { "label": "George Dickel - Our Whisky", "url": "https://www.georgedickel.com" }
+        {
+          "label": "George Dickel - Our Whisky",
+          "url": "https://www.georgedickel.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -495,9 +738,18 @@
     "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 13 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Vanilla, caramel corn, and light oak.",
     "palate": "Brown sugar and oak with a hint of banana.",
@@ -507,7 +759,10 @@
       "tier": "reported",
       "note": "Evan Williams is drawn from Heaven Hill's standard (non-wheated) bourbon mash bill, the same recipe family as Elijah Craig - Heaven Hill doesn't publish exact percentages to consumers, but this 75/13/12 ratio is the one consistently cited across whiskey trade writing.",
       "sources": [
-        { "label": "Evan Williams - Our Bourbon", "url": "https://www.evanwilliams.com" }
+        {
+          "label": "Evan Williams - Our Bourbon",
+          "url": "https://www.evanwilliams.com"
+        }
       ],
       "verifiedAt": ""
     }
@@ -518,9 +773,18 @@
     "parentCompany": "Luxco (MGP Ingredients)",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 13 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Intense oak, dark fruit, and rye spice.",
     "palate": "Bold caramel and black pepper, with dried fruit and real barrel-proof heat.",
@@ -539,9 +803,18 @@
     "parentCompany": "Wilderness Trail Distillery (independently owned)",
     "category": "Kentucky Straight Wheated Bourbon (Bottled-in-Bond)",
     "grains": [
-      { "grain": "Corn", "pct": 64 },
-      { "grain": "Wheat", "pct": 24 },
-      { "grain": "Malted Barley", "pct": 12 }
+      {
+        "grain": "Corn",
+        "pct": 64
+      },
+      {
+        "grain": "Wheat",
+        "pct": 24
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
     ],
     "nose": "Honey, vanilla, and warm baking spice.",
     "palate": "Soft wheat sweetness, caramel, and light oak.",
@@ -560,9 +833,18 @@
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 15 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Corn sweetness, vanilla, and light oak.",
     "palate": "Caramel and baking spice over a simple oak backbone.",
@@ -580,10 +862,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "35141",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Vanilla, caramel, and toasted oak with a burst of cinnamon spice.",
     "palate": "Rich brown sugar and oak, with barrel-proof heat carrying the spice further than standard Benchmark.",
@@ -595,7 +887,13 @@
       "verifiedAt": ""
     },
     "references": [
-      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
     ]
   },
   {
@@ -603,10 +901,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "41887",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Honey, vanilla, and light oak spice.",
     "palate": "Caramel and toffee with a soft, honeyed sweetness from single-barrel selection.",
@@ -618,7 +926,13 @@
       "verifiedAt": ""
     },
     "references": [
-      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
     ]
   },
   {
@@ -626,10 +940,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "36484",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Caramel corn, vanilla, and a light touch of oak.",
     "palate": "Mild brown sugar sweetness with gentle oak and a hint of spice.",
@@ -641,7 +965,13 @@
       "verifiedAt": ""
     },
     "references": [
-      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
     ]
   },
   {
@@ -649,10 +979,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "sku": "1294",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Rich oak, vanilla, and baked apple.",
     "palate": "Brown sugar and toffee with warm baking spice, bottled-in-bond weight.",
@@ -664,7 +1004,13 @@
       "verifiedAt": ""
     },
     "references": [
-      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
     ]
   },
   {
@@ -672,10 +1018,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "5149",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 15 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Caramel, vanilla, and light oak.",
     "palate": "Honeyed sweetness with oak spice and a hint of citrus.",
@@ -693,10 +1049,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "17108",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Rye", "pct": 15 },
-      { "grain": "Malted Barley", "pct": 10 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
     ],
     "nose": "Vanilla, oak, and dried fruit.",
     "palate": "Rich toffee and baking spice, full-bodied.",
@@ -714,10 +1080,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon (Kosher for Passover)",
+    "sku": "26212",
     "grains": [
-      { "grain": "Corn", "pct": 90 },
-      { "grain": "Rye", "pct": 8 },
-      { "grain": "Malted Barley", "pct": 2 }
+      {
+        "grain": "Corn",
+        "pct": 90
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 2
+      }
     ],
     "nose": "Vanilla, brown sugar, and mint, consistent with standard Buffalo Trace.",
     "palate": "Brown sugar and spice over oak and toffee.",
@@ -729,7 +1105,13 @@
       "verifiedAt": ""
     },
     "references": [
-      { "label": "Buffalo Trace Distillery - Our Process", "url": "https://www.buffalotracedistillery.com", "tags": ["Mash Bill"] }
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
     ]
   },
   {
@@ -737,10 +1119,20 @@
     "distillery": "Buffalo Trace Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Wheated Bourbon (Kosher for Passover)",
+    "sku": "26213",
     "grains": [
-      { "grain": "Corn", "pct": 75 },
-      { "grain": "Red Winter Wheat", "pct": 16 },
-      { "grain": "Malted Barley", "pct": 9 }
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 16
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
     ],
     "nose": "Honey, ripe banana, and warm baking spice.",
     "palate": "Soft wheat sweetness and brown sugar, no rye bite.",
@@ -758,9 +1150,16 @@
     "distillery": "MGP of Indiana (Lawrenceburg, IN)",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Rye Whiskey",
+    "sku": "6108",
     "grains": [
-      { "grain": "Rye", "pct": 95 },
-      { "grain": "Malted Barley", "pct": 5 }
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
     ],
     "nose": "Mint, black pepper, and dried fruit.",
     "palate": "Brown sugar, cherry, and cinnamon spice.",
@@ -772,7 +1171,691 @@
       "verifiedAt": ""
     },
     "references": [
-      { "label": "MGP Ingredients - Distillery Products", "url": "https://www.mgpingredients.com", "tags": ["Mash Bill", "Distillery & Ownership"] }
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
     ]
+  },
+  {
+    "title": "Elijah Craig Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "5261",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, toasted oak, and caramel corn.",
+    "palate": "Smoky oak, nutmeg, and butterscotch.",
+    "finish": "Long, spicy, and slightly smoky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Elijah Craig Single Barrel Store Pick",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "31406",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, toasted oak, and caramel corn, more pronounced from single-barrel selection.",
+    "palate": "Smoky oak, nutmeg, and butterscotch.",
+    "finish": "Long, spicy, and slightly smoky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Elijah Craig Toasted Barrel",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon (Toasted Barrel Finished)",
+    "sku": "26901",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel, and a rounder toasted-oak sweetness from its finishing barrel.",
+    "palate": "Butterscotch, brown sugar, and soft oak spice.",
+    "finish": "Smooth, warm, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family. The toasted-barrel finish happens after distillation and doesn't change the base mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Evan Williams Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "11945",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel corn, and light oak.",
+    "palate": "Brown sugar and oak with a hint of banana.",
+    "finish": "Short to moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Evan Williams is drawn from Heaven Hill's standard (non-wheated) bourbon mash bill, the same recipe family as Elijah Craig - Heaven Hill doesn't publish exact percentages to consumers, but this 75/13/12 ratio is the one consistently cited across whiskey trade writing.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Evan Williams - Our Bourbon",
+        "url": "https://www.evanwilliams.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Evan Williams Bourbon White Label B&Bond",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "sku": "26488",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel corn, and oak.",
+    "palate": "Brown sugar, oak, and a touch more heat at 100 proof.",
+    "finish": "Moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Evan Williams Single Barrel Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "6362",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel, and toasted oak, more pronounced from single-barrel selection and extra age.",
+    "palate": "Brown sugar, oak spice, and dried fruit.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Evan Williams Single Barrel 250th",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "41837",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel, and toasted oak.",
+    "palate": "Brown sugar, oak spice, and dried fruit.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family. This bottling is a 250th-anniversary release of the standard Single Barrel expression.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Evan Williams 1783 Small Batch",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "12329",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel corn, and light oak.",
+    "palate": "Soft brown sugar and oak, mellower than standard Evan Williams.",
+    "finish": "Short to moderate, easy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Heaven Hill Bottled in Bond 7 Year",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "sku": "35470",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and caramel corn.",
+    "palate": "Brown sugar and oak spice, carried by 100 proof.",
+    "finish": "Moderate, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family. This is Heaven Hill's own-label flagship, built from the same standard recipe as Elijah Craig and Evan Williams.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Heaven Hill Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "7174",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel corn, and light oak.",
+    "palate": "Brown sugar and oak with a hint of banana.",
+    "finish": "Short to moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Henry McKenna Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon (Single Barrel, Bottled-in-Bond)",
+    "sku": "25661",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and dried fruit.",
+    "palate": "Caramel, baking spice, and toasted oak, aged 10 years.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and shared across the whole Elijah Craig/Evan Williams/Heaven Hill family. SKU shown is the 1L bottle - this store's smallest stocked size for this label.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Fighting Cock 6YR 103 Proof",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "1487",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Bold oak, caramel, and dark fruit.",
+    "palate": "Brown sugar and black pepper, carried by 103 proof.",
+    "finish": "Long, hot, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Fighting Cock is a long-time Heaven Hill bonded-strength bourbon; Heaven Hill hasn't directly confirmed it shares the standard 75/13/12 recipe, but that's consistent with its known sourcing. Treat this as an approximation, not a confirmed recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Old Fitzgerald 7 Year BIB",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Wheated Bourbon (Bottled-in-Bond)",
+    "sku": "39457",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Brown sugar, ripe banana, and honeysuckle.",
+    "palate": "Caramel and vanilla with soft, bready wheat sweetness.",
+    "finish": "Gentle, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Old Fitzgerald is built from Heaven Hill's wheated mash bill (wheat standing in for rye), the same recipe family as Larceny - Heaven Hill hasn't published exact figures to consumers, so this 68/20/12 ratio is an approximation drawn from whiskey trade writing, not a confirmed number.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Elijah Craig Rye",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Rye Whiskey",
+    "sku": "32024",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 35
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Mint, dill, and black pepper.",
+    "palate": "Rye spice, brown sugar, and a hint of cherry.",
+    "finish": "Dry, peppery, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Heaven Hill's rye whiskey mash bill sits right at the legal 51% rye minimum (51/35/14) - the figure most consistently cited across whiskey trade writing for this recipe family, which also backs Rittenhouse and Pikesville.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Elijah Craig - Our Whiskey",
+        "url": "https://elijahcraig.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Mellow Corn Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Corn Whiskey",
+    "sku": "32870",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Rye",
+        "pct": 10
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Corn sweetness, banana, and light oak.",
+    "palate": "Sweet corn, honey, and mild oak - lighter than a bourbon due to used/uncharred cooperage aging.",
+    "finish": "Short, sweet, gentle.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Mellow Corn is legally a Kentucky Straight Corn Whiskey, not a bourbon - the law requires at least 80% corn and permits aging in used or uncharred barrels. Heaven Hill hasn't published its exact grain split; this figure is a common estimate for the category, not a confirmed number.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Bernheim Original Wheat Straight Whiskey",
+    "distillery": "Heaven Hill Distillery (Bernheim site)",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Straight Wheat Whiskey",
+    "sku": "6521",
+    "grains": [
+      {
+        "grain": "Wheat",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Honey, banana bread, and toasted marshmallow.",
+    "palate": "Wheat cereal sweetness, vanilla, and light spice.",
+    "finish": "Smooth, gentle, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Bernheim is a straight wheat whiskey, not a bourbon - it must be at least 51% wheat by law. Heaven Hill hasn't published its exact grain split; this figure is the ratio most commonly cited for the category, not a confirmed number.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Bernheim Barrel Proof Wheat Straight Whiskey",
+    "distillery": "Heaven Hill Distillery (Bernheim site)",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Straight Wheat Whiskey (Barrel Proof)",
+    "sku": "34136",
+    "grains": [
+      {
+        "grain": "Wheat",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Honey, banana bread, and warm oak, more intense at barrel proof.",
+    "palate": "Wheat sweetness and vanilla with real barrel-proof heat.",
+    "finish": "Long, warm, gently spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Same wheat whiskey mash bill as Bernheim Original, bottled undiluted at barrel proof rather than standard proof - Heaven Hill hasn't published exact percentages for either bottling.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Bernheim 20th Anniversary 10YR",
+    "distillery": "Heaven Hill Distillery (Bernheim site)",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Straight Wheat Whiskey",
+    "sku": "41727",
+    "grains": [
+      {
+        "grain": "Wheat",
+        "pct": 51
+      },
+      {
+        "grain": "Corn",
+        "pct": 37
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Honey, banana bread, and rich toasted oak from extra age.",
+    "palate": "Wheat sweetness, vanilla, and deeper oak spice than standard Bernheim.",
+    "finish": "Long, warm, moderately spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "A 10-year, limited anniversary bottling of the same wheat whiskey mash bill as Bernheim Original - Heaven Hill hasn't published exact percentages for any Bernheim bottling.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Heaven Hill Grain to Glass Specialty Barrel Bourbon",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "40592",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Placeholder only - grain composition for this specialty label has not been researched yet. The single-grain listing above is a non-answer, not a finding; replace it (and the tasting notes) once someone confirms the actual recipe.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
