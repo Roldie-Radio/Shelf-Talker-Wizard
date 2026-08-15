@@ -318,10 +318,13 @@ function sampleConfidence(overrides = {}) {
   return {
     tier: 'confirmed',
     note: 'Mash bill #1 is publicly confirmed by the distillery.',
-    sources: [{ label: 'Distillery site', url: 'https://example.com' }],
     verifiedAt: '2026-01-15',
     ...overrides,
   };
+}
+
+function sampleReferences(overrides) {
+  return overrides || [{ label: 'Distillery site', url: 'https://example.com', tags: ['Mash Bill'] }];
 }
 
 test('upsertMashBill stores every Bourbon Library field and rowToMashBill round-trips them', () => {
@@ -337,6 +340,7 @@ test('upsertMashBill stores every Bourbon Library field and rowToMashBill round-
       finish: 'Long and smooth',
       tastingSource: 'Distillery official tasting notes',
       confidence: sampleConfidence(),
+      references: sampleReferences(),
     });
     assert.equal(entry.parentCompany, 'Sazerac Company');
     assert.equal(entry.category, 'Kentucky Straight Bourbon');
@@ -345,6 +349,7 @@ test('upsertMashBill stores every Bourbon Library field and rowToMashBill round-
     assert.equal(entry.finish, 'Long and smooth');
     assert.equal(entry.tastingSource, 'Distillery official tasting notes');
     assert.deepEqual(entry.confidence, sampleConfidence());
+    assert.deepEqual(entry.references, sampleReferences());
     // Reads back identically through getMashBill too, not just the
     // upsert's own return value.
     assert.deepEqual(db.getMashBill(entry.id), entry);
@@ -355,8 +360,9 @@ test('a mash bill with no confidence data at all defaults to the "unknown" tier 
   withTempDb(() => {
     const entry = db.upsertMashBill({ title: 'Mystery Batch', grains: sampleGrains() });
     assert.deepEqual(entry.confidence, {
-      tier: 'unknown', note: '', sources: [], verifiedAt: '',
+      tier: 'unknown', note: '', verifiedAt: '',
     });
+    assert.deepEqual(entry.references, []);
     assert.equal(entry.parentCompany, '');
     assert.equal(entry.category, '');
     assert.equal(entry.nose, '');
@@ -393,6 +399,16 @@ test('updateMashBillById: omitting a Bourbon Library field (undefined) preserves
   });
 });
 
+test('updateMashBillById: omitting references (undefined) preserves the existing list', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Weller Special Reserve', grains: sampleGrains(), references: sampleReferences(),
+    });
+    const updated = db.updateMashBillById(entry.id, { nose: 'Caramel, vanilla' });
+    assert.deepEqual(updated.references, sampleReferences());
+  });
+});
+
 test('updateMashBillById: an explicit empty string clears a field, unlike omitting it', () => {
   withTempDb(() => {
     const entry = db.upsertMashBill({
@@ -408,22 +424,33 @@ test('updateMashBillById: confidence is replaced as a whole object when provided
     const entry = db.upsertMashBill({ title: 'Larceny Barrel Proof', grains: sampleGrains(), confidence: sampleConfidence() });
     const updated = db.updateMashBillById(entry.id, { confidence: { tier: 'estimated' } });
     assert.deepEqual(updated.confidence, {
-      tier: 'estimated', note: '', sources: [], verifiedAt: '',
+      tier: 'estimated', note: '', verifiedAt: '',
     });
   });
 });
 
-test('confidence.sources drops entries with neither a label nor a url', () => {
+test('references drops entries with neither a label nor a url, and strips unrecognized tags', () => {
   withTempDb(() => {
     const entry = db.upsertMashBill({
       title: 'Wild Turkey Rare Breed',
       grains: sampleGrains(),
-      confidence: {
-        tier: 'reported',
-        sources: [{ label: 'Good source', url: 'https://example.com' }, { label: '', url: '' }, {}],
-      },
+      references: [
+        { label: 'Good source', url: 'https://example.com', tags: ['Mash Bill', 'Not A Real Tag'] },
+        { label: '', url: '' },
+        {},
+      ],
     });
-    assert.deepEqual(entry.confidence.sources, [{ label: 'Good source', url: 'https://example.com' }]);
+    assert.deepEqual(entry.references, [{ label: 'Good source', url: 'https://example.com', tags: ['Mash Bill'] }]);
+  });
+});
+
+test('updateMashBillById: references is replaced as a whole list when provided, not merged item-by-item', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Four Roses Small Batch', grains: sampleGrains(), references: sampleReferences() });
+    const updated = db.updateMashBillById(entry.id, {
+      references: [{ label: 'New source', url: 'https://example.org', tags: [] }],
+    });
+    assert.deepEqual(updated.references, [{ label: 'New source', url: 'https://example.org', tags: [] }]);
   });
 });
 
@@ -463,8 +490,9 @@ test('applyMashBillColumns migrates a pre-existing 6-column mash_bills table cle
     // New columns exist and default to the same "nothing known yet" shape
     // a brand-new row would have.
     assert.deepEqual(legacy.confidence, {
-      tier: 'unknown', note: '', sources: [], verifiedAt: '',
+      tier: 'unknown', note: '', verifiedAt: '',
     });
+    assert.deepEqual(legacy.references, []);
     assert.equal(legacy.parentCompany, '');
 
     // And the migrated table isn't just readable - it accepts writes to

@@ -268,13 +268,24 @@ function normalizeConfidenceTier(tier) {
 }
 
 // Same JSON-column pattern as grains above - a small ordered list of
-// {label, url} citations backing the confidence tier/note, shown as the
-// profile page's own "View N sources" disclosure.
-function normalizeConfidenceSources(sources) {
-  if (!Array.isArray(sources)) return [];
-  return sources
-    .map((s) => ({ label: s && s.label ? String(s.label).trim() : '', url: s && s.url ? String(s.url).trim() : '' }))
-    .filter((s) => s.label || s.url);
+// {label, url, tags} citations, shown as the profile page's unified
+// "References & Sources" section. `tags` says which part(s) of the entry a
+// source backs (Mash Bill, Tasting Notes, Distillery & Ownership, Other),
+// so the profile page can drop a numbered marker next to just the
+// section(s) it supports. Still stored in the confidence_sources column -
+// that name predates this section covering more than the mash bill, but
+// renaming the column would mean a migration for no behavior change.
+const REFERENCE_TAGS = new Set(['Mash Bill', 'Tasting Notes', 'Distillery & Ownership', 'Other']);
+
+function normalizeReferences(refs) {
+  if (!Array.isArray(refs)) return [];
+  return refs
+    .map((r) => ({
+      label: r && r.label ? String(r.label).trim() : '',
+      url: r && r.url ? String(r.url).trim() : '',
+      tags: Array.isArray(r && r.tags) ? r.tags.map((t) => String(t).trim()).filter((t) => REFERENCE_TAGS.has(t)) : [],
+    }))
+    .filter((r) => r.label || r.url);
 }
 
 function normalizeOptionalText(value) {
@@ -300,9 +311,9 @@ function rowToMashBill(row) {
     confidence: {
       tier: row.confidence_tier || 'unknown',
       note: row.confidence_note || '',
-      sources: row.confidence_sources ? JSON.parse(row.confidence_sources) : [],
       verifiedAt: row.confidence_verified_at || '',
     },
+    references: row.confidence_sources ? JSON.parse(row.confidence_sources) : [],
   };
 }
 
@@ -331,11 +342,11 @@ function validateMashBillInput({ title, grains }) {
 // updateMashBillById's own distillery handling already used before this
 // helper existed. `existing` is a rowToMashBill()-shaped object or null.
 function mashBillOptionalFieldParams({
-  parentCompany, category, nose, palate, finish, tastingSource, confidence,
+  parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
 }, existing) {
   const prev = existing || {
     parentCompany: '', category: '', nose: '', palate: '', finish: '', tastingSource: '',
-    confidence: { tier: '', note: '', sources: [], verifiedAt: '' },
+    confidence: { tier: '', note: '', verifiedAt: '' }, references: [],
   };
   const conf = confidence !== undefined ? (confidence || {}) : prev.confidence;
   return {
@@ -347,8 +358,8 @@ function mashBillOptionalFieldParams({
     tastingSource: normalizeOptionalText(tastingSource !== undefined ? tastingSource : prev.tastingSource),
     confidenceTier: normalizeConfidenceTier(conf.tier),
     confidenceNote: normalizeOptionalText(conf.note),
-    confidenceSources: JSON.stringify(normalizeConfidenceSources(conf.sources)),
     confidenceVerifiedAt: normalizeOptionalText(conf.verifiedAt),
+    confidenceSources: JSON.stringify(normalizeReferences(references !== undefined ? references : prev.references)),
   };
 }
 
@@ -367,7 +378,7 @@ const MASH_BILL_OPTIONAL_COLUMNS_SET = `
 // than blocking on a "already exists" error.
 function upsertMashBill({
   title, distillery, grains, source,
-  parentCompany, category, nose, palate, finish, tastingSource, confidence,
+  parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
 }) {
   const db = getDb();
   const { cleanTitle, cleanGrains } = validateMashBillInput({ title, grains });
@@ -381,7 +392,7 @@ function upsertMashBill({
     source: source || 'Manual',
     updatedAt: now,
     ...mashBillOptionalFieldParams({
-      parentCompany, category, nose, palate, finish, tastingSource, confidence,
+      parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
     }, existing),
   };
 
@@ -416,7 +427,7 @@ function upsertMashBill({
 // letting better-sqlite3's raw constraint error reach the caller.
 function updateMashBillById(id, {
   title, distillery, grains, source,
-  parentCompany, category, nose, palate, finish, tastingSource, confidence,
+  parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
 }) {
   const db = getDb();
   const existing = getMashBill(id);
@@ -439,7 +450,7 @@ function updateMashBillById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...mashBillOptionalFieldParams({
-        parentCompany, category, nose, palate, finish, tastingSource, confidence,
+        parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
       }, existing),
     });
   } catch (err) {

@@ -443,17 +443,17 @@ function createApp({
     });
   });
 
-  // Bourbon Library fields (parent company, category, tasting notes, and
-  // the Mash Bill Confidence block) beyond the original
+  // Bourbon Library fields (parent company, category, tasting notes,
+  // Mash Bill Confidence, and References & Sources) beyond the original
   // title/distillery/grains/source - see mashBillOptionalFieldParams in
   // db.js for how an omitted (undefined) one leaves whatever's already
   // saved alone rather than blanking it out.
   function mashBillOptionalFields(body) {
     const {
-      parentCompany, category, nose, palate, finish, tastingSource, confidence,
+      parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
     } = body || {};
     return {
-      parentCompany, category, nose, palate, finish, tastingSource, confidence,
+      parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
     };
   }
 

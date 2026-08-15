@@ -82,6 +82,12 @@ additionally mangles spaces in uploaded asset names into dots - leaving the defa
 download the mismatch. Don't remove or reintroduce spaces into this without re-checking that a
 real release's `latest.yml` and its uploaded `.exe` asset name still match exactly.
 
+If auto-update isn't working on a particular PC, check its update log at
+`%LOCALAPPDATA%\Shelf Talker Wizard\logs\main.log` &mdash; electron-updater's own feed URL, HTTP
+status, and version-comparison output all get written there, which is usually enough to tell
+whether it's a network/firewall issue, a permissions issue (install path needing admin rights), or
+a stale/corrupt cached download in `%LOCALAPPDATA%\shelf-talker-wizard-updater\pending`.
+
 To build it yourself instead, on a Windows machine with Node 18+:
 
 ```bash

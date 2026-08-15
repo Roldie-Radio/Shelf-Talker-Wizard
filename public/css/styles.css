@@ -67,6 +67,12 @@
   --ui-danger-tint: rgba(210, 31, 31, 0.08);
   --ui-code-bg: #f0ece3;
   --ui-danger: #c81a1a;
+  /* Brighter than --ui-danger specifically for the delete-talker button on
+     the Live Preview card (see .card__delete-badge below) - that button
+     needs to read as an urgent, distinct action against a busy card, where
+     --ui-danger's tint-friendly red is too close to --sale-red already
+     printed on the talker itself. */
+  --ui-danger-bright: #ff2323;
 
   /* Mash Bill Confidence tiers (Bourbon Library profile page, see
      renderBourbonProfile in app.js) - three semantic tones, deliberately
@@ -139,6 +145,7 @@
   --ui-danger-tint: rgba(255, 107, 107, 0.14);
   --ui-code-bg: #302c28;
   --ui-danger: #ff8f8f;
+  --ui-danger-bright: #ff4d4d;
   --ui-good: #6fcf74;
   --ui-good-tint: rgba(111, 207, 116, 0.12);
   --ui-warn: #d68a3a;
@@ -429,6 +436,15 @@ h1, h2, h3 { margin: 0; }
   background: var(--ui-field);
   color: var(--ui-ink);
 }
+.library-sync { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 0.9rem; padding-top: 0.75rem; border-top: 1px dashed var(--ui-border); }
+.library-sync__status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--ui-muted); }
+.library-sync__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-good); flex: 0 0 auto; }
+.library-sync__dot.is-stale { background: var(--ui-warn); }
+.library-sync__dot.is-syncing { background: var(--ui-accent); animation: library-sync-pulse 1.1s ease-in-out infinite; }
+@keyframes library-sync-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .library-sync__dot.is-syncing { animation: none; }
+}
 .library-chips { display: flex; gap: 0.4rem; margin-top: 0.75rem; flex-wrap: wrap; }
 .library-stats { display: flex; gap: 1.4rem; margin-top: 0.9rem; flex-wrap: wrap; }
 .library-stat { display: flex; flex-direction: column; }
@@ -489,11 +505,51 @@ h1, h2, h3 { margin: 0; }
 .conf-block__row { display: flex; align-items: center; gap: 0.6rem; }
 .conf-block__note { font-size: 0.85rem; color: var(--ui-ink-soft); margin: 0.5rem 0 0; line-height: 1.45; }
 .conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
-.conf-sources { margin-top: 0.5rem; font-size: 0.8rem; }
-.conf-sources summary { cursor: pointer; color: var(--ui-accent-ink); font-weight: 600; }
-.conf-sources ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
-.conf-sources li { margin-bottom: 0.2rem; }
-.conf-sources a { color: var(--ui-accent-ink); }
+/* Inline citation marker next to a profile-page heading (see
+   citeMarkersHtml in app.js) - jumps down to its numbered row in the
+   References & Sources block below. */
+.cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  margin-left: 0.3rem;
+  border-radius: 4px;
+  background: var(--ui-code-bg);
+  color: var(--ui-accent-ink);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: 2px;
+  border: 1px solid var(--ui-border);
+}
+.cite:hover { background: var(--ui-accent); color: var(--ui-on-accent); border-color: var(--ui-accent); }
+
+/* Bourbon profile page (renderBourbonProfile in app.js). The breadcrumb
+   sits directly above the title - the "All bourbons" exit used to live as
+   a small text link in the header band above, which scrolled out of view
+   on longer profiles and wasn't obvious as a back control in the first
+   place. */
+.library-crumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; margin-bottom: 0.9rem; }
+.library-crumb button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ui-accent-ink);
+  background: var(--ui-code-bg);
+  border: none;
+  border-radius: 6px;
+  padding: 0.32rem 0.65rem 0.32rem 0.5rem;
+  cursor: pointer;
+}
+.library-crumb button:hover { background: var(--ui-hover); }
+.library-crumb__sep { color: var(--ui-muted); }
+.library-crumb__current { color: var(--ui-muted); font-weight: 600; }
 
 /* Bourbon profile page (renderBourbonProfile in app.js). */
 .profile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
@@ -541,6 +597,46 @@ h1, h2, h3 { margin: 0; }
   text-align: left;
 }
 .sibling-btn:hover { border-color: var(--ui-accent-ink); }
+
+/* Unified "References & Sources" block (referencesSectionHtml in app.js) -
+   every citation on the entry in one place, spanning the full profile
+   width below .profile-grid rather than living inside just one card. */
+.refs__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.refs__head h3 { margin: 0; }
+.refs__head span { font-size: 0.76rem; color: var(--ui-muted); }
+.ref-row {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.6rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--ui-border);
+}
+.ref-row:first-of-type { margin-top: 0.7rem; }
+.ref-row__n { font-size: 0.78rem; font-weight: 700; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+.ref-row__main a { color: var(--ui-accent-ink); font-weight: 600; font-size: 0.87rem; text-decoration: none; }
+.ref-row__main a:hover { text-decoration: underline; }
+.ref-row__main > span { font-size: 0.87rem; font-weight: 600; }
+.ref-row__url {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--ui-muted);
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ref-row__tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.ref-row__tag {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ui-ink-soft);
+  background: var(--ui-panel-alt);
+  border: 1px solid var(--ui-border);
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+}
 
 @media (max-width: 720px) {
   .profile-grid { grid-template-columns: 1fr; }
@@ -1267,6 +1363,13 @@ h1, h2, h3 { margin: 0; }
 }
 .toggle-btn.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
 
+/* References & Sources tag picker (Mash Bill Library form) - deliberately
+   its own class rather than reusing .preview-toggle, which els.previewToggleBtns
+   (Live Preview's Current Talker/Full Page toggle) grabs every .toggle-btn
+   under via a single page-init querySelectorAll - sharing it here rewired
+   clicks on these buttons into that toggle's own click handler instead. */
+.ref-tag-picker { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+
 /* A stand-in for a printed Letter-landscape sheet, laid out at its literal
    printed size - 11in x 8.5in, with the same 0.28in page margin and the
    same inch gaps as the @media print rules below - and then scaled down as
@@ -1315,21 +1418,21 @@ h1, h2, h3 { margin: 0; }
 }
 .card__edit-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 50%;
+  left: 50%;
   background: var(--ui-accent);
   color: var(--ui-on-accent);
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   border-radius: 999px;
-  padding: 3px 7px 3px 6px;
+  padding: 5px 12px;
   opacity: 0;
-  transform: scale(0.85);
+  transform: translate(-50%, -50%) scale(0.85);
   transition: opacity 0.12s ease, transform 0.12s ease;
   pointer-events: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
   white-space: nowrap;
   z-index: 1;
 }
@@ -1338,7 +1441,123 @@ h1, h2, h3 { margin: 0; }
 .sign.is-editable:hover .card__edit-badge,
 .sign.is-editable:focus-visible .card__edit-badge {
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Delete-talker button that appears in the card's top-right corner
+   alongside the edit badge above - a small circular "X" styled with real
+   button depth (gradient fill + inset highlight/shadow) since, unlike the
+   edit badge, this is a destructive action and needs to read as a pressable
+   control rather than a passive label. Clicking it doesn't delete outright;
+   it swaps in .card__delete-confirm (below) since deletion can't be undone. */
+.card__delete-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #ffffff66;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ff4b4b 0%, var(--ui-danger-bright) 55%, #e01414 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.12s ease, transform 0.12s ease, filter 0.08s ease;
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    inset 0 -2px 3px rgba(0,0,0,0.25);
+  z-index: 1;
+}
+.card.is-editable:hover .card__delete-badge,
+.card.is-editable:focus-visible .card__delete-badge,
+.sign.is-editable:hover .card__delete-badge,
+.sign.is-editable:focus-visible .card__delete-badge {
+  opacity: 1;
   transform: scale(1);
+}
+.card__delete-badge:hover {
+  filter: brightness(1.08);
+  transform: scale(1.06);
+}
+.card__delete-badge:active {
+  transform: scale(0.94);
+  filter: brightness(0.96);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(0,0,0,0.15),
+    inset 0 1px 3px rgba(0,0,0,0.35);
+}
+.card__delete-badge svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 0.5px rgba(0,0,0,0.3));
+}
+
+/* Confirm-delete overlay, shown in place of the card's own content once
+   .card__delete-badge is clicked (see makeSheetPreviewEditable in app.js).
+   Sits above the click-to-edit affordance so a confirming card can't also
+   be clicked into edit mode underneath it. */
+.card__delete-confirm {
+  position: absolute;
+  inset: 0;
+  background: rgba(27, 27, 27, 0.85);
+  color: #fff;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 0 14px;
+  z-index: 2;
+  cursor: default;
+}
+.card__delete-confirm.is-open { display: flex; }
+
+/* Once the confirm overlay is open, hide the edit/delete badges underneath
+   it rather than relying on the overlay's own opacity to mask them - at
+   0.85 alpha they were still faintly visible through it. */
+.card.is-confirming-delete .card__edit-badge,
+.card.is-confirming-delete .card__delete-badge,
+.sign.is-confirming-delete .card__edit-badge,
+.sign.is-confirming-delete .card__delete-badge {
+  opacity: 0 !important;
+}
+.card__delete-confirm p {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.card__delete-confirm-row { display: flex; gap: 8px; }
+.card__delete-confirm button {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.card__delete-confirm-cancel {
+  background: transparent;
+  border-color: rgba(255,255,255,0.5);
+  color: #fff;
+}
+.card__delete-confirm-delete {
+  background: var(--ui-danger-bright);
+  color: #fff;
 }
 
 /* Auto-arrange preview: unlike the grid above (one uniform card/sign
