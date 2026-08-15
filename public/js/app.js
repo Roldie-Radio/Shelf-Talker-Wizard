@@ -1532,6 +1532,11 @@
   // rather than replacing them - see the comment on #smartSearchFieldWrap
   // in index.html for why.
   const SMART_SEARCH_UPC_MIN_DIGITS = 8; // UPC-A/EAN-13 run 12-13 digits, UPC-E 8 - store SKUs here are shorter
+  // Our own self-printed labels barcode the store's SKU as "A" + that SKU
+  // zero-padded to 7 digits (e.g. A0042420 for item 42420) rather than a
+  // real manufacturer UPC, so it needs unwrapping back to a plain SKU
+  // before it can go through the same SKU Lookup a typed 42420 would.
+  const INTERNAL_UPC_RE = /^A(\d{7})$/i;
   const SMART_SEARCH_HINTS = {
     name: 'Searching by name…',
     sku: 'Looks like a SKU. Press Enter, or Look Up SKU below, to search it.',
@@ -1541,6 +1546,7 @@
   function detectSmartSearchMode(raw) {
     const value = raw.trim();
     if (!value) return null;
+    if (INTERNAL_UPC_RE.test(value)) return 'internalUpc';
     const digitsOnly = value.replace(/[\s-]/g, '');
     if (!/^\d+$/.test(digitsOnly)) return 'name';
     return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
@@ -1552,9 +1558,15 @@
 
   function runSmartSearch(rawValue) {
     const mode = detectSmartSearchMode(rawValue);
-    els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
+    if (mode === 'internalUpc') {
+      const itemNumber = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
+      els.smartSearchHint.textContent = `Internal UPC for item ${itemNumber}. Press Enter, or Look Up SKU below, to search it.`;
+    } else {
+      els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
+    }
     if (!mode) return;
-    const targetBtn = smartSearchMethodBtn(mode === 'upc' ? 'scan' : mode === 'sku' ? 'sku' : 'searchName');
+    const targetMethod = mode === 'upc' ? 'scan' : mode === 'sku' || mode === 'internalUpc' ? 'sku' : 'searchName';
+    const targetBtn = smartSearchMethodBtn(targetMethod);
     if (targetBtn && !targetBtn.classList.contains('is-active')) setActiveMethodPanel(targetBtn);
     if (mode === 'name') {
       // Set + dispatch rather than calling runNameSearch directly so Search
@@ -1564,6 +1576,8 @@
       els.nameSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
     } else if (mode === 'sku') {
       els.skuInput.value = rawValue.trim();
+    } else if (mode === 'internalUpc') {
+      els.skuInput.value = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
     } else {
       els.scanUpcInput.value = rawValue.trim();
     }
@@ -1580,7 +1594,7 @@
     e.preventDefault();
     const mode = detectSmartSearchMode(els.smartSearchInput.value);
     runSmartSearch(els.smartSearchInput.value);
-    if (mode === 'sku') els.skuLookupBtn.click();
+    if (mode === 'sku' || mode === 'internalUpc') els.skuLookupBtn.click();
     else if (mode === 'upc') els.scanUpcLookupBtn.click();
   });
 
