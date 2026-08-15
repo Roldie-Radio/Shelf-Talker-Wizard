@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const { start } = require('../server/index.js');
 const { closeDb } = require('../server/db.js');
 
@@ -76,8 +77,18 @@ function closeProgressWindow() {
 // dev copy throws immediately, so the whole feature stays off there.
 function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true;
+  // Routes electron-updater's own internal logging (feed URL, HTTP status,
+  // parsed latest.yml, etc.) into electron-log's file transport, not just
+  // the handful of events we already react to below - this is what lets
+  // someone actually diagnose an update that fails on a single machine
+  // without remote desktop, by pulling this file instead. Defaults to
+  // %LOCALAPPDATA%\Shelf Talker Wizard\logs\main.log on Windows.
+  autoUpdater.logger = log;
+  log.transports.file.level = 'info';
+  log.info(`[updater] initialized, current version ${app.getVersion()}, log file: ${log.transports.file.getFile().path}`);
 
   autoUpdater.on('error', (err) => {
+    log.error('[updater] error', err);
     const wasDownloading = downloadInProgress;
     downloadInProgress = false;
     closeProgressWindow();
@@ -95,6 +106,7 @@ function setupAutoUpdater() {
   // whole point is confirming a background-triggered download is actually
   // happening instead of leaving it invisible until (or unless) it finishes.
   autoUpdater.on('update-available', (info) => {
+    log.info(`[updater] update available: ${info.version}`);
     manualCheckInProgress = false;
     downloadInProgress = true;
     createProgressWindow(info.version);
@@ -110,6 +122,7 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on('update-not-available', () => {
+    log.info('[updater] no update available');
     if (manualCheckInProgress) {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
@@ -124,6 +137,7 @@ function setupAutoUpdater() {
   // manual - an update sitting downloaded and ready is always worth
   // surfacing, not just when someone happened to go looking for it.
   autoUpdater.on('update-downloaded', (info) => {
+    log.info(`[updater] update downloaded: ${info.version}`);
     downloadInProgress = false;
     closeProgressWindow();
     dialog
@@ -153,6 +167,7 @@ function handleCheckForUpdates() {
     return;
   }
   manualCheckInProgress = true;
+  log.info('[updater] manual check triggered');
   // Swallow the promise rejection here - the 'error' event above is the
   // single source of truth for reporting a failed check, so this doesn't
   // also show its own dialog for the same failure.
@@ -346,7 +361,10 @@ app.whenReady().then(async () => {
   // A few seconds after launch, not blocking startup on it - this is a
   // background check for staff who just leave the app running, not
   // something the window needs to wait on.
-  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000);
+  setTimeout(() => {
+    log.info('[updater] background check triggered');
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 5000);
 });
 
 app.on('window-all-closed', () => {

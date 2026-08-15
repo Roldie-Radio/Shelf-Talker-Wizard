@@ -436,6 +436,15 @@ h1, h2, h3 { margin: 0; }
   background: var(--ui-field);
   color: var(--ui-ink);
 }
+.library-sync { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 0.9rem; padding-top: 0.75rem; border-top: 1px dashed var(--ui-border); }
+.library-sync__status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--ui-muted); }
+.library-sync__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-good); flex: 0 0 auto; }
+.library-sync__dot.is-stale { background: var(--ui-warn); }
+.library-sync__dot.is-syncing { background: var(--ui-accent); animation: library-sync-pulse 1.1s ease-in-out infinite; }
+@keyframes library-sync-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .library-sync__dot.is-syncing { animation: none; }
+}
 .library-chips { display: flex; gap: 0.4rem; margin-top: 0.75rem; flex-wrap: wrap; }
 .library-stats { display: flex; gap: 1.4rem; margin-top: 0.9rem; flex-wrap: wrap; }
 .library-stat { display: flex; flex-direction: column; }
