@@ -51,6 +51,7 @@
       version: '4.2.0',
       items: [
         'New (experimental, off by default): Wine Profile for Wine/Spirits Shelf Talkers - five 1-5 dot meters (Fruit, Body, Dry, Acidity, Alcohol) printed under the description, in the same dot style as the Untappd Rating widget on Beer talkers. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (the same varietal list Wine Food Pairings\' Suggest Pairings already uses), then adjust any dot by hand - click a dot to set that category\'s score, or click it again to clear it back to unrated. Turn it on in Settings → Experimental Features → Wine Profile.',
+        'Fixed: Search by Name could come back "Could not find on Untappd" for a beer that SKU Lookup found fine, when the WinePOS export\'s title spelled its style out in full (e.g. "Cream Ale") - the extra style word wasn\'t being stripped from the Untappd search query the way "Ale" alone already was.',
       ],
     },
     {
