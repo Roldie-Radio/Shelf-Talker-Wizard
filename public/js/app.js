@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.2.3',
+      items: [
+        'Changed: the Search by Name/SKU Lookup/Scan UPC toggle is gone, along with the separate "Product Name" field it used to show - the single Search field above now handles typing a product name directly, with the matching results dropdown right underneath it.',
+      ],
+    },
+    {
       version: '4.2.2',
       items: [
         'New: the Search tab now opens with one Search field above Search by Name/SKU Lookup/Scan UPC - type a product name, a SKU, or scan a UPC and it detects which and switches to (and runs) the matching lookup automatically, so picking a method first is no longer required day to day. The three panels and their toggle are still there underneath as a manual override.',
