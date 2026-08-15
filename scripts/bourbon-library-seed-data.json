@@ -4941,5 +4941,330 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Jefferson's Ocean Aged at Sea Bourbon",
+    "distillery": "Jefferson's (Kentucky Artisan Distillery + undisclosed sourced whiskey)",
+    "parentCompany": "Castle Brands (Pernod Ricard)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "3490",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Jefferson's doesn't disclose which distillery or mash bill goes into most of its bottlings - it's built around a blending/finishing program (Kentucky Artisan Distillery plus other undisclosed sourced whiskey) rather than one house recipe. Not guessing a specific grain split here. This expression's signature trait (aging at sea aboard research vessels) happens after distillation and doesn't change the underlying mash bill.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Jefferson's Ocean Rye Double Barrel",
+    "distillery": "Jefferson's (Kentucky Artisan Distillery + undisclosed sourced whiskey)",
+    "parentCompany": "Castle Brands (Pernod Ricard)",
+    "category": "Straight Rye Whiskey",
+    "sku": "31679",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Jefferson's doesn't disclose which distillery or mash bill goes into most of its bottlings - it's built around a blending/finishing program (Kentucky Artisan Distillery plus other undisclosed sourced whiskey) rather than one house recipe. Not guessing a specific grain split here. This is the rye counterpart to Jefferson's Ocean, also finished at sea.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Jefferson's Reserve Single Barrel",
+    "distillery": "Jefferson's (Kentucky Artisan Distillery + undisclosed sourced whiskey)",
+    "parentCompany": "Castle Brands (Pernod Ricard)",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "33119",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Jefferson's doesn't disclose which distillery or mash bill goes into most of its bottlings - it's built around a blending/finishing program (Kentucky Artisan Distillery plus other undisclosed sourced whiskey) rather than one house recipe. Not guessing a specific grain split here.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Jefferson's Small Batch Bourbon",
+    "distillery": "Jefferson's (Kentucky Artisan Distillery + undisclosed sourced whiskey)",
+    "parentCompany": "Castle Brands (Pernod Ricard)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "38151",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Jefferson's doesn't disclose which distillery or mash bill goes into most of its bottlings - it's built around a blending/finishing program (Kentucky Artisan Distillery plus other undisclosed sourced whiskey) rather than one house recipe. Not guessing a specific grain split here.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Jefferson's Tropics Kentucky Straight Bourbon",
+    "distillery": "Jefferson's (Kentucky Artisan Distillery + undisclosed sourced whiskey)",
+    "parentCompany": "Castle Brands (Pernod Ricard)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "35183",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Jefferson's doesn't disclose which distillery or mash bill goes into most of its bottlings - it's built around a blending/finishing program (Kentucky Artisan Distillery plus other undisclosed sourced whiskey) rather than one house recipe. Not guessing a specific grain split here. Tropics is aged/finished in a warm-climate location as part of the Ocean series concept.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "WhistlePig Snout to Tail 10YR Straight Bourbon",
+    "distillery": "WhistlePig Farm (Vermont, with Kentucky sourcing)",
+    "parentCompany": "WhistlePig Whiskey (independently owned)",
+    "category": "Straight Bourbon",
+    "sku": "42032",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "Honey, brown sugar, and toasted cashew.",
+    "palate": "Roasted almonds and baked cornbread.",
+    "finish": "Fresh oak and cedar.",
+    "tastingSource": "WhistlePig official product notes",
+    "confidence": {
+      "tier": "unknown",
+      "note": "WhistlePig doesn't disclose the mash bill for its Snout to Tail bourbon - the whiskey is aged in barrels with two differently toasted heads (a post-distillation barrel-treatment technique), but the underlying grain recipe isn't published.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "WhistlePig PiggyBack 6 Year Bourbon",
+    "distillery": "WhistlePig Farm (blend of Vermont, Kentucky, and Indiana sourced whiskey)",
+    "parentCompany": "WhistlePig Whiskey (independently owned)",
+    "category": "Straight Bourbon",
+    "sku": "34962",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 97
+      },
+      {
+        "grain": "Rye",
+        "pct": 2
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 1
+      }
+    ],
+    "nose": "Corn sweetness, vanilla, and light oak.",
+    "palate": "Sweet corn, caramel, and gentle spice.",
+    "finish": "Smooth, short to moderate.",
+    "tastingSource": "WhistlePig official product notes",
+    "confidence": {
+      "tier": "reported",
+      "note": "WhistlePig publishes this 97/2/1 near-maximum-corn mash bill directly for PiggyBack Bourbon, distilled from a blend of Vermont, Kentucky, and Indiana sourced whiskey.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "PiggyBack 100 Proof Bourbon - WhistlePig",
+        "url": "https://www.whistlepigwhiskey.com/whiskeys/piggyback-bourbon",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Yellowstone 93 Proof Kentucky Bourbon",
+    "distillery": "Limestone Branch Distillery",
+    "parentCompany": "Luxco/MGP Ingredients",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "10949",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and light spice.",
+    "palate": "Caramel, baking spice, and gentle rye pepper.",
+    "finish": "Moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Yellowstone traces its recipe to the Beam family (Limestone Branch's founders are descendants of the Beam family) and uses this 75/13/12 mash bill - the same ratio as standard Jim Beam - cooked using Limestone Branch's traditional three-stage open cook.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Yellowstone Bourbon is Made - Yellowstone Bourbon",
+        "url": "https://yellowstonebourbon.com/how-yellowstone-bourbon-is-made-a-journey-through-time-and-craft/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Yellowstone American Single Malt Whiskey",
+    "distillery": "Limestone Branch Distillery",
+    "parentCompany": "Luxco/MGP Ingredients",
+    "category": "American Single Malt Whiskey",
+    "sku": "34357",
+    "grains": [
+      {
+        "grain": "Malted Barley",
+        "pct": 100
+      }
+    ],
+    "nose": "Toasted grain, honey, and dried fruit.",
+    "palate": "Malty sweetness, caramel, and light spice.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Limestone Branch publishes this as a 100% malted barley mash bill for Yellowstone's American Single Malt line, distinct from the rest of the Yellowstone bourbon family.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Introducing: Yellowstone American Single Malt Whiskey - Limestone Branch",
+        "url": "https://limestonebranch.com/introducing-yellowstone-american-single-malt-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Yellowstone Rum Cask Bourbon",
+    "distillery": "Limestone Branch Distillery",
+    "parentCompany": "Luxco/MGP Ingredients",
+    "category": "Kentucky Straight Bourbon (Rum Cask Finished)",
+    "sku": "36982",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and a tropical rum-cask sweetness.",
+    "palate": "Caramel, baking spice, and molasses notes from the rum finish.",
+    "finish": "Warm, sweet, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same 75/13/12 base mash bill as standard Yellowstone, finished afterward in rum casks - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Yellowstone Bourbon is Made - Yellowstone Bourbon",
+        "url": "https://yellowstonebourbon.com/how-yellowstone-bourbon-is-made-a-journey-through-time-and-craft/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Yellowstone Toasted Cask Bourbon",
+    "distillery": "Limestone Branch Distillery",
+    "parentCompany": "Luxco/MGP Ingredients",
+    "category": "Kentucky Straight Bourbon (Toasted Barrel Finished)",
+    "sku": "36983",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, oak, and a rounder toasted-barrel sweetness.",
+    "palate": "Caramel, baking spice, and deeper toasted-oak notes.",
+    "finish": "Warm, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same 75/13/12 base mash bill as standard Yellowstone, finished afterward in toasted (uncharred) barrels - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How Yellowstone Bourbon is Made - Yellowstone Bourbon",
+        "url": "https://yellowstonebourbon.com/how-yellowstone-bourbon-is-made-a-journey-through-time-and-craft/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   }
 ]
