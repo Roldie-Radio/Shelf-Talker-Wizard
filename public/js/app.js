@@ -990,6 +990,14 @@
     scanUpcLookupBtn: document.getElementById('scanUpcLookupBtn'),
     scanUpcStatus: document.getElementById('scanUpcStatus'),
     scanUpcSaveBtn: document.getElementById('scanUpcSaveBtn'),
+    scanUpcUntappdSection: document.getElementById('scanUpcUntappdSection'),
+    scanUpcUntappdUrl: document.getElementById('scanUpcUntappdUrl'),
+    scanUpcUntappdBtn: document.getElementById('scanUpcUntappdBtn'),
+    scanUpcUntappdStatus: document.getElementById('scanUpcUntappdStatus'),
+    scanUpcUntappdHtmlToggle: document.getElementById('scanUpcUntappdHtmlToggle'),
+    scanUpcUntappdHtmlSection: document.getElementById('scanUpcUntappdHtmlSection'),
+    scanUpcUntappdHtmlInput: document.getElementById('scanUpcUntappdHtmlInput'),
+    scanUpcUntappdHtmlBtn: document.getElementById('scanUpcUntappdHtmlBtn'),
 
     exportSettingsOverlay: document.getElementById('exportSettingsOverlay'),
     exportSettingsCloseBtn: document.getElementById('exportSettingsCloseBtn'),
@@ -3104,6 +3112,18 @@
     // is for. refreshPreview() re-renders whichever mode is actually active
     // instead of forcing single like a bare renderPreview() call would.
     refreshPreview();
+
+    // Untappd's own search only ever fails for beer (see untappdError's
+    // origin in enrichBeerFromUntappd) - offer the manual "paste the beer's
+    // Untappd URL/HTML" fallback below only then, and clear out anything
+    // left over from a previous scan's attempt at it. Same pattern as
+    // applySkuLookupProduct's own skuUntappdSection handling above.
+    els.scanUpcUntappdSection.hidden = !(isBeer && data.untappdError);
+    els.scanUpcUntappdUrl.value = '';
+    els.scanUpcUntappdStatus.textContent = '';
+    els.scanUpcUntappdHtmlInput.value = '';
+    els.scanUpcUntappdHtmlSection.hidden = true;
+    els.scanUpcUntappdHtmlToggle.setAttribute('aria-expanded', 'false');
   }
 
   // Collects whichever best-effort enrichment step didn't pan out, so staff
@@ -3148,6 +3168,7 @@
     }
     els.scanUpcInput.value = '';
     els.scanUpcStatus.textContent = message || 'Added to queue! Scan the next one.';
+    els.scanUpcUntappdSection.hidden = true;
     els.scanUpcInput.focus();
     return true;
   }
@@ -3191,8 +3212,13 @@
         if (picked) {
           addScannedUpcToQueue('Added to queue! Scan the next one.');
         } else {
+          // None of the offered candidates were right (or staff just backed
+          // out) - reveal the same manual "paste an Untappd URL" fallback a
+          // plain miss already offers below, rather than leaving no way
+          // forward but Manual Entry.
+          els.scanUpcUntappdSection.hidden = false;
           els.scanUpcStatus.textContent = 'Found it. Untappd had more than one possible match and none was picked - '
-            + 'brewery/style/ABV/rating are blank. Review the fields, then click "Add to Queue".';
+            + 'try the Untappd URL box below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -3207,10 +3233,13 @@
         // store/description error could still show up here.
         const otherProblems = scanUpcProblems(data);
         const suffix = otherProblems ? ` ${otherProblems}` : '';
-        els.scanUpcStatus.textContent = confirmed
-          ? `Found it!${suffix} Review the fields, then click "Add to Queue".`
-          : `Found it. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
-            + 'Review the fields, then click "Add to Queue".';
+        if (confirmed) {
+          els.scanUpcStatus.textContent = `Found it!${suffix} Review the fields, then click "Add to Queue".`;
+        } else {
+          els.scanUpcUntappdSection.hidden = false;
+          els.scanUpcStatus.textContent = `Found it. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
+            + 'Try the Untappd URL box below, or review the fields and add it as-is.';
+        }
         return;
       }
 
@@ -3253,6 +3282,72 @@
   // fields were hand-edited after a scan) - same addScannedUpcToQueue,
   // just with no per-scan enrichment note to fold in.
   els.scanUpcSaveBtn.addEventListener('click', () => addScannedUpcToQueue());
+
+  // Manual fallback for a scan whose automatic Untappd search came back
+  // empty (see applyUpcScanProduct's untappdError check above) - same
+  // "paste the beer's Untappd URL" pattern as SKU Lookup's own
+  // skuUntappdBtn handler, reusing the same /api/untappd-lookup endpoint
+  // and applyUntappdFields merge.
+  els.scanUpcUntappdBtn.addEventListener('click', async () => {
+    const untappdUrl = els.scanUpcUntappdUrl.value.trim();
+    if (!untappdUrl) {
+      els.scanUpcUntappdStatus.textContent = "Enter the beer's Untappd URL first.";
+      return;
+    }
+    els.scanUpcUntappdBtn.disabled = true;
+    els.scanUpcUntappdStatus.textContent = 'Reading that Untappd page...';
+
+    try {
+      const resp = await fetch('/api/untappd-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: readForm(), untappdUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+
+      applyUntappdFields(data);
+      els.scanUpcUntappdStatus.textContent = 'Filled in from Untappd! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.scanUpcUntappdStatus.textContent = err.message || 'Something went wrong reading that Untappd page.';
+    } finally {
+      els.scanUpcUntappdBtn.disabled = false;
+    }
+  });
+
+  // "Untappd blocking that too? Paste the beer page's HTML instead" - same
+  // paste-HTML pattern as skuUntappdHtmlToggle above, for Scan UPC.
+  els.scanUpcUntappdHtmlToggle.addEventListener('click', () => {
+    els.scanUpcUntappdHtmlSection.hidden = !els.scanUpcUntappdHtmlSection.hidden;
+    els.scanUpcUntappdHtmlToggle.setAttribute('aria-expanded', String(!els.scanUpcUntappdHtmlSection.hidden));
+  });
+
+  els.scanUpcUntappdHtmlBtn.addEventListener('click', async () => {
+    const html = els.scanUpcUntappdHtmlInput.value;
+    if (!html.trim()) {
+      els.scanUpcUntappdStatus.textContent = "Paste the beer page's HTML first.";
+      return;
+    }
+    els.scanUpcUntappdHtmlBtn.disabled = true;
+    els.scanUpcUntappdStatus.textContent = 'Reading pasted HTML...';
+
+    try {
+      const resp = await fetch('/api/untappd-lookup-html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: readForm(), html, url: els.scanUpcUntappdUrl.value.trim() }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read that pasted HTML.');
+
+      applyUntappdFields(data);
+      els.scanUpcUntappdStatus.textContent = 'Filled in from pasted HTML! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.scanUpcUntappdStatus.textContent = err.message || 'Something went wrong reading that HTML.';
+    } finally {
+      els.scanUpcUntappdHtmlBtn.disabled = false;
+    }
+  });
 
   // ---------- Find tasting notes (Wine/Spirits) ----------
 
