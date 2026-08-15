@@ -543,6 +543,16 @@
             </label>
           </div>
 
+          <!-- Large Display Signs only (see isLargeSign in applyFormMode) -
+               prints bottom-right in Verdana 11pt bold, matching Regular
+               Price (see .sign__case-price in styles.css and
+               buildSignPriceRowHtml in card.js). Shelf Talkers and Small
+               Display Signs have no room for it and never render it. -->
+          <label class="field" id="casePriceField" hidden>
+            <span>Case Price (optional)</span>
+            <input type="text" inputmode="decimal" id="fCasePrice" placeholder="149.99" />
+          </label>
+
           <div class="form-actions">
             <button type="submit" class="btn btn--primary" id="saveBtn">Add to Queue</button>
             <button type="button" class="btn" id="cancelEditBtn" hidden>Cancel Edit</button>
@@ -1074,7 +1084,7 @@
         <h3>Adding a shelf talker</h3>
         <p>There are three tabs on the left for adding a product. Every one of them opens with the same two dropdowns: <strong>Type</strong> (<strong>Shelf Talker</strong>, <strong>Small Display</strong>, or <strong>Large Display</strong>) and <strong>Product Type</strong> (<strong>Wine / Spirits</strong> or <strong>Beer</strong>) &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). Both are shared across all three tabs: change either one on any tab and it stays set that way when you switch tabs.</p>
         <ul>
-          <li><strong>Edit Talker</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
+          <li><strong>Edit Talker</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field. <strong>Case Price</strong> (Large Display only, optional) prints bottom-right in the same bold style as Regular Price &mdash; Shelf Talkers and Small Display Signs have no room for it, so the field is hidden for those.</li>
           <li><strong>Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
           <li><strong>Search</strong> &mdash; pick a method (<strong>Search by Name</strong>, <strong>SKU Lookup</strong>, or <strong>Scan UPC</strong>) and look the product up instead of typing everything by hand. See "Searching, by name, SKU, or UPC" below.</li>
         </ul>

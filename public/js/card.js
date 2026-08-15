@@ -1453,24 +1453,49 @@ function buildSignMetaRowHtml(talker, leftHtml) {
   `;
 }
 
+// Case Price - Large Display Signs only (see fCasePrice in index.html), an
+// optional per-case cost printed bottom-right in the same Verdana 11pt bold
+// style as Regular Price (.sign__case-price mirrors .sign__regular-price's
+// base rule - see styles.css). formatMoney already returns '' for a blank
+// field, so an unset Case Price simply renders nothing, same as Regular/
+// Sale Price above.
+function buildCasePriceHtml(talker) {
+  const casePrice = formatMoney(talker.casePrice);
+  return casePrice ? `<div class="sign__case-price">Case Price ${casePrice}</div>` : '';
+}
+
 // Price row for Large signs: sale/super-sale price on the left, regular
 // price on the right (or regular price alone, right-aligned, when there's
 // no sale). Super Sale matches the reference sign's own printed layout
 // exactly: same .sign__sale-price line as a normal sale, just with "Super"
 // prepended - not a separate larger/centered price treatment (that's still
 // what Small signs use; this is Large-only, same as the rest of this
-// function).
+// function). Case Price, if set, always lands bottom-right: it takes over
+// the row's own right-hand slot whenever that slot would otherwise sit
+// empty (Standard/Closeout with no Sale Price, Super Sale with no Sale
+// Price to compare against), and drops to its own right-aligned row below
+// the price row whenever that slot is already the Regular Price.
 function buildSignPriceRowHtml(talker) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   const regular = formatMoney(talker.price);
+  const caseHtml = buildCasePriceHtml(talker);
 
   if (talkerType === 'supersale') {
     const bigPrice = hasSale ? talker.salePrice : talker.price;
+    if (hasSale) {
+      return `
+        <div class="sign__price-row">
+          <div class="sign__sale-price">Super Sale Price ${formatMoney(bigPrice)}</div>
+          <div class="sign__regular-price">Regular Price ${regular}</div>
+        </div>
+        ${caseHtml ? `<div class="sign__case-price-row">${caseHtml}</div>` : ''}
+      `;
+    }
     return `
       <div class="sign__price-row">
         <div class="sign__sale-price">Super Sale Price ${formatMoney(bigPrice)}</div>
-        ${hasSale ? `<div class="sign__regular-price">Regular Price ${regular}</div>` : '<div></div>'}
+        ${caseHtml || '<div></div>'}
       </div>
     `;
   }
@@ -1478,12 +1503,14 @@ function buildSignPriceRowHtml(talker) {
   // No sale price: the lone Regular Price takes over the Sale Price's own
   // size and slot (see .sign__regular-price--solo in styles.css) instead of
   // sitting in its usual small, right-hand spot - dropping the Sale Price's
-  // empty placeholder div lets flexbox's space-between put this single
-  // child flush left, the same spot the Sale Price line would occupy.
+  // empty placeholder div (unless Case Price fills it instead) lets
+  // flexbox's space-between put the Regular Price flush left, the same spot
+  // the Sale Price line would occupy.
   if (!hasSale) {
     return `
       <div class="sign__price-row">
         <div class="sign__regular-price sign__regular-price--solo">Regular Price ${regular}</div>
+        ${caseHtml}
       </div>
     `;
   }
@@ -1493,6 +1520,7 @@ function buildSignPriceRowHtml(talker) {
       <div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>
       <div class="sign__regular-price">Regular Price ${regular}</div>
     </div>
+    ${caseHtml ? `<div class="sign__case-price-row">${caseHtml}</div>` : ''}
   `;
 }
 
