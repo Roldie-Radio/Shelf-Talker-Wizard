@@ -238,10 +238,11 @@
     }
   },
   {
-    "title": "Woodford Reserve Distiller's Select",
+    "title": "Woodford Reserve Bourbon Distillers Select",
     "distillery": "Woodford Reserve Distillery",
     "parentCompany": "Brown-Forman Corporation",
     "category": "Kentucky Straight Bourbon",
+    "sku": "2718",
     "grains": [
       {
         "grain": "Corn",
@@ -273,10 +274,11 @@
     }
   },
   {
-    "title": "Old Forester 86 Proof",
+    "title": "Old Forester Bourbon",
     "distillery": "Old Forester Distillery",
     "parentCompany": "Brown-Forman Corporation",
     "category": "Kentucky Straight Bourbon",
+    "sku": "27209",
     "grains": [
       {
         "grain": "Corn",
@@ -2850,5 +2852,348 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Old Forester 1870 Bourbon",
+    "distillery": "Old Forester Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "34985",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Brown sugar, orange peel, and mint.",
+    "palate": "Rich caramel and vanilla with a spicy rye backbone.",
+    "finish": "Warm and moderately long.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions. The 1870 Original Batch recreates an early Old Forester production method (blending barrels from three warehouse locations) - a blending process, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Forester - Our Whiskey",
+        "url": "https://www.oldforester.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Forester 1897 Bottled & Bond Bourbon",
+    "distillery": "Old Forester Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon (Bottled-in-Bond)",
+    "sku": "27772",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Brown sugar, orange peel, and mint, carried by 100 proof.",
+    "palate": "Rich caramel and vanilla with a spicy rye backbone.",
+    "finish": "Long, warm.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Forester - Our Whiskey",
+        "url": "https://www.oldforester.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Forester 1910 Old Fine Whisky",
+    "distillery": "Old Forester Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "25016",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Brown sugar, orange peel, and toasted oak.",
+    "palate": "Rich caramel and vanilla with extra oak from a double-barreling finish.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions. The 1910 expression is finished with a second, new charred barrel - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Forester - Our Whiskey",
+        "url": "https://www.oldforester.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Forester 1920 Prohibition Style",
+    "distillery": "Old Forester Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon (Barrel Proof)",
+    "sku": "14207",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Bold brown sugar, orange peel, and mint at barrel-proof strength.",
+    "palate": "Rich caramel, vanilla, and rye spice, undiluted.",
+    "finish": "Long, hot, spicy.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions. Bottled at barrel (non-chill-filtered) proof, styled after Prohibition-era medicinal whiskey.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Forester - Our Whiskey",
+        "url": "https://www.oldforester.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Forester Single Barrel Private",
+    "distillery": "Old Forester Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "32187",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Brown sugar, orange peel, and mint, fuller from single-barrel selection.",
+    "palate": "Rich caramel and vanilla with a spicy rye backbone.",
+    "finish": "Long, warm.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Forester - Our Whiskey",
+        "url": "https://www.oldforester.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Woodford Reserve Double Oaked Bourbon",
+    "distillery": "Woodford Reserve Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "17230",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Dried fruit, vanilla, mint, and richer toasted oak.",
+    "palate": "Deeper cocoa, cinnamon, and ripe fruit from a second charred barrel.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions. Double Oaked is finished in a second, deeply toasted/lightly charred barrel - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Woodford Reserve - Our Process",
+        "url": "https://www.woodfordreserve.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Woodford Reserve Double Double Oak",
+    "distillery": "Woodford Reserve Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "38701",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 72
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Dried fruit, vanilla, mint, and intense toasted oak.",
+    "palate": "Bold cocoa, cinnamon, and ripe fruit from two extra charred barrels.",
+    "finish": "Long, warm, very oaky.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 72/18/10 mash bill directly - it's the same base recipe shared across Old Forester and Woodford Reserve, with barrel treatment, proofing, and blending driving the difference between individual expressions. Double Double Oak extends the Double Oaked concept through two additional charred barrels - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Woodford Reserve - Our Process",
+        "url": "https://www.woodfordreserve.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Woodford Reserve Rye",
+    "distillery": "Woodford Reserve Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Rye Whiskey",
+    "sku": "6078",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 53
+      },
+      {
+        "grain": "Corn",
+        "pct": 33
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 14
+      }
+    ],
+    "nose": "Mint, dill, and spicy rye grain.",
+    "palate": "Rye spice, vanilla, and cinnamon over toasted oak.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Woodford Reserve Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Brown-Forman publishes this 53/33/14 mash bill directly for Woodford Reserve Rye, the same way it does for the flagship bourbon.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Woodford Reserve - Our Process",
+        "url": "https://www.woodfordreserve.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Forester Single Barrel Rye",
+    "distillery": "Old Forester Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Kentucky Straight Rye Whiskey (Single Barrel)",
+    "sku": "30743",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 65
+      },
+      {
+        "grain": "Corn",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 15
+      }
+    ],
+    "nose": "Mint, black pepper, and dried fruit.",
+    "palate": "Rye spice, caramel, and vanilla, fuller from single-barrel selection.",
+    "finish": "Long, warm, peppery.",
+    "tastingSource": "Brown-Forman official product notes",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Unlike the bourbon and Woodford Reserve Rye, Brown-Forman hasn't published an exact mash bill for Old Forester's rye. This 65/20/15 figure is the commonly-cited trade estimate, not a distillery-confirmed number - replace as soon as better information turns up.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
