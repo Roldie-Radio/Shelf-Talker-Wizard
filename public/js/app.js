@@ -41,6 +41,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.0.1',
+      items: [
+        'Fixed: the Bourbon Library now arrives pre-loaded with 14 popular bourbons (Buffalo Trace, Four Roses Single Barrel, Maker\'s Mark, Woodford Reserve, and others) the first time it launches on a PC, instead of showing up empty. It auto-seeds itself from this project\'s own GitHub repo in the background on startup - no manual setup step, and it never touches a library that already has entries (including one you\'ve cleared out on purpose).',
+      ],
+    },
+    {
       version: '4.0.0',
       items: [
         'New: Bourbon Library - a permanent sidebar section for browsing every bourbon in the shared Mash Bill Library, with Mash Bill Confidence scoring and a profile page per bottle.',
