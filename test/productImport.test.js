@@ -3058,6 +3058,15 @@ test('buildUntappdSearchQuery strips a standalone "Wit" the same as "Witbier"', 
   assert.equal(buildUntappdSearchQuery('Hoegaarden Belgian Wit'), 'Hoegaarden');
 });
 
+// A WinePOS export title routinely spells out "Cream Ale" in full (unlike a
+// store product page, which tends to already be trimmed to the beer's bare
+// name) - "Ale" alone being stripped left "Cream" behind, an extra word the
+// beer's real Untappd name doesn't have, and the search missed a real match
+// (Oakflower's "Crackle", a Cream Ale) it should have found.
+test('buildUntappdSearchQuery strips "Cream" the same as other style words', () => {
+  assert.equal(buildUntappdSearchQuery('Oakflower Crackle Cream Ale'), 'Oakflower Crackle');
+});
+
 test('buildUntappdSearchQuery leaves ambiguous macro-brand words like "Light" alone', () => {
   // "Light" is often the only thing telling two real, separately-listed
   // Untappd beers from the same brewery apart (Coors Light vs. Coors

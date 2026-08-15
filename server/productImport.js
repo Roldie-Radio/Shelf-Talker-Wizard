@@ -1716,7 +1716,7 @@ const BEER_STYLE_WORD_PATTERN = new RegExp(
     'dunkel', 'm[aä]rzen', 'helles', 'barleywine', 'lambic', 'bock', 'doppelbock',
     'schwarzbier', 'rauchbier', 'kellerbier', 'tripel', 'dubbel', 'quad', 'quadrupel',
     'esb', 'sour', 'farmhouse', 'wheat', 'hazy', 'double', 'imperial', 'triple',
-    'session', 'dry', 'irish', 'belgian', 'german',
+    'session', 'dry', 'irish', 'belgian', 'german', 'cream',
   ].join('|') + ')\\b',
   'gi'
 );
