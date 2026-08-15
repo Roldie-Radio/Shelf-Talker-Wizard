@@ -7169,5 +7169,230 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "Pinhook Straight Bourbon Whiskey 2024",
+    "distillery": "Castle & Key Distillery",
+    "parentCompany": "Pinhook Whiskey (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "4043",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Vanilla, caramel, and light rye spice.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Pinhook's current flagship releases are distilled at Castle & Key Distillery using this reported 75/15/10 mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "About Us - Pinhook Bourbon",
+        "url": "https://pinhookbourbon.com/pages/about",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Pinhook Cask Strength 2024 Purple Wax",
+    "distillery": "Castle & Key Distillery",
+    "parentCompany": "Pinhook Whiskey (independently owned)",
+    "category": "Kentucky Straight Bourbon (Cask Strength)",
+    "sku": "37023",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Vanilla, caramel, and rye spice, more intense at cask strength.",
+    "palate": "Rich brown sugar and oak with real barrel-proof heat.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Pinhook's current flagship releases are distilled at Castle & Key Distillery using this reported 75/15/10 mash bill. Same base mash bill as the 2024 Straight Bourbon, bottled undiluted.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "About Us - Pinhook Bourbon",
+        "url": "https://pinhookbourbon.com/pages/about",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Pinhook Vertical Series 9YR Gold Wax",
+    "distillery": "MGP of Indiana (sourced, older stock)",
+    "parentCompany": "Pinhook Whiskey (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "38369",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and caramel, more developed from extra age.",
+    "palate": "Black pepper, cinnamon, and brown sugar.",
+    "finish": "Long, spicy, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Pinhook's Vertical Series draws on older MGP of Indiana-sourced stock (predating its current Castle & Key-distilled flagship) - using MGP's well-documented 75/21/4 high-rye bourbon recipe as the likely base, though not independently confirmed for this specific release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Woodinville Straight Rye",
+    "distillery": "Woodinville Whiskey Co.",
+    "parentCompany": "Moet Hennessy",
+    "category": "Straight Rye Whiskey",
+    "sku": "35467",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 100
+      }
+    ],
+    "nose": "Mint, dill, and black pepper.",
+    "palate": "Bold rye spice and brown sugar, no corn sweetness to soften it.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Woodinville publishes a 100% rye mash bill directly, sourced from the Omlin family farm in Quincy, Washington - unmalted rye, using an external enzyme for starch conversion rather than malted grain.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Woodinville 100% Rye Whiskey - Woodinville Whiskey Co.",
+        "url": "https://woodinvillewhiskeyco.com/pages/woodinville-100-rye-whiskey",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Kings County Bourbon Whiskey",
+    "distillery": "Kings County Distillery",
+    "parentCompany": "Kings County Distillery (independently owned)",
+    "category": "Straight Bourbon (High Malt)",
+    "sku": "31902",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 20
+      }
+    ],
+    "nose": "Toasted grain, honey, and dark fruit.",
+    "palate": "Rich malt sweetness and oak spice, unusually close to Scotch in style for a bourbon.",
+    "finish": "Smooth, moderate, malty.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Kings County publishes this 80/20 corn/malted barley mash bill directly - 80% organic New York corn from a single Finger Lakes farm and 20% English Golden Promise malted barley, double pot-distilled at their Brooklyn distillery.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Kings County Distillery - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Kings_County_Distillery",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Horse Soldier Straight Bourbon Whiskey",
+    "distillery": "Horse Soldier Farms (currently contract-distilled in Columbus, OH)",
+    "parentCompany": "Horse Soldier Bourbon (independently owned)",
+    "category": "Straight Bourbon (Wheated)",
+    "sku": "34884",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Red Winter Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Vanilla, caramel, and soft wheat sweetness.",
+    "palate": "Brown sugar and baked bread, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Horse Soldier's Small Batch line uses this reported 70/20/10 wheated mash bill; production currently happens in Columbus, Ohio while their own Kentucky distillery is under construction.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Horse Soldier Bourbon - Live Legendary",
+        "url": "https://horsesoldierbourbon.com/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
   }
 ]
