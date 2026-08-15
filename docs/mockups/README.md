@@ -195,3 +195,38 @@ browser.
   Chilled callout instead of being replaced by it, and a fixed **All
   Combinations** panel shows all three Talker Styles with Chilled on side by
   side for a quick sanity check.
+- **wine-profile-infographic.html** &mdash; proposes an optional **Wine
+  Profile** block for Wine / Spirits Shelf Talkers: five small at-a-glance
+  meters &mdash; **Fruit, Body, Dry, Acidity, Alcohol** &mdash; each scored
+  1&ndash;5 with filled dots, reusing the same visual language the app
+  already uses for the Untappd Rating widget on Beer talkers
+  (`.card__beer-dot`), just applied across five categories instead of one
+  overall score. Sits directly under Description, above Ratings/Awards
+  &mdash; its own line with a top divider, the same treatment
+  `.card__flavor` (Nose/Palate/Finish) and `.card__pairings` (Pairs Well
+  With) already use. Laid out as one horizontal strip (label over its own
+  row of 5 dots, 5 equal columns) rather than 5 stacked full-width rows,
+  since a wine talker can already be carrying Ratings, Awards, and Food
+  Pairing chips underneath it &mdash; the strip trades a little column
+  width for a lot of vertical space back. Staff set each score by clicking
+  dots by hand, plus a **Suggest Profile** button next to the field that
+  prefills all five from a small varietal keyword table matched against
+  Product Title &mdash; the same pattern **Suggest Pairings** already uses
+  for Food Pairing Suggestions, with suggested values staying fully
+  editable and a status line tracking whether the current values came from
+  a suggestion or were hand-edited. The six sample wines (Cabernet
+  Sauvignon, Zinfandel, Sangiovese/Chianti, Pinot Grigio, Riesling,
+  Moscato) are picked to show genuinely different shapes side by side. Not
+  gated behind a real Experimental Features toggle here (see
+  `wine-pairings-experimental-toggle.html` for that switch pattern) &mdash;
+  this mockup uses a plain **Show Wine Profile on this shelf talker**
+  checkbox instead, to keep the focus on the block itself. **Implemented**
+  in a follow-up to this mockup &mdash; see the README's own Wine Profile
+  section for the shipped behavior. It landed a plain Settings &rarr;
+  Experimental Features &rarr; **Wine Profile** toggle (not the checkbox
+  above) and dropped the mockup's separate keyword table in favor of
+  attaching a `profile` object straight onto each existing
+  `WINE_PAIRING_RULES` entry in `card.js`, so Suggest Profile and Suggest
+  Pairings share one varietal match instead of two lists that could drift
+  apart &mdash; the extension that `color` field's own comment had already
+  flagged as coming later.

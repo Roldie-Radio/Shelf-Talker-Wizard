@@ -34,6 +34,16 @@
         document.documentElement.setAttribute('data-menu-size', menuSize);
       }
     } catch (e) { /* storage unavailable - stay on the Comfortable default */ }
+    try {
+      // Queue column show/hide (app bar switch next to History, see
+      // applyQueueColumnVisible in app.js) - same before-first-paint
+      // reasoning as theme/accent/menu size above, otherwise a saved
+      // "hidden" choice would flash the Queue column in for one frame on
+      // every launch before the Full Page preview grid widens into it.
+      if (localStorage.getItem('shelfTalkerQueueColumnVisible.v1') === 'false') {
+        document.documentElement.setAttribute('data-queue-hidden', 'true');
+      }
+    } catch (e) { /* storage unavailable - stay on the visible default */ }
   })();
 </script>
 </head>
@@ -198,6 +208,13 @@
     </div>
     <div class="appbar__actions">
       <span class="queue-count"><strong id="queueCount">0</strong> queued</span>
+      <div class="queue-toggle">
+        <span class="queue-toggle__label" id="queueToggleLabel">Queue column</span>
+        <label class="switch">
+          <input type="checkbox" id="queueColumnToggle" checked aria-labelledby="queueToggleLabel" />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
       <button type="button" id="historyBtn" class="btn" title="Search and reprint past shelf talkers">History</button>
       <button type="button" id="helpBtn" class="btn" title="Help">Help</button>
       <button type="button" id="themeToggle" class="btn btn--icon" aria-pressed="false" title="Switch to dark mode">
@@ -383,6 +400,29 @@
               <span>Finish (optional)</span>
               <textarea id="fFinish" rows="2" maxlength="200" placeholder="Long and warm, a whisper of black pepper"></textarea>
             </label>
+          </div>
+
+          <!-- Wine/Spirits-only, same visibility rule as Food Pairing
+               Suggestions below (Shelf Talkers only, hidden for Beer/
+               Display Signs, and gated behind its own Settings ->
+               Experimental Features -> Wine Profile toggle - see
+               applyExperimentalWineProfile in app.js). The five dot rows
+               are built by renderProfilePicker (see app.js) from
+               WINE_PROFILE_CATEGORIES (global, defined in card.js), so the
+               row order/labels/low-high captions can't drift out of sync
+               with what actually prints (buildWineProfileHtml in card.js).
+               Suggest Profile runs suggestWineProfile (also card.js,
+               reusing the same varietal match Suggest Pairings' own
+               detectWinePairings uses) against the Title already in the
+               form and prefills all five dots; every dot stays clickable
+               afterward to hand-adjust or override. -->
+          <div class="field" id="profileField">
+            <div class="field-head">
+              <span>Wine Profile (optional) <span class="beta-badge">Experimental</span></span>
+              <button type="button" class="btn btn--small btn--ghost" id="suggestProfileBtn">Suggest Profile</button>
+            </div>
+            <p class="help-text" id="profileSuggestStatus" role="status" aria-live="polite">Type a Product Title, then click Suggest Profile.</p>
+            <div class="wine-profile-picker" id="profilePicker"></div>
           </div>
 
           <!-- Spirits/Wine-only, same visibility rule as Nose/Palate/Finish
@@ -881,7 +921,6 @@
             <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
           </div>
         </div>
-        <a href="#" class="library-back" id="libraryBackLink" hidden>&larr; All bourbons</a>
       </div>
       <div class="library-sync">
         <div class="library-sync__status">
@@ -1583,6 +1622,12 @@
             Wine Food Pairings
           </label>
           <p class="help-text">Adds a Food Pairing Suggestions section to Wine/Spirits Shelf Talkers: click Suggest Pairings to match the varietal detected in the Product Title/Description (e.g. Cabernet Sauvignon) against a short list of food pairings, then pick up to 3 to print under the description. Off by default; turning it off again hides the section and the printed pairings without deleting anything already on a talker.</p>
+
+          <label class="server-pc-checkbox">
+            <input type="checkbox" id="experimentalProfileCheckbox" />
+            Wine Profile
+          </label>
+          <p class="help-text">Adds a Wine Profile section to Wine/Spirits Shelf Talkers: five 1&ndash;5 dot meters &mdash; Fruit, Body, Dry, Acidity, Alcohol &mdash; printed under the description, Untappd-style. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (e.g. Cabernet Sauvignon), then adjust any dot by hand before printing. Off by default; turning it off again hides the section and the printed strip without deleting anything already on a talker.</p>
         </div>
       </div>
       <div class="modal__footer">
