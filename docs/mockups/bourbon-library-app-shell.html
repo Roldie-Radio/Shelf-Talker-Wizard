@@ -1,0 +1,888 @@
+<title>Bourbon Library App Shell — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - same base set as bourbon-profile-page.html/mash-bill-library.html
+   so this sits in the same visual system. Adds one new fixed set for the
+   Library's own "app-within-an-app" band (--lib-band-*) - declared once,
+   not re-toggled per theme, same precedent as --ink/--sale-red above:
+   this is a brand/identity color, not a UI-chrome surface color.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+  --amber-band: #bd8436;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+  --ui-low: #a8391a;
+  --ui-low-tint: rgba(168, 57, 26, 0.1);
+
+  --lib-band-bg: #241a10;
+  --lib-band-bg-soft: #2f2216;
+  --lib-band-ink: #f3e6cf;
+  --lib-band-muted: #c9b89a;
+  --lib-band-accent: #d9a441;
+  --lib-band-accent-soft: rgba(217, 164, 65, 0.16);
+  --lib-band-border: #4a3a26;
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+.decision-strip { display: flex; align-items: center; gap: 0.5rem; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.55rem 0.8rem; font-size: 0.85rem; font-weight: 700; width: fit-content; }
+
+/* ---------- menu bar (File/Tools only now - Advanced/Help moved into
+   Settings, see the settings-section rules below. Spans the full device
+   width, above the rail, same as index.html's #menuBar sitting above its
+   own app-shell; native <details> gives working click-to-open dropdowns
+   with no JS of their own) ---------- */
+.mb-bar { display: flex; gap: 0.1rem; padding: 0.4rem 1.1rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); font-size: 0.82rem; }
+.mb-menu { position: relative; }
+.mb-menu summary { list-style: none; cursor: pointer; padding: 0.3rem 0.65rem; border-radius: 6px; font-weight: 600; color: var(--ui-ink-soft); }
+.mb-menu summary::-webkit-details-marker { display: none; }
+.mb-menu summary:hover, .mb-menu[open] summary { background: var(--ui-hover); color: var(--ui-ink); }
+.mb-dropdown { position: absolute; top: 100%; left: 0; margin-top: 0.2rem; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 8px; box-shadow: 0 10px 26px var(--ui-shadow); padding: 0.3rem; min-width: 190px; z-index: 4; }
+.mb-dropdown-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; text-align: left; border: none; background: transparent; font-family: inherit; font-size: 0.82rem; color: var(--ui-ink); padding: 0.4rem 0.6rem; border-radius: 5px; cursor: pointer; }
+.mb-dropdown-item:hover { background: var(--ui-hover); }
+.mb-dropdown-item .accel { font-size: 0.72rem; color: var(--ui-muted); }
+.mb-sep { height: 1px; background: var(--ui-border); margin: 0.25rem 0.3rem; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:focus-visible, input:focus-visible, .card:focus-visible, .chip-filter:focus-visible, .rail__icon:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+/* ---------- switch component ---------- */
+.switch-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 600; }
+.switch { position: relative; width: 40px; height: 22px; flex: 0 0 auto; }
+.switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+.switch__track { position: absolute; inset: 0; background: var(--ui-border); border-radius: 999px; transition: background 0.15s; }
+.switch__thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--ui-panel); box-shadow: 0 1px 2px var(--ui-shadow); transition: transform 0.15s; }
+.switch input:checked ~ .switch__track { background: var(--ui-accent); }
+.switch input:checked ~ .switch__thumb { transform: translateX(18px); }
+
+/* ---------- app shell: real persistent rail + swapped content ---------- */
+.app-shell { display: flex; min-height: 620px; }
+.rail { width: 78px; flex: 0 0 auto; background: var(--ui-panel-alt); border-right: 1px solid var(--ui-border); display: flex; flex-direction: column; align-items: center; padding: 0.9rem 0; gap: 0.35rem; }
+.rail__brand { display: block; width: 58px; height: auto; margin-bottom: 0.7rem; }
+.rail__icon { width: 64px; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; border: none; background: transparent; border-radius: 10px; cursor: pointer; color: var(--ui-ink-soft); font-family: inherit; padding: 0.4rem 0.2rem; }
+.rail__icon .glyph { font-size: 1.15rem; line-height: 1; }
+.rail__icon .caption { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.02em; white-space: normal; text-align: center; line-height: 1.15; }
+.rail__icon:hover { background: var(--ui-hover); }
+.rail__icon.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.rail__icon.is-library:not(.is-active) { color: var(--lib-band-accent); }
+.rail__spacer { flex: 1; }
+.mini-talker-icon, .mini-glass-icon { display: block; }
+
+.content-pane { flex: 1; min-width: 0; overflow-y: auto; background: var(--ui-panel); }
+
+/* ---------- Shelf Talker view (representative slice of the real Talker Builder,
+   incl. the Queue side panel and History button that already live on this one
+   screen today - see index.html's Queue panel and #historyBtn) ---------- */
+.build-pad { padding: 1.2rem 1.6rem 1.6rem; }
+.build-top-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.build-tabs { display: flex; gap: 0.3rem; }
+.build-tab { border: 1px solid var(--ui-border); background: var(--ui-panel-sunken); color: var(--ui-ink-soft); font-family: inherit; font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 8px; }
+.build-tab.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.build-columns { display: grid; grid-template-columns: 300px 1fr 230px; gap: 1.3rem; align-items: start; }
+@media (max-width: 1000px) { .build-columns { grid-template-columns: 1fr; } }
+
+/* ---------- Live Preview panel (index.html's .panel--preview, third
+   column of its own three-column .layout - form / preview / queue - that
+   this mockup had dropped entirely) ---------- */
+.build-preview { display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+.preview-header { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.preview-header h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); }
+.preview-toggle { display: inline-flex; gap: 0.2rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.15rem; }
+.preview-toggle button { border: none; background: transparent; padding: 0.28rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
+.preview-toggle button.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.preview-stage { display: flex; justify-content: center; padding: 1rem 0.4rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 10px; min-height: 210px; align-items: center; }
+
+/* ---------- preview card: matches the real .card's own look (see
+   styles.css) closely enough to read as "the actual talker," not a
+   generic placeholder box - amber .card__band up top, 2px ink border,
+   Verdana price row, Regular Price in ink (only a Sale Price is ever
+   red, per .card__sale-price/.card__regular-price). ---------- */
+.preview-card { background: #fff; border: 2px solid var(--ink); border-radius: 2px; width: 150px; overflow: hidden; display: flex; flex-direction: column; color: var(--ink); font-family: Verdana, Geneva, sans-serif; }
+.preview-card__band { height: 13px; background: var(--amber-band); flex: 0 0 auto; }
+.preview-card__body { padding: 0.55rem 0.55rem 0.65rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.preview-card__title { font-weight: 800; font-size: 0.72rem; line-height: 1.25; }
+.preview-card__desc { font-size: 0.58rem; color: #555; line-height: 1.3; }
+.preview-card__mashbar { display: flex; height: 5px; border-radius: 2px; overflow: hidden; margin-top: 0.05rem; }
+.preview-card__mashbar span { height: 100%; }
+.preview-card__price { margin-top: 0.15rem; font-weight: 800; font-size: 0.76rem; }
+
+.preview-sheet-page { background: #fff; border: 1px solid var(--ui-border); box-shadow: 0 6px 18px var(--ui-shadow); border-radius: 4px; padding: 0.7rem; }
+.preview-sheet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; place-items: center; }
+.preview-card--sheet { width: 92px; }
+.preview-card--sheet .preview-card__band { height: 8px; }
+.preview-card--sheet .preview-card__body { padding: 0.35rem 0.35rem 0.4rem; gap: 0.15rem; }
+.preview-card--sheet .preview-card__title { font-size: 0.54rem; }
+.preview-card--sheet .preview-card__desc { display: none; }
+.preview-card--sheet .preview-card__price { font-size: 0.6rem; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; max-width: 420px; }
+.field span { color: var(--ui-ink-soft); }
+.field input { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font-weight: 400; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; max-width: 420px; }
+.bourbon-fields { border: 1px dashed var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; margin-top: 0.9rem; max-width: 420px; }
+.bourbon-fields__label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--lib-band-accent); margin-bottom: 0.6rem; }
+.bourbon-fields-hidden-note { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.9rem; max-width: 420px; line-height: 1.5; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip-ph { background: var(--ui-code-bg); border-radius: 999px; padding: 0.25rem 0.65rem; font-size: 0.78rem; font-weight: 600; color: var(--ui-ink-soft); }
+.build-queue { border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-panel-sunken); padding: 0.85rem 0.9rem; }
+.build-queue__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.build-queue__header h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-muted); }
+.build-queue__count { font-size: 0.7rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.1rem 0.45rem; border-radius: 999px; }
+/* Matches index.html's own .queue-item shape: colored theme swatch,
+   bold truncating title, muted meta line, kebab "more actions" button -
+   not a plain text row. */
+.build-queue__item { display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.45rem 0.5rem; background: var(--ui-panel); margin-bottom: 0.4rem; }
+.build-queue__swatch { width: 6px; align-self: stretch; border-radius: 3px; background: var(--amber-band); flex-shrink: 0; }
+.build-queue__body { flex: 1; min-width: 0; }
+.build-queue__title { font-weight: 700; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.build-queue__meta { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.05rem; }
+.build-queue__menu-btn { flex: 0 0 auto; border: none; background: none; color: var(--ui-muted); font-size: 1rem; line-height: 1; padding: 0.2rem 0.45rem; border-radius: 6px; cursor: pointer; font-family: inherit; }
+.build-queue__menu-btn:hover { color: var(--ui-accent-ink); background: var(--ui-hover); }
+
+/* ---------- Settings view (rail icon -> content pane swap) ---------- */
+.settings-pad { padding: 1.2rem 1.6rem 1.6rem; max-width: 560px; }
+.settings-section h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.6rem; }
+.settings-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.settings-row__label { font-size: 0.88rem; font-weight: 700; }
+.settings-row__caption { font-size: 0.8rem; color: var(--ui-ink-soft); margin-top: 0.25rem; line-height: 1.5; max-width: 46ch; }
+.settings-note { display: flex; gap: 0.5rem; align-items: flex-start; background: var(--ui-good-tint); border: 1px solid color-mix(in srgb, var(--ui-good) 40%, var(--ui-border)); color: var(--ui-good); border-radius: 8px; padding: 0.65rem 0.8rem; font-size: 0.82rem; font-weight: 600; margin-top: 1rem; }
+
+/* ---------- Library view ---------- */
+.lib-band { background: var(--lib-band-bg); color: var(--lib-band-ink); padding: 1.1rem 1.6rem; }
+.lib-band__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.lib-brand { display: flex; align-items: center; gap: 0.7rem; }
+.lib-brand__icon { width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(155deg, var(--lib-band-accent), #a86a24); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex: 0 0 auto; }
+.lib-brand__name { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; }
+.lib-brand__tag { font-size: 0.72rem; color: var(--lib-band-muted); margin-top: 0.1rem; }
+.lib-search { margin-top: 1rem; }
+.lib-search input { width: 100%; font: inherit; font-size: 0.92rem; padding: 0.65rem 0.9rem; border-radius: 8px; border: 1px solid var(--lib-band-border); background: var(--lib-band-bg-soft); color: var(--lib-band-ink); }
+.lib-search input::placeholder { color: var(--lib-band-muted); }
+.lib-chips { display: flex; gap: 0.4rem; margin-top: 0.7rem; flex-wrap: wrap; }
+.chip-filter { border: 1px solid var(--lib-band-border); background: var(--lib-band-bg-soft); color: var(--lib-band-muted); font-family: inherit; font-size: 0.76rem; font-weight: 700; padding: 0.32rem 0.7rem; border-radius: 999px; cursor: pointer; }
+.chip-filter.is-active { background: var(--lib-band-accent-soft); border-color: var(--lib-band-accent); color: var(--lib-band-accent); }
+.lib-stats { display: flex; gap: 1.4rem; margin-top: 0.9rem; flex-wrap: wrap; }
+.lib-stat { display: flex; flex-direction: column; }
+.lib-stat b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.lib-stat span { font-size: 0.7rem; color: var(--lib-band-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.lib-body { padding: 1.3rem 1.6rem 1.7rem; }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
+.card { text-align: left; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-panel-sunken); padding: 0.9rem 1rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.5rem; }
+.card:hover { border-color: var(--ui-accent); box-shadow: 0 4px 14px var(--ui-shadow); }
+.card__title { font-size: 0.98rem; font-weight: 700; }
+.card__sub { font-size: 0.76rem; color: var(--ui-muted); }
+.card__bar { display: flex; width: 100%; height: 8px; border-radius: 3px; overflow: hidden; border: 1px solid rgba(0,0,0,0.12); }
+.card__bar span { height: 100%; }
+.card__bar--empty { background: repeating-linear-gradient(135deg, var(--ui-code-bg), var(--ui-code-bg) 5px, var(--ui-panel-alt) 5px, var(--ui-panel-alt) 10px); }
+.card__footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.1rem; }
+
+.conf-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.12rem 0.5rem 0.12rem 0.4rem; border-radius: 999px; border: 1px solid transparent; }
+.conf-badge--confirmed { background: var(--ui-good-tint); color: var(--ui-good); border-color: color-mix(in srgb, var(--ui-good) 40%, transparent); }
+.conf-badge--reported  { background: var(--ui-warn-tint); color: var(--ui-warn); border-color: color-mix(in srgb, var(--ui-warn) 40%, transparent); }
+.conf-badge--estimated { background: var(--ui-low-tint);  color: var(--ui-low);  border-color: color-mix(in srgb, var(--ui-low) 40%, transparent); }
+.conf-badge--unknown   { background: var(--ui-code-bg);   color: var(--ui-muted); }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--ui-muted); font-size: 0.88rem; }
+
+.crumb { font-size: 0.8rem; color: var(--ui-muted); margin-bottom: 1rem; }
+.crumb button { background: none; border: none; color: var(--ui-accent-ink); font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0; }
+.profile-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1.2rem; }
+.profile-head h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+.profile-head__by { margin: 0.25rem 0 0; font-size: 0.88rem; color: var(--ui-ink-soft); }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; }
+.tag { font-size: 0.72rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.18rem 0.55rem; border-radius: 999px; }
+.profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.1rem; align-items: start; }
+@media (max-width: 760px) { .profile-grid { grid-template-columns: 1fr; } }
+.block { border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1rem 1.1rem; background: var(--ui-panel); margin-bottom: 1.1rem; }
+.block h3 { font-size: 0.92rem; margin-bottom: 0.75rem; }
+.grain-bar { display: flex; width: 100%; height: 16px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15); }
+.grain-bar__seg { height: 100%; }
+.grain-bar--empty { background: repeating-linear-gradient(135deg, var(--ui-code-bg), var(--ui-code-bg) 6px, var(--ui-panel-sunken) 6px, var(--ui-panel-sunken) 12px); border-style: dashed; }
+.grain-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.7rem; margin-top: 0.4rem; font-size: 0.78rem; font-weight: 700; }
+.grain-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.grain-swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.grain-empty-note { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.5rem; }
+.conf-meter { display: inline-flex; gap: 2px; }
+.conf-meter span { width: 6px; height: 6px; border-radius: 50%; background: var(--ui-border); }
+.conf-meter span.is-on { background: currentColor; }
+.conf-block { margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px dashed var(--ui-border); }
+.conf-block__row { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.conf-block__note { font-size: 0.84rem; color: var(--ui-ink-soft); line-height: 1.5; margin: 0.5rem 0 0; }
+.conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
+details.sources { margin-top: 0.5rem; }
+details.sources summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--ui-accent-ink); list-style: none; }
+details.sources summary::-webkit-details-marker { display: none; }
+details.sources summary::before { content: "▸ "; }
+details.sources[open] summary::before { content: "▾ "; }
+.sources-list { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.8rem; color: var(--ui-ink-soft); line-height: 1.7; }
+.sources-list a { color: var(--ui-accent-ink); }
+.tasting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+@media (max-width: 560px) { .tasting-grid { grid-template-columns: 1fr; } }
+.tasting-card { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.8rem; }
+.tasting-card h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.35rem; }
+.tasting-card p { margin: 0; font-size: 0.86rem; color: var(--ui-ink); line-height: 1.45; }
+.tasting-source { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.6rem; }
+.info-card dl { margin: 0; display: flex; flex-direction: column; gap: 0.65rem; }
+.info-card dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.1rem; }
+.info-card dd { margin: 0; font-size: 0.88rem; font-weight: 600; }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed structure &middot; not part of the running app</p>
+    <h1>Bourbon Library App Shell</h1>
+    <div class="decision-strip">&#9989; Decided: Sidebar Rail</div>
+    <p>
+      Of the three entry points compared last round, <strong>Sidebar Rail</strong> is the pick &mdash; a persistent
+      icon rail down the left edge of the whole app, with <strong>Bourbon Library</strong> as one first-class icon
+      alongside the app's existing screen rather than a tab switch or a header button. Manual Entry / Import /
+      Search, the Queue side panel, and History all stay together under one <strong>Shelf Talker</strong> icon,
+      reached exactly the way each is reached today. <strong>Settings</strong> keeps its own rail icon rather than
+      nesting inside Shelf Talker &mdash; a standing destination for the one screen most likely to get more
+      settings over time, not just a single menu item.
+    </p>
+    <p>
+      Both new icons are drawn rather than emoji: <strong>Shelf Talker</strong> is a tiny rendering of an actual
+      printed talker, and <strong>Bourbon Library</strong> is a Glencairn glass &mdash; the shape whiskey gets
+      nosed and tasted from, redrawn as a clean two-tone inline SVG (outlined neck, solid-filled bowl) to match a
+      reference glass shape, in the app's own ink/gold tokens instead of a raster placeholder. The rail's top mark
+      is the real <strong>Liquor Outlet Wine Cellars</strong> logo now too, not a placeholder "STW" badge. Click
+      between <strong>Shelf Talker</strong>, <strong>Library</strong>, and <strong>Settings</strong> to swap the
+      content pane. Flip <strong>Bourbon Shelf Talkers</strong> off in Settings, then check the Shelf Talker tab
+      and the Library icon &mdash; one changes, the other doesn't.
+    </p>
+    <p>
+      One thing earlier versions left out entirely: the real app also has a Windows-style <strong>menu bar</strong>
+      (File / Tools / Advanced / Help, above the app bar) that never appeared in this mockup. File and Tools stay
+      &mdash; they're Queue/talker-specific (Open/Save/Find Queue, Beer Talker Info, Wine Pairing Rules), and the
+      Queue itself is persistent app state regardless of which rail icon is active, so this menu bar now spans the
+      <strong>full width of the app, above the rail</strong>, rather than living inside the Shelf Talker screen.
+      Mash Bill Library and Settings already dropped out of Tools since both have rail icons now, and
+      <div class="decision-strip" style="display:inline-flex;margin:0.3rem 0 0;">&#9989; Decided: Advanced &amp; Help &rarr; Settings</div>
+      moves the last two menus off the bar entirely &mdash; open Settings below to see them as two new sections
+      there instead.
+    </p>
+    <p>
+      A second gap, same story: the real Shelf Talker screen is a <strong>three-column layout</strong> &mdash;
+      form, <strong>Live Preview</strong> (Current Talker / Full Page toggle), Queue &mdash; and this mockup had
+      quietly dropped the middle column, leaving just form and Queue. It's back now, wired to the same toggle and
+      showing a live mini preview card that reacts to the Bourbon Shelf Talkers switch (the mash bill bar
+      only renders in Current Talker mode when the toggle is on) and to the Queue, which Full Page mode renders
+      as a small sheet of cards.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard</div>
+    </div>
+    <div class="mb-bar">
+      <details class="mb-menu">
+        <summary>File</summary>
+        <div class="mb-dropdown">
+          <button type="button" class="mb-dropdown-item"><span>Open Queue&hellip;</span><span class="accel">Ctrl+O</span></button>
+          <button type="button" class="mb-dropdown-item"><span>Save Queue</span><span class="accel">Ctrl+S</span></button>
+          <div class="mb-sep"></div>
+          <button type="button" class="mb-dropdown-item"><span>Exit</span></button>
+        </div>
+      </details>
+      <details class="mb-menu">
+        <summary>Tools</summary>
+        <div class="mb-dropdown">
+          <button type="button" class="mb-dropdown-item"><span>Find Queue&hellip;</span><span class="accel">Ctrl+F</span></button>
+          <div class="mb-sep"></div>
+          <button type="button" class="mb-dropdown-item"><span>Beer Talker Info</span></button>
+          <button type="button" class="mb-dropdown-item"><span>Wine Pairing Rules&hellip;</span></button>
+        </div>
+      </details>
+    </div>
+    <div class="app-shell">
+      <div class="rail" id="rail">
+        <img class="rail__brand" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAABoCAYAAADSOxQOAAABdWlDQ1BJQ0MgUHJvZmlsZQAAeJx1kb1LAnEYxz9qYZTmUINEg4NFg0IURGPZ4CIhZpDVouepgdpxp4S0Bi0NQkPU0tvQf1Br0FoQBEUQ0dzY2xJyPaeCEvocv3s+fH/P9+G558AeySsFo2cOCsWSHguHfCuJVZ/zHSdebAziTiqGNh+NRugaP49SKfEQtHp1r+sYA2nVUMDWJzyjaHpJWKYhslXSLN4THlZyybTwiXBAlwGFby091eA3i7MN/rJYj8cWwG719GXbONXGSk4vCE8I+wv5stKcx/oSl1pcXpI8ImcUgxhhQvhIUWaDPCWCkouys86+ybpvkU3xKPLWqKCLI0tOvAFRy9JVlZwRXZUnT8Xa+/99GpnpqUZ3Vwh6X03zcwyc+1CrmubvqWnWzsDxAtfFln9T9jT7LXq1pfmPwbMDlzctLXUAV7vgfdaSerIuOeTYMxn4uAB3AobuoX+tsavmPedPEN+WX3QHh0cwLvWe9T+6Jmfp3OqskwAAaWlJREFUeJztnXV4XNe1t9+Dw2ImSxZYZmaIOczYpE2btCnDd1O87S0z3d5Syk0haThtGO3EMTOzLFnMNDxz6PvjjEaSLSe24zRNq9/zOLHn7LPPxrXXXihYlsUo/n3xxy/e5e5oPill5hU6wMrtaW30VM1csLy9oc6IhsNlIlZ5blnV4mBvTzwWCRILh7EsnUjAj2noIAiAvUZMEyRRxOlLRZREVNWF0+sTnB5fvO3k8U3xaKShoGK8XDFtrrPx6P4NXS0nd02Yu8ravfaJupTMXCM1K1e7+XPfj729IzKKtwrCKDH598FDP/hsRnv9cWdabnFBoKc919/ZnuHLyL2kr7MlT1Yd+VhmRTwWVURBRFZUREVGEAREScHp9qA6XKhuD4Ig4HB6kFU1WbeFhQCYhkk0EsIyTeLhEHo8RjQSxDJNDE1H0+OYWhxD15AdDjypGQS6O9f6MnMivvSsut62xmcnLr5Y7O9orotFIh2RYKDnQz/8i/n2jdooLhRGick7GD+4c5V73uW3zo0Fg9k7X/6HIy0n96bu9uZCSzeqREHwCKKI6vLi9qXgSU0nJTMHb3oWvowsvGlZeNMycPnScDjdKA4nsupAcTgQBAEQ3vD7WiyKoceJRSNo0QjRUJBgXxeh3m78PZ0E+nro72ol4u8j5O8nHOgDLCRFAdNq8aVnH9T0+Gu+jNxDsXDgmKyobR/8/p+63upxG8Vbg1Fi8g7D07/57iTV7ZkQ6u+eeXDTmmyn03NjJBTwCoKAw+0hM7+YtOwCMgvHkJ5XTGZeESmZubi8KcM4jX8WTNMgEugn0NNFT3szfR3NdDacoLe9lb7OJsIBP1osjqQoDarDtTdvTOWRrKLSmp3rnn54wuxloes/9TXtn97oUZwXRonJOwD/uOfbkzrqayaG+rqnybJ8ZV9P+0QjruHLyCI9p4D8sePJHzuOjNwiMgtK8KRlvKnvWZaJoesj8iYWFpKkIIjim/pGNBSgt72ZntZGOupraGs4QXvdMUL9PUQiQVOSlafzS6v9KZnZB7CMNbd+6ac73tQHR/GWY5SY/Ivi6I71Bc/+9nsTU7Lybwv0ds7yd7aNtSxcaTn5FI2bxJjx08krG0dGbiHu1PSzrjcS7CcSDBDq7ybY30u4r5dI2E8sEiLi96PFIsSiEWLh0MjExDRR3R4cTheKw4nTm4LT48Ph8uBJTcObmoknLQO3LxWXN/WsiU4sHKK3vYmuppPUH9pNS+1hWuuOYeoGbl/KcQTx2YoZ85rbao/85qP/97D/rDs8in8aRonJvxju/+5/TXZ5067xd7ZedXL/9kIL8jPyiiibPJvyafPIK60iJTMHxeF83Xos06Svs5Wetma6mmrpbWumt6OFvs5WAj2daPEIelzHiMcwTR1JceBwuhBVB7IoITvdCAmhK5aAhQUCCAjo8Ri6Hrf/xOPEoxFAQFFVJFlFVlW8aRmkZueTnltAek4BmYWlZBaUkJZTgKI6XrftpmHg726np62RE7u3cGLvdjqaTiCIIqIkbfClZL6anl/4yHu+8ot9F2zgR/GmMUpM/kXwzG9/cLO/p/3O+iN7JkT8/Tmqy62Om7GI6nnLKKqchCc1/XUJiK5rdNbX0HryKC21R+mor6G3rZFAXw+WaSIKIp6UdFKycvCmZ5OSmUNqdi6+tCw8aRk4XB5UpwtJUZEVBUlxwBmIiaHH0XUDXYuhRaM2VxPow9/Tjb+7HX9XG8HeTvzdnfj7usEwsCwLpzeFjLwisovKyCuvJr+0ktzSKlwe3xn7ZRo6IX8f7Q0nOLrlFY7v3kRfZ6vp9Ka0OtyebYVjq//e39H25F0//Ev/BZ+UUZwTRonJ24h7v/RBxZGScmnrsf03aHHt6ng0nJJdNJbx85YyccEK0nIKz0hALNMk2NdN/ZE9nNy/naZj++lubSYWDqK63PhSMsgurSSnpJzcojIyi0rxpmfhcLkRJRlRlBAlEUF4c7KPYW2yLCzTwDTsP/FomJC/n562RjoaauhqqqOt7hj93R3EQkEkVSU9O5+CiomMmTSd0gnTSc8rRpLkEes3dI1Qfw9Ht6/nwMYXaTp2EFGWIrKkvJJXUvEPb0b249ff/a3uC9ahUZwTRonJ24DffvZ2tyAJ1f6uzv/RYtGrDC0uFY2fwrSlVzBu1mKcbm/CWGw49HiMQG83tfu2cmzHepqOHSDQ24msqGTkF1NYMZGiqikUlFeTWVCMw+W11bwj1DUcFmdSBceCEZoOHiPU3UvJ1PGkFeYC0FnbSNOB46TnZ1M8bTySMjIBGPYV00TT4vR1tNBWe5Sm4/tpOnaA7qaTRMJBnN40CkorqJi5kIrpC8jIK0J1ukasS9NiNBzay+61/+DE7i3Eo1EzLTvvaHpe0a8Ut/fBUF9X153f/O3o4v4nYpSY/BPx68+8Ww30dpQLlvC5eDTyPgsonzKH6SuuomrmYgTx9A1tcyA9NBzZzcGNL1O3bztBfy8uXyqF5eMpnTSLMROmkz92HA6X57zbdiZy8uqvHmDdHx6hv62L4omV3Px/XyQWCPPwF35Ez8lmVI+TpR+6heUfuRVBGonLOTOhAjAMnY6Tx2k8uo8T+3fQfGw/fZ3tqA4HJeOnMmnhKsqnzsOXkY18BllLc80hdr/8D45se41I0E9qdv5Bp9f3vxF/7yOf+tUTgfMZj1GcO0aJyT8JP77zsgrF6fhQb2fLnbKkZpRNmc3si6+ncubCIaUGN54Wi9HVWMvhra+w97Xn6Ww8gduXSnH1FCpnLqRsylzyS6vedLsGZl8A9Fic5kPHMeI6+dXlNO4/wv5n16G6XHTWNbL/2deYfdOlGIbJoZc3oThVDE1Ddbn4wJ+/R+GkN9+e7tZG6g/vpmbnRmr376C/s5XU7DzGz1nG5MWryRtbjduXOuK7zScOsevFv3No86uEA714UtP+mpKR86fiiTO2Xv7+z4TedONG8boYJSZvMe772seL2ptPXhLs6fyYIAnTSqqnMWv1dUxatHrE8tFQkMaj+9j76jMc3PgSkWCAwsoJjJ+/nMrpCyismogsX3jjMz0WZ/29j/Pij++levkcsspK2PHIM8SjcbJLi5h86WKOvrqdWCRKRkEuJ3cewLRMTN1Ej2nc8P1PM/PaVRe0TW31x6nds5XDm1/h5JHdWIZBxfT5TF9xFWMnz8aXkQ2czvvU7d/Ozpf+wZFt69DjMbNixvy/eNIy7rn241/bfkEbOIphGCUmbyGe+NnX3nXy8J4Pdrc2LM0pGcus1dcxefFleFLTEiUGt0E8GqFmz2Z2vvB3jm5fB4JA1ZwlTFl8CWMnzyQlM+8MX3n9a8TZov34Sf5wx3/TfbKF5R99F7ufeoVQTz+qy0HUHyS3qozSGRNIycumbucBjm/YgSTLCIJIzthibrvnK2SXFp3193qb25FVBV92RqIHtvfPSD2JhgI0HNnLwY0vc2DTiwR7eyibOIOZq6+leu4yfOlZp42FaRgc2rKWLU//jbr9O8nIK6rNHVP+s3d/+ec/fbNjNYqRMUpM3iL84fN3fqmjue4L8WjIO2v1dcy+9EZyisuHlBhc+Ee3v8a25x7myLZ1yIrK1KWXM23ZFRRWTcLhdF+YBg2d5sSObdx7hJ6GFgonV+Hwevj9ez5HT1Mbc266lB2PvYCAgCBCxB/El53J1V//JJNWL+TIK1t55HM/wp2eQtnsyXgyUph21QoifX56mtpIL8rDm5VGRkkBkiQNb4Zlsv4Pj3Hkla1c/Ok7GTNjwtl3wTRpqT3MoU1r2fH8I/S2t1A6eSZzLr2RyUsuw+EaGKvBsQ30dLLnlafZ/OR9hPp68WZk/6p86tw/XPf/vrHz/AdzFCNhlJhcYPz68++bHeho+0p/R+PqvIqJ6spbP0rF9PkjCg+bjh1g85P3cXDjy1jAlKWXMWv1dRSWjz+jsPFCwDJN1vzir2y57ynikSgpeVms+q/3EQuGeeobv2LuLZdRs2kXbcfqkRSZtLwspl6xDC2uEfEHKJpURfbYYlqP1HLwxQ30NrWjeJwseM81iLJER20DkiQT6e0nJSeTqovm4PS66KxtYsvfnqZu+34u+ez7mXPzpTg87rPgrU4v0dlwgr3rnmPrcw8T7O2masYC5l35LsbPWz5iDc3HD/Dqw7/n6Lb1ZBeVnvCmZf7ojm//9tcXaEhHwSgxuaB44Duffk/doZ3fj4dD+TNWXcvi695Lem7haeXCQT8bH/8z259/mGBfLxMXrmTx9XeQXzZuiF3JUNHom0Owu5cjr2xDi8SYuHohLUdO8PBnvo/T4yIaDNNd30Je9Vhu//XX6a5vpaexFcWhsOvJNfQ0tDH7hktoPVzD8c27wbQQRJGVn7qdUFcvm+57EkEUGLdkNrlVZZzYtItoIMyUK5dRvXgma+55gBNbduHweogGQuSWl3Lx3XdQddGshHcy531TM02D7tYGtj/3CDuffxzTNJm4+GKW3PC+IVzgYOWRoJ/da5/ktYf/QDwW6U/LKfieNzPnt3d+49c9b3qQRzFKTC4Edq55tnz3y4/c3XB477tTM3NSVrz740xatBpZGS4otUyTozvWs+a+X9J4bD/F4yax7OYPUzlz4Ruax78Rhu5HU9fR4zqKy4EWjbH7ibWc2Lyb7pNNiIrMgtuvof1YPbFgEKfPS8uRWvytXUy5Yiknt+2j8cAxUrIzmLBqAVMvX8b+F9bzwo//gMvnRRBFYuEIvow0Jl96Edsfe46MonzGL5/P5vufQotEEEURh8fN8o/fxrH1O8gpL6FwYiUndxxg7LwpTLls6Zvq66kwdI3WE4dZ98gfOLLtNVKzclh47fuYfcn1I85B/aFdvPCnn9J28riWkpn9Unpuwfvf943ftF3QRv0HYpSYvEnc+6W7skyL+xuP7l1dVDmRyz7wOQoqxieeDm7xkL+HVx76HdufeQiH28P8q25j7uXvOqOa83xxfNNu1v78PiL9ARa+7zq8Oem89tuHiYUiFFSXUzpjAnW7DnJozWZiwTAOj4uZ161mzKyJvPLrB2jacxSnz4NlmsgOmVv+94vUbt3LSz+7j5SsdExDx5WSgjc7jQkrFrDhT4+TW1VKSnYGu59cizczDbAIdvUz47qVXPLZD5CWn008FGHX31+mfOE0csaWXNA+D8AwDPa+8gzrH/0jHU21TJi3jJW3f4LckopEiaGylA6ev/cn7F/3HLllVU1pOXkfue1LP3v6LWnYfwje2GxxFGfEM7/+3uT2hppvBft7V09fdiWr3/ep0zQLFhYNh3fz/O//l/rDe6iatZiVt32EonFTLnh7epvbeeKrP6W9poG0vCw6jp9kzS/uo6+pDUEWCXT2kJKbwdFXt6JF46geJ9FgmEMvb0aUJGKBCIpDQZJFTFMg0hfkxObdjFs6l9d+/wjRUJgJK+aTN66McL8fSZGZctlF+Nu6kJ0qmBZGTEuojDVyKsaQkpOJIAh0N7YSC4ffAkJiJf8rSRIzVl7F2MkzefXh37HjhcdpPLaPyz7wOSbMX5HgUuzyvowcrvvk18nML2bDP/5a5O9s/dp3blvS9cX7X9tygRv4H4NRYnKeeOrX35l9Ys+WZ+KRSPZFN72fFe/6COKAT4llgSBgaHF2rnmCF+79CaZpsOr2j7PwmvcmTMQvnExkAP62Tvo7unG4nGSXlxDu99PT1Io3PZVYMExafg69LR1osRiyLGJZFopDIdznp7+tE4fLga7pOEQRMxanaPI4fDmZONwuZt14CVF/kLSCPHY+9iL9bZ2IokjV0tksuuN6VLeLvuYOWg4eRxAkymZPYfzyBUiyRKCrl4MvbmDq5csuWF8HIQz+1wJLgLTcQq75xNcYM3EmL/3lZ/ztW/+PJTd9gKU33YU7Jc0uiIWkqCy/9aOk5xbxwp9/MtPf1f7k33/+tW9NmLv8T+PmLBkNc3COGCUm54hda5+R+jtbbtz7ylPfi4bD2Zfd9VkWXPXu4YUEgXCwn9ce/j2vPvhbcseO45I7/ovxc4dupjdPRBI0CwA9ppFVVkzJ1GoOvbwZLRJDi8QwdQMskFSFQFcPJTMmICsq4f4AqttBNBDCk57K1MuX0Xr4BC2HT9Bd30LFwhlUL5/HvmfWse43DzPtyuVUzJvGCz/5E73N7bjTU7AMk0MvbaZy4QwmXryEstmTcaf5yCjOp3TWZOLBIHpcY9ffXyKnooScirfmepOEMHxUpy+/kvyyKp77w495+a+/oLv5JJfc+Rmyi8vs8UtYtkxfcRXu1HSe/OU3sw9uePGnbm/KmHFzlnz6rW3svx9Gick5IhIO3LH9uUe+q2ta1lUf+RJzLrsp8cRKXGwE+jvbeeZ332fHC48yZenlXPr+u8ktqbRLWdagFuNNQhDA1A32Pfcah9ZsBgHGzp6CLzsDPaZRuWQ2jfuO0nmyCUmRCRzvZc5NlzL75svZ8+QaQr39eDPTmP+eayibOwV3ug9D1+huaKVwchU7H32B1sMnsCyLAy+sR4vH0GJxFJetthYkEYfbSe2W/bQcrGXv02vJHFNAqKeP7LHFRIMhwn0BcsrHMH753AvS53NFXtk4bv7cD8gZU8Frj/yOvs42rvnYVykePyVBeOxZGzdrMdff/W3+8fOvsf7xP33CNAzt0g989gtvS6PfoRgVwJ4Dfv3Z90wL9nQ97+9pz732Y19l+sqrE08GBXvdzSd57P++ypHt61h8/ftYffsn8aS+uTCKr4cdj73IE1/9Kf72blSPi8u+8CFUh0Lt9v1klhSiuBzU7zxAd0MLY6ZPxJudTjwURlIUtEiMgomV+LJS2XTfU4T6/ORXj2Xph26hu66ZB+7+DorTgWkYKA6FikWzaD10gtYjtXgzUjF0HS0SYe67ruLE1r10nmhElEQi/QFm33QprjQfmSUFTFy9EHdqCq5U71s2Dm8EQ9fZ9syDPPeHH5KalcdVH/8KlTNsvygrceUUEGg6doAHvvdpYqEA1XOXv3fx9bffnzumynjbGv4OwihncpZ48mf/M76rse6Phq7lXvXRLw8hJDBASLqaTvLwjz5P3YGdXHbn3Sy56a4h8pELcK0BhCFVxSNRDr24EX97Dym5Wcy6YTWNew5Tv+MAuq5zbN02MkuLuOiuGymcPI4Tm3az5pf3E+kPkJafjS87k9yqUl7+xf007jmCw+Ok5cAxtEiMpR+8mczSQtqP1iJKMrFQhJKp1UxcMZ8nv/UrehvbUF0qs268jMJJlWz40+OIkoTsVJEdKrLLQenMyex87AU2/fUJ3D4vq+5+L+OXz3/T43A+kGSZ+Ve9G3dKOk/c8w0e/78vc+2nvkHVzEXDjPiLqiZx82e/z6M/+RLHdq7/37zSitTcMVU/f1sa/Q7DKDE5C/zq/92UIauOP+rx2PS5l9/MhLnLCHR3YhiabXIuS/R1tPLsb79H07EDXP2xLzP/yluRZIULRUgYqEWwr0pGXEN1OckdNwZd18koKUAQRWq37kWLxZBkBUGUaNp3lD1PrmX8ygW0Hasn0NaN6nPT29KJZUFnXSMdNQ2k5GWBAHI0Tv2OfTTOn8bkS5bg8rjpb++idOYkxkyfQNGUcaTkZdLT0EpKThbF06qJ9AeYftVyLKCzrpnOEw1UXzSH5oPHsYCKedOJ+IO89vtHySgpJPetlp28zgBOXXY5Tl8Kj/34Szzx869xyQc+x9hJs9G1GGALoTILx7D4+jt58S//l7nzpb9/+eTBnS3v/vLPH3t7Gv3Ogfzddy/7pWVZc3Q9bmIO5EKyBVO2zHuovNyylZ2CYAv/EmWE5DuDijpLEBGsRHlEBNPEEu18LAImIDKY2slKftf+sgCmhSWS+IJolxp4LSmfIFHfICwGvznwy8Dnhpa0ksztYPsHS5iYiW8KdmUuw7KmiLLE4a2vcmzHhiQhGUAkFCAeDXH5XZ9n/tW3IYrSkHZeOIKy95l1bLn/SaL9QcavnM+Ma1bRXtOIZRoEunoxDRNZVREEAUEQUJwOmg/X0t/WhSfNC5KIKICo2ueIrCrIDgVD05FkCcMw8GSm01FTz/HXdrLik+8hu7yYnY+8QO32A+x/YT3NB2vIqyqlevk8HB43elzHk5VG27E6yudN5dLPvR9REvGkp5Kan8XJHfvx5WZSPncasWD4gozDeSEhsR43azE3fPq7PP6z/+Hxn3yZ1Ow8MM1BJbMgIIkilm7S29GSHezt/s03b5r3OTPxvmDBSOtupPU06Lw4uBYsQbDVTgP7TLCSW8BOoGjvHwDRMLFEMblThu1NQUBIiCns/SUmfhv4nsDQCDMWgIm9r0wLxCG1JX4f7Nmgyl08pVeDtQkIgoWsOFIRxWbZsqypkijOKpkyB29KGqahI0r2qcZAJ4eNWuIfQwZgJAy8Yg2lFUOeWUP+f+oPQoIcDK/o1JcTf7GGFxnhc6e1abA6IXFvGLw+WNawryMIApZlQUJwahkGhmUO1icIGIaBHosxduoc5lxyw5CUmsJpU/BmcPDljTz63z/GiMcRBIGGHx8l3Ofnlv/9PMHOXjb/7SlMw0CwBERJAsvC0HV8GWk43C6mXbOS/S9soPNEA4IiI4cjZBTlMX7ZPHY/uQZZdSBIAhULZ9ByoAZ/Zw++rHT6WzvIHTeG4inVbH/keTJL8omFIpzYtIcJKxew9cGn2fCnvyNY0NfcSUZxHnpcwzIsDq/ZghaO0F3fQlp+NsVTbrsgY3HuGKL6AqpmLeSGu7/LjucetQNhKyqWBRaJuRVEJEmy169pZQqikGnv0cEVdvp6Ivm7NWR9nvLglDeGLP5TiIplcca9cdreORWJbwmnPLRGKDO4z4XhKsIh8tSh9ViWbXWMIGDE4zQe308kGCiQDU2LK14PK971IfLH2pabsXCQaDiUqOw0ajKkJW8VzuYkvxCn/VC+aggRs8yRioz8vgWIAmnZBa/TtgszVrv/vgY9HsfhdoEApm5y8MVNzL3lcvpau5AVlbLZk2jcdwxLM9A0jZS8bKoumk39rkMUTani1p99mS33P0mot5+CCRVMWLWQ6VevJK+qjK6TzeRPLKfzRAN9rZ3MuelSYuEIfU3tzLnlcnb+/UX2PLWWeChCSl4m5fOmIgjQ29SBEddJyc3E4XRQv30fDo+HsD+EHo8jqwqGbtLb3I4R15Gd6gXk1c4Wp37NomLaPCqmzSPo7yEeCiFK8hAOIFksuWEH6ICIMIwwjYwz9fDU/XMqxXgjnMvInes+OvU4Pn3MBEFEdjhw+9IACPn7eOB7n8bf023KSX8Ow95Almmy9oFfcXTbazhfJ2r4vyNMy0KSRCRRPav5srAwtDjl0+ez/F0fQZJlLqSM5FRo0SgY9gXOSty/FFXhxJY9xEMRBAGqL5qLLzuT3uZ2nD4v+dVldNY28fLP/0pGcS63//qbXPvNT1GzZQ+b/vw4+59ex9RrlrPso7ciiAKBzl5e+fUDjF85n97GNrY9/BwrP3YrvU1tbLj3caL+EN6MNPpbu1j324epvmgOM69dRaCzG1eKj7S8TJwpPioXzKD50DGOvrqVaDiKIELhxCrbUvYtG6GzhTVk21gc37mRrU/+DUGSkCTlzG8Jlm3laxhYlvk29+FtgCCixUKkZeVzw2e/h8uTYie3T4yFLNiiCwZUxJZl0dFQS2p2HtOWXYkgivxHqI8FsAwTWXXgdHmGXFXODAsL0zAoqJiAJA+cam/dEpty2VKOb9hFoKcfSRJBEhk7fyp12/ax79nXKJ87lTGzJtHf1knBhAomX7KYV37zIHv+sYb0why66ppZ95uHWPqhm3nkMz+gu6EVBGg6cAzF4WDhe6+h80QDJzbuoqe5DT0WB0Fg431PEOjuR4/ZQl/LMnH6vHTVNdLf0UPprIlMbV7Ka797mOPrt1M4sYqJqxcx+6bL6K5v4egr28itLmXJB254y8bm3DB4/RQQqJ6zFF9aJnoshiifWSdha9MsouEghq6fBXfy7wKbA5dkmZo9W2g4tDshsB58LGANaHOGbIGE1HHMxJlMX3HVP7nR72y81Utr+tUriPiD7HlyDZFAiNKZk/Ckp1KzaTeqy8nxLbvJrighe2wxsVCE4xt3481II7+6jFBvP4rLScQfYPcTawl0duPLSgdBINjVzdF1W1n43qtp3H+U9uMnUZwqDq8H0zAw4jrhfj/e7HR6mttQPU5igQCpOZl4M9LoqW/h+R/+ke6GZpxeN3ueWUtGST6lsyeRXpDL9d+7m/wJFQnO7V8J9oy5PD4qpi94m9vyzoAkq7TWHh0i+4EBQfMpOo6BRwJaNIJpjNrqnBveWnIiyhKL7riOW3/2P1z3rf+HIMC2R54j0N2Lw+tGVh0Eu/qQFIUTW/ey/vcPo0VjVK+cjxbViPQFmLRqIarHmbyNDXCd9kYXyK0Yg+x0YJkWogBGXCcWilC1ZBZzb70CURLprm8By2LJXTfhyUihbscBeppa8Galo7qcOL0e2o7WsePRF3jq2/ew+YFnMHXzdfs2incG4tHwiDcVgVE7k3ckMorzySjOZ+ffX6L9+EkyiguIhcKIlkX+uDL2Pb+evqZWEASOvLKVmdevYs7Nl5JWkMOsGy6h5UgtG/74OOF+P5ZpISkK41fYxmTl86cx67rVbP7bU0SCYSRZZvaNlzBp9SIEUcTj89G47wjF08Yzfvlcjq3bTvOhGlw+j63Ol0RM3cSTnoJpWRiGxY5HnmfC8vlMXDV6+v87Y5SYvIOx8hPvwdB0jr6yFcXnZtpVK+htbSfQ3onD68EyLaL+AKIkc/F/vx+H24UgChRPreaqr3+czX/+B3o8zpybLmP61SsAUJwOLvn8B6hYNJPWIzXkVpZRtWgmitP2x5l06WImrF5gq57BjhUrSYydN50DL6wHAVJzs8kdV8ahlzciKzK6ZRLo7HrbxmkU/xyMEpN3MDKK8rj+23fT19KB7JBJycnij3f+N9FwBIfHgxaNoricFE6qwum1gy1bFoiSyKzrVjNxxQIsTceVkYo4JIGW0+th0sWLmLBiPqIsnfZdcUiQaNXtYv9zr7Hg9qtx+TzEwxGql8/j8NrNtB09CYAvO4MxMya9tYMxircdo8TknQwLVJeDnPLi5E+Xf/6DPP3tX9F+vB5ndgazb76MqZdfNFA8qaQSBAF32qDqf6it0gCShOR1tN2LP3ADnbWN7H7yFVZ85BZm3nAJoiQQD0foPtmC7FJZetct5FePvXD9HsW/JEaJyTsZQwwVBwhB4eQq7vzzD2g7WosnPZWM4hHy7QgjmNW9juzYEs4sWs6tGMNd9/2QUE8fvuyMJNey8H3XMeddtsD2X0+LM4q3AqOz/G+AUwmB4lAonjLu9HJn+Psb1v8Gz2VVITUv+7TfFceFzzw4in9djJRpehSjGMUozhn/tsTENN85NjKWZWGZ/352GKZp/GdYT48COJdrjgWttYep3bcNp8eH7HAmnBtOdYsEPR4jEgqSnltA5fQFiQBBQypCQItHqdmzhZ6WBlyeFCRVYaiTkZC4qFumRSwWRo/HGTd7CZn5xQxaXCU/STwcov7Qbjqb6+hqqUcQRExdw52WTnZhGQUVE8kpHjukBYPQtTgn9myls/EE7pQ0pGSulSF9EwQs0yIeDaPFopRNmkVB+XgigT72rHsWy7TwpKRhGibBng58mdlUz12G0+Mb0cy+6fhB2muP0tlcSzwaQRBEBEkiu6iUnOKxjJkwIxmg2sJCsGxXdQForz/BiT2bcbh9KA5HYsOePg/xiN1WRVVxuL1YloUkybhS08nILRwxQdibgaFp9hw0nqCz6aTtu6TruNxesorLyCsdR2Hl0HSgQxwtLYvGw3tpPLYPh9tr5xESbFf5QWNL+y9aLEIsEiGvtJzyqfOJhgIc3PQykaAfT2o6giAS6O3G7UulZPw0elobCPb3ojhU9HicWDiILDtwuj0Mhg5IjJ9lp0SNhoLouobL7UNWFLRYlNScAtJyCmg4tIt4NIrT4x3R7UIQRLR4HCMeRZRVJi1ceUY/t7aTx6g/uAtJVlGcztPqGui3Foti6DqGFgNBwOnyJrI+WmiaRkn1ZLKLxhL293F81yYsy0KUBLR4jFgohMPlQXY6EtWfsscsi0goAKaJw5uCKIqYhoE3LYPyqfOGae9eD2dPTARbA+Dy+mg6fpD9619INHiwCivBDVTPXU7ZpJmI4kiMj5D8ryiIOL0pHN+1ieO7NiCIEoIgJsvpsQjutHSmrbiK9Kx8xGHCAVvqaOo6O158nP0bXqC7uYFAbycV0+cz74p30dFQw6sP/Q6A1OwCyhJ5aXPHVJ7WJFEScbi9HNu5geO7Ntk5coXBmCiGpuF0+5i24grSc4sQEn0TBAEBkZbaQxzc+BIur4/xcy8iLa8oKcwY2uqGQ7vZ+vzDNB7Zj7+jFVdqOstu+RApGdmsffDX7Hj+UbzpWeSNqWTa8iuZtGi17c08RAgqiCKirFCzexNHtr6K7HAOiytrmgayojLnsltwutzsWvskbXXHUFQngiiiON24fD7yxlQyfcXVjJ08e3BMz9JzdTCqhl3+wIYX2L3mSdpO1tDf1UJh1WQWX3cHWjzGy3/5GZGAH19mFsXVU5lzyU2UjJ8KDKYrFyy7X4rDRVvdcfasfRIEYfhCtkwsy2LS4ksorBiPICSeCQKiKNHf2crGf/wVU9cZN/ciKmcsxN/Vxkt/+RmdTScRJbvvE+ctwzBNDm54CVGWT4vJaxo6E+cvwzQtDm99FVPX0OMaYybPYvV7P4nq8tLT1sTaB35lc5RD3hcEiIZCVMxYQNWsRbbw+XWGVBAEREmmtfYwu9c8aR/SwwqAHo0yNZF7WouGaas/xok9Wwn39+Jwe4mGAlz+4f8mu2gsvR3NPPO7H2AZGrFYBE9KBtOWXs7xk5toPLrXjrMzpL2GFsPlSWXCotUEejo4vPVVJEHEskzGTJhu7+MLTkyA3LIqcsvGIaku9qx9FsvUEYY4WRq6jiAIFFVNZMaKqzAtMxEkaCjsBSirTqpmLARRJNjXxeEta5FEJWnvYAkC8ViEFDmXCXOWkl9WnRyEgXABge5Onv3DDzmybR2mZSIJEqrTxeIb72TspNmUTppF8/FD7H3tWbAsdr5QT82ezax89yeYvGj14CDIKhXTbAvQkL+Xw5vWguoYJIaCgB6NInpTGTdrCcXjpiQXiNObwuxLbmBcdzv9Xa2kZxew6vZPoTjdiOKga7llwbZnH+C1R+8l2N+DJEnEYlFmL1rFrIuvQxQl4tEQj/3fVwj7+zm+ZwsnD+7i5IGdrHz3x3F6fQxwbtlFZWQVlKDHY+x55VnckjyM0Bq6gSypjJ97ETnFY8kuKeepe75JX0crisuD7u8h1NdNZ10NJw/s4rIPfJbx85ZxLmLZAUISi4RYc/897F7zFHosAoKAIMrMuewmJi1cBUBb7VE2PflX/L1dHHjtRWr3bmPxte9lzhW3IEkJT2vRDplYWDWJY9vXseP5R0EUkC0l2Srbs92ibNJMJi+6OLGcLJxuL1OXXs74+cuJRcIEuju59M67cXpSaDlxiHg8SiTQR2HlRC6+425Kxk/j+K6N7H7pCVS3OxEGaxDxWITy6QuomDafiukLeOFPP6GjoRYtFsHjS6OochJZhSVsfeYhzMSaHxwYkWjQT+6YcmasuApJVs5wqNrIKSknu6iMI1tfZeszDyLJ6vAQGIJIPBKhdNIMJi+6BNM0iEVCdDfXs+b+ezixd+uw66RlWViGRjjgp2jcZC65478oqJjAmvt+Se2+bSiKOthegQSH5WPS/OVkFIxhzITprL3vl0RCfgzDPKc1cU7EZIBrkCQJWVEwTQlJGUJNBBFBAFlW7NNCOBNFS5CDBMWTJAVJUZFEeZAKCiArDiRFQRLlJCdgPxII9nTy5C+/ztEdG3F4PMiyjBbX8KZlkJFjxxZRVAc5JeWIkozidCIbFoGuDp759XfBspi8+OIhTU9EthJFJFVFUpRBQigISIqGJCtI0vC2gIAky3hSM8guKiM1MxeH+/TAyZv+8VfWPnAPgO2VjIDu0Mkprkh+J7OwDNnhRJYVFBzous7WZx8iFg1z2Qc+i8ubkmiOgCDJiIKEqqpIijx8rAUNWVHtvsgKxVWTyCwoobejFUVRwUpcn0yTvo4Wtr/wGGOnzsHh8pxhvkaCgK7FefZ3P2TPuqdRVQeq24cej+Jxu8nOHwzNmF1ciiwpOBwuUCyioSAv/uXn6HqcBVffngzdIIiJbS2KSKqCKIiJ0JeJL0oGYHPDA3OQINWIkoTT7SW7qAxZceDypibmU8IwTHyZOVz5sf9h7KTZyd/lgXk+RXQoGQaCKOFOSWfq0stRnS4e+O6nMQ3dbqMgIIgSkqza19NhnIlgrx/BDmdw+mF6yigKIoIkIohScr0PC0okCEiKiihIiJL9R1ZUPCnpXPOJr/L4T/6Hmt2bkQQxWZ9pmuSVVnH1R7+czC4pyjKyoiApyiD3L4Ciasn9503LYO5lN4Mo8tzvfoAkS2/kOD8M5yeAtYYGqRvp8eu1QOA0ameNzF4PsL/mKfXp8ThrHvoNR3ZswOVLQ5IULEQs00JRHEiKI1lWlGV7sSTYaNXpQY/HeeFPP6HlxGH786dEkTozLCxrZEGpaRpYhok5RJA6UG/N7s2sf+yP9kJQHfbisxLsvTA4BYqi4nS6sUwTAQFFVnB5U9mz9im2P/dI4ho5OE6WZZ3hYjIoh7DbljhhrIFIXvYcCKJ9GAT7ugj1nUvubrv+zU8/yL51z+F0epEkNRlyUBAkrCHEzeHy2CEaElZzqtOFKIm8+tDvObZzw7A6gUT/B8ZwhG8PiwA2/F3TMIYJsy3TRI+GmbX6esomzhr2OzAQaG/w90Rtljn4YNzsi5i27Eri0cggB/A6AnN7GM68VkaCXfbMi29wDwxyIOm5hcy57BZUtxdd1xLtMhBkmVmXXD8kTe3AWhiJyxi+VgRBYPaqa6mYOpd4JPz6Bkin4B2pzWk8tt9exN6U0/pqYQ0hZlbComt4CVlVCfX1sPGJ+5Ib98LDJhaGrrHpyfuJxyK2fOm09TLkB1G0T9yhP0kiqtPFlqcfpKOx9rxaIggJwowwfPcIQmIRC8M4gLNBT3sTu156bESZg42hBPrUHWuhOFzosSibnvgrYX/vOX37XBANBUnLK2TC/GWJdp67dkmUJCbMX44vLYtYJHThG3kWGML70NPayLGdGwGomr2InKJStFgUAE2Lk55TyMQFK8/7W5KsMGPVtZimiWWdvVb0HUdMLMti95on0eMxRFE6b9Wj7HBSu28LbQ01F7iFw1G7bxvNNQeS10F7OY9MvEbckpaF4nDg7+nk0Ja153TaDbDYA+EI7Q/YMW1N0yQeCaHHYxRWTMCXmXNO/Tqw4UX6u9oTMo/zgGXh8PloOLqfpmP7z6+Os4CsqkxasJKsgjEDnz0v5JZWDgpU3xYMNvzYrk1se/YhLMvC4fIwceFqUjNzsUwTh9PNxAUrSTnH+TwVJeOnUT5tHoZ+9sTkHWcBGw7001xzEMXhTOyN8+MqREEkFg5Ru2cL+aVVF7SNNux21R3YiRaLociOJGfwhufjUHle4kqiOhwJweX7EirB14NlfychV2g4spfejhYkRUHXIhi6iWVaqE4X4+cvZ8n1d76ukPBUGLpOw5G9mJZ53sHG7NC5IpamU7NnKxXTF5611uBcUFg5kYLy8ckxO99siuk5hcy/8jYE6W04fy0LWbW1PFoswrFt64Zp8BZd/76kVim3tJLskjfvB+VLz+KiG+9EVt5orQ3iHUdM/F1tRAN+pDMKd88OAoAFPW2NF6RdZ0JPS4NNEMSkYvfcK7EsZFnF39VBNBTA+wbERJREDENjw+N/QpQV6vZuI9DbicPlJW/sOLIKS8kuKiW7qIzicVNQHM5E2tKza1+wr9vmShCHyXzOB6Is0dPWjGkYbwkxOdfr2xkh2FzO2wFRluhtb6Zu/w6ObF/H0R2vMWv1dcnnsjLYLkmSz59bPAWKw/XGhYbgHUdMoqEgWizyhlLyN4RgMzWxUPDCNGwEWJZF2N9nb9Q3W5ddIfHE3fj1y9rcjCc9CylxxTFNO1WHqRvo8SiiJJNZOMY2DoOzJiRgZy+Ih4K2LPRNxL215bEClqGf1/v/CbAsC0W1udKjO9ZzfOcGOw3HhSKSFxDvOGIiyYotAxiQPp9vRRZgCbZe/y2CrdZTzvsqNhx2f8/mOmIZJpJDYeaKa8gsKCYtO4/nfv8j4rEoLScO03z8APtfe4GtTz/Iqts/wbjZSyB5+XrjtkqKkjgNz190PVRbIwiv45b8Hw5BENDicSqmz6O4eipFFRNY9+jv0fV/PQL8T78AxiNhWmoOomlvfMKOhJSMLJweH4ZpvLHs4XUwoLb1pL91ScUBUrLz7K+9SR8Vy7JQXW6cCVuTN34B9Lg9xpkFJTg9XixTR5blhA2KREfDCV766y/obKo7p7Z4UzPxpGVwJsX0WTcQAcs0cHi95y3LeCdC12K01B4mEvSfVXlTN/Bl5VJUNYklN32A6jnLiIYCyeeRkJ+mmkN2xPy3Ef90YtJwZC/P/uHHxELnp2JLycolPa8IU49jn4zn5yBnWfZdtKB8/BsXfhPIL62yrVPfBDERBAE9HiO/rAr1VHPr18EAwTQNWzg3wEcIgm1o5/R46Wo5ycGNLw186azqdbg9ZBWOwbLAPAft0vC2DajxTYrHTR3mlvHvjs7GOp7/4//S3dJwdi+Itt8TgNPtpWrW4oTMz57f49vW89K9PyEei7w1DT5L/FOJiWUa1OzaZAtQz1PYJkoyExeswDRMLOG0/Gt2mQG/GVE84xXD0DXSc4somzLn1FaeV7sESGRXHP5+1azFeNNzMN6EF7NpmiCKjJtz0XluOitp4DYUoiiBadJScwhdi59TjZUzFyMr6jmpqodCwHb29KZnUT5lzrlxJq9T1s7z9K/tgd10/ADdTSfPXu5xiqlUxdS5TF91dXI+j+/bSjQcOMV37Z+PfxIxsbvt7+3iwOaXUd1uOAdV5KkYP28Z+WPHEQ0GTtEm2M5/hqYR6O0mFgnZEzZgtYjt82OaJqauM2v1tXgSaQ6HVmFZ5ogWvomUw0N6NByxaHhILFW7REZeEZOXrEaPRzGH1GsN+KsOnf8BIegpDsChQB9jp8ymfNrcsxqfUyErKrIiJw3UhnbWsiAcChCPRob+/IaomrWIsZNmoUUiQ83Tkn8f5u8iJBJtWwmilsjfHAsFmbrkUtLzik6pXbDH6kybI0ksTvWWhmjQj6z86wknBxCPhDm08WVi0fBwV5RzQGbhGKpnX4QgCHTUH6du7zbbSfZN7KkLgX/S1wUMXWfDY/fS09KAoro4z9sJAJ7UDJbf8mFUp4vowL3TAkGU0DWN7S8+yqan7mfLMw/SVncEUbHDG9jajDiRoJ+Ji1YyfcXVDLw8sCQz8gqRRBnD0BObwKYgoiwTDQfx93QkejQcvR2ttJ+soahiYrLPA3XOv+JWxkyYQTQYSJpp24JHa9gha2g6uhZP+n+Ancs1NTOHZbd8CKfnFHnJG16d7Oep2Xl4fBmYunZKw22Vlpkwxda1OFosinUWkyNJMhfd/EHScgqIhQMJwjjEJG/IdyzTTKqeBdHW3gR7uymdOIt5V946TLUJ4M3IxOn2oceiCOJgRQICpmHQ09o02P4hH9JiUWr3b6No3JQ3bP8bjt2bfX4Girzn1aep2bMZ1ekezo2dx/d0Lc7mp/9Gb3vTOdmDvFU4L2KiOlxJCbwgCMP+IAhJdeMAwv5eNjz+J3a9/CQOtzdh0T04OErCX+W0urBNmR0u92ltqJy1iEvu/DQOj5dQXw+GFkdWFEL93SiKk0kLVqKqLo5sW48j4e8SDfiJhcNMWLiSS+64e0g7B0W5ZVPnMmbSLGL+QEINa7dFVlTi0TD7X3uOvo6WYW1prT3Kmvt+QW5pBWOn2tcmWx1scx/ulDQu/+DnKameQiTQRzwatjeGaaeaHIAWs+OPiKJIPBYj0NdNanYeV3zoC7an8qnz4LYd80YaO0EUk8QnNSuP4vFT0TQNU9eS8yQItk2KqenU7d3Ghr//mY6m2rOwHbF9fArKq7n8Q18gNTuPUH+vnV5TkojHY2hD7u+hvm47J60AsUiIkL+XkonTufLDXyA16/QYtbnF5UxcsJJYOEQsMT6CINjXVwsOb3v1NNeC3rZGnvntD1CdHqrnLn2D9oPD42Vgbkdaw/bzM8PlSx153AWbs1Qc7mHXGNvD+xnWPfx7LAt77Q0hEI5EvJMz7YNT2xPs6+bVh3/L3teeR1adbyg2kFXHiPtVwL7uqs7T99i54pwu4N3N9bTXH+fkwV0Ee7uxTHOYefHAaV67fwcOt5dYOEh/ZytHtr7K8d2bkWQFQ4sTDvVjGDpNx/bT39XBycN7CPZ2IYrSELd/iEciyA6Vw1vXkp5bTFHVpGFmwjNXXYMvI4uNf/8L9Yd2E/b3IaoqFdPnU1gxgezCMrY//yi9bU1Ylkl6bgHTl1/N3CtuOSVYzaCthDc1g4vv+H8oDgfHd24g1NeFIMnIsu26fWjTWvxdHZRNmYMkyfR1tdJWd4zM/CJW3f4pBHHQ63kockrKuf7ub/Pao3/k4KY1hPp7iIeCHNn8CuPnLseXkcXedc8TDvQTCwdRXR6q517ERTe+n5LqacPq6m1vornmEPWH9hDy92JosWEEwDBsN/VDm14mI6+IgopJzLn0JlpqDlGzewuq02mfZAJgmjTWHOQfv/wG01dchS89m0FCf6Y7+GAcksoZC7juU99kw+N/ombvVuKREPFomAOb11BQOQk9FuPQlleIhYPo8TietAymL7+aRde9l4zk9Wa4Vkh1ully4/sxDJ19654l0NtlB6ZWHIiCSNOxAzz43bsZN3sJDreX/q4O2moPIzucXPGhL+B0e0+rE2xnzPqDuwkH+mg4vIeQv5t41MlQFbeFvfFr925Fj8fwZWZTMm5qso5Qfw/Nxw7S096Iv6cDyzjFClgQCAf6aao5wMFNL2PoGsG+bmr3buXgpjXo8TgIEOjpwLIs+jrbaKk5RNPR/TZB1rThXIggEA2FqN23FdPQiUXC9LW3cHjLK9Ts3YKsqpi6QbC/+zR5XTwaoenoPqKhAM3HDxLq7UaSlSSBsgTszJ2mxdFtr9LZeIKMgmLyxlSd15VJ+NbNC9c6XJ5l7/rvH1NYNQnTNLjvG58kd0wFq27/5DCrxBO7t7B//QsIsogRj582X3aUdAtJdaIoKlo8SiQURI9Fbc9RRUGLRsgpq2LeZTdzcNNLNB07AIKIEY8lNA4DdQ1aZCoOJxYWsy++nvyxp2tfAr3dHN+1idrdW2g8to/MwhKq5y4j1NPJlmcfRFYczL38FipnLCB/bHXyPS0WIRToIy0r/7Q6IyE/dXu2cmLvVjqaTxLs6UxE39KJR0OoTiepWflkFpRQPWcJE+avfF0X/oGhMg2dE/u2UbdvG01H9tPX0UpOaSUOr4fGw/vwpKaTXzaOsVPnMHbKXNy+1MT7g2b49Qd3sWftU/a4afbiHGrxMaCyFWUZVXUyfcWVFJRPoLulnh0vPM6JfdsI9HRgGDqq001W4Riq5yxlxoqrzvuEigT9nNi7hdq9W2k+fpBIKEjxuMnEo1HaTh4hI7eIospJlE+fT+nEswu4o2tx6vZt48TerbTXH6evs51oKICZIJaSJJOSmUNGXhFjp81n8uJVpGTkJEfrVFJoGhqbnvwbPa2NtgFgPJa8kg2mMsd2RFQdWIJA/thxzLnkxmQdnU117HrpH0RCfswzqGJNy0JWVBRFRdc1YpEQ8WgExeFAVV3E4xGcHh8rbv0YPW1N7H31aUzDQItHEUfiCi0LSXUgKwp6PG7HGtHiOFxeJFkhHo+SkVfM0pvvQhliHR3s72XnC4/S294Cgq0RGnq1GpBjiQlPbi0Wo2LGfCYuWHXG+dm95kk2PnEf7/36PfjSswj0dvHQ9z9HS82h/nPiTIrHTyW7uAxZVZO+AiNB12IYmmZzGoqMJA0RNFmmfdIrKhMXrKJq5iJk1XnavRlsi03LNNFiMQxTx+1NZaQTx5eeyYwVVzJx/nL83e0E+roQBYmgLxXDMLCsKBm5hcMIiWWavPSXn5M/djzTV1x5ypctXJ4UJixcRdXsJYT8fcRCAbR4LEnkRFnG6fbiTcs8S7PjhNGZJFM5fQEV0+YR6Oki5O8l7O/DNA3mX3Er3tQMvGmZSV+SZCSyIT0vKJ9ARl4xiuqwNSojjIllWWixCJZlJrgwi8yCMax67yeZ1d5CNOS3OUtFJSUjG09qxpCWnrtVq8ubwqSFq6mefRHBvm6CfT3EwkEswJuajjs1HV961jmY39sbsnLmIsqnzyfU30sk0G/LdBK5PURRxOF0403PPC2GjHDamNhxUGasvBpDs2PTDIQ9HHhjKPR4DEPXhsyDXWd6biELr3kPA6EUTuferCSRtwm9HUlNVoaEJbUFZigOBw6Xm/ScuxBlZRghGNYXAXsPGHoyRo0oywhW4uCwbC2WvYcG++32pTDr4hswdA3F4Tyz9siy0OJRDF1DdXmGJWQ7F5wTMVGdrlPiuZ653NnA5U1JBvx53frOMmiPw+0h2z2W7ESs11B/Dw6nh2B/Ly/8+f9oOLaP4nHT0KJhjm5fR3drA4tvvPO0eoZuJFl1kJqVC1m5Z9WGM+HUzSkIIimZOW/o3Tn43uDfznYeRpI1iaKUiKN79m09F8iqg7RErNQ3h8E2iKKELz0LX3rWOb976m/uU7V3Z8Cp45uw0EFWVLxn046ztAdSHM7TZIwjlzs3Pxmwx82Tmn5WZdWha+W0sB1nh/OyFAr29VN/4AB6LHbe9iJvNURJItjfjSiIKKpCNBRg54t/Z+8rT2MZJpFQgPFzLqb5cA167ACj9tyj+E+Epmv40tIomTgR1ZUgWOdpr3JuxCTBQamqSmZ+vh3z9W3WbZ8JoijiTU8hu6SMYzs24E5JRxAEjJhGPB5h+rIrWHDNHVjGgKn7KDEZxX8aLEzDxOFyXZA4LedVg+pykVf+zsgdOyd8E211x4iGg4iihOJ2M33VVax898dHjNU6ilGM4vxwbsTkHXh4V89ZSkpmLvUHdyFKMoVVEymqnJR8/mZc6EdCxB9Ej8WRFCUZB1SSZDs4ryAkI6xLioyh6RianrBrsOOiWhaYup4Q9IqIspTkOgck7JZhW9JeyPgfgY5uJFXBnZaChUU8FMXhOfd7+kg4H77PsuxTUxSFYdyvaRjocQ15SJ6lWCgMCKhORyL/0unoaWhFj8dJzctCkCQMTceVMnqY2LgwnPn58TbvMKJSUD7+jA59F5KQWJZF66ETbPrL34mFo1jA2HlTSclM5+TOAwlTfYuqJbPILh/DtgeextB1FKcDUZJQnCqGaaAoKunFefS3dhELhRFlCS0SY8plF1E8dRz7n3uNms27yRpTRGpeJoHOXluiL0mARTQYRgAk1YE7zcuElfPxZqadsd2H1mxi7S/uR3W7uO47/4Wh6TTtPUruuFIOr9mCO9Vnmz5YFtFgCCHRVk+qj+oV89nzxBq0SAzZ5UAAov1BUvKzmXzFRTjdLoy4xvaHnyMaCKG47Ah50UAYX3Y6U664CKf3dAH78Y27OPTSJlwpHubccjnphbYA3N/ezZa/PYVpmMmo9rFwmHBvEE9aKjmVxYxbOpe0/GywbHXo9kdfoPXwCTLHFCAI0Lj3CKWzp7DgPVdfoG30TseFGYF/e1fNkTiPC82NDEAQBDLLCult6+LgC+uxTCiZNh5PegpbH3gGLRbHneZj/Ir5pORk4G/romjyOMJ+P6/86gGwLGSnykUfuJHU3CzajtSy7rcPYxoG0UAIURApnjIOLRpn28PPUTZjEvNuu5LDL2/i8LptyIqKpEhULZ5FT1MbNZv3MHbuZMbOnWwTkxF2TuOewzz2hR/TUdsECKQV5mDqJt7sdFzpPrY9+DS9LV3YqlqZvMoy+lrb6Wlqp2BCOWVzp1C34wAHX9yIHo9h6SbOFC8Lbr8aBiK8C9B1spkt9z1JLBzBNAxSsjNZeMd1Z5yHmo27eP6Hv0dxOsipGJMkJorTgakbvPyz+wALRIHlH72ViD/AtgefQVIkJq5eyI3f/xyejFRObN3HM9/+Ndd+61NMuXwpx17bzos/+TNOn3egaaO4QPjXlJ5eUJxZTfhWIDU3i+ols0nLz8ablYah6eRPqCCtIAdPeiqejDQ8GakoLgfjVsxj0fuvp2jyOFwpHpwpHlJzsph906VULppJ1eJZuHweXCk+UnKy6KpvQpBEpl2xnJUfu41Fd17PtKuWU718HqrHhep24E7zcdkX7uKmH32evIoS28nPMXIAqHgkxvo/PkbbsZNUL5nNRx7+P+KhMFvuexLLtKicN50ld92ELEsoDhV3eiqXfP4D3Pbzr5BelIsoi7hSU7jsC3dRMrXa9kIWBapXzGXZR96F02urG2VFYcXHbqNs7uSEnYTMmOnjWXD71Ti87tPcTkzTThniy8lA9bhor6nHTAQ29mSkMueWy0gryMbhcaOoKhULZrL8Y7eRVpiD4nRxZO1WDq/ZDED9rgP0d3Thb+9CVmUmrFzA7b/5Jim5b20cm/9E/NsTk38mKRnYE9llRShO21y9o6Yey7JwpadgGSZaNErEH6C3sQ1JllGcKn3N7YAtGxAVCTEhWe9v70bTNERJRHYodJ1sJhoIoesaqXk55JTb9iKxcAQROweP7HCgetyUTK1mwooFmLqO6nSO2PGO4/UcfmUrzlQvxdOrmbBiHjNvuATZoWDGdWSnal9BRNtBDwEcHieVi2dSvXQuliUgiAKejFQkVU74BAm2UaNjuAGW7HLgTrXlMZIsocc1jLjtYHhauhLDRI/G7f6oCq2HTxCPDAmmZYHTZ1+NTNOkp6mVlJxMZFVFlCVERaGj1o7tG+ruQ1EV1v3uYe7/+DfY9sAz5FeXsuiOG4ZP2ijeNP7tick/EwN7Iq0oD3d6GpgWfW2dIIi4fR4QbKGiHtWIBcI4vR4EUSTiD5IQqCQ4DHvzR/1BTN0EUUCURUK9/fQ2t2MlhJCq2xaQRgOhZAOGxnApmTEB1e0aUShpGSZH1m0l0teP0+chc4ydxLx01mRyKsZgGLrd1rg22DPLSvwbqi6ajSRLWIaBqemJAEwgCgJaOIoWjQ3/YCLVpIXdxmgwNJxADIEWixMLhhAskFSFrromIv2DDpGSoqC4nFiYGLpOuLcfRVVRXU4QbPNwU7NN3QVBtKPyx+IcfGkTT3/n1/z+vZ9n/3Prh0/aKN40RonJW4CU/CxScm0ryag/RMfxk/S3dSYSVkGot59IIIg73XY2DPX5k05aTq87SSQG/k1CsxP1h+iqbcKyLAxNT2g07OuKlcjWJylKUkuRWpCDJzNtxHB+mqZRt3UfgiQhSzLuVNsS2eXzkD222OasXgcF48ttD+FILHFNSRzxokgsHEGPDQ+2JEgS7jSfHefEAj2unzEni2WYGHEdU7BQHQ76WzvoaWpNPpcUGafXhWmYCIJIuNcPkogzxYOlm5iWRUqePf6+rHTb/0SWUV1OLAs6jtXz8s//TEfNWUY6G8VZ4QzExDo1VMQoYESWeDASipV87stII70wG0EUMeIaxzZuH4jygSCK9Da1EfEH8WXaps5Rf2CAMcHhdaO6XOixGM5ULzlVJZAIJmRZFp11jQPeaCguB6auEw9Fkj5DkjTotu7NTCUtL2tEFbK/vYv2Ew3IqoLkUnH4Bs2pc6rG4ElPfd2hyCjOx5ORiqEbiJJocwoDKTNHiL1h+zOJCe5JIBYKn0ZwBqDHYkQCQXvEJAEtptF6pDZJcCVFtmUthokoCUQCQaSEXMfQdPLGlzP54iUA5I0vx5nqIxoKY5kWoiQgqQqmbtkevCPM5CjOD2ckJqIkvfl0Ev9uGIG4DvWdGUi9qTgdpOXlICsyEb+f1kO1jJk+AVM3EASR7sZWBFEgtSAnkQ4jiJUg3g6PB0G0VacOj5u8qlIkUcQy7Y3TXlOPmbhuKE4nuqajRaO2GtQ0caV6EUWRWCiCJEn2phshZGTH8Qai/iCCKKIoyjBOJKMwzw5i9DoBexweFynZmXZuW0FAdToxBwI/mSME0BaFBMclJDxY9aRQ9VRYgOx0ICoKgmkfbM0Ha5LlJUWy1dUCSLJMpD/AwRc30F3fwtgF07j+W58ivdjW/lQtmc2i916Dy+vBMAwM3b6SpeRnkllaOOJMjuLMkM6YDnYE1bCFhWGYNB7ez95Xn0EUxWFJnP/TYGG7ozvc3iFn19C4Cwaqy0P+2PHDvD7TivKQ3U6i/SEySwrILClg37OvYuo6HTUNdg5hl8MWqEY0u0bTSspLtGgMwYTc8lKOurcT7w0gijJ9Te3E/EEUp4ooiejRGNFghIEIZ7LTgaHrHF6zhfTCHFLyshP2J8PRcbweQ7PdIWRVxeEZ5Ex8ORlosdhp74AdhDvqD2GaBmmFg06KlmUnGxdEgWgwdNr7oiji9LgTHK+dv8fQzuDCrxmk5WeTmptJqKcfWVZoP3YSLRpDUmREWcbh8yBY4HC7aDlUQ+eJRiKBMEY0zrYHn2HxB28mqzgfURK4+O47Gbd0Dm1Haon6Q6z/0+OMXzoPh9uFaeh0NNbaScVkefjcmiaRYD/mW5aP+h0CAcBCdXo4sXcbsUhoxNGQrQTlH/BclESZsZNncWjLWrY998hgXQkMmCqcEqb0NAwtN9L7I5UdCWf6ztBtPfT9U8uP9P5p37PsQDHCCA8t7DSbYiKDoCVYCJaQrNA0Ddy+NC658zNk5BUm3/dlpSNJMqZhULVoJvG4ZoeVjGrEg2G8mbZqMhZIbDzB5mwG5B3xsB0ztnBSFU6vm0BnL5LLgb+zh7aaBpSEuleLaRiJjWuZJu6E/USkP0DBxApS87Js69tT0NPUlrC3sW01BGmw0570FAIdPcPKDzyVFYXWI7WoHhferPTBMJTJPEZ2aMXklWfgfUFAVOTk3w1dTwpzT4Uej5FZXED22BL8bbtR3U56m9roa+kkb5wdF8ed5kMQBOKxOF5HBpd/6UO8+qsHqduxj2MbdiCKIld//ZM07D6M7FAonTmJ0pm25XPD/qPMvH6VPX7xGDtf/AcNh3ejujyDoQsEwLIwDT3xy5mJyeuFkhrp2ZnX9KD906nrmzO+c/rvI+2HN9qDIz8bbNHA3wxDp7h6Kk6vfQ2WVYfNcGAhC4JlWaZFb2cLDo8XyzAYP3855dPm2gGUGch2OxgJXhAsTGvI8CY4/EECMvDpgQU2OCwmAsJA4eTAJWs+JcK7mOjeYH12LUOGOJlG4vThEgCTwUU+0JsBvcJgLQNfHwxBNBB3Y8AkXmDoVIvJKw0ImIZGNNRPOOBJurhnFNtXBUmVKZxUaRuFWRamYZBelEduZQkAkWDY5kIsCyQRT7otCNVjGqZukFNRjDcrg87aJgRBIOIP0lXXiC/LJkZaJIoW1xKxXywUtwvLMOhtbietIBtfVtppAZZN06S/vRNZkjEt045iNsTRK7OkAFl1JK46iSFODLUgigR7enDpBiXTqnH63AmCKyQ5N0EQT2OFBVHEleJJhEUUMXWDeOgM2pxoDG9WGrmVY6jZtAsSMpaWwzXkjStFkiXcKb6BzmDENcpmTuJQeTFNB46huFzU7zmMHovT09TGoZc3c83XP4HqdLDt0eeYfeOlpBfmoWkx+jpamLBgBZOXXDw81oplYWKeEqxISO7ugbVtMbjuB3JJW5YwbL+AhSUkVrM1nFiIyfU+uD4Hn59OKixIpE4xE7K0ge8PvCEMKZ34NkJyJwkIWMn9N1Dz4P4a4MEGZjO5kxLv2InlVPw9HYiCSMjfk4hbLCCLspJl6Bpr7v8VqsuNZRgoiWBFZrJpQzdx4pMDqyvZxSGyAwxAHBItbTiGEhrLShCXgXeHxVKw/20Jgr3ZEgGLB1a4xcDvg3UKDN32AhZGgu0QEu0ZIHfDuZqhgykOYVWSG8SyEEQJLRYhFgkxEH994Hk8EiI1p4CL3/cp8krHkVdVytIP3kzd9v240lNxenvtNggCOeUleDLSAFutq0Vi9iJBxJVmU3zTMtE1HXdaKqn5Q0IpmibN+48xcfVCwN54WiwOoohhGKTm59Db3EFfS/uIZuoAeixOoKMHQRaxYrodpCehQbKAlFxbGzVI1IXkwpJkmVBXL5ZhMvmyJTZ3EIniSvUlqI1ALBhBi53OdQiilFwTpm6eIgAdRDwUxeF1UTChAllVEr5KJs0HjjHjmpUAOFN9tipakoiFIwR7+nCnp9qzblmEe/30t3WSV1nKk9+4hz9/+KuMWzKLnLHFjF82l5C/j+fv/TENh/bg8PiGEA07Yr/qUFHdXkzTsgWLAliICIn1NEBghx1jVmJFDF2vQzIj2EtvQLY2wvmfXOOJ8gPcnpBoAEPkWMLgITkQ4dAYcuDaddgkZOiXBo/VQRJkt/V0fmVwnw4cy4kD2gItEgREDFOnv7MFRVFTZUsQ7sMyyjsbT1imodvpBSySgyEk8q1YgoSQpFuDVAsLRExMYSC5gTD4IHlS2QNlJsMyCslJEwQLCxFxmMDOpuT2uA+ynFjikE4niIpNLjEtEUGwEDExBBHRMgEp+Y0kibESJ4YgIFgGZqJfg8RjgJgku2IBCpawxNDiVTmlFWSXlKHHYiRzX4giqsPFsR2vEeju4IbPfIe8MVUs+cCNTL96BQ63E9XpQFYVDF0gv7os2dNYIGRzJqKIIAq40+wT1zJNhISxWEZRrm3IZto8X/PBGqZcZmsr9FgcI6YlHOIk+prbWPebB183u5sWiRMNhJIn8UAA6oGZGYoBQawo2LIz0zDoa+1E9QxGVxcQUBQlYThnXx1Gkoc4U7021yIJaFr8jInYDF1HkhUyS/JxeT2E/QFEWabtSJ0dc1UScXjcidSrtv9NNBDC6XODZLdTi8borGtCVhRUt4OC8eWMu2g2xVOqiYQCPHnPN9n36rOUTJhOSmaOneQqsc8lh5NQXzdHt7+GJElBUZAeMExTFxL326EnfXKcGLptB7iBgeN48JAUEuveJjiJfwsiA8HHk0vdnhhEEokcEgRFtEx7UQoiJAizhWXvP8te/1bi+eDNwMIcknzEEkAc2D6JHwf2hc1BJTiUgQKChWCR2L8JgpTgikRBQHa6VEkU/TJYP0MQJDuy1EBOE+zNLQxuPlOQEdEHhgYz8UkskBIbeOCZZcmQKDtIkcEUQEBESFw+LEtEEEwsJERrQLJvD98AMREHNvWwY0BKnBBWctBNy/auFdGGEBMRy5IRBDMxsfbMWIKY6JuOKciJuk6tOzmBlijJotOXfnVfW+NfFIdDWnrzB8nILbLz0CRYP9M02b/uef7xy2/w4Pc/z3Wf/Bol1VMTXIVtAWpZJi6Ph7zqwfAN0UAIwzCSK3KAmAxkcAPIKClAcqhYugkihHr9SaFqLBwlHrVlLg6Xk2OvbSPUG2DOrcNDUQ5FxB+wk24JdtvtURwhvYVlEQ9HEovWVql2nmigfs9hsiuGRGsT7HMrkQkIURBHTAg14JgnWAKmbo7IvQDomoGu6xRXlpJakEOgpw+H20VXfRO97V1kFOTg9LpQXQ60uIYejRP1h/FmpiNYAqIsEQtH2fPEGioXz2Lh7dcy47pV+LLS8Xe189Rvvs3BjWtYeM27WfaujyCrDlvGkzjsdF3jqXu+jep0Wd60zD9Hg4HPq6JoCpiJY0lCxBhCTET7QGVw/ZhIiOhYAzqOJDExsCwhyaDYS0zC5ubBPmQTZEDgFGKS2JcWWIIMlpHkkAxBQrIMux2WzQGLyRYOEJPBvSVaiWRlSWJiczI2MTHt8pYBSCCYCEOYgYGr/oDQ3RRE0cI05S/et25ksf0ohuHBH37hH9WzFv7itUf/8Kmnf/1dbrz7O6eFJpx96Q0gWDz5q2/z4Pc+y9Uf/zLjZi0GIK0gh2lXLqNx7xFyqkqT70QCIayE9aikyIMC2IituQBIL8xDdTqJBoKIlogoicnUB3pcw4xrCKJIPBJl1g2X0HakdshCOh2mbiBYQ3nMkWFZFrFgCMuykBUFUzNYe88DdNU3M//dVw0tOHgdFQR0XR8kkEOgOh0oToe9+DWdWPB0zsRKnBqSaAtyZYdiZywQIOIP0XrgeIKYeFCdDrRYnHgsTrQ/QHZ5iW3LArYVbkxj8iWLkWQFSZXpaKjj6d98h9p921hw5W1cfOfdKKfEMjZNnefv+TFHtq2jYvr89bNW3/jl6rmLzy+X7X8YRi1gzxK3fPZ74cz8ks+UTZr1/aYje3n8p1+mu7l+SAlb6zPn0pu44dPfJR4L8dD3P8POFx9PBOp1cMWXPsqN3/9c0gEOIB6KYJo2a6q6XTi8tuxCi8ZQEv4tGcV5+LLS7BgfgoUoiTgT5eLhiH1NEgQMzaBs7lSmXrUC2Tmycx9AuD+AloijYhoWitNxRvkKDJyeA3zmCHIwQUB2qAiQMGXXhnFWA5BUJSEMtoXa+pCrkGVaRPzBpAzm6e/8hl/dcjedJxpRnbYwWI/FaT58ArBteWSnC9O0ME2TUK+fgvHlpOVlE+4LkJqfxbxbr0i4E8jUHdjOQ9//NHUHd7L05g9y6V2fTRASK0lQY+EQT//6e+xe+5Q1ZuLMmulLL7+teu7i3jMOzCiGYZSYnANmXnydXjp5zq/mXHHri3X7d/DA9z9De/3xxNMB1lRg2tLLedfnf0xaTgGP/ewrvPiXnxIO9OHwuCicVIkk2yrj3uY2Wo/WJVlgh9uF0+PGNEzbXD5BEFLysvBk2sREMO3EWQ6fTUyMmMZAbl1BEhEQyK8sTZrqj2QjZOpGUjAoYAtGxTOE7RsgIXo8jijLrPj4uymfPw0tMsjQigPaFcvCHCK0PRWSIiOothBWFEVi/lDS2S8WDrP/6Vfsv4cieDJSufKLH+SiD92EIImYmoEkSbQerAFAdigoThVME1mW6GluQ4/FWPKBm5hyyWKu/canqFw0Ez0eY/vzj/DXb3yS/s42Lr/rc6x898cSkdoHBJJ2rpsn7vkGW597xBAE8fdlk2Ytm7j44qbTOjGKM2KUmJwjVtz2kfqyCTPvWnjNe1/saqrnwR98jobDewCGXRvKp83jXZ//MdUzl7Duwd/z0A8+R2vtkWQ9oiRRt20/DbsPokXjGNG4TUxSfBi6ltCq2cREFEWyxhTYsnXTwuFx2U5tQCQUsjmbRJ1OrxtXRgoun5doIETT/qOn9UGUEqrbAcUAI1isJjAgOhIEgXg4SlpRHqWzpyCPYLtCopwdLW5QBhPu6ae/rQunz42qOhI+NbZDn2HY5Qxdp7uxHT0WR3U5ueTT72fc0rmMnTsdp9eDoRtYgkDnySai/qDNxfncGIaBIEnsf+ZV9j2zjlk3Xsztv/kG41fMx9/dzjO/+wGP/PiLeNMyuenzP2Te5bec0jPo7Wjh8Z9+hQMbXiI9t/DPlml+fOnNHxglJOeIUWJyHpiwYHlD1eyL7lp+64ef8Xe2mw99/7Mc2WqfqoMZbiC7ZCzXf+a7LL3lLmr3buXer3yYnS/9g3gideaMa1dx3Xf+i0mrF2IhoMXiKE41wbmYyfs/QOaYQgQRsEwUlxPFZV+BtEgM00jk8km47AuCiMProauumbrt+09rv9PnQZSlkZiHEZEkM5aJpRtklxaiuG0ZTn9L57CyoiSix+NEh8hD2mvqqdu+1+ZMhqhNo+HwYCIrSyDU34+u6QkuyCZWWaUFeHMybK5MhFBPL21Ha0nJycThdhLq7iO9IIfJly2lcvHs5DdP7N7MX77+cdY98gemLr2Md3/5Z1TNXDikpXbnm44d4NEffZH9655j3JwlL8xYdfVnvvb3HSPrrEfxuvi3j7T2VmHs5JkNrpSUO5uO7buj4dCebzzyoy+qy279EPOuuA1ZUZJ6fI8vlUvu/DQFFRN48c8/56Hvf4bavVtYdN37yB9bTfncaRRPrqby7y+x79l1vPbbRyiaWkXXyRZyKwdVyBkl+ciqAy0cQXU5k2kJYsEwZsLa1M7L7MSTlkJmST7Bnt4RrV8VZ8JqcQg3MpSuWJaV8CMabqEAApZh4s3OINIXpL2mge66ZqZdtTx5bUpUMMwCNhqOEg/HkGUF1ePEbLdju2qReCImLhhxjWBnL1o0hhHXGDD7cPo8ZJTk03LwGIIgosd0jm3YSagvQKCjh7m3XM5FH7yZ0lm2dWtfRwvbn3+E1x69F0GUuOqjX2LBVbehOt1J1etAbw9seokX//gTelobutLz8n9SVF79y4tu/lD/uayDUQxilJi8CeSPqey49Yv/9/3Hf/bVk3vXPPWlF/7008mdzfWsuOXDpCSSdg0YJE1Zcik5JRWsf/SPbH3uYU7s3crCa9/LzFXX4PalMe+2KymdPZm6bftY95uHObF1DzlVJRROqgAga0wBDp+bWMhOTSopckJ1GwXTTGi1BQRVxpeTgTPFw+b7nxqx3Q6PzZmciTHxd/TSvO8IlYtnwrDtZwtOnV4voV4/4b4Aod5+BFFE9bohYUAliiLikMq1UJhIXwBBkmwPZtMCQSQWDCftYUK9ftuALxyx4+EOCa5UMK6MQy9tsvMdBUNsvu9pqpfOYelH3sWkSxajOFQsy+TAhpdY/9i91O3bRuXMxax8z8cYO2VOopZBWU48FmXzk/ez/rE/IitqrGLGgq+875u//dW5zf4oTsUoMbkAuO6TX39o0qKV3Vv+ft9Ptz3z0IS2uqOsevcnqJg+n6E+HXmllVz98a9QOXsRa/76C5745Tc5tGUt86+8jSmLLyavqpS8qlIKqstxpXk58PwGxkybSHphDunF+bjTffS1tqN4HAntjUYsEX4AQUAUBBweWyujxzXaj52keFr1ae1VvU7cKV6CXYOKiqESk2BXNz3N7SPIUQT0uEZ2WRG+jDRqtuxBi0YRRDu6PglNkx7ViAy55oR6/cQjUSRFQnU5bSGtIKBH40lP4L62DsL9AaLhKIZh2gZpCRSMr0CPxdFjGhULpjHtihVULJxBVqmtmq8/tIvNTz3I/g3P43R7ueIjX2TGCjup/WDv7JnobKxl7d9+zaGta1Gdzo2lk2f/VJbEf5zrnI/idIwSkwuEqhmLX67ZsfGygq72j/a0NH7ukR//N3MuvZHF190xLPWi6nQx7aLLKR0/ne0vPMbmJ+/j0R99ngPrn2fW6uuomrWYMbMmUjCxgr7WDtyptj2J6nKSVpBL877jybzMhm6ghSP2lcKyyyiJTRj1B+mobaB62dzT2qo4VHx52bQeP5n8bSiXEguFUd2uEV3NDU3H4XbhcLsIdvaixxMyD3PAwlvAMM1hTnyBzh5CfX4797RscyaiLBILhpIyk47jJ4kFQsSDYfoa29AnVQEQ6Q+y+f4nKZhYyYLbr6Jq0Sx82bZfUmvdEbY/9yj71j9PNBhg2kWXsvC6O8gvG5cwxhvOV+16+QnWP3YvnY21ZnbxmH+YFh+/5XM/GIy6NIo3hVFicgFx2Qe/UP+3b3zsK8Xjpxw8umvTf6175I/TTh7czbKbP8jYqXOGlU3LKWDFrR9h4oLVbHnqPg5seIkTuzdTPn0+cy65kYoZC8geOzwncEHVWPY++QpKQpNjxHXiMTs5tmWYqC4nkmrLSDpPNtNzsmXE3DeCIJBelDso/MS2mBxAuKcf1aGcMW7FAPpbO3Gm2pxQ0tvJvsEMc5DrbWpDcTkRZTFhtGZzJoauJ1XJNVv2YhgmbUdq2fPUGnqa27juO3cjqzLz33M1eePKkkSkre4YW599kIMb1xDu72XstLksvv59lE6cOSxv70Dru1sbePWB33Jwyxpcbo+x7JYP/rJm98b/+dCPHwi8bgdHcU4YJSYXGLd+5Zcx4C8//ei1j3tSM3/Z2Xji5oe+/1nH9JVXM//KW0nJyk1uUlGSKSgfxzWf+BrTV1zDlmcf4PjOjdTs3EjppFnMWH0NFdPm43B7EASRxe+/npS8TFS3Cz0WZ/29j9Gw6yCq04mRsBaVnSqWZbHvmXXohoEnbeTE8PmVtvetqZvEYzFiwTCuRJDmnuZ2CsZXvGGSr+7GForSbA7CdvKzLcMtzbCdD7GFuR0n6imcWIUoy7b/TMIFQY9pmJrB8Q07ObnjAJIgsvvpV4jH4nbgJd1EdTupXDQTQ49Tt38nu17+O0e2ryca8lMyfirzLv9vqmdfhDJCIvdoKMDuNU+w8an7ifr7rfTcwi0F5RO+4knNfPVDP37gzM5LozgvjBKTtwifuufvwQd++NkPZOYVvNLb2f7lrc88WHZ0+zph/jXvYdKCVbh9qcmyoiRRNnkmZZNncmLfVnavfYrj217j2M6N5I2tYvKSi5kwbwWp2XnMfdcVgO2spzhUvJnpmKaJv6MHLabRUdNIb3Mbe595BU9aKoI0sva/aOo4FJeTqD+EEY0TD0aSz/xt3YxbMvt180hrsThd9S0UJq4jrhRvgjcR0eM6sbBdX9uxerpOtpBdVoSsKsgO1ZaJYBEPh1n3u4ep3boXh8vBmGkTmXHtSsrnz8CZ4kbX4vR1tFKzdzP7X3uOhoN7QJIYO3EG01ZeTfXci1AU52lti0VC1B/czfrH76Xh8F4kUTw294pbXkMQv3Xx+/5f/WkvjOKCYJSYvIV412d/qAF/eu7e/90gydJHgr3ddzx1z7fS9736HAuvuo0xk2YOIyoA5VPmUj5lLq0nDrN33XMc3rqOF/74U1579F4qp89j/NzllFRPxZeZw7KPvItlH34Xxzfuombjbur3HOTRz/+QnuZ2Ir1+XB7PMK0IDJpqZYwpILusmLrtB4j0Bwh09ZBTWUJ3fQvRYAh3akrCbH5kY7bmA8fwt3TY8WuxA18nPewFKxnSYPcTLxPpCWDoJi0Ha+iubcY0dFRPOq5UH31Nbcy9+QomrlpI1lhboBro7aR5zx4OblzLke2v0dfZSmpWLpMvupTJiy6mYsaCEa9gWixKc81Btj3/KEe3rMWy6J28+JJd4WDvly6+4+6tb2IqR3EWGCUm/wRcesfdNcCn197/q40Nx/bd1nh474oHv/eZ1MpZi5mx6hrGjJ+KJ3V4Uqj88vHkl49nwVW3cWzXJo5ue4UTu7ewd91zZOQVM3bybMqnzqegspqKRVOoXDQDgLqtB2g5UkPD7kPo0RjOlAGfm0GNBoDD5WTiqoWc2LSHYHcf9bsPUTprEtseegZfTiauVC8IAorTyVBrFGeqbaa/96lXiAwJY2AYmp08S7e9aet3HyLY3cv6PzyCaRlE/EF2PP4iuq6z+v/dQeGkSkpnTCYlLx2A/u5Wju98jWM7N1OzZwttJ4+iqE6Kx01m/lW3Ujl9AXllVSOOrxaP0XRsP3tfeZpDm9cSDQcjWYVjns/KL3nghru/9ciFmMNRvDGE1wsaPIoLj+f++L9CT1vjtYHu9lva6o4tsBAKSyfOZNryyxk7ZQ6pmbkjvmcaBs01h6g7sJ3jOzfQdHQ/0VCA1Kxc8isnUTZpJoWVE8grq8TjywQgHo6juoc7/A0NgdPT0Mrv3vNZ2o7WUTi1mvxxZTTuOcwtP/lvSmdOou1YHc/98A8cfHFDIk2HyLIP34zT4+bFn/6ZvrZOVn3qfcy4ZgVPfPVn1G4/gNPjwpXqs83dU9zkjyunsLqcwslVFFRX4PB5EGXQ9AgdJ0/QUnuEur3baTy6j+6WBkRJIb+siooZCyifOoficVNxuEd2QoyFgtQd3Mn+DS9Qs2MTsViI7ILSVxze1D994Lu//8uFmrNRnB1GicnbhMf+93+cbfVHZ+ma9p5Qf89dsXBIyCsbx8T5K6iYseCMidYBIsF+OhvraDp+gNp922g6eoD+7nZkRSU9t5C80koKKiaQV1pBSmYeKZnZeNOyRqzr4IubeOTzP6K7oQUjHueqr36MVZ96L5Iis+Hex1n324cQTBAUMalF0iIxXCleJFlmzq1XkFdZytYHnqFw0jjS8rLwZKXhTk0hJScLZ6r9Tn93C11N9XQ21dFSc4iW44fpbmskEg7i9aWTXzaO0qlzGVM9hdwxFfgyss/Y/57WJmr2bOH4jvWcPLiLeDxCVsGYV9ILiv/scnlevP6/vj2q7n0bMEpM3mb86asf9qZkZC8J9/fd3t5w/OZAbxepWfmUjJ9K9awllE+bj9PrO+P7sUgYf1cbXS31NBzaS3PNATobawn0diNKEqrLTXp2HmnZhaQXFJGeU0hKRg6etAx8aZn4MrOo23qQmo27KZxUxbSrliXrjvSFCXT22MGgJRFJkdGicTtvjcdtJ8PyuUCEeDSMrseIRgL4uzvwd7bT29ZMZ8tJelsa6WppIur3Y5gaDreX7MIy8surKZkwjbzSKlIzc3GnpJ2xn4au0XBoN4e3reP4rs30tzcTj4eP5Y0dv76gfPxGQ4+/eOPd322+kHMzinPDKDH5F8Fzf/hRWlZR6ZymYwdXHtzwwlQEYbUkSmQUjKFs4kzGTptDyfhpqE73GeswTZNYKEAkFKC3rYn2+uN01NfS2VRLb3sLsWgIQ9MwdB2H24PT48Xl9eFOS0NV3HgzMpBkp+197PYhKzKSmkj/kEgCZgdhChGLRNBiEUL9vYR6e9D0KNFAgHDATywUwBIEFFlBcbhIyc4lq6CE3DGV5IypJKuwFLcvBYfbmzTAOxOajx+gZvdWavdvpbOhllgsSnpOXtiXkf2njsaT92QXjz35vq/9cjR40b8ARonJvxhevv8e9cD6FzwZuYUz+nvabwj19VwRi0YKVIdTzMwvYczEGZRNmU1RxSTcKamvW5dlWRi6hh6PocWi+Hs66etoJtDVSX9PB/7udgK9XUSCfkxTtyPdx+KYhoaua6fHGLZs4zRJUZAkGVFWUBQFWXWgun2kZGSRkpFNSlYOvoxc0rLzSMvOR3W5kRUVWVWHR4AfAVo8SlvtUU7s287J/dvpaKghHovhcns1BPHp0qmzXyqdMH338V0b9t7yuR9FXreyUfxTMUpM/oXxq8/cJkeDQW96Vt6NsVjoqr72lklaPJYvCqLizcgWCyrGM2b8dIrGTSY9Jx9ZdSLJb2y5CnbAassybQ9h00SPx4iGgxjxOJoWIxYNDwlBPOQ9y0R2uFBVB7LiQHW5cbjddmxfURhMc3EWbTB0m0vq62ql4+Rxag/spKXmID2tTRi6ZnhS06KSpO4w4d7xsxYdObFvx56SSdPjV971+dFF+y+IUWLyDsKvP/3u3JTMvNUd9UenSYp6bbCvK1OLxVNkVSU9r5DswrEUjZtCVmEx6blFuDxeO22J6nhdA7S3HJaFrsXRYlFi0TD9Xa10tzTRfPwgbSeP09feRCTo1yRJCbl8vj53SuqRzIIxO1KyC19sqTm07Y5v/Go0TvE7AKPE5B2KJ+/5Vq5psiQeCy/sOHk0J9DbU2ZaZkU8EvLIisPlSUnFl55FVtFYMgtKSM3IITU3H7cvHcXhQHHYREZRHAm171lGShoBNndj2FxNPIYWj6LFYkSC/fi72unvaqe/s4W2kzX093QQ6u9Bi4ZjquqKiIrS4k3Pqo9HwxuKysfvl1XH/uv/69snL9xIjeKfhVFi8m+CX37yRjl7zNjLWuuO5zuc7onxUGC8BZXhgN8d7O12Olwun01E3HjSM/D40nB5U3F6U1BUFZcvFafLg9PjQxBFHF4fijLEejaRs8TQ40SCAbBMIqEgWixMyN+HFo2gxaIEejoJBfqIBPzEI3bq07gWiwqmVZ+RX+QFoU51uo7oWmRvTnFlZ6C7c/1dP/xzy9s2cKO4YBglJv+muO8bn1CLqifPbqs9mtrT2uTNLCiu6mpuyO9uqZd1TbNUt7vKMvQiQ9dzvOlZqYauY5kGppVIuGSaySROMBBILWFFmwhcLSQSf4miRDwSJhoOHM7ML3FZltnQ19F6NCOv0MwoLGv3d7WdiMWje2cuvyKj/WTN3ps++/2eM7V7FO9c/H9EA5rQh45UBgAAAABJRU5ErkJggg==" alt="Liquor Outlet Wine Cellars">
+        <button type="button" class="rail__icon" data-view="shelfTalker">
+          <span class="glyph">
+            <svg class="mini-talker-icon" viewBox="0 0 22 30" width="18" height="24" aria-hidden="true">
+              <rect x="1" y="1" width="20" height="28" rx="1.5" fill="#ffffff" stroke="var(--ink)" stroke-width="1.6"/>
+              <rect x="4" y="4.5" width="14" height="3" rx="0.6" fill="var(--ink)"/>
+              <rect x="4" y="10" width="11" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+              <rect x="4" y="13" width="8.5" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+              <rect x="4" y="20" width="14" height="6" rx="1" fill="var(--sale-red)"/>
+              <rect x="6.5" y="22.2" width="9" height="1.8" rx="0.5" fill="#ffffff"/>
+            </svg>
+          </span>
+          <span class="caption">Shelf Talker</span>
+        </button>
+        <button type="button" class="rail__icon is-library" data-view="library">
+          <span class="glyph">
+            <svg class="mini-glass-icon" viewBox="0 0 22 30" width="18" height="24" aria-hidden="true">
+              <path d="M7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 Z" fill="var(--lib-band-accent)"/>
+              <path d="M7.5,1.5 C6.5,2.2 6.3,3 6.5,3.5 C6.7,4.5 8,7 8.5,9 C9,10.5 7,11.5 7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 C15,11.5 13,10.5 13.5,9 C14,7 15.3,4.5 15.5,3.5 C15.7,3 15.5,2.2 14.5,1.5 Z" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="caption">Library</span>
+        </button>
+        <div class="rail__spacer"></div>
+        <button type="button" class="rail__icon" data-view="settings"><span class="glyph">&#9881;&#65039;</span><span class="caption">Settings</span></button>
+      </div>
+      <div class="content-pane" id="contentPane"></div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Queue and History fold in; Settings keeps its own icon</h3>
+        <p>Queue is already a side panel on the same screen as the form, and History is already a button that
+        opens a dialog &mdash; neither is a separate top-level screen today, so neither needed its own rail icon;
+        both stay nested inside <strong>Shelf Talker</strong> (renamed from an earlier "Build"). Settings gets its
+        own rail icon back rather than folding in too &mdash; it's the one screen most likely to grow more
+        settings over time, and staff reaching for it shouldn't have to go through Shelf Talker to get there.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Icons drawn from the product, not picked from an emoji set</h3>
+        <p>Shelf Talker is a tiny rendering of an actual printed talker &mdash; white card, dark border, red price
+        block, using the same <code>--ink</code>/<code>--sale-red</code> print colors the real cards use. Library
+        is a Glencairn glass &mdash; the nosing glass shape, standing in for "everything we know about what's in
+        the bottle" &mdash; redrawn as two stacked SVG paths (a solid-filled bowl/foot path underneath, a
+        stroke-only outline path on top spanning rim to base) so the neck reads as glass and the bowl as
+        contained liquid, without a separate clip-path. Same technique on the rail icon (gold fill on the
+        neutral rail background) and the Library header band's own icon (cream fill so it reads against that
+        icon's gold badge instead of disappearing into it). The rail's brand mark is the real store logo now,
+        not a text placeholder.</p>
+      </div>
+    </div>
+    <div class="notes-card">
+      <h3>Decoupling, now shown where the flag actually lives</h3>
+      <p>The Experimental Features switch sits on its own Settings screen, reached from its own rail icon &mdash;
+      flip it off, then switch to Shelf Talker and only the Mash Bill / Nose-Palate-Finish fields react. The
+      Library icon, its content, and its own confidence filters are untouched, because they never read that flag
+      to begin with.</p>
+    </div>
+    <div class="notes-card">
+      <h3>Decided: Advanced &amp; Help &rarr; Settings, menu bar goes full-width</h3>
+      <p>Advanced (Export File Settings, View Export File, Server PC) and Help (What's New, Check for Updates,
+      About) are now two new sections on the Settings screen, alongside Experimental Features &mdash; open
+      Settings to see them. That leaves File and Tools as the only two menus, and since both operate on the Queue
+      (which persists no matter which rail icon is active, not just while Shelf Talker happens to be open), the
+      bar moved out of the Shelf Talker screen entirely and now spans the <strong>full width of the app, above the
+      rail</strong> &mdash; permanent chrome, not a per-screen element.</p>
+    </div>
+    <div class="notes-card">
+      <h3>Open question this raises: should the Queue panel go full-width too?</h3>
+      <p>The menu bar's File &gt; Save Queue is now reachable from Library or Settings, but the Queue side panel
+      itself still only renders on the Shelf Talker screen &mdash; a staff member could save/find the queue from
+      anywhere, but not see it, without switching back. Worth deciding whether that's a real inconsistency
+      (Queue count badge always visible somewhere?) or fine as-is, since Print Now/the actual print flow is still
+      Shelf-Talker-specific either way.</p>
+    </div>
+    <div class="notes-card">
+      <h3>Live Preview: restored, then re-styled to actually look right</h3>
+      <p>The real Shelf Talker screen (<code>.layout</code> in styles.css) is a three-column grid &mdash; form,
+      Live Preview, Queue &mdash; and this mockup's Shelf Talker view had silently collapsed to just two columns.
+      Restored as its own middle column with the same Current Talker / Full Page toggle the real app uses; the
+      preview card is a simplified stand-in, not the actual card renderer, but it now borrows the real
+      <code>.card</code>'s own visual markers instead of a generic box: the amber <code>.card__band</code> strip,
+      a 2px ink border, Verdana price type, and a plain-ink <strong>Regular Price</strong> (real cards only turn
+      the price red for an actual Sale Price, per <code>.card__sale-price</code>/<code>.card__regular-price</code>).
+      Full Page mode wraps its mini cards in a white sheet boundary instead of a loose grid. The Queue list got the
+      same pass &mdash; a colored theme swatch, bold truncating title, muted meta line, and a &#8942; kebab button,
+      matching <code>.queue-item</code> instead of a plain text row. Both still react to the rest of the screen's
+      state: Bourbon Shelf Talkers on/off toggles the mash bill bar, and Full Page's cards come from the same
+      queue data the Queue panel shows.</p>
+    </div>
+    <div class="notes-card">
+      <h3>Open questions</h3>
+      <ul>
+        <li>Queue visibility outside Shelf Talker (see above) &mdash; still open.</li>
+        <li>Does "Add a bourbon" belong in the Library itself now (a real add-entry flow, not just the Edit
+        Talker form's "Save this mash bill" checkbox), now that it's meant to stand on its own as a reference?</li>
+        <li>Storage/sync stays exactly as designed for the Mash Bill Library (Server-PC-hosted, every register
+        polls) &mdash; this is presentation only, not a new data architecture.</li>
+        <li>Card grid vs. table for Browse: grid reads more "reference app," but a dense table scales better past
+        a few dozen entries. Worth revisiting once real shelf data is seeded in.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const GRAIN_COLORS = { Corn: '#d9a441', Rye: '#8a3a2c', Wheat: '#c9b464', 'Malted Barley': '#a67c3d', 'Malted Rye': '#6e2a1f', Oat: '#ddd0ad' };
+const FALLBACK_COLOR = '#b8ab98';
+const TIER_META = {
+  confirmed: { label: 'Confirmed', on: 4, colorVar: '--ui-good' },
+  reported:  { label: 'Reported',  on: 3, colorVar: '--ui-warn' },
+  estimated: { label: 'Estimated', on: 2, colorVar: '--ui-low' },
+  unknown:   { label: 'Unknown',   on: 0, colorVar: '--ui-muted' },
+};
+
+const bourbons = [
+  { id: 1, title: 'Buffalo Trace', distillery: 'Buffalo Trace Distillery', parent: 'Sazerac Company',
+    tags: ['Straight Bourbon', 'Mash Bill #1 (Low-Rye)'],
+    grains: [{ g: 'Corn', p: 89.5 }, { g: 'Rye', p: 7 }, { g: 'Malted Barley', p: 3.5 }],
+    confidence: { tier: 'reported', verified: 'Aug 2026',
+      note: 'Sazerac has never officially published exact percentages. These figures are what multiple independent industry sources consistently converge on.',
+      sources: [
+        { label: 'VinePair — The Complete Guide to Each of Buffalo Trace’s Elusive Mash Bills', url: 'https://vinepair.com/articles/buffalo-trace-mash-bill-guide/' },
+        { label: 'Whisky Advocate — The Mashbills of Buffalo Trace', url: 'https://whiskyadvocate.com/The-Mashbills-of-Buffalo-Trace' },
+      ] },
+    tasting: { nose: 'Vanilla, brown sugar, a light hit of oak spice.', palate: 'Caramel corn, mint, oak.', finish: 'Long, warm, a trace of smoke.', source: 'Distiller.com (auto-filled)' } },
+  { id: 2, title: 'Four Roses Single Barrel', distillery: 'Four Roses Distillery', parent: 'Kirin Holdings (Four Roses Distillery LLC)',
+    tags: ['Single Barrel Bourbon', 'Recipe OBSK'],
+    grains: [{ g: 'Corn', p: 60 }, { g: 'Rye', p: 35 }, { g: 'Malted Barley', p: 5 }],
+    confidence: { tier: 'confirmed', verified: 'Aug 2026',
+      note: 'Four Roses publishes both base mash bills and all ten recipe codes directly on their own site.',
+      sources: [ { label: 'Four Roses — Our Recipes (official)', url: 'https://www.fourrosesbourbon.com/our-recipes' } ] },
+    tasting: { nose: 'Ripe berries, caramel, floral notes.', palate: 'Cinnamon, dried fruit, toasted oak.', finish: 'Spicy and warm, lingers.', source: 'Distiller.com (auto-filled)' } },
+  { id: 3, title: "Blanton's Single Barrel", distillery: 'Buffalo Trace Distillery', parent: 'Sazerac Company',
+    tags: ['Single Barrel Bourbon', 'Mash Bill #2 (Higher-Rye)'],
+    grains: [{ g: 'Corn', p: 87.5 }, { g: 'Rye', p: 9 }, { g: 'Malted Barley', p: 3.5 }],
+    confidence: { tier: 'estimated', verified: 'Aug 2026',
+      note: 'Corn and malted barley are fairly consistent across sources, but the rye share is disputed — estimates range from about 9% to as high as 15%.',
+      sources: [ { label: 'VinePair — The Complete Guide to Each of Buffalo Trace’s Elusive Mash Bills', url: 'https://vinepair.com/articles/buffalo-trace-mash-bill-guide/' } ] },
+    tasting: { nose: 'Citrus peel, honey, vanilla.', palate: 'Nutmeg, caramel, orange zest.', finish: 'Smooth, sweet, medium length.', source: 'Manually entered' } },
+  { id: 4, title: "Michter's US*1 Bourbon", distillery: "Michter's Distillery (Shively / Fort Nelson)", parent: 'Chatham Imports',
+    tags: ['Small Batch Bourbon'], grains: null,
+    confidence: { tier: 'unknown', verified: 'Aug 2026',
+      note: 'Michter’s has never disclosed a mash bill for this expression — nothing recorded rather than printing a guess.',
+      sources: [ { label: 'Bourbon Culture — Michter’s Distillery: Past, Present and Future (no distillery confirmation)', url: 'https://thebourbonculture.com/whiskey-info/michters-distillery-past-present-and-future/' } ] },
+    tasting: { nose: 'Toffee, vanilla, light oak.', palate: 'Caramel, baking spice.', finish: 'Soft, balanced.', source: 'Manually entered' } },
+  { id: 5, title: 'Redemption Bourbon', distillery: 'MGP Ingredients (Lawrenceburg, IN)', parent: 'Deutsch Family Wine & Spirits',
+    tags: ['Straight Bourbon', 'MGP-distilled'],
+    grains: [{ g: 'Corn', p: 60 }, { g: 'Rye', p: 38.1 }, { g: 'Malted Barley', p: 1.8 }],
+    confidence: { tier: 'reported', verified: 'Aug 2026',
+      note: 'MGP doesn’t publish per-brand percentages, but this breakdown is consistently cited across whiskey-industry references tracking MGP’s standard recipes.',
+      sources: [ { label: 'Kindred Cocktails — Redemption (ingredient reference)', url: 'https://kindredcocktails.com/ingredient/redemption' } ] },
+    tasting: { nose: 'Rye spice, black pepper, caramel.', palate: 'Cinnamon, dark fruit, oak.', finish: 'Dry, peppery.', source: 'Distiller.com (auto-filled)' } },
+];
+
+let activeRailItem = 'shelfTalker';
+let experimentalOn = true;
+let previewMode = 'sheet'; // single | sheet - matches index.html's own Full Page default
+let libView = 'home'; // home | profile
+let selectedId = null;
+let searchQuery = '';
+let activeFilter = 'all';
+
+function grainBarHtml(grains) {
+  const bar = grains.map(({ g, p }) => `<span style="width:${p}%;background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></span>`).join('');
+  const legend = grains.map(({ g, p }) => `<span><span class="grain-swatch" style="background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></span>${p}% ${g}</span>`).join('');
+  return { bar, legend };
+}
+function meterHtml(tier) {
+  const meta = TIER_META[tier];
+  const dots = [0, 1, 2, 3].map((i) => `<span class="${i < meta.on ? 'is-on' : ''}"></span>`).join('');
+  return `<span class="conf-meter" style="color:var(${meta.colorVar})">${dots}</span>`;
+}
+function badgeHtml(tier) {
+  const meta = TIER_META[tier];
+  return `<span class="conf-badge conf-badge--${tier}">${meta.label}</span>`;
+}
+
+/* ---------------- Shelf Talker view (Build, renamed - includes the Queue
+   side panel, Live Preview panel, and History button that already live on
+   this one screen; the File/Tools menu bar is now static chrome above the
+   rail, not part of this view - see the static .mb-bar in the page
+   markup) ---------------- */
+const queueItems = [
+  { title: 'Buffalo Trace', size: '750mL', price: '$27.99' },
+  { title: 'Woodford Reserve', size: '750mL', price: '$34.99' },
+  { title: "Maker's Mark", size: '750mL', price: '$29.99' },
+];
+
+function mashBarHtml(cls) {
+  return experimentalOn ? `
+    <div class="${cls}">
+      <span style="width:75%;background:${GRAIN_COLORS.Corn}"></span>
+      <span style="width:13%;background:${GRAIN_COLORS.Rye}"></span>
+      <span style="width:12%;background:${GRAIN_COLORS['Malted Barley']}"></span>
+    </div>` : '';
+}
+
+function previewStageHtml() {
+  if (previewMode === 'single') {
+    return `
+      <div class="preview-card">
+        <div class="preview-card__band"></div>
+        <div class="preview-card__body">
+          <div class="preview-card__title">Buffalo Trace Kentucky Straight Bourbon</div>
+          <div class="preview-card__desc">Kentucky Straight Bourbon Whiskey</div>
+          ${mashBarHtml('preview-card__mashbar')}
+          <div class="preview-card__price">Regular Price $27.99</div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="preview-sheet-page">
+      <div class="preview-sheet">
+        ${queueItems.map((q) => `
+          <div class="preview-card preview-card--sheet">
+            <div class="preview-card__band"></div>
+            <div class="preview-card__body">
+              <div class="preview-card__title">${q.title}</div>
+              <div class="preview-card__price">${q.price}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+function renderBuild() {
+  const bourbonFields = experimentalOn ? `
+    <div class="bourbon-fields">
+      <div class="bourbon-fields__label">Bourbon Shelf Talkers fields</div>
+      <div class="field"><span>Mash Bill</span></div>
+      <div class="chip-row"><span class="chip-ph">75% Corn</span><span class="chip-ph">13% Rye</span><span class="chip-ph">12% Malted Barley</span></div>
+      <div class="field" style="margin-top:0.8rem;"><span>Nose / Palate / Finish</span><input placeholder="Vanilla, brown sugar, oak spice&hellip;"></div>
+    </div>` : `
+    <p class="bourbon-fields-hidden-note">Mash Bill / Nose-Palate-Finish / Store Pick fields are hidden &mdash;
+    turn on <strong>Bourbon Shelf Talkers</strong> in Settings to show them on this form.</p>`;
+  document.getElementById('contentPane').innerHTML = `
+    <div class="build-pad">
+      <div class="build-top-row">
+        <div class="build-tabs">
+          <button class="build-tab is-active" type="button">Manual Entry</button>
+          <button class="build-tab" type="button">Import from Website</button>
+          <button class="build-tab" type="button">Search</button>
+        </div>
+        <button type="button" class="btn btn--small" title="Search and reprint past shelf talkers">History</button>
+      </div>
+      <div class="build-columns">
+        <div class="build-form">
+          <div class="field"><span>Distillery</span><input value="Buffalo Trace"></div>
+          <div class="field"><span>Product Title</span><input value="Buffalo Trace Kentucky Straight Bourbon"></div>
+          <div class="field-row">
+            <div class="field"><span>Size</span><input value="750mL"></div>
+            <div class="field"><span>Price</span><input value="$27.99"></div>
+          </div>
+          ${bourbonFields}
+        </div>
+        <div class="build-preview">
+          <div class="preview-header">
+            <h4>Live Preview</h4>
+            <div class="preview-toggle" id="previewToggle">
+              <button type="button" data-mode="single" class="${previewMode === 'single' ? 'is-active' : ''}">Current Talker</button>
+              <button type="button" data-mode="sheet" class="${previewMode === 'sheet' ? 'is-active' : ''}">Full Page</button>
+            </div>
+          </div>
+          <div class="preview-stage">${previewStageHtml()}</div>
+        </div>
+        <div class="build-queue">
+          <div class="build-queue__header"><h4>Queue</h4><span class="build-queue__count">${queueItems.length}</span></div>
+          ${queueItems.map((q) => `
+            <div class="build-queue__item">
+              <div class="build-queue__swatch"></div>
+              <div class="build-queue__body">
+                <div class="build-queue__title">${q.title}</div>
+                <div class="build-queue__meta">${q.size} &middot; ${q.price}</div>
+              </div>
+              <button type="button" class="build-queue__menu-btn" title="More actions">&#8942;</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+  document.querySelectorAll('#previewToggle button').forEach((btn) => {
+    btn.addEventListener('click', () => { previewMode = btn.dataset.mode; renderBuild(); });
+  });
+}
+
+/* ---------------- Settings view ---------------- */
+function renderSettings() {
+  const advancedHelpSections = `
+    <div class="settings-section" style="margin-top:1.1rem;">
+      <h4>Advanced</h4>
+      <div class="settings-row"><div><div class="settings-row__label">Export File Settings&hellip;</div></div><button type="button" class="btn btn--small">Open</button></div>
+      <div class="settings-row" style="margin-top:0.5rem;"><div><div class="settings-row__label">View Export File&hellip;</div></div><button type="button" class="btn btn--small">Open</button></div>
+      <div class="settings-row" style="margin-top:0.5rem;"><div><div class="settings-row__label">Server PC&hellip;</div></div><button type="button" class="btn btn--small">Open</button></div>
+    </div>
+    <div class="settings-section" style="margin-top:1.1rem;">
+      <h4>Help</h4>
+      <div class="settings-row"><div><div class="settings-row__label">What&rsquo;s New / Check for Updates / About</div></div><button type="button" class="btn btn--small">Open</button></div>
+    </div>`;
+  document.getElementById('contentPane').innerHTML = `
+    <div class="settings-pad">
+      <div class="settings-section">
+        <h4>Experimental Features</h4>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row__label">Bourbon Shelf Talkers</div>
+            <div class="settings-row__caption">Adds Mash Bill, Nose/Palate/Finish, and a Store Pick ribbon to the
+            talker form. Gated here because it changes what prints on a real, customer-facing sign.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="experimentalToggle" ${experimentalOn ? 'checked' : ''}>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+        </div>
+      </div>
+      ${advancedHelpSections}
+      <div class="settings-note">
+        &#9989; The Bourbon Library isn't listed here &mdash; it doesn't read this flag. It's reachable from the
+        rail on the left no matter how this switch is set. Try it: flip the switch, then click Library.
+      </div>
+    </div>
+  `;
+  document.getElementById('experimentalToggle').addEventListener('change', (e) => {
+    experimentalOn = e.target.checked;
+  });
+}
+
+/* ---------------- Library view ---------------- */
+function matchesFilter(b) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'confirmed') return b.confidence.tier === 'confirmed';
+  if (activeFilter === 'reported') return b.confidence.tier === 'reported';
+  if (activeFilter === 'needs') return b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown';
+  return true;
+}
+function matchesSearch(b) {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return true;
+  return b.title.toLowerCase().includes(q) || b.distillery.toLowerCase().includes(q) || b.parent.toLowerCase().includes(q);
+}
+function chipsHtml() {
+  const counts = {
+    all: bourbons.length,
+    confirmed: bourbons.filter((b) => b.confidence.tier === 'confirmed').length,
+    reported: bourbons.filter((b) => b.confidence.tier === 'reported').length,
+    needs: bourbons.filter((b) => b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown').length,
+  };
+  const chips = [
+    { key: 'all', label: `All bourbons (${counts.all})` },
+    { key: 'confirmed', label: `✅ Confirmed (${counts.confirmed})` },
+    { key: 'reported', label: `📋 Reported (${counts.reported})` },
+    { key: 'needs', label: `⚠️ Needs verification (${counts.needs})` },
+  ];
+  return chips.map((c) => `<button type="button" class="chip-filter ${activeFilter === c.key ? 'is-active' : ''}" data-filter="${c.key}">${c.label}</button>`).join('');
+}
+function statsHtml() {
+  const distilleries = new Set(bourbons.map((b) => b.distillery)).size;
+  const parents = new Set(bourbons.map((b) => b.parent)).size;
+  const needsCount = bourbons.filter((b) => b.confidence.tier === 'estimated' || b.confidence.tier === 'unknown').length;
+  return `
+    <div class="lib-stat"><b>${bourbons.length}</b><span>Bourbons</span></div>
+    <div class="lib-stat"><b>${distilleries}</b><span>Distilleries</span></div>
+    <div class="lib-stat"><b>${parents}</b><span>Parent companies</span></div>
+    <div class="lib-stat"><b>${needsCount}</b><span>Need verification</span></div>
+  `;
+}
+function homeBodyHtml() {
+  const rows = bourbons.filter((b) => matchesFilter(b) && matchesSearch(b));
+  if (!rows.length) return '<div class="empty-state">No bourbons match this search/filter.</div>';
+  return `
+    <div class="card-grid">
+      ${rows.map((b) => {
+        const barInner = b.grains ? grainBarHtml(b.grains).bar : '';
+        return `
+        <button type="button" class="card" data-id="${b.id}">
+          <div>
+            <div class="card__title">${b.title}</div>
+            <div class="card__sub">${b.distillery}</div>
+          </div>
+          <div class="card__bar ${b.grains ? '' : 'card__bar--empty'}">${barInner}</div>
+          <div class="card__footer">
+            <span class="card__sub">${b.tags[0]}</span>
+            ${badgeHtml(b.confidence.tier)}
+          </div>
+        </button>`;
+      }).join('')}
+    </div>
+  `;
+}
+function profileBodyHtml() {
+  const b = bourbons.find((x) => x.id === selectedId);
+  const siblings = bourbons.filter((x) => x.id !== b.id && x.distillery === b.distillery);
+  const mashBillBlock = b.grains
+    ? (() => { const { bar, legend } = grainBarHtml(b.grains); return `<div class="grain-bar">${bar}</div><div class="grain-legend">${legend}</div>`; })()
+    : `<div class="grain-bar grain-bar--empty"></div><p class="grain-empty-note">No mash bill on file for this expression.</p>`;
+  return `
+    <div class="crumb"><button type="button" id="crumbBack">&larr; Bourbon Library</button> / ${b.title}</div>
+    <div class="profile-head">
+      <div>
+        <h2>${b.title}</h2>
+        <p class="profile-head__by">${b.distillery} &middot; <strong>${b.parent}</strong></p>
+        <div class="profile-tags">${b.tags.map((t) => `<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="profile-grid">
+      <div>
+        <div class="block">
+          <h3>Mash Bill</h3>
+          ${mashBillBlock}
+          <div class="conf-block">
+            <div class="conf-block__row">
+              <span style="font-size:0.78rem;font-weight:700;color:var(--ui-ink-soft);text-transform:uppercase;letter-spacing:0.03em;">Mash Bill Confidence</span>
+              ${badgeHtml(b.confidence.tier)}
+              ${meterHtml(b.confidence.tier)}
+            </div>
+            <p class="conf-block__note">${b.confidence.note}</p>
+            <div class="conf-block__verified">Last verified ${b.confidence.verified}</div>
+            <details class="sources">
+              <summary>View ${b.confidence.sources.length} source${b.confidence.sources.length === 1 ? '' : 's'}</summary>
+              <ul class="sources-list">${b.confidence.sources.map((s) => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.label}</a></li>`).join('')}</ul>
+            </details>
+          </div>
+        </div>
+        <div class="block">
+          <h3>Tasting Notes</h3>
+          <div class="tasting-grid">
+            <div class="tasting-card"><h4>Nose</h4><p>${b.tasting.nose}</p></div>
+            <div class="tasting-card"><h4>Palate</h4><p>${b.tasting.palate}</p></div>
+            <div class="tasting-card"><h4>Finish</h4><p>${b.tasting.finish}</p></div>
+          </div>
+          <div class="tasting-source">Source: ${b.tasting.source}</div>
+        </div>
+      </div>
+      <div class="block info-card">
+        <h3>Distillery &amp; Ownership</h3>
+        <dl>
+          <div><dt>Distillery</dt><dd>${b.distillery}</dd></div>
+          <div><dt>Parent company</dt><dd>${b.parent}</dd></div>
+          <div><dt>Style</dt><dd>${b.tags[0]}</dd></div>
+        </dl>
+        ${siblings.length ? `
+          <dt style="margin-top:0.9rem;">Other ${b.distillery} entries</dt>
+          <div style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;">
+            ${siblings.map((s) => `<button type="button" class="card" data-id="${s.id}" style="padding:0.5rem 0.65rem;flex-direction:row;align-items:center;justify-content:space-between;"><span class="card__sub" style="color:var(--ui-ink);font-weight:700;">${s.title}</span>${badgeHtml(s.confidence.tier)}</button>`).join('')}
+          </div>` : ''}
+      </div>
+    </div>
+  `;
+}
+function renderLibrary() {
+  document.getElementById('contentPane').innerHTML = `
+    <div class="lib-band">
+      <div class="lib-band__top">
+        <div class="lib-brand">
+          <div class="lib-brand__icon">
+            <svg viewBox="0 0 22 30" width="22" height="30" aria-hidden="true">
+              <path d="M7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 Z" fill="#f3e6cf"/>
+              <path d="M7.5,1.5 C6.5,2.2 6.3,3 6.5,3.5 C6.7,4.5 8,7 8.5,9 C9,10.5 7,11.5 7,13 C7,15 3.5,15.5 3.5,18 C3.5,20.5 8,21.5 8.5,23 C8.8,23.8 9,24 9,25 C9,26 6.5,26 6.5,27 L6.5,28.5 L15.5,28.5 L15.5,27 C15.5,26 13,26 13,25 C13,24 13.2,23.8 13.5,23 C14,21.5 18.5,20.5 18.5,18 C18.5,15.5 15,15 15,13 C15,11.5 13,10.5 13.5,9 C14,7 15.3,4.5 15.5,3.5 C15.7,3 15.5,2.2 14.5,1.5 Z" fill="none" stroke="#241a10" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="lib-brand__name">Bourbon Library</div>
+            <div class="lib-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+      </div>
+      <div class="lib-search"><input type="text" id="librarySearch" placeholder="Search by name, distillery, or parent company&hellip;" value="${searchQuery}"></div>
+      <div class="lib-chips" id="libraryChips">${chipsHtml()}</div>
+      <div class="lib-stats">${statsHtml()}</div>
+    </div>
+    <div class="lib-body" id="libraryBody">${libView === 'home' ? homeBodyHtml() : profileBodyHtml()}</div>
+  `;
+  document.getElementById('librarySearch').addEventListener('input', (e) => { searchQuery = e.target.value; libView = 'home'; renderLibrary(); });
+  document.querySelectorAll('.chip-filter[data-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => { activeFilter = btn.dataset.filter; renderLibrary(); });
+  });
+  document.querySelectorAll('#libraryBody .card[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); libView = 'profile'; renderLibrary(); });
+  });
+  const crumbBack = document.getElementById('crumbBack');
+  if (crumbBack) crumbBack.addEventListener('click', () => { libView = 'home'; renderLibrary(); });
+}
+
+/* ---------------- rail wiring ---------------- */
+function renderRailState() {
+  document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.view === activeRailItem);
+  });
+}
+function renderContent() {
+  renderRailState();
+  if (activeRailItem === 'shelfTalker') renderBuild();
+  else if (activeRailItem === 'library') renderLibrary();
+  else if (activeRailItem === 'settings') renderSettings();
+}
+document.querySelectorAll('.rail__icon[data-view]').forEach((btn) => {
+  btn.addEventListener('click', () => { activeRailItem = btn.dataset.view; renderContent(); });
+});
+
+renderContent();
+</script>

@@ -78,6 +78,98 @@ browser.
   follow-up to this mockup &mdash; see the README's own Mash Bill Library
   section for the shipped behavior, which stuck to exact-title matching
   only (see that section for why).
+- **bourbon-profile-page.html** &mdash; follow-up to mash-bill-library.html
+  above: proposes a read-focused **profile page** on top of each saved
+  Mash Bill Library entry &mdash; distillery, parent company, tasting
+  notes, and mash bill together, doubling as a staff reference instead of
+  only feeding the Edit Talker form's recall banner. Introduces a
+  **Mash Bill Confidence** section: a four-tier score (Confirmed / Reported
+  / Estimated / Unknown) reflecting how directly a grain composition traces
+  back to the distillery itself, since a lot of this data is
+  industry-reported rather than officially disclosed. Each tier gets a
+  color badge, a dot meter, a one-line rationale, and an expandable
+  source-citation list; deliberately staff-only &mdash; it never prints on
+  the shelf talker, only the grain bar does when one is known. The five
+  sample entries (Buffalo Trace, Four Roses, Blanton's, Michter's,
+  Redemption) are drawn from the public-source research behind the mash
+  bill seed list, picked so all four tiers show up at least once instead of
+  clustering in the middle. Not yet backed by real schema &mdash;
+  <code>mash_bills</code> today has no parent-company, category,
+  tasting-note, or confidence columns; this mockup is scoped to the page
+  and scoring design, not the data-model changes it would need.
+- **bourbon-library-app-shell.html** &mdash; follow-up to
+  bourbon-profile-page.html above: confirms **Bourbon Shelf Talkers** (the
+  mash bill chip builder, Nose/Palate/Finish, Store Pick) stays gated
+  behind Settings &rarr; Experimental Features exactly as today, but takes
+  the **Bourbon Library** itself out from under that toggle and out of
+  Tools&hellip; into something that reads as its own space within the
+  program. Compared three entry points and settled on a persistent
+  **Sidebar Rail** &mdash; three icons: **Shelf Talker** (the entire
+  existing app, renamed from an earlier "Build"), **Library**, and
+  **Settings**. Queue and History never got their own icons because
+  neither is a separate top-level screen today &mdash; Queue is already
+  the side panel next to the form, History is already a button that opens
+  a dialog &mdash; so both stay nested inside Shelf Talker exactly as they
+  already work. Settings kept its own rail icon (an earlier pass folded
+  it into Shelf Talker as a dialog, then un-folded it back onto the rail)
+  since it's the one screen most likely to grow more settings over time.
+  Two rail icons are drawn from the product itself instead of emoji:
+  **Shelf Talker** is a small inline-SVG rendering of an actual printed
+  talker (white card, dark border, a red price block, using the same
+  fixed <code>--ink</code>/<code>--sale-red</code> print colors the real
+  cards use), and **Bourbon Library** is a Glencairn glass redrawn (from a
+  user-supplied reference image) as two stacked SVG paths &mdash; a
+  solid-filled bowl/foot underneath, a stroke-only outline on top spanning
+  rim to base &mdash; so the neck reads as glass and the bowl as contained
+  liquid, no clip-path needed. Same technique on the rail icon (gold fill)
+  and the Library header band's own icon (cream fill, so it reads against
+  that icon's gold badge instead of disappearing into it). The rail's
+  brand mark at the top is the real Liquor Outlet Wine Cellars logo
+  (embedded inline, base64) now too, not a placeholder "STW" badge. Once
+  inside the Library, it gets a distinct dark "reading
+  room" header band (same fonts/radii/accent family as the rest of the
+  app, just a different room) with search, a card grid (swaps the flat
+  table for something more browsable), working confidence filter chips
+  (All / Confirmed / Reported / **Needs verification**, the last one
+  doubling as a real research to-do list), and the profile page from
+  bourbon-profile-page.html re-chromed with a back-to-grid breadcrumb.
+  Presentation only &mdash; storage/sync stays the existing Mash Bill
+  Library design. Also surfaces and resolves a gap earlier passes missed
+  entirely: the real app's Windows-style menu bar (File / Tools /
+  Advanced / Help, above the app bar, see <code>#menuBar</code> in
+  index.html) never appeared in this mockup before. **Decided:**
+  Advanced (Export File Settings, View Export File, Server PC) and Help
+  (What's New, Check for Updates, About) become two new sections on the
+  Settings screen, alongside Experimental Features &mdash; Mash Bill
+  Library and Settings itself had already dropped out of Tools since both
+  have rail icons now. That leaves just File and Tools (Open/Save/Find
+  Queue, Beer Talker Info, Wine Pairing Rules) as a working menu bar
+  (native <code>&lt;details&gt;</code> dropdowns, no extra JS), and since
+  both operate on the Queue &mdash; which persists no matter which rail
+  icon is active &mdash; that bar now spans the **full width of the app,
+  above the rail**, as permanent chrome rather than living inside the
+  Shelf Talker screen. Flags one open question this raises: the Queue
+  side panel itself still only renders on the Shelf Talker screen even
+  though File &gt; Save Queue is now reachable from anywhere, which the
+  notes call out rather than resolve. Fixes a second dropped piece too:
+  the real Shelf Talker screen is a three-column layout (form, **Live
+  Preview**, Queue, see <code>.layout</code> in styles.css) and this
+  mockup had quietly collapsed to two columns, form and Queue only. Live
+  Preview is back as its own column with the same Current Talker / Full
+  Page toggle the real app uses. Its first pass looked nothing like the
+  real thing, so the preview card and Queue rows were both redone against
+  the actual CSS: the preview card now carries the amber
+  <code>.card__band</code> strip, a 2px ink border, Verdana price type,
+  and an ink-colored <strong>Regular Price</strong> (only a Sale Price is
+  ever red on a real card); Full Page wraps its mini cards in a white
+  sheet boundary instead of a bare grid; and Queue rows now have the
+  colored theme swatch, bold truncating title, muted meta line, and
+  &#8942; kebab button that <code>.queue-item</code> actually has, not a
+  plain text line. Both still react to the rest of the screen's state
+  &mdash; Bourbon Shelf Talkers on/off toggles the mash bill bar, and
+  Full Page's cards come from the same queue data the Queue panel shows.
+  Other open questions (a real "Add a bourbon" flow, grid vs. table at
+  scale) also remain.
 - **live-preview-talker-selection.html** &mdash; lets staff click a talker
   directly on the **Full Page** Live Preview to edit it, instead of having to
   find the matching row in the Queue list below and open its &#8942; menu.

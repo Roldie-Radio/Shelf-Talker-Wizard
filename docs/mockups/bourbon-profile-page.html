@@ -1,0 +1,548 @@
+<title>Bourbon Profile Page — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted from Shelf Talker Wizard's own public/css/styles.css,
+   same base set mash-bill-library.html already uses, so this sits in
+   the same visual system rather than inventing a second one. Two new
+   tokens only (--ui-low/--ui-low-tint) for the "Estimated" confidence
+   tier, which has no equivalent anywhere in the real app yet.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+  --ui-low: #a8391a;
+  --ui-low-tint: rgba(168, 57, 26, 0.1);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.appbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.5rem; background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); flex-wrap: wrap; row-gap: 0.6rem; }
+.appbar h1 { font-size: 1.1rem; }
+.appbar p { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--ui-muted); }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:focus-visible, input:focus-visible, summary:focus-visible, .lib2-row:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+.layout { display: grid; grid-template-columns: 300px 1fr; gap: 0; align-items: stretch; min-height: 560px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+/* ---------- left: library list ---------- */
+.lib-pane { border-right: 1px solid var(--ui-border); background: var(--ui-panel-alt); padding: 1rem; display: flex; flex-direction: column; min-width: 0; }
+.lib-pane input { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); width: 100%; margin-bottom: 0.75rem; }
+.lib2-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+.lib2-row { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 0.55rem 0.65rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.2rem; }
+.lib2-row:hover { background: var(--ui-hover); }
+.lib2-row.is-selected { background: var(--ui-panel); border-color: var(--ui-border); box-shadow: 0 1px 0 var(--ui-shadow); }
+.lib2-row__title { font-weight: 700; font-size: 0.86rem; }
+.lib2-row__sub { font-size: 0.74rem; color: var(--ui-muted); }
+.lib2-row__meta { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; }
+
+/* ---------- confidence badge + dot meter (shared, list + profile) ---------- */
+.conf-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.14rem 0.5rem 0.14rem 0.4rem; border-radius: 999px; border: 1px solid transparent; }
+.conf-badge--confirmed { background: var(--ui-good-tint); color: var(--ui-good); border-color: color-mix(in srgb, var(--ui-good) 40%, transparent); }
+.conf-badge--reported  { background: var(--ui-warn-tint); color: var(--ui-warn); border-color: color-mix(in srgb, var(--ui-warn) 40%, transparent); }
+.conf-badge--estimated { background: var(--ui-low-tint);  color: var(--ui-low);  border-color: color-mix(in srgb, var(--ui-low) 40%, transparent); }
+.conf-badge--unknown   { background: var(--ui-code-bg);   color: var(--ui-muted); }
+.conf-meter { display: inline-flex; gap: 2px; }
+.conf-meter span { width: 6px; height: 6px; border-radius: 50%; background: var(--ui-border); }
+.conf-meter span.is-on { background: currentColor; }
+
+/* ---------- right: profile page ---------- */
+.profile-pane { padding: 1.4rem 1.6rem 1.8rem; min-width: 0; overflow-y: auto; }
+.profile-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1.2rem; }
+.profile-head h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+.profile-head__by { margin: 0.25rem 0 0; font-size: 0.88rem; color: var(--ui-ink-soft); }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; }
+.tag { font-size: 0.72rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.18rem 0.55rem; border-radius: 999px; }
+.profile-head__actions { display: flex; gap: 0.5rem; }
+
+.profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.1rem; align-items: start; }
+@media (max-width: 760px) { .profile-grid { grid-template-columns: 1fr; } }
+
+.block { border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1rem 1.1rem; background: var(--ui-panel); margin-bottom: 1.1rem; }
+.block h3 { font-size: 0.92rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.block h3 .btn { margin-left: auto; }
+
+.grain-bar { display: flex; width: 100%; height: 16px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15); }
+.grain-bar__seg { height: 100%; }
+.grain-bar--empty { background: repeating-linear-gradient(135deg, var(--ui-code-bg), var(--ui-code-bg) 6px, var(--ui-panel-sunken) 6px, var(--ui-panel-sunken) 12px); border-style: dashed; }
+.grain-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.7rem; margin-top: 0.4rem; font-size: 0.78rem; font-weight: 700; }
+.grain-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.grain-swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.grain-empty-note { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.5rem; }
+
+.conf-block { margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px dashed var(--ui-border); }
+.conf-block__row { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.conf-block__label { font-size: 0.78rem; font-weight: 700; color: var(--ui-ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+.conf-block__note { font-size: 0.84rem; color: var(--ui-ink-soft); line-height: 1.5; margin: 0.5rem 0 0; }
+.conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
+details.sources { margin-top: 0.5rem; }
+details.sources summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--ui-accent-ink); list-style: none; }
+details.sources summary::-webkit-details-marker { display: none; }
+details.sources summary::before { content: "▸ "; }
+details.sources[open] summary::before { content: "▾ "; }
+.sources-list { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.8rem; color: var(--ui-ink-soft); line-height: 1.7; }
+.sources-list a { color: var(--ui-accent-ink); }
+
+.tasting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+@media (max-width: 560px) { .tasting-grid { grid-template-columns: 1fr; } }
+.tasting-card { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.8rem; }
+.tasting-card h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.35rem; }
+.tasting-card p { margin: 0; font-size: 0.86rem; color: var(--ui-ink); line-height: 1.45; }
+.tasting-source { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.6rem; }
+
+.info-card dl { margin: 0; display: flex; flex-direction: column; gap: 0.65rem; }
+.info-card dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.1rem; }
+.info-card dd { margin: 0; font-size: 0.88rem; font-weight: 600; }
+.sibling-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+.sibling-btn { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.8rem; font-family: inherit; color: var(--ui-ink); cursor: pointer; }
+.sibling-btn:hover { background: var(--ui-hover); }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+table.tiers { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+table.tiers th, table.tiers td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--ui-border); vertical-align: top; }
+table.tiers th { color: var(--ui-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.table-wrap { overflow-x: auto; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed feature &middot; not part of the running app</p>
+    <h1>Bourbon Profile Pages &amp; Mash Bill Confidence</h1>
+    <p>
+      Today the <strong>Mash Bill Library</strong> is a flat table of title &rarr; grain composition, built to feed
+      the Edit Talker form's recall banner. This mockup proposes a read-focused <strong>profile page</strong> on top
+      of the same entries &mdash; distillery, parent company, tasting notes, and mash bill in one place &mdash; so
+      it doubles as a staff reference, not just shelf-talker plumbing. Click a bourbon on the left to open its page.
+    </p>
+    <p>
+      Because a lot of mash bill data is industry-reported rather than distillery-confirmed (see the seed list
+      compiled earlier), each profile also carries a <strong>Mash Bill Confidence</strong> section &mdash; a scoring
+      system so staff can see at a glance how sure we actually are, instead of every entry looking equally
+      authoritative. It's a staff-only signal: it never prints on the shelf talker itself, only the grain
+      composition does when one is known.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Bourbon Library</div>
+    </div>
+    <div class="appbar">
+      <div>
+        <h1>Bourbon Library</h1>
+        <p>5 of 5 entries shown &middot; Bourbon Shelf Talkers: ON</p>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="lib-pane">
+        <input id="libSearch" placeholder="Search title or distillery&hellip;">
+        <div class="lib2-list" id="libList"></div>
+      </div>
+      <div class="profile-pane" id="profilePane"></div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+
+    <div class="notes-card">
+      <h3>How Mash Bill Confidence is scored</h3>
+      <p>Four tiers, ordered by how directly the number traces back to the distillery itself &mdash; not a
+      statistical score, just a plain rule for which bucket an entry belongs in:</p>
+      <div class="table-wrap">
+        <table class="tiers">
+          <thead><tr><th>Tier</th><th>Meter</th><th>What qualifies</th><th>How staff should treat it</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="conf-badge conf-badge--confirmed">Confirmed</span></td>
+              <td><span class="conf-meter" style="color:var(--ui-good)"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span></span></td>
+              <td>The distillery currently publishes the exact grain percentages itself (own site, press kit, label filing).</td>
+              <td>Safe to state as fact.</td>
+            </tr>
+            <tr>
+              <td><span class="conf-badge conf-badge--reported">Reported</span></td>
+              <td><span class="conf-meter" style="color:var(--ui-warn)"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span><span></span></span></td>
+              <td>Not published by the distillery, but 2+ independent reputable sources agree within a few points of each other.</td>
+              <td>Good working number &mdash; cite as "commonly reported," not distillery-confirmed.</td>
+            </tr>
+            <tr>
+              <td><span class="conf-badge conf-badge--estimated">Estimated</span></td>
+              <td><span class="conf-meter" style="color:var(--ui-low)"><span class="is-on"></span><span class="is-on"></span><span></span><span></span></span></td>
+              <td>Only one source, or multiple sources disagree / give a wide range.</td>
+              <td>Treat as a rough range, not a fixed number.</td>
+            </tr>
+            <tr>
+              <td><span class="conf-badge conf-badge--unknown">Unknown</span></td>
+              <td><span class="conf-meter" style="color:var(--ui-muted)"><span></span><span></span><span></span><span></span></span></td>
+              <td>Nothing found beyond the whiskey category's legal minimum (e.g. &ge;51% corn for bourbon).</td>
+              <td>Leave the mash bill blank &mdash; don't present a legal minimum as the real recipe.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Profile page = a view, not a new editing surface</h3>
+        <p>Every field shown here (grains, sources, tasting notes) still lives in the existing <code>mash_bills</code>
+        row and is still edited through the Edit Talker form's Mash Bill field or the Manage Mash Bill Library
+        dialog &mdash; same Server-PC-hosted sync already built for the library. This page is a read-focused
+        layout on top of that data, the same relationship a product page has to its underlying database row.</p>
+        <p>The "Other &hellip; in the Library" list on the right and the "Edit in Library" button are how a profile
+        page would hand off to that existing editing surface rather than duplicating it.</p>
+      </div>
+      <div class="notes-card notes-card--warn">
+        <h3>Schema gap this would need to close</h3>
+        <p>Today's <code>mash_bills</code> table has <code>title</code>, <code>distillery</code>, <code>grains</code>,
+        and one free-text <code>source</code> string. A real version of this page needs new columns: parent company,
+        category/style tag, structured tasting notes (nose/palate/finish, reusing the shape Bourbon Shelf Talkers
+        already put on a talker), and the confidence block itself &mdash; tier, a short rationale, a list of
+        source citations, and a last-verified date, rather than one loose <code>source</code> string.</p>
+      </div>
+    </div>
+
+    <div class="notes-card">
+      <h3>Sample data in this mockup</h3>
+      <p>The five entries are drawn from the public-source research done earlier for the seed list &mdash; Buffalo
+      Trace and Four Roses' recipe system are widely documented; Blanton's rye percentage is genuinely disputed
+      across sources; Michter's has never disclosed a mash bill at all. That spread was picked on purpose so all
+      four tiers show up at least once instead of everything landing in the middle.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const GRAIN_COLORS = { Corn: '#d9a441', Rye: '#8a3a2c', Wheat: '#c9b464', 'Malted Barley': '#a67c3d', 'Malted Rye': '#6e2a1f', Oat: '#ddd0ad' };
+const FALLBACK_COLOR = '#b8ab98';
+
+const TIER_META = {
+  confirmed: { label: 'Confirmed', on: 4, colorVar: '--ui-good' },
+  reported:  { label: 'Reported',  on: 3, colorVar: '--ui-warn' },
+  estimated: { label: 'Estimated', on: 2, colorVar: '--ui-low' },
+  unknown:   { label: 'Unknown',   on: 0, colorVar: '--ui-muted' },
+};
+
+const bourbons = [
+  {
+    id: 1,
+    title: 'Buffalo Trace',
+    distillery: 'Buffalo Trace Distillery',
+    parent: 'Sazerac Company',
+    tags: ['Straight Bourbon', 'Mash Bill #1 (Low-Rye)'],
+    grains: [{ g: 'Corn', p: 89.5 }, { g: 'Rye', p: 7 }, { g: 'Malted Barley', p: 3.5 }],
+    confidence: {
+      tier: 'reported',
+      note: 'Sazerac has never officially published exact percentages for either Buffalo Trace mash bill. These figures are what multiple independent industry sources consistently converge on, but they’re estimates, not a distillery statement.',
+      verified: 'Aug 2026',
+      sources: [
+        { label: 'VinePair — The Complete Guide to Each of Buffalo Trace’s Elusive Mash Bills', url: 'https://vinepair.com/articles/buffalo-trace-mash-bill-guide/' },
+        { label: 'Whisky Advocate — The Mashbills of Buffalo Trace', url: 'https://whiskyadvocate.com/The-Mashbills-of-Buffalo-Trace' },
+        { label: 'bourbonr.com — Updated: Buffalo Trace Distillery Mash Bills', url: 'http://bourbonr.com/blog/updated-buffalo-trace-distillery-mash-bills/' },
+      ],
+    },
+    tasting: {
+      nose: 'Vanilla, brown sugar, a light hit of oak spice.',
+      palate: 'Caramel corn, mint, oak.',
+      finish: 'Long, warm, a trace of smoke.',
+      source: 'Distiller.com (auto-filled)',
+    },
+  },
+  {
+    id: 2,
+    title: 'Four Roses Single Barrel',
+    distillery: 'Four Roses Distillery',
+    parent: 'Kirin Holdings (Four Roses Distillery LLC)',
+    tags: ['Single Barrel Bourbon', 'Recipe OBSK'],
+    grains: [{ g: 'Corn', p: 60 }, { g: 'Rye', p: 35 }, { g: 'Malted Barley', p: 5 }],
+    confidence: {
+      tier: 'confirmed',
+      note: 'Four Roses publishes both base mash bills ("B" and "E") and all ten recipe codes directly on their own site — the rare case of a distillery stating exact percentages itself.',
+      verified: 'Aug 2026',
+      sources: [
+        { label: 'Four Roses — Our Recipes (official)', url: 'https://www.fourrosesbourbon.com/our-recipes' },
+        { label: 'VinePair — The Complete Guide to the 10 Four Roses Bourbon Recipes', url: 'https://vinepair.com/articles/four-roses-bourbon-recipe-guide/' },
+      ],
+    },
+    tasting: {
+      nose: 'Ripe berries, caramel, floral notes.',
+      palate: 'Cinnamon, dried fruit, toasted oak.',
+      finish: 'Spicy and warm, lingers.',
+      source: 'Distiller.com (auto-filled)',
+    },
+  },
+  {
+    id: 3,
+    title: "Blanton's Single Barrel",
+    distillery: 'Buffalo Trace Distillery',
+    parent: 'Sazerac Company',
+    tags: ['Single Barrel Bourbon', 'Mash Bill #2 (Higher-Rye)'],
+    grains: [{ g: 'Corn', p: 87.5 }, { g: 'Rye', p: 9 }, { g: 'Malted Barley', p: 3.5 }],
+    confidence: {
+      tier: 'estimated',
+      note: 'Corn and malted barley are reasonably consistent across sources, but the rye share is genuinely disputed — estimates range from about 9% to as high as 15%. Shown here at the low end of that range; treat the rye figure as approximate, not exact.',
+      verified: 'Aug 2026',
+      sources: [
+        { label: 'VinePair — The Complete Guide to Each of Buffalo Trace’s Elusive Mash Bills', url: 'https://vinepair.com/articles/buffalo-trace-mash-bill-guide/' },
+        { label: 'Taste Select Repeat — The Ultimate Guide To Buffalo Trace Mash Bills', url: 'https://www.tasteselectrepeat.com/blogs/bts/buffalo-trace' },
+      ],
+    },
+    tasting: {
+      nose: 'Citrus peel, honey, vanilla.',
+      palate: 'Nutmeg, caramel, orange zest.',
+      finish: 'Smooth, sweet, medium length.',
+      source: 'Manually entered',
+    },
+  },
+  {
+    id: 4,
+    title: "Michter's US*1 Bourbon",
+    distillery: "Michter's Distillery (Shively / Fort Nelson)",
+    parent: 'Chatham Imports',
+    tags: ['Small Batch Bourbon'],
+    grains: null,
+    confidence: {
+      tier: 'unknown',
+      note: 'Michter’s has never disclosed a mash bill for this expression. The only mention found is one blog’s unconfirmed speculation, which doesn’t meet the bar for even an "Estimated" entry — nothing is recorded here rather than printing a guess.',
+      verified: 'Aug 2026',
+      sources: [
+        { label: 'Bourbon Culture — Michter’s Distillery: Past, Present and Future (no distillery confirmation)', url: 'https://thebourbonculture.com/whiskey-info/michters-distillery-past-present-and-future/' },
+      ],
+    },
+    tasting: {
+      nose: 'Toffee, vanilla, light oak.',
+      palate: 'Caramel, baking spice.',
+      finish: 'Soft, balanced.',
+      source: 'Manually entered',
+    },
+  },
+  {
+    id: 5,
+    title: 'Redemption Bourbon',
+    distillery: 'MGP Ingredients (Lawrenceburg, IN)',
+    parent: 'Deutsch Family Wine & Spirits',
+    tags: ['Straight Bourbon', 'MGP-distilled'],
+    grains: [{ g: 'Corn', p: 60 }, { g: 'Rye', p: 38.1 }, { g: 'Malted Barley', p: 1.8 }],
+    confidence: {
+      tier: 'reported',
+      note: 'MGP itself doesn’t publish per-brand percentages, but this specific breakdown is consistently cited across whiskey-industry references tracking MGP’s standard recipes.',
+      verified: 'Aug 2026',
+      sources: [
+        { label: 'Kindred Cocktails — Redemption (ingredient reference)', url: 'https://kindredcocktails.com/ingredient/redemption' },
+        { label: 'bourbonr.com — MGP/LDI by Mash Bill', url: 'http://bourbonr.com/blog/mgpldi-mash-bill/' },
+      ],
+    },
+    tasting: {
+      nose: 'Rye spice, black pepper, caramel.',
+      palate: 'Cinnamon, dark fruit, oak.',
+      finish: 'Dry, peppery.',
+      source: 'Distiller.com (auto-filled)',
+    },
+  },
+];
+
+let selectedId = 1;
+
+function grainBarHtml(grains) {
+  const bar = grains.map(({ g, p }) => `<div class="grain-bar__seg" style="width:${p}%;background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></div>`).join('');
+  const legend = grains.map(({ g, p }) => `<span><span class="grain-swatch" style="background:${GRAIN_COLORS[g] || FALLBACK_COLOR}"></span>${p}% ${g}</span>`).join('');
+  return { bar, legend };
+}
+
+function meterHtml(tier) {
+  const meta = TIER_META[tier];
+  const dots = [0, 1, 2, 3].map((i) => `<span class="${i < meta.on ? 'is-on' : ''}"></span>`).join('');
+  return `<span class="conf-meter" style="color:var(${meta.colorVar})">${dots}</span>`;
+}
+
+function badgeHtml(tier) {
+  const meta = TIER_META[tier];
+  return `<span class="conf-badge conf-badge--${tier}">${meta.label}</span>`;
+}
+
+function renderList(filter) {
+  const q = (filter || '').trim().toLowerCase();
+  const rows = bourbons.filter((b) => !q || b.title.toLowerCase().includes(q) || b.distillery.toLowerCase().includes(q));
+  document.getElementById('libList').innerHTML = rows.map((b) => `
+    <button type="button" class="lib2-row ${b.id === selectedId ? 'is-selected' : ''}" data-id="${b.id}">
+      <span class="lib2-row__title">${b.title}</span>
+      <span class="lib2-row__sub">${b.distillery}</span>
+      <span class="lib2-row__meta">${badgeHtml(b.confidence.tier)} ${meterHtml(b.confidence.tier)}</span>
+    </button>
+  `).join('') || '<p class="lib2-row__sub">No entries match.</p>';
+  document.querySelectorAll('.lib2-row[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderAll(); });
+  });
+}
+
+function renderProfile() {
+  const b = bourbons.find((x) => x.id === selectedId);
+  const pane = document.getElementById('profilePane');
+  const siblings = bourbons.filter((x) => x.id !== b.id && x.distillery === b.distillery);
+
+  const mashBillBlock = b.grains
+    ? (() => {
+      const { bar, legend } = grainBarHtml(b.grains);
+      return `<div class="grain-bar">${bar}</div><div class="grain-legend">${legend}</div>`;
+    })()
+    : `<div class="grain-bar grain-bar--empty"></div><p class="grain-empty-note">No mash bill on file for this expression.</p>`;
+
+  pane.innerHTML = `
+    <div class="profile-head">
+      <div>
+        <h2>${b.title}</h2>
+        <p class="profile-head__by">${b.distillery} &middot; <strong>${b.parent}</strong></p>
+        <div class="profile-tags">${b.tags.map((t) => `<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+      <div class="profile-head__actions">
+        <button type="button" class="btn btn--small">Edit in Library</button>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <div>
+        <div class="block">
+          <h3>Mash Bill</h3>
+          ${mashBillBlock}
+          <div class="conf-block">
+            <div class="conf-block__row">
+              <span class="conf-block__label">Mash Bill Confidence</span>
+              ${badgeHtml(b.confidence.tier)}
+              ${meterHtml(b.confidence.tier)}
+            </div>
+            <p class="conf-block__note">${b.confidence.note}</p>
+            <div class="conf-block__verified">Last verified ${b.confidence.verified}</div>
+            <details class="sources">
+              <summary>View ${b.confidence.sources.length} source${b.confidence.sources.length === 1 ? '' : 's'}</summary>
+              <ul class="sources-list">
+                ${b.confidence.sources.map((s) => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.label}</a></li>`).join('')}
+              </ul>
+            </details>
+          </div>
+        </div>
+
+        <div class="block">
+          <h3>Tasting Notes</h3>
+          <div class="tasting-grid">
+            <div class="tasting-card"><h4>Nose</h4><p>${b.tasting.nose}</p></div>
+            <div class="tasting-card"><h4>Palate</h4><p>${b.tasting.palate}</p></div>
+            <div class="tasting-card"><h4>Finish</h4><p>${b.tasting.finish}</p></div>
+          </div>
+          <div class="tasting-source">Source: ${b.tasting.source}</div>
+        </div>
+      </div>
+
+      <div class="block info-card">
+        <h3>Distillery &amp; Ownership</h3>
+        <dl>
+          <div><dt>Distillery</dt><dd>${b.distillery}</dd></div>
+          <div><dt>Parent company</dt><dd>${b.parent}</dd></div>
+          <div><dt>Style</dt><dd>${b.tags[0]}</dd></div>
+        </dl>
+        ${siblings.length ? `
+          <dt style="margin-top:0.9rem;">Other ${b.distillery} entries in the Library</dt>
+          <div class="sibling-list">
+            ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${s.title}</span>${badgeHtml(s.confidence.tier)}</button>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  pane.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderAll(); });
+  });
+}
+
+function renderAll() {
+  renderList(document.getElementById('libSearch').value);
+  renderProfile();
+}
+
+document.getElementById('libSearch').addEventListener('input', (e) => renderList(e.target.value));
+renderAll();
+</script>

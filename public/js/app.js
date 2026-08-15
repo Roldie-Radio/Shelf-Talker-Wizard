@@ -41,6 +41,68 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.0.0',
+      items: [
+        'New: Bourbon Library - a permanent sidebar section for browsing every bourbon in the shared Mash Bill Library, with Mash Bill Confidence scoring and a profile page per bottle.',
+        'New: The Pairing Atlas - a permanent sidebar section for browsing wine varietals and their food pairings as illustrated infographics, grouped and filterable by color (Red, White, Rosé, Sparkling, Fortified & Dessert). Built on the same Wine Food Pairings data Suggest Pairings and Tools > Wine Pairing Rules… already use, so it can\'t drift out of sync with what those already offer.',
+        'Changed: Navigation moves to a persistent icon rail on the left - Shelf Talker, Bourbon Library, and The Pairing Atlas each get their own icon, with Settings folded in at the bottom - replacing the separate Settings/Queue/History buttons that used to live in the app bar.',
+      ],
+    },
+    {
+      version: '3.3.21',
+      items: [
+        'New: Large Display Signs now have a Case Price field (optional) - prints bottom-right in the same Verdana 11pt bold styling as Regular Price. Not shown for Shelf Talkers or Small Display Signs, which have no room for it.',
+      ],
+    },
+    {
+      version: '3.3.20',
+      items: [
+        'New: Tools → Wine Pairing Rules… now has a filter box - type a varietal, region, or keyword to narrow the list down instead of scrolling through all 30+ entries. Matches against every region and sweetness refinement too, not just each rule\'s own name, so searching "Chablis" or "Trocken" finds the Chardonnay or Riesling rule that keyword belongs to.',
+      ],
+    },
+    {
+      version: '3.3.19',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Australia, Greece, and South Africa. Australia adds a new Semillon varietal plus region refinements across several existing rules (Hunter Valley and McLaren Vale for Shiraz, Coonawarra for Cabernet Sauvignon, Clare/Eden Valley for Riesling, McLaren Vale for Garnacha/Grenache). South Africa adds Pinotage and Chenin Blanc (with its own Stellenbosch/Swartland vs. Loire Valley split) plus a Stellenbosch refinement for Cabernet Sauvignon. Greece adds Assyrtiko, Agiorgitiko, Xinomavro, and Retsina, matched by appellation (Santorini, Nemea, Naoussa) as well as grape.',
+      ],
+    },
+    {
+      version: '3.3.18',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Portugal - Vinho Verde, Douro Red (Touriga Nacional/Touriga Franca), and Port all join the varietal list. A title naming both a grape and Vinho Verde (e.g. "Alvarinho, Vinho Verde") still resolves to the more specific Albariño match added a few releases back; a bare "Vinho Verde" with no grape named now matches on its own instead of going unmatched.',
+      ],
+    },
+    {
+      version: '3.3.17',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now tells Bordeaux and Burgundy styles apart, and can match them even when the title never says the grape - real Bordeaux/Burgundy is labeled by chateau/village, not varietal. Cabernet Sauvignon\'s Bordeaux match now specifically means the Cabernet-dominant Left Bank (Médoc, Pauillac, Margaux, Saint-Julien, Saint-Estèphe); Merlot gains its own Right Bank match (Saint-Émilion, Pomerol) it never had before. Pinot Noir\'s Burgundy match splits into Côte de Nuits vs. Côte de Beaune, and Chardonnay gains its first Burgundy matches (Chablis, plus Côte de Beaune whites like Meursault and Puligny-Montrachet) alongside its existing California ones.',
+      ],
+    },
+    {
+      version: '3.3.16',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now tells domestic sub-regions apart by climate instead of lumping them under one state-wide match. Cabernet Sauvignon splits Napa Valley from cooler Sonoma County, plus new Paso Robles and Washington State refinements. Chardonnay and Zinfandel each gain their own warmer-vs-cooler California split for the first time (Napa Valley vs. Sonoma Coast/Russian River Valley for Chardonnay; Lodi vs. Dry Creek Valley for Zinfandel), and Merlot gains a California vs. Washington State refinement. A bare "California" on a Cabernet or Merlot still falls back to its most recognized region (Napa) rather than going unmatched.',
+      ],
+    },
+    {
+      version: '3.3.15',
+      items: [
+        'New (Wine Food Pairings, experimental): Riesling\'s region matching now tells apart Rheingau, Pfalz, and Nahe (previously all lumped into "Mosel, Germany"), and gains a second, independent refinement tier for Germany\'s own Pradikatswein sweetness classification (Trocken, Kabinett, Spätlese, Auslese and beyond) - the thing that actually swings what food a Riesling pairs with. A title carrying both a region and a sweetness level (e.g. "Spätlese Pfalz") gets both refinements at once ("Riesling — Pfalz, Germany, Spätlese").',
+      ],
+    },
+    {
+      version: '3.3.14',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers Spanish classifications - Albariño, Tempranillo, Garnacha/Grenache, and Verdejo join the varietal list. Region refinements deepen Albariño (Rías Baixas, Spain vs. Vinho Verde, Portugal - same grape, different country), Tempranillo (Rioja vs. Ribera del Duero), and Garnacha (Priorat); Champagne/Sparkling also gains a Cava, Catalonia refinement.',
+      ],
+    },
+    {
+      version: '3.3.13',
+      items: [
+        'New (Wine Food Pairings, experimental): Suggest Pairings now covers six more Italian classifications - Nebbiolo, Sangiovese, Montepulciano d\'Abruzzo, Primitivo, and Barbera join the varietal list, and Pinot Grigio/Gris and Champagne/Sparkling gain Italian region refinements (Alto Adige, Prosecco, Franciacorta). Region matching also deepens for Nebbiolo (Barolo vs. Barbaresco), Sangiovese (Chianti Classico vs. Brunello di Montalcino), and Barbera (d\'Alba vs. d\'Asti). A title reading "Vino Nobile di Montepulciano" correctly matches Sangiovese, not the unrelated Montepulciano grape.',
+      ],
+    },
+    {
       version: '3.3.12',
       items: [
         'Fixed: Beer Name\'s Auto-size toggle wasn\'t actually defaulting on for beer scanned/looked up via Scan UPC, SKU Lookup, Search by Name, or Import - filling the form from a lookup was silently forcing it off (even after picking a beer from the "Pick the Right Beer" dialog), overriding the on-by-default behavior added in 3.3.3. It now defaults on for beer through every one of those paths, same as starting a beer entry from Manual Entry already did.',
@@ -690,6 +752,28 @@
   // ---------- Elements ----------
 
   const els = {
+    // Persistent rail (Shelf Talker / Library / Settings) and the two
+    // screens it switches between - see the "Rail" section further down
+    // for the click handling.
+    rail: document.getElementById('rail'),
+    railShelfTalkerBtn: document.getElementById('railShelfTalkerBtn'),
+    railLibraryBtn: document.getElementById('railLibraryBtn'),
+    railAtlasBtn: document.getElementById('railAtlasBtn'),
+    railSettingsBtn: document.getElementById('railSettingsBtn'),
+    shelfTalkerView: document.getElementById('shelfTalkerView'),
+    libraryView: document.getElementById('libraryView'),
+    libraryBackLink: document.getElementById('libraryBackLink'),
+    libraryFilterInput: document.getElementById('libraryFilterInput'),
+    libraryChips: document.getElementById('libraryChips'),
+    libraryStats: document.getElementById('libraryStats'),
+    libraryBody: document.getElementById('libraryBody'),
+    atlasView: document.getElementById('atlasView'),
+    atlasBackLink: document.getElementById('atlasBackLink'),
+    atlasFilterInput: document.getElementById('atlasFilterInput'),
+    atlasChips: document.getElementById('atlasChips'),
+    atlasStats: document.getElementById('atlasStats'),
+    atlasBody: document.getElementById('atlasBody'),
+
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
@@ -798,6 +882,8 @@
     theme: document.getElementById('fTheme'),
     price: document.getElementById('fPrice'),
     salePrice: document.getElementById('fSalePrice'),
+    casePriceField: document.getElementById('casePriceField'),
+    casePrice: document.getElementById('fCasePrice'),
     talkerSizeField: document.getElementById('talkerSizeField'),
     talkerSize: document.getElementById('fTalkerSize'),
     talkerType: document.getElementById('fTalkerType'),
@@ -912,6 +998,8 @@
     winePairingRulesMenuItem: document.getElementById('winePairingRulesMenuItem'),
     winePairingRulesOverlay: document.getElementById('winePairingRulesOverlay'),
     winePairingRulesCloseBtn: document.getElementById('winePairingRulesCloseBtn'),
+    winePairingRulesFilterInput: document.getElementById('winePairingRulesFilterInput'),
+    winePairingRulesFilterStatus: document.getElementById('winePairingRulesFilterStatus'),
     winePairingRulesList: document.getElementById('winePairingRulesList'),
 
     helpBtn: document.getElementById('helpBtn'),
@@ -946,10 +1034,23 @@
     mashBillLibraryFormTitle: document.getElementById('mashBillLibraryFormTitle'),
     mashBillLibraryFormTitleInput: document.getElementById('mashBillLibraryFormTitleInput'),
     mashBillLibraryFormDistilleryInput: document.getElementById('mashBillLibraryFormDistilleryInput'),
+    mashBillLibraryFormParentCompanyInput: document.getElementById('mashBillLibraryFormParentCompanyInput'),
+    mashBillLibraryFormCategoryInput: document.getElementById('mashBillLibraryFormCategoryInput'),
     mashBillLibraryFormGrain: document.getElementById('mashBillLibraryFormGrain'),
     mashBillLibraryFormPct: document.getElementById('mashBillLibraryFormPct'),
     mashBillLibraryFormAddGrainBtn: document.getElementById('mashBillLibraryFormAddGrainBtn'),
     mashBillLibraryFormGrainList: document.getElementById('mashBillLibraryFormGrainList'),
+    mashBillLibraryFormNoseInput: document.getElementById('mashBillLibraryFormNoseInput'),
+    mashBillLibraryFormPalateInput: document.getElementById('mashBillLibraryFormPalateInput'),
+    mashBillLibraryFormFinishInput: document.getElementById('mashBillLibraryFormFinishInput'),
+    mashBillLibraryFormTastingSourceInput: document.getElementById('mashBillLibraryFormTastingSourceInput'),
+    mashBillLibraryFormConfidenceTier: document.getElementById('mashBillLibraryFormConfidenceTier'),
+    mashBillLibraryFormConfidenceNoteInput: document.getElementById('mashBillLibraryFormConfidenceNoteInput'),
+    mashBillLibraryFormConfidenceVerifiedInput: document.getElementById('mashBillLibraryFormConfidenceVerifiedInput'),
+    mashBillLibraryFormSourceLabel: document.getElementById('mashBillLibraryFormSourceLabel'),
+    mashBillLibraryFormSourceUrl: document.getElementById('mashBillLibraryFormSourceUrl'),
+    mashBillLibraryFormAddSourceBtn: document.getElementById('mashBillLibraryFormAddSourceBtn'),
+    mashBillLibraryFormSourceList: document.getElementById('mashBillLibraryFormSourceList'),
     mashBillLibraryFormSaveBtn: document.getElementById('mashBillLibraryFormSaveBtn'),
     mashBillLibraryFormCancelBtn: document.getElementById('mashBillLibraryFormCancelBtn'),
     mashBillLibraryFormStatus: document.getElementById('mashBillLibraryFormStatus'),
@@ -1366,6 +1467,12 @@
     const isLargeSign = isSign && !isSmallSign;
     els.superSaleFontSizeField.hidden = els.talkerType.value !== 'supersale' || isLargeSign;
 
+    // Case Price only ever prints on a Large Display Sign (see
+    // buildSignPriceRowHtml in card.js) - Shelf Talkers and Small Display
+    // Signs have no bottom-right slot for it, so the field stays out of the
+    // way for those, same as Awards/Store Pick/etc. above.
+    els.casePriceField.hidden = !isLargeSign;
+
     // The "CLOSEOUT!!" badge renders on the Shelf Talker card and on both
     // Display Sign sizes (see buildPricingHtml/buildSignMetaRowHtml/
     // buildSmallSignBodyHtml in card.js), so unlike Super Sale above there's
@@ -1501,6 +1608,7 @@
       theme: els.theme.value,
       price: els.price.value.trim(),
       salePrice: els.salePrice.value.trim(),
+      casePrice: els.casePrice.value.trim(),
       talkerType: els.talkerType.value,
       isChilled: els.chilled.checked,
       superSaleFontSize: els.superSaleFontSize.value.trim(),
@@ -1551,6 +1659,7 @@
     els.theme.value = talker.theme || 'amber';
     els.price.value = talker.price || '';
     els.salePrice.value = talker.salePrice || '';
+    els.casePrice.value = talker.casePrice || '';
     // 'chilled' used to be a 4th Talker Style option, mutually exclusive
     // with Closeout/Super Sale (see the isChilled migration just below) -
     // an older saved/imported talker carrying that value maps onto plain
@@ -1962,11 +2071,12 @@
   // file already calls directly - card.js's <script> tag loads before this
   // one's, see index.html), so no import/require is needed here.
   //
-  // detectWinePairings folds a second, optional country/region match into
-  // its return value - see the WINE_PAIRING_RULES comment block in
-  // card.js. Nothing below this comment needs to know that: a region match
-  // just shows up as a longer rule.label ("Malbec — Mendoza, Argentina")
-  // and one already-swapped candidate in rule.pairings.
+  // detectWinePairings folds in optional second-tier matches (country/
+  // region and, for Riesling, Germany's own sweetness classification) -
+  // see the WINE_PAIRING_RULES comment block in card.js. Nothing below
+  // this comment needs to know that: a tier match just shows up as a
+  // longer rule.label ("Malbec — Mendoza, Argentina", "Riesling — Mosel,
+  // Germany, Kabinett") and already-swapped candidates in rule.pairings.
 
   // Renders the currently-selected pairings (currentPairings) as removable
   // chips - same markup/behavior as renderRatingsList above, just a
@@ -2792,6 +2902,7 @@
     if (!talker.size) return 'Please enter a size/unit.';
     if (!talker.price || Number.isNaN(Number(talker.price))) return 'Please enter a valid regular price.';
     if (talker.salePrice && Number.isNaN(Number(talker.salePrice))) return 'Sale price must be a number.';
+    if (talker.casePrice && Number.isNaN(Number(talker.casePrice))) return 'Case price must be a number.';
     return null;
   }
 
@@ -4826,45 +4937,83 @@
   // Suggestions comment block near suggestPairings below). Renders on
   // every open rather than once at startup so it always reflects
   // whatever's currently in that array, same as Suggest Pairings would
-  // see if it ran right now. A rule's optional `regions` list (see the
-  // WINE_PAIRING_RULES comment block in card.js) renders nested underneath
-  // it, one row per region, showing which pairing slot it swaps and with
-  // what - reading straight from the same data detectWinePairings matches
-  // against, so this can't describe a swap that doesn't actually happen.
+  // see if it ran right now. A rule's optional `regions` and/or
+  // `sweetness` lists (see the WINE_PAIRING_RULES comment block in
+  // card.js) each render as their own nested section, one row per entry,
+  // showing which pairing slot it swaps and with what - reading straight
+  // from the same data detectWinePairings matches against, so this can't
+  // describe a swap that doesn't actually happen. renderRefinementList
+  // below builds either section from a rule + one of its two lists, since
+  // they're identical in shape (id/label/test/swapIndex/swap) and differ
+  // only in the heading above them.
+  function renderRefinementList(rule, list, heading) {
+    if (!list || !list.length) return '';
+    return `
+      <div class="pairing-rule-row__regions">
+        <div class="pairing-rule-row__regions-label">${escapeHtml(heading)} (only checked once ${escapeHtml(rule.label)} itself matches)</div>
+        ${list.map((entry) => `
+          <div class="pairing-region-row">
+            <div class="pairing-region-row__name">${escapeHtml(entry.label)}</div>
+            <div class="pairing-region-row__keywords">matches <code>${escapeHtml(entry.test.toString())}</code></div>
+            <div class="pairing-region-row__swap">
+              slot ${entry.swapIndex + 1}:
+              <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[entry.swapIndex].icon)} ${escapeHtml(rule.pairings[entry.swapIndex].food)}</span>
+              <span class="pairing-region-row__arrow">&rarr;</span>
+              <span class="pairing-rule-chip">${escapeHtml(entry.swap.icon)} ${escapeHtml(entry.swap.food)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // Matches a filter query against a rule's own label/pattern and every
+  // one of its region/sweetness sub-entries' labels/patterns, not just the
+  // rule's own top-level name - so typing "Chablis" or "Trocken" surfaces
+  // the varietal that sub-entry belongs to (Chardonnay, Riesling) even
+  // though neither word appears in that rule's own label or top-level
+  // test. Matching against `test.source` (the regex body, not the
+  // /pattern/flags wrapper `test.toString()` prints) means the filter
+  // finds a varietal by any keyword Suggest Pairings itself would match on,
+  // including ones not spelled out in the rule's label.
+  function pairingRuleMatchesQuery(rule, query) {
+    if (!query) return true;
+    const haystacks = [rule.label, rule.test.source];
+    (rule.regions || []).forEach((r) => haystacks.push(r.label, r.test.source));
+    (rule.sweetness || []).forEach((s) => haystacks.push(s.label, s.test.source));
+    return haystacks.some((h) => h.toLowerCase().includes(query));
+  }
+
   function renderPairingRulesReference() {
-    els.winePairingRulesList.innerHTML = WINE_PAIRING_RULES.map((rule) => `
+    const rawQuery = els.winePairingRulesFilterInput.value.trim();
+    const query = rawQuery.toLowerCase();
+    const matches = WINE_PAIRING_RULES.filter((rule) => pairingRuleMatchesQuery(rule, query));
+    els.winePairingRulesFilterStatus.textContent = query
+      ? `${matches.length} of ${WINE_PAIRING_RULES.length} varietals match "${rawQuery}".`
+      : '';
+    els.winePairingRulesList.innerHTML = matches.length ? matches.map((rule) => `
       <div class="pairing-rule-row">
         <div class="pairing-rule-row__name">${escapeHtml(rule.label)}</div>
         <div class="pairing-rule-row__keywords">matches <code>${escapeHtml(rule.test.toString())}</code></div>
         <div class="pairing-rule-row__pairings">${rule.pairings.map((p) => `
           <span class="pairing-rule-chip">${escapeHtml(p.icon)} ${escapeHtml(p.food)}</span>
         `).join('')}</div>
-        ${(rule.regions && rule.regions.length) ? `
-          <div class="pairing-rule-row__regions">
-            <div class="pairing-rule-row__regions-label">Region refinements (only checked once ${escapeHtml(rule.label)} itself matches)</div>
-            ${rule.regions.map((region) => `
-              <div class="pairing-region-row">
-                <div class="pairing-region-row__name">${escapeHtml(region.label)}</div>
-                <div class="pairing-region-row__keywords">matches <code>${escapeHtml(region.test.toString())}</code></div>
-                <div class="pairing-region-row__swap">
-                  slot ${region.swapIndex + 1}:
-                  <span class="pairing-rule-chip pairing-rule-chip--swapped-out">${escapeHtml(rule.pairings[region.swapIndex].icon)} ${escapeHtml(rule.pairings[region.swapIndex].food)}</span>
-                  <span class="pairing-region-row__arrow">&rarr;</span>
-                  <span class="pairing-rule-chip">${escapeHtml(region.swap.icon)} ${escapeHtml(region.swap.food)}</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+        ${renderRefinementList(rule, rule.regions, 'Region refinements')}
+        ${renderRefinementList(rule, rule.sweetness, 'Sweetness refinements')}
       </div>
-    `).join('');
+    `).join('') : '<p class="help-text">No varietals match that filter.</p>';
   }
 
   const winePairingRulesModal = createModal({
     overlay: els.winePairingRulesOverlay,
     closeBtns: [els.winePairingRulesCloseBtn],
-    onOpen: renderPairingRulesReference,
+    onOpen: () => {
+      els.winePairingRulesFilterInput.value = '';
+      renderPairingRulesReference();
+    },
   });
+
+  els.winePairingRulesFilterInput.addEventListener('input', renderPairingRulesReference);
 
   // First click jumps to the print preview (Full Page mode - see
   // setPreviewMode); once it's showing, the button relabels itself "Print
@@ -5206,6 +5355,7 @@
   // both, switching label/button text based on which mode this is in.
   let mashBillLibraryEditingId = null;
   let mashBillLibraryFormGrains = [];
+  let mashBillLibraryFormSources = [];
   let mashBillLibrarySyncPollTimer = null;
 
   function renderMashBillLibraryFormGrainList() {
@@ -5217,13 +5367,37 @@
     `).join('');
   }
 
+  // Same rating-chip pattern as the grain list above, just for confidence
+  // source citations ({label, url} - see confidence.sources in server/db.js).
+  function renderMashBillLibraryFormSourceList() {
+    els.mashBillLibraryFormSourceList.innerHTML = mashBillLibraryFormSources.map((s, i) => `
+      <div class="rating-chip" data-mashbill-form-source-index="${i}">
+        <span>${escapeHtml(s.label || s.url)}</span>
+        <button type="button" data-action="remove-mashbill-form-source" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  }
+
   function resetMashBillLibraryForm() {
     mashBillLibraryEditingId = null;
     mashBillLibraryFormGrains = [];
+    mashBillLibraryFormSources = [];
     els.mashBillLibraryFormTitleInput.value = '';
     els.mashBillLibraryFormDistilleryInput.value = '';
+    els.mashBillLibraryFormParentCompanyInput.value = '';
+    els.mashBillLibraryFormCategoryInput.value = '';
     els.mashBillLibraryFormPct.value = '';
+    els.mashBillLibraryFormNoseInput.value = '';
+    els.mashBillLibraryFormPalateInput.value = '';
+    els.mashBillLibraryFormFinishInput.value = '';
+    els.mashBillLibraryFormTastingSourceInput.value = '';
+    els.mashBillLibraryFormConfidenceTier.value = 'unknown';
+    els.mashBillLibraryFormConfidenceNoteInput.value = '';
+    els.mashBillLibraryFormConfidenceVerifiedInput.value = '';
+    els.mashBillLibraryFormSourceLabel.value = '';
+    els.mashBillLibraryFormSourceUrl.value = '';
     renderMashBillLibraryFormGrainList();
+    renderMashBillLibraryFormSourceList();
     els.mashBillLibraryFormTitle.textContent = 'Add an entry manually';
     els.mashBillLibraryFormSaveBtn.textContent = 'Add Entry';
     els.mashBillLibraryFormCancelBtn.hidden = true;
@@ -5233,9 +5407,20 @@
   function loadMashBillLibraryEntryIntoForm(entry) {
     mashBillLibraryEditingId = entry.id;
     mashBillLibraryFormGrains = entry.grains.map((g) => ({ grain: g.grain, pct: g.pct }));
+    mashBillLibraryFormSources = (entry.confidence.sources || []).map((s) => ({ label: s.label, url: s.url }));
     els.mashBillLibraryFormTitleInput.value = entry.title;
     els.mashBillLibraryFormDistilleryInput.value = entry.distillery || '';
+    els.mashBillLibraryFormParentCompanyInput.value = entry.parentCompany || '';
+    els.mashBillLibraryFormCategoryInput.value = entry.category || '';
+    els.mashBillLibraryFormNoseInput.value = entry.nose || '';
+    els.mashBillLibraryFormPalateInput.value = entry.palate || '';
+    els.mashBillLibraryFormFinishInput.value = entry.finish || '';
+    els.mashBillLibraryFormTastingSourceInput.value = entry.tastingSource || '';
+    els.mashBillLibraryFormConfidenceTier.value = entry.confidence.tier || 'unknown';
+    els.mashBillLibraryFormConfidenceNoteInput.value = entry.confidence.note || '';
+    els.mashBillLibraryFormConfidenceVerifiedInput.value = entry.confidence.verifiedAt || '';
     renderMashBillLibraryFormGrainList();
+    renderMashBillLibraryFormSourceList();
     els.mashBillLibraryFormTitle.textContent = `Edit "${entry.title}"`;
     els.mashBillLibraryFormSaveBtn.textContent = 'Save Changes';
     els.mashBillLibraryFormCancelBtn.hidden = false;
@@ -5385,6 +5570,28 @@
     renderMashBillLibraryFormGrainList();
   });
 
+  function addMashBillLibraryFormSource() {
+    const label = els.mashBillLibraryFormSourceLabel.value.trim();
+    const url = els.mashBillLibraryFormSourceUrl.value.trim();
+    if (!url) return;
+    mashBillLibraryFormSources.push({ label, url });
+    els.mashBillLibraryFormSourceLabel.value = '';
+    els.mashBillLibraryFormSourceUrl.value = '';
+    renderMashBillLibraryFormSourceList();
+  }
+  els.mashBillLibraryFormAddSourceBtn.addEventListener('click', addMashBillLibraryFormSource);
+  els.mashBillLibraryFormSourceUrl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addMashBillLibraryFormSource(); }
+  });
+
+  els.mashBillLibraryFormSourceList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="remove-mashbill-form-source"]');
+    if (!btn) return;
+    const idx = Number(btn.closest('[data-mashbill-form-source-index]').dataset.mashbillFormSourceIndex);
+    mashBillLibraryFormSources.splice(idx, 1);
+    renderMashBillLibraryFormSourceList();
+  });
+
   els.mashBillLibraryFormCancelBtn.addEventListener('click', resetMashBillLibraryForm);
 
   els.mashBillLibraryFormSaveBtn.addEventListener('click', async () => {
@@ -5405,6 +5612,18 @@
         distillery: els.mashBillLibraryFormDistilleryInput.value.trim(),
         grains: mashBillLibraryFormGrains,
         source: 'Manual',
+        parentCompany: els.mashBillLibraryFormParentCompanyInput.value.trim(),
+        category: els.mashBillLibraryFormCategoryInput.value.trim(),
+        nose: els.mashBillLibraryFormNoseInput.value.trim(),
+        palate: els.mashBillLibraryFormPalateInput.value.trim(),
+        finish: els.mashBillLibraryFormFinishInput.value.trim(),
+        tastingSource: els.mashBillLibraryFormTastingSourceInput.value.trim(),
+        confidence: {
+          tier: els.mashBillLibraryFormConfidenceTier.value,
+          note: els.mashBillLibraryFormConfidenceNoteInput.value.trim(),
+          sources: mashBillLibraryFormSources,
+          verifiedAt: els.mashBillLibraryFormConfidenceVerifiedInput.value,
+        },
       };
       const resp = mashBillLibraryEditingId
         ? await fetch(`/api/mashbills/${mashBillLibraryEditingId}`, {
@@ -5443,6 +5662,463 @@
       els.mashBillLibrarySyncNowBtn.disabled = false;
     }
   });
+
+  // ---------- Bourbon Library (rail view) ----------
+  //
+  // A read-focused browse/profile screen over the same mash_bills data the
+  // dialog above manages - search, a confidence-tier filter, a card grid,
+  // and a profile page per entry. Editing still goes through the dialog
+  // above (see the profile page's own "Edit in Library" button); this
+  // section never writes anything, only reads mashBillLibraryCache.
+
+  const CONFIDENCE_TIER_META = {
+    confirmed: {
+      label: 'Confirmed', dots: 4, colorVar: '--ui-good', tintVar: '--ui-good-tint',
+    },
+    reported: {
+      label: 'Reported', dots: 3, colorVar: '--ui-warn', tintVar: '--ui-warn-tint',
+    },
+    estimated: {
+      label: 'Estimated', dots: 2, colorVar: '--ui-low', tintVar: '--ui-low-tint',
+    },
+    unknown: {
+      label: 'Unknown', dots: 0, colorVar: '--ui-muted', tintVar: '--ui-code-bg',
+    },
+  };
+
+  function confidenceTierMeta(tier) {
+    return CONFIDENCE_TIER_META[tier] || CONFIDENCE_TIER_META.unknown;
+  }
+
+  function confidenceBadgeHtml(tier) {
+    const meta = confidenceTierMeta(tier);
+    return `<span class="conf-badge" style="color:var(${meta.colorVar});background:var(${meta.tintVar});">${escapeHtml(meta.label)}</span>`;
+  }
+
+  function confidenceMeterHtml(tier) {
+    const meta = confidenceTierMeta(tier);
+    const dots = [0, 1, 2, 3].map((i) => `<span class="${i < meta.dots ? 'is-on' : ''}"></span>`).join('');
+    return `<span class="conf-meter" style="color:var(${meta.colorVar});">${dots}</span>`;
+  }
+
+  // Same grain colors the printed card's own Mash Bill bar uses
+  // (MASH_BILL_GRAIN_COLORS is a plain global defined in card.js - see the
+  // WINE_PAIRING_RULES comment elsewhere in this file for the same
+  // cross-script convention), so a bourbon's card-grid/profile-page bar
+  // here always matches what would print on its talker.
+  function grainBarHtml(grains) {
+    if (!grains || !grains.length) return '<div class="grain-bar grain-bar--empty"></div>';
+    const segs = grains.map((g) => `<span style="width:${g.pct}%;background:${MASH_BILL_GRAIN_COLORS[g.grain] || MASH_BILL_GRAIN_FALLBACK_COLOR}"></span>`).join('');
+    return `<div class="grain-bar">${segs}</div>`;
+  }
+
+  let libraryFilterQuery = '';
+  let libraryTierFilter = 'all';
+  let libraryViewMode = 'grid';
+  let librarySelectedId = null;
+
+  function libraryMatchesFilter(entry) {
+    const tier = entry.confidence.tier;
+    if (libraryTierFilter === 'confirmed') return tier === 'confirmed';
+    if (libraryTierFilter === 'reported') return tier === 'reported';
+    if (libraryTierFilter === 'needs') return tier === 'estimated' || tier === 'unknown';
+    return true;
+  }
+
+  function libraryMatchesSearch(entry) {
+    const q = libraryFilterQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (entry.title || '').toLowerCase().includes(q)
+      || (entry.distillery || '').toLowerCase().includes(q)
+      || (entry.parentCompany || '').toLowerCase().includes(q);
+  }
+
+  function renderLibraryChipsAndStats() {
+    const counts = {
+      all: mashBillLibraryCache.length,
+      confirmed: mashBillLibraryCache.filter((m) => m.confidence.tier === 'confirmed').length,
+      reported: mashBillLibraryCache.filter((m) => m.confidence.tier === 'reported').length,
+      needs: mashBillLibraryCache.filter((m) => m.confidence.tier === 'estimated' || m.confidence.tier === 'unknown').length,
+    };
+    const chips = [
+      { key: 'all', label: `All bourbons (${counts.all})` },
+      { key: 'confirmed', label: `Confirmed (${counts.confirmed})` },
+      { key: 'reported', label: `Reported (${counts.reported})` },
+      { key: 'needs', label: `Needs verification (${counts.needs})` },
+    ];
+    els.libraryChips.innerHTML = chips.map((c) => `
+      <button type="button" class="toggle-btn ${libraryTierFilter === c.key ? 'is-active' : ''}" data-tier="${c.key}">${escapeHtml(c.label)}</button>
+    `).join('');
+    els.libraryChips.querySelectorAll('button[data-tier]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        libraryTierFilter = btn.dataset.tier;
+        renderLibraryChipsAndStats();
+        renderLibraryBody();
+      });
+    });
+    els.libraryStats.innerHTML = `
+      <div class="library-stat"><b>${mashBillLibraryCache.length}</b><span>Bourbons</span></div>
+      <div class="library-stat"><b>${new Set(mashBillLibraryCache.map((m) => m.distillery).filter(Boolean)).size}</b><span>Distilleries</span></div>
+      <div class="library-stat"><b>${new Set(mashBillLibraryCache.map((m) => m.parentCompany).filter(Boolean)).size}</b><span>Parent companies</span></div>
+      <div class="library-stat"><b>${counts.needs}</b><span>Need verification</span></div>
+    `;
+  }
+
+  function bourbonCardHtml(entry) {
+    return `
+      <button type="button" class="bourbon-card" data-id="${entry.id}">
+        <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
+        <div class="bourbon-card__sub">${escapeHtml(entry.distillery || 'Distillery unknown')}</div>
+        ${grainBarHtml(entry.grains)}
+        <div class="bourbon-card__footer">
+          <span class="bourbon-card__sub">${escapeHtml(entry.category || '')}</span>
+          ${confidenceBadgeHtml(entry.confidence.tier)}
+        </div>
+      </button>
+    `;
+  }
+
+  function renderLibraryGrid() {
+    const rows = mashBillLibraryCache.filter((m) => libraryMatchesFilter(m) && libraryMatchesSearch(m));
+    if (!rows.length) {
+      els.libraryBody.innerHTML = '<p class="help-text">No bourbons match this search/filter.</p>';
+      return;
+    }
+    els.libraryBody.innerHTML = `<div class="bourbon-grid">${rows.map(bourbonCardHtml).join('')}</div>`;
+    els.libraryBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySelectedId = Number(btn.dataset.id);
+        libraryViewMode = 'profile';
+        renderLibraryBody();
+      });
+    });
+  }
+
+  function renderBourbonProfile() {
+    const entry = mashBillLibraryCache.find((m) => m.id === librarySelectedId);
+    if (!entry) {
+      libraryViewMode = 'grid';
+      renderLibraryBody();
+      return;
+    }
+    const siblings = mashBillLibraryCache.filter((m) => m.id !== entry.id && entry.distillery && m.distillery === entry.distillery);
+    const sourcesHtml = entry.confidence.sources && entry.confidence.sources.length
+      ? `<details class="conf-sources">
+          <summary>View ${entry.confidence.sources.length} source${entry.confidence.sources.length === 1 ? '' : 's'}</summary>
+          <ul>${entry.confidence.sources.map((s) => `<li><a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.label || s.url)}</a></li>`).join('')}</ul>
+        </details>`
+      : '';
+    const tastingHtml = (entry.nose || entry.palate || entry.finish) ? `
+      <div class="block">
+        <h3>Tasting Notes</h3>
+        <div class="tasting-grid">
+          <div class="tasting-card"><h4>Nose</h4><p>${escapeHtml(entry.nose || '—')}</p></div>
+          <div class="tasting-card"><h4>Palate</h4><p>${escapeHtml(entry.palate || '—')}</p></div>
+          <div class="tasting-card"><h4>Finish</h4><p>${escapeHtml(entry.finish || '—')}</p></div>
+        </div>
+        ${entry.tastingSource ? `<div class="tasting-source">Source: ${escapeHtml(entry.tastingSource)}</div>` : ''}
+      </div>` : '';
+
+    els.libraryBody.innerHTML = `
+      <div class="profile-head">
+        <div>
+          <h2>${escapeHtml(entry.title)}</h2>
+          <p class="profile-head__by">${escapeHtml(entry.distillery || 'Distillery unknown')}${entry.parentCompany ? ` &middot; <strong>${escapeHtml(entry.parentCompany)}</strong>` : ''}</p>
+          ${entry.category ? `<div class="profile-tags"><span class="tag">${escapeHtml(entry.category)}</span></div>` : ''}
+        </div>
+        <button type="button" class="btn btn--small" id="libraryEditBtn">Edit in Library</button>
+      </div>
+      <div class="profile-grid">
+        <div>
+          <div class="block">
+            <h3>Mash Bill</h3>
+            ${grainBarHtml(entry.grains)}
+            <div class="conf-block">
+              <div class="conf-block__row">
+                ${confidenceBadgeHtml(entry.confidence.tier)}
+                ${confidenceMeterHtml(entry.confidence.tier)}
+              </div>
+              ${entry.confidence.note ? `<p class="conf-block__note">${escapeHtml(entry.confidence.note)}</p>` : ''}
+              ${entry.confidence.verifiedAt ? `<div class="conf-block__verified">Last verified ${escapeHtml(entry.confidence.verifiedAt)}</div>` : ''}
+              ${sourcesHtml}
+            </div>
+          </div>
+          ${tastingHtml}
+        </div>
+        <div class="block info-card">
+          <h3>Distillery &amp; Ownership</h3>
+          <dl>
+            <div><dt>Distillery</dt><dd>${escapeHtml(entry.distillery || 'Unknown')}</dd></div>
+            ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
+            ${entry.category ? `<div><dt>Style</dt><dd>${escapeHtml(entry.category)}</dd></div>` : ''}
+          </dl>
+          ${siblings.length ? `
+            <dt class="info-card__siblings-label">Other ${escapeHtml(entry.distillery)} entries</dt>
+            <div class="sibling-list">
+              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(s.title)}</span>${confidenceBadgeHtml(s.confidence.tier)}</button>`).join('')}
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+    document.getElementById('libraryEditBtn').addEventListener('click', () => {
+      mashBillLibraryModal.open();
+      loadMashBillLibraryEntryIntoForm(entry);
+    });
+    els.libraryBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySelectedId = Number(btn.dataset.id);
+        renderBourbonProfile();
+      });
+    });
+  }
+
+  function renderLibraryBody() {
+    els.libraryBackLink.hidden = libraryViewMode !== 'profile';
+    if (libraryViewMode === 'profile') renderBourbonProfile();
+    else renderLibraryGrid();
+  }
+
+  els.libraryFilterInput.addEventListener('input', (e) => {
+    libraryFilterQuery = e.target.value;
+    libraryViewMode = 'grid';
+    renderLibraryBody();
+  });
+  els.libraryBackLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    libraryViewMode = 'grid';
+    librarySelectedId = null;
+    renderLibraryBody();
+  });
+
+  // Called every time the rail switches to Library (see setActiveView
+  // above) - re-fetches so the screen reflects the shared library's actual
+  // current state rather than whatever this client happened to have cached
+  // from the last recall banner check.
+  function renderLibraryView() {
+    fetchMashBillLibrary().then(() => {
+      libraryViewMode = 'grid';
+      librarySelectedId = null;
+      els.libraryFilterInput.value = '';
+      libraryFilterQuery = '';
+      renderLibraryChipsAndStats();
+      renderLibraryBody();
+    });
+  }
+
+  // ---------- The Pairing Atlas (rail view) ----------
+  //
+  // A read-focused browse/profile screen over WINE_PAIRING_RULES (a plain
+  // global defined in card.js - same array Suggest Pairings and Tools >
+  // Wine Pairing Rules... already match/render against, so this can't
+  // drift out of sync with what that button actually offers - see the
+  // WINE_PAIRING_RULES comment block in card.js). Unlike that modal, which
+  // is a developer-facing reference (raw match patterns, one flat list),
+  // this is the consumer-facing version: a color-grouped varietal grid and
+  // a per-varietal profile page that renders its pairings as an
+  // infographic instead of a list. Entirely client-side - WINE_PAIRING_RULES
+  // is a static array already loaded with the page, so unlike
+  // renderLibraryView above there's no fetch, and unlike the Bourbon
+  // Library this never writes anything either.
+  //
+  // Filter matching reuses pairingRuleMatchesQuery, defined above for the
+  // Wine Pairing Rules modal's own filter box - same "matches this
+  // varietal's own label/pattern, or any of its region/sweetness
+  // sub-entries'" semantics, so typing "Chablis" or "Trocken" here finds
+  // the same varietal it would in that modal.
+
+  const ATLAS_COLORS = ['Red', 'White', 'Rosé', 'Sparkling', 'Fortified & Dessert'];
+
+  let atlasFilterQuery = '';
+  let atlasColorFilter = 'all';
+  let atlasViewMode = 'grid';
+  let atlasSelectedId = null;
+
+  function atlasMatchesFilter(rule) {
+    return atlasColorFilter === 'all' || rule.color === atlasColorFilter;
+  }
+
+  function atlasMatchesSearch(rule) {
+    return pairingRuleMatchesQuery(rule, atlasFilterQuery.trim().toLowerCase());
+  }
+
+  function renderAtlasChipsAndStats() {
+    const counts = { all: WINE_PAIRING_RULES.length };
+    ATLAS_COLORS.forEach((color) => {
+      counts[color] = WINE_PAIRING_RULES.filter((r) => r.color === color).length;
+    });
+    const chips = [{ key: 'all', label: `All varietals (${counts.all})` }]
+      .concat(ATLAS_COLORS.filter((color) => counts[color] > 0).map((color) => ({ key: color, label: `${color} (${counts[color]})` })));
+    els.atlasChips.innerHTML = chips.map((c) => `
+      <button type="button" class="toggle-btn ${atlasColorFilter === c.key ? 'is-active' : ''}" data-color="${c.key}">${escapeHtml(c.label)}</button>
+    `).join('');
+    els.atlasChips.querySelectorAll('button[data-color]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        atlasColorFilter = btn.dataset.color;
+        renderAtlasChipsAndStats();
+        renderAtlasBody();
+      });
+    });
+    const twists = WINE_PAIRING_RULES.reduce((sum, r) => sum + (r.regions ? r.regions.length : 0) + (r.sweetness ? r.sweetness.length : 0), 0);
+    const pairingsCharted = WINE_PAIRING_RULES.reduce((sum, r) => sum + r.pairings.length, 0);
+    els.atlasStats.innerHTML = `
+      <div class="library-stat"><b>${WINE_PAIRING_RULES.length}</b><span>Varietals</span></div>
+      <div class="library-stat"><b>${new Set(WINE_PAIRING_RULES.map((r) => r.color)).size}</b><span>Wine Colors</span></div>
+      <div class="library-stat"><b>${twists}</b><span>Regional/Sweetness Twists</span></div>
+      <div class="library-stat"><b>${pairingsCharted}</b><span>Pairings Charted</span></div>
+    `;
+  }
+
+  function wineCardHtml(rule) {
+    const regionCount = (rule.regions ? rule.regions.length : 0) + (rule.sweetness ? rule.sweetness.length : 0);
+    return `
+      <button type="button" class="bourbon-card wine-card" data-id="${rule.id}">
+        <div class="bourbon-card__title">${escapeHtml(rule.label)}</div>
+        <div class="wine-card__pairings" aria-hidden="true">${rule.pairings.map((p) => `<span title="${escapeHtml(p.food)}">${escapeHtml(p.icon)}</span>`).join('')}</div>
+        <div class="bourbon-card__footer">
+          <span class="tag">${escapeHtml(rule.color)}</span>
+          <span class="bourbon-card__sub">${regionCount ? `${regionCount} twist${regionCount === 1 ? '' : 's'}` : ''}</span>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderAtlasGrid() {
+    const rows = WINE_PAIRING_RULES.filter((r) => atlasMatchesFilter(r) && atlasMatchesSearch(r));
+    if (!rows.length) {
+      els.atlasBody.innerHTML = '<p class="help-text">No varietals match this search/filter.</p>';
+      return;
+    }
+    els.atlasBody.innerHTML = `<div class="bourbon-grid">${rows.map(wineCardHtml).join('')}</div>`;
+    els.atlasBody.querySelectorAll('.wine-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        atlasSelectedId = btn.dataset.id;
+        atlasViewMode = 'profile';
+        renderAtlasBody();
+      });
+    });
+  }
+
+  // The infographic itself: the same 4 pairings Suggest Pairings offers,
+  // laid out as a 2x2 poster (big icon over its food label) instead of the
+  // Wine Pairing Rules modal's flat chip row - this is the "browse for
+  // ideas" surface, that one's the "check what a button will do" surface.
+  function pairingInfographicHtml(rule) {
+    return `
+      <div class="block">
+        <h3>Pairing Infographic</h3>
+        <div class="pairing-infographic">
+          ${rule.pairings.map((p) => `
+            <div class="pairing-infographic__item">
+              <div class="pairing-infographic__icon">${escapeHtml(p.icon)}</div>
+              <div class="pairing-infographic__food">${escapeHtml(p.food)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <p class="help-text">The same 4 candidates Suggest Pairings (Edit Talker &rarr; Food Pairing Suggestions) offers for ${escapeHtml(rule.label)} - pick up to 3 to print.</p>
+      </div>
+    `;
+  }
+
+  // Regions and sweetness tiers render with the same markup - both are
+  // "narrow down to this sub-entry, swap one slot of the base 4" (see the
+  // WINE_PAIRING_RULES comment block in card.js) - just a different
+  // heading and, for a rule like Riesling that carries both, two separate
+  // blocks rather than one merged list.
+  function atlasRefinementListHtml(rule, list, heading) {
+    if (!list || !list.length) return '';
+    return `
+      <div class="block">
+        <h3>${escapeHtml(heading)}</h3>
+        <div class="atlas-region-list">
+          ${list.map((entry) => `
+            <div class="atlas-region-item">
+              <div class="atlas-region-item__label">${escapeHtml(entry.label)}</div>
+              <div class="atlas-region-item__swap">
+                <span class="pairing-infographic__icon">${escapeHtml(entry.swap.icon)}</span>
+                <span>${escapeHtml(entry.swap.food)}</span>
+                <span class="atlas-region-item__was">in place of ${escapeHtml(rule.pairings[entry.swapIndex].food)}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAtlasProfile() {
+    const rule = WINE_PAIRING_RULES.find((r) => r.id === atlasSelectedId);
+    if (!rule) {
+      atlasViewMode = 'grid';
+      renderAtlasBody();
+      return;
+    }
+    const siblings = WINE_PAIRING_RULES.filter((r) => r.id !== rule.id && r.color === rule.color);
+    els.atlasBody.innerHTML = `
+      <div class="profile-head">
+        <div>
+          <h2>${escapeHtml(rule.label)}</h2>
+          <div class="profile-tags"><span class="tag">${escapeHtml(rule.color)}</span></div>
+        </div>
+      </div>
+      <div class="profile-grid">
+        <div>
+          ${pairingInfographicHtml(rule)}
+          ${atlasRefinementListHtml(rule, rule.regions, 'Regional Twists')}
+          ${atlasRefinementListHtml(rule, rule.sweetness, 'Sweetness Refinements')}
+        </div>
+        <div class="block info-card">
+          <h3>At a Glance</h3>
+          <dl>
+            <div><dt>Color</dt><dd>${escapeHtml(rule.color)}</dd></div>
+            ${rule.regions ? `<div><dt>Regional twists</dt><dd>${rule.regions.length}</dd></div>` : ''}
+            ${rule.sweetness ? `<div><dt>Sweetness tiers</dt><dd>${rule.sweetness.length}</dd></div>` : ''}
+          </dl>
+          ${siblings.length ? `
+            <dt class="info-card__siblings-label">Other ${escapeHtml(rule.color)} varietals</dt>
+            <div class="sibling-list">
+              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(s.label)}</span></button>`).join('')}
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+    els.atlasBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        atlasSelectedId = btn.dataset.id;
+        renderAtlasProfile();
+      });
+    });
+  }
+
+  function renderAtlasBody() {
+    els.atlasBackLink.hidden = atlasViewMode !== 'profile';
+    if (atlasViewMode === 'profile') renderAtlasProfile();
+    else renderAtlasGrid();
+  }
+
+  els.atlasFilterInput.addEventListener('input', (e) => {
+    atlasFilterQuery = e.target.value;
+    atlasViewMode = 'grid';
+    renderAtlasBody();
+  });
+  els.atlasBackLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    atlasViewMode = 'grid';
+    atlasSelectedId = null;
+    renderAtlasBody();
+  });
+
+  // Called every time the rail switches to Atlas (see setActiveView
+  // above). No fetch to await (see the section comment above), so unlike
+  // renderLibraryView this resets and renders synchronously.
+  function renderAtlasView() {
+    atlasViewMode = 'grid';
+    atlasSelectedId = null;
+    atlasColorFilter = 'all';
+    els.atlasFilterInput.value = '';
+    atlasFilterQuery = '';
+    renderAtlasChipsAndStats();
+    renderAtlasBody();
+  }
 
   // Fired once, right as printing is confirmed (see printNow() below) with
   // whatever's in the Queue at that moment - that's exactly what's about to
@@ -5843,6 +6519,45 @@
       els.experimentalPairingsCheckbox.checked = experimentalPairingsEnabled;
     },
   });
+
+  // ---------- Rail (Shelf Talker / Library / Pairing Atlas / Settings) ----------
+  //
+  // Settings isn't a fourth screen - its rail button just opens the same
+  // settingsModal above, unchanged. Shelf Talker, Library, and Atlas are
+  // real screens: exactly one of els.shelfTalkerView (the existing .layout
+  // three-column form/preview/queue grid, untouched) / els.libraryView /
+  // els.atlasView is visible at a time, toggled here rather than with the
+  // tabs' full role="tablist" machinery (see activateTab) - this is a
+  // whole-screen swap, not adjacent panels of one form.
+  let activeRailView = 'shelfTalker';
+
+  function setActiveView(view) {
+    activeRailView = view;
+    els.railShelfTalkerBtn.classList.toggle('is-active', view === 'shelfTalker');
+    els.railLibraryBtn.classList.toggle('is-active', view === 'library');
+    els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
+    els.shelfTalkerView.hidden = view !== 'shelfTalker';
+    els.libraryView.hidden = view !== 'library';
+    els.atlasView.hidden = view !== 'atlas';
+    if (view === 'shelfTalker') {
+      // The preview stage reads 0 for its own width while
+      // els.shelfTalkerView is hidden (display:none), so scalePreview
+      // silently no-ops on it - but the global window resize handler below
+      // still fires no matter which screen is showing, leaving the cached
+      // scale stale for whenever this screen becomes visible again. Same
+      // fix as an actual window resize: just rescale now that it's visible.
+      rescalePreviewStage();
+    } else if (view === 'library') {
+      renderLibraryView();
+    } else if (view === 'atlas') {
+      renderAtlasView();
+    }
+  }
+
+  els.railShelfTalkerBtn.addEventListener('click', () => setActiveView('shelfTalker'));
+  els.railLibraryBtn.addEventListener('click', () => setActiveView('library'));
+  els.railAtlasBtn.addEventListener('click', () => setActiveView('atlas'));
+  els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
   // ---------- Menu bar ----------
   //

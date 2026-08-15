@@ -156,7 +156,46 @@
     </div>
   </header>
 
-  <main class="layout no-print">
+  <!-- Persistent left icon rail (Shelf Talker / Library / Pairing Atlas /
+       Settings) - see the "Rail" section of app.js for the click handling.
+       Shelf Talker, Library, and Atlas swap which of .layout/#libraryView/
+       #atlasView is visible; Settings is not a fourth screen, its button
+       just opens the existing #settingsOverlay modal below, same as it's
+       always been reachable from Tools -> Settings. Icon-only (no visible
+       caption, title="" gives the tooltip instead) to keep the width this
+       adds to the app's existing fixed-column layout as small as possible -
+       see the min-width note on .rail in styles.css. -->
+  <div class="app-shell">
+    <nav class="rail no-print" id="rail" aria-label="Sections">
+      <button type="button" class="rail__icon is-active" id="railShelfTalkerBtn" data-view="shelfTalker" title="Shelf Talker">
+        <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+          <rect x="1" y="1" width="20" height="28" rx="1.5" fill="#ffffff" stroke="var(--ink)" stroke-width="1.6"/>
+          <rect x="4" y="4.5" width="14" height="3" rx="0.6" fill="var(--ink)"/>
+          <rect x="4" y="10" width="11" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+          <rect x="4" y="13" width="8.5" height="1.6" rx="0.5" fill="var(--ink)" opacity="0.45"/>
+          <rect x="4" y="20" width="14" height="6" rx="1" fill="var(--sale-red)"/>
+          <rect x="6.5" y="22.2" width="9" height="1.8" rx="0.5" fill="#ffffff"/>
+        </svg>
+      </button>
+      <button type="button" class="rail__icon" id="railLibraryBtn" data-view="library" title="Bourbon Library">
+        <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+          <path d="M4.6,16 L17.4,16 L16.5,27 C16.4,27.6 15.8,28 15,28 L7,28 C6.2,28 5.6,27.6 5.5,27 Z" fill="var(--ui-accent)"/>
+          <path d="M4,7 L18,7 L16.5,27 C16.4,27.6 15.8,28 15,28 L7,28 C6.2,28 5.6,27.6 5.5,27 Z" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button type="button" class="rail__icon" id="railAtlasBtn" data-view="atlas" title="The Pairing Atlas">
+        <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+          <path d="M7.4,9.2 C7.7,12.6 8.7,14.8 11,17 C13.3,14.8 14.3,12.6 14.6,9.2 Z" fill="var(--ui-accent)"/>
+          <path d="M6,3 L16,3 C16,9.4 15,13.4 11,17.4 C7,13.4 6,9.4 6,3 Z M11,17.4 L11,25 M6.6,27.2 C6.6,26.3 8.5,25.7 11,25.7 C13.5,25.7 15.4,26.3 15.4,27.2" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="rail__spacer"></div>
+      <button type="button" class="rail__icon" id="railSettingsBtn" title="Settings">
+        <span class="rail__icon-glyph" aria-hidden="true">&#9881;&#65039;</span>
+      </button>
+    </nav>
+
+  <main class="layout no-print" id="shelfTalkerView">
 
     <section class="panel panel--form">
       <div class="tabs" role="tablist" aria-label="How to add a product">
@@ -511,6 +550,16 @@
             </label>
           </div>
 
+          <!-- Large Display Signs only (see isLargeSign in applyFormMode) -
+               prints bottom-right in Verdana 11pt bold, matching Regular
+               Price (see .sign__case-price in styles.css and
+               buildSignPriceRowHtml in card.js). Shelf Talkers and Small
+               Display Signs have no room for it and never render it. -->
+          <label class="field" id="casePriceField" hidden>
+            <span>Case Price (optional)</span>
+            <input type="text" inputmode="decimal" id="fCasePrice" placeholder="149.99" />
+          </label>
+
           <div class="form-actions">
             <button type="submit" class="btn btn--primary" id="saveBtn">Add to Queue</button>
             <button type="button" class="btn" id="cancelEditBtn" hidden>Cancel Edit</button>
@@ -757,6 +806,81 @@
 
   </main>
 
+  <!-- Bourbon Library - a read-focused screen over the Mash Bill Library's
+       own data (see server/db.js's mash_bills table). Rendered entirely by
+       renderLibraryView/renderBourbonProfile in app.js; editing an entry
+       still goes through the existing #mashBillLibraryOverlay dialog below,
+       reached from a profile page's own "Edit in Library" button - this
+       view is a browsing surface on top of that data, not a second editing
+       UI for it. Hidden by default; the rail toggles it with .layout. -->
+  <section class="library-view no-print" id="libraryView" hidden>
+    <div class="library-band">
+      <div class="library-band__top">
+        <div class="library-brand">
+          <div class="library-brand__icon">
+            <svg viewBox="0 0 22 30" aria-hidden="true">
+              <path d="M4.6,16 L17.4,16 L16.5,27 C16.4,27.6 15.8,28 15,28 L7,28 C6.2,28 5.6,27.6 5.5,27 Z" fill="var(--ui-on-accent)" opacity="0.55"/>
+              <path d="M4,7 L18,7 L16.5,27 C16.4,27.6 15.8,28 15,28 L7,28 C6.2,28 5.6,27.6 5.5,27 Z" fill="none" stroke="var(--ui-on-accent)" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="library-brand__name">Bourbon Library</div>
+            <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+        <a href="#" class="library-back" id="libraryBackLink" hidden>&larr; All bourbons</a>
+      </div>
+      <div class="library-search">
+        <input type="search" id="libraryFilterInput" aria-label="Search the Bourbon Library" placeholder="Search by name, distillery, or parent company&hellip;" />
+      </div>
+      <div class="library-chips" id="libraryChips"></div>
+      <div class="library-stats" id="libraryStats"></div>
+    </div>
+    <div class="library-body" id="libraryBody"></div>
+  </section>
+
+  <!-- The Pairing Atlas - a read-focused browse/profile screen over
+       WINE_PAIRING_RULES (see card.js), the same array Suggest Pairings and
+       Tools > Wine Pairing Rules... already match/render against, so this
+       can't drift out of sync with what that button actually offers.
+       Unlike the Wine Pairing Rules modal (a developer-facing reference
+       that shows the raw match patterns), this is the consumer-facing,
+       browsable version: a varietal grid grouped by color, and a per-
+       varietal profile page rendering its pairings as an infographic
+       rather than a list. Client-side only, no server data - see the
+       "Pairing Atlas" section of app.js. Decoupled from the Wine Food
+       Pairings experimental flag the same way the Bourbon Library shell
+       was decoupled from its own experimental flag - a rail entry point is
+       permanent app furniture, not an experiment. Hidden by default; the
+       rail toggles it with .layout/#libraryView. -->
+  <section class="library-view no-print" id="atlasView" hidden>
+    <div class="library-band">
+      <div class="library-band__top">
+        <div class="library-brand">
+          <div class="library-brand__icon">
+            <svg viewBox="0 0 22 30" aria-hidden="true">
+              <path d="M7.4,9.2 C7.7,12.6 8.7,14.8 11,17 C13.3,14.8 14.3,12.6 14.6,9.2 Z" fill="var(--ui-on-accent)" opacity="0.55"/>
+              <path d="M6,3 L16,3 C16,9.4 15,13.4 11,17.4 C7,13.4 6,9.4 6,3 Z M11,17.4 L11,25 M6.6,27.2 C6.6,26.3 8.5,25.7 11,25.7 C13.5,25.7 15.4,26.3 15.4,27.2" fill="none" stroke="var(--ui-on-accent)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="library-brand__name">The Pairing Atlas</div>
+            <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+        <a href="#" class="library-back" id="atlasBackLink" hidden>&larr; All varietals</a>
+      </div>
+      <div class="library-search">
+        <input type="search" id="atlasFilterInput" aria-label="Search The Pairing Atlas" placeholder="Search by varietal, region, or keyword&hellip;" />
+      </div>
+      <div class="library-chips" id="atlasChips"></div>
+      <div class="library-stats" id="atlasStats"></div>
+    </div>
+    <div class="library-body" id="atlasBody"></div>
+  </section>
+
+  </div><!-- /.app-shell -->
+
   <section id="printRoot" class="print-only"></section>
 
   <div id="queueItemMenu" class="queue-item-menu no-print" hidden>
@@ -930,6 +1054,11 @@
       <p class="pairing-rules-modal-intro">
         <strong>Suggest Pairings</strong> (Edit Talker &rarr; Food Pairing Suggestions) checks the Product Title, falling back to the Description, against this list top to bottom &mdash; the first varietal whose pattern matches wins, and its 4 candidate pairings are offered (pick up to 3 to print). No match falls back to picking pairings manually.
       </p>
+      <label class="field pairing-rules-modal-filter">
+        <span>Filter by varietal, region, or keyword</span>
+        <input type="search" id="winePairingRulesFilterInput" placeholder="Barolo, Coonawarra, Chablis..." />
+      </label>
+      <p class="help-text" id="winePairingRulesFilterStatus" role="status" aria-live="polite"></p>
       <div class="pairing-rules-modal-body" id="winePairingRulesList"></div>
     </div>
   </div>
@@ -1002,7 +1131,7 @@
         <h3>Adding a shelf talker</h3>
         <p>There are three tabs on the left for adding a product. Every one of them opens with the same two dropdowns: <strong>Type</strong> (<strong>Shelf Talker</strong>, <strong>Small Display</strong>, or <strong>Large Display</strong>) and <strong>Product Type</strong> (<strong>Wine / Spirits</strong> or <strong>Beer</strong>) &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). Both are shared across all three tabs: change either one on any tab and it stays set that way when you switch tabs.</p>
         <ul>
-          <li><strong>Edit Talker</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field.</li>
+          <li><strong>Edit Talker</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field. <strong>Case Price</strong> (Large Display only, optional) prints bottom-right in the same bold style as Regular Price &mdash; Shelf Talkers and Small Display Signs have no room for it, so the field is hidden for those.</li>
           <li><strong>Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
           <li><strong>Search</strong> &mdash; pick a method (<strong>Search by Name</strong>, <strong>SKU Lookup</strong>, or <strong>Scan UPC</strong>) and look the product up instead of typing everything by hand. See "Searching, by name, SKU, or UPC" below.</li>
         </ul>
@@ -1136,6 +1265,16 @@
               <input type="text" id="mashBillLibraryFormDistilleryInput" maxlength="80" placeholder="Four Roses" />
             </label>
           </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Parent Company (optional)</span>
+              <input type="text" id="mashBillLibraryFormParentCompanyInput" maxlength="80" placeholder="Sazerac Company" />
+            </label>
+            <label class="field">
+              <span>Category (optional)</span>
+              <input type="text" id="mashBillLibraryFormCategoryInput" maxlength="60" placeholder="Kentucky Straight Bourbon" />
+            </label>
+          </div>
           <div class="ratings-builder">
             <select id="mashBillLibraryFormGrain" aria-label="Grain">
               <option value="Corn">Corn</option>
@@ -1149,6 +1288,54 @@
             <button type="button" class="btn btn--small" id="mashBillLibraryFormAddGrainBtn">Add</button>
           </div>
           <div class="ratings-list" id="mashBillLibraryFormGrainList"></div>
+
+          <!-- Bourbon Library profile page fields (see renderBourbonProfile
+               in app.js) - all optional, same "leave blank if you don't
+               know it yet" philosophy as the rest of this form. -->
+          <label class="field">
+            <span>Nose (optional)</span>
+            <textarea id="mashBillLibraryFormNoseInput" rows="2" maxlength="300" placeholder="Vanilla, brown sugar, mint"></textarea>
+          </label>
+          <label class="field">
+            <span>Palate (optional)</span>
+            <textarea id="mashBillLibraryFormPalateInput" rows="2" maxlength="300" placeholder="Brown sugar and spice, oak"></textarea>
+          </label>
+          <label class="field">
+            <span>Finish (optional)</span>
+            <textarea id="mashBillLibraryFormFinishInput" rows="2" maxlength="300" placeholder="Long, smooth, and pleasant"></textarea>
+          </label>
+          <label class="field">
+            <span>Tasting Notes Source (optional)</span>
+            <input type="text" id="mashBillLibraryFormTastingSourceInput" maxlength="120" placeholder="Distillery official tasting notes" />
+          </label>
+
+          <hr class="settings-section-divider" />
+          <h3 class="settings-section-title">Mash Bill Confidence</h3>
+          <p class="help-text">How sure are we this mash bill is right? Confirmed (distillery-stated), Reported (widely cited but not distillery-confirmed), Estimated (a guess based on similar bourbons), or Unknown (nothing to go on yet).</p>
+          <label class="field">
+            <span>Confidence Tier</span>
+            <select id="mashBillLibraryFormConfidenceTier">
+              <option value="unknown">Unknown</option>
+              <option value="estimated">Estimated</option>
+              <option value="reported">Reported</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Confidence Note (optional)</span>
+            <textarea id="mashBillLibraryFormConfidenceNoteInput" rows="2" maxlength="300" placeholder="Mash bill #1 is publicly confirmed by the distillery."></textarea>
+          </label>
+          <label class="field">
+            <span>Last Verified (optional)</span>
+            <input type="date" id="mashBillLibraryFormConfidenceVerifiedInput" />
+          </label>
+          <div class="ratings-builder">
+            <input type="text" id="mashBillLibraryFormSourceLabel" placeholder="Source name" aria-label="Source name" />
+            <input type="text" id="mashBillLibraryFormSourceUrl" placeholder="https://..." aria-label="Source URL" />
+            <button type="button" class="btn btn--small" id="mashBillLibraryFormAddSourceBtn">Add</button>
+          </div>
+          <div class="ratings-list" id="mashBillLibraryFormSourceList"></div>
+
           <div class="reviewer-manager__add">
             <button type="button" class="btn btn--small btn--primary" id="mashBillLibraryFormSaveBtn">Add Entry</button>
             <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormCancelBtn" hidden>Cancel</button>

@@ -310,3 +310,170 @@ test('getStats includes the mash bill count', () => {
     assert.equal(db.getStats().mashBills, 2);
   });
 });
+
+// ---------- Bourbon Library fields (parent company / category / tasting
+// notes / Mash Bill Confidence) ----------
+
+function sampleConfidence(overrides = {}) {
+  return {
+    tier: 'confirmed',
+    note: 'Mash bill #1 is publicly confirmed by the distillery.',
+    sources: [{ label: 'Distillery site', url: 'https://example.com' }],
+    verifiedAt: '2026-01-15',
+    ...overrides,
+  };
+}
+
+test('upsertMashBill stores every Bourbon Library field and rowToMashBill round-trips them', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Eagle Rare 10 Year',
+      distillery: 'Buffalo Trace Distillery',
+      grains: sampleGrains(),
+      parentCompany: 'Sazerac Company',
+      category: 'Kentucky Straight Bourbon',
+      nose: 'Vanilla, brown sugar, mint',
+      palate: 'Brown sugar and spice, oak',
+      finish: 'Long and smooth',
+      tastingSource: 'Distillery official tasting notes',
+      confidence: sampleConfidence(),
+    });
+    assert.equal(entry.parentCompany, 'Sazerac Company');
+    assert.equal(entry.category, 'Kentucky Straight Bourbon');
+    assert.equal(entry.nose, 'Vanilla, brown sugar, mint');
+    assert.equal(entry.palate, 'Brown sugar and spice, oak');
+    assert.equal(entry.finish, 'Long and smooth');
+    assert.equal(entry.tastingSource, 'Distillery official tasting notes');
+    assert.deepEqual(entry.confidence, sampleConfidence());
+    // Reads back identically through getMashBill too, not just the
+    // upsert's own return value.
+    assert.deepEqual(db.getMashBill(entry.id), entry);
+  });
+});
+
+test('a mash bill with no confidence data at all defaults to the "unknown" tier for display, not backfilled on write', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Mystery Batch', grains: sampleGrains() });
+    assert.deepEqual(entry.confidence, {
+      tier: 'unknown', note: '', sources: [], verifiedAt: '',
+    });
+    assert.equal(entry.parentCompany, '');
+    assert.equal(entry.category, '');
+    assert.equal(entry.nose, '');
+  });
+});
+
+test('upsertMashBill rejects an unrecognized confidence tier rather than storing garbage', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Some Bourbon', grains: sampleGrains(), confidence: { tier: 'extremely-sure' },
+    });
+    // Falls back to "unknown" for display, same as no tier at all -
+    // normalizeConfidenceTier only accepts the four known tiers.
+    assert.equal(entry.confidence.tier, 'unknown');
+  });
+});
+
+test('updateMashBillById: omitting a Bourbon Library field (undefined) preserves the existing value', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Blanton\'s Single Barrel',
+      grains: sampleGrains(),
+      parentCompany: 'Sazerac Company',
+      category: 'Kentucky Straight Bourbon',
+      confidence: sampleConfidence(),
+    });
+    // Only touches nose - every other Bourbon Library field is left off
+    // the payload entirely (undefined), which must NOT clear them.
+    const updated = db.updateMashBillById(entry.id, { nose: 'Nutty, citrus, honey' });
+    assert.equal(updated.nose, 'Nutty, citrus, honey');
+    assert.equal(updated.parentCompany, 'Sazerac Company');
+    assert.equal(updated.category, 'Kentucky Straight Bourbon');
+    assert.deepEqual(updated.confidence, sampleConfidence());
+  });
+});
+
+test('updateMashBillById: an explicit empty string clears a field, unlike omitting it', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Old Forester 86', grains: sampleGrains(), parentCompany: 'Brown-Forman',
+    });
+    const updated = db.updateMashBillById(entry.id, { parentCompany: '' });
+    assert.equal(updated.parentCompany, '');
+  });
+});
+
+test('updateMashBillById: confidence is replaced as a whole object when provided, not merged field-by-field', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({ title: 'Larceny Barrel Proof', grains: sampleGrains(), confidence: sampleConfidence() });
+    const updated = db.updateMashBillById(entry.id, { confidence: { tier: 'estimated' } });
+    assert.deepEqual(updated.confidence, {
+      tier: 'estimated', note: '', sources: [], verifiedAt: '',
+    });
+  });
+});
+
+test('confidence.sources drops entries with neither a label nor a url', () => {
+  withTempDb(() => {
+    const entry = db.upsertMashBill({
+      title: 'Wild Turkey Rare Breed',
+      grains: sampleGrains(),
+      confidence: {
+        tier: 'reported',
+        sources: [{ label: 'Good source', url: 'https://example.com' }, { label: '', url: '' }, {}],
+      },
+    });
+    assert.deepEqual(entry.confidence.sources, [{ label: 'Good source', url: 'https://example.com' }]);
+  });
+});
+
+// The migration itself: mash_bills shipped with just six columns for
+// several releases (see applyMashBillColumns's own comment in db.js) -
+// simulate exactly that shape on disk, then confirm opening it through
+// db.js adds the ten Bourbon Library columns without losing the existing
+// row, and that writes against the now-migrated table work normally.
+test('applyMashBillColumns migrates a pre-existing 6-column mash_bills table cleanly', () => {
+  withTempDb((dir) => {
+    const Database = require('better-sqlite3');
+    const filePath = path.join(dir, 'data.db');
+    const raw = new Database(filePath);
+    raw.exec(`
+      CREATE TABLE mash_bills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        distillery TEXT,
+        grains TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'Manual',
+        updated_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX idx_mash_bills_title_unique ON mash_bills (title COLLATE NOCASE);
+    `);
+    raw.prepare(`
+      INSERT INTO mash_bills (title, distillery, grains, source, updated_at)
+      VALUES ('Legacy Entry', 'Some Distillery', '[{"grain":"Corn","pct":80}]', 'Manual', '2025-01-01T00:00:00.000Z')
+    `).run();
+    raw.close();
+
+    // Opening through db.js (any call reaches getDb() -> applySchema()) is
+    // what a real app launch against an old data.db would do.
+    const legacy = db.listMashBills().find((m) => m.title === 'Legacy Entry');
+    assert.ok(legacy, 'the pre-existing row survived the migration');
+    assert.equal(legacy.distillery, 'Some Distillery');
+    assert.deepEqual(legacy.grains, [{ grain: 'Corn', pct: 80 }]);
+    // New columns exist and default to the same "nothing known yet" shape
+    // a brand-new row would have.
+    assert.deepEqual(legacy.confidence, {
+      tier: 'unknown', note: '', sources: [], verifiedAt: '',
+    });
+    assert.equal(legacy.parentCompany, '');
+
+    // And the migrated table isn't just readable - it accepts writes to
+    // the new columns like any fresh install's table would.
+    const updated = db.updateMashBillById(legacy.id, { parentCompany: 'Test Co' });
+    assert.equal(updated.parentCompany, 'Test Co');
+
+    // Re-running the migration (a second launch against the same file)
+    // is a no-op, not a duplicate-column error.
+    assert.doesNotThrow(() => db.getDb());
+  });
+});

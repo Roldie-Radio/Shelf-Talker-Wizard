@@ -54,16 +54,55 @@ function applySchema(db) {
     -- Server PC (see serverConfig.js) is the one whose copy is authoritative
     -- store-wide - see mashBillSync.js for how every other PC's writes get
     -- forwarded to it and its reads get cached locally.
+    --
+    -- The columns below parent_company onward back the Bourbon Library read
+    -- view (see renderLibraryView in app.js) - every one of them is
+    -- optional, since a lot of entries will only ever have the original
+    -- title/distillery/grains a talker needed. See applyMashBillColumns
+    -- below for how these were added to installs that shipped before this
+    -- table grew past its original 6 columns.
     CREATE TABLE IF NOT EXISTS mash_bills (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       distillery TEXT,
       grains TEXT NOT NULL,
       source TEXT NOT NULL DEFAULT 'Manual',
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      parent_company TEXT,
+      category TEXT,
+      nose TEXT,
+      palate TEXT,
+      finish TEXT,
+      tasting_source TEXT,
+      confidence_tier TEXT,
+      confidence_note TEXT,
+      confidence_sources TEXT,
+      confidence_verified_at TEXT
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_mash_bills_title_unique ON mash_bills (title COLLATE NOCASE);
   `);
+  applyMashBillColumns(db);
+}
+
+// mash_bills shipped with just id/title/distillery/grains/source/updated_at
+// for several releases (as far back as 3.3.x) - CREATE TABLE IF NOT EXISTS
+// above is a no-op against an existing installs's data.db, so the ten
+// Bourbon Library columns it now also lists need to be added the honest
+// way, one ALTER TABLE per column actually missing. Checked via
+// PRAGMA table_info rather than SQLite 3.35's ADD COLUMN IF NOT EXISTS
+// syntax, since better-sqlite3's bundled SQLite version isn't pinned here -
+// this works on any version. Safe (and cheap) to run on every launch: a
+// fresh install's CREATE TABLE above already has every column, so the
+// PRAGMA finds nothing missing and every ALTER TABLE is skipped.
+function applyMashBillColumns(db) {
+  const existing = new Set(db.pragma('table_info(mash_bills)').map((col) => col.name));
+  const wanted = [
+    'parent_company', 'category', 'nose', 'palate', 'finish', 'tasting_source',
+    'confidence_tier', 'confidence_note', 'confidence_sources', 'confidence_verified_at',
+  ];
+  for (const column of wanted) {
+    if (!existing.has(column)) db.exec(`ALTER TABLE mash_bills ADD COLUMN ${column} TEXT`);
+  }
 }
 
 // Re-derived whenever the configured directory changes (same pattern as
@@ -215,6 +254,34 @@ function normalizeGrains(grains) {
     .filter((g) => g.grain && Number.isFinite(g.pct) && g.pct > 0);
 }
 
+// Mash Bill Confidence (see the Bourbon Library profile page in app.js) -
+// how directly a saved grain composition traces back to the distillery
+// itself. Deliberately not required or defaulted at write time (an entry
+// with no tier at all just means nobody has assessed it yet); rowToMashBill
+// below is where a missing tier becomes the literal 'unknown' tier for
+// display, rather than every legacy/simple row needing one written in.
+const CONFIDENCE_TIERS = new Set(['confirmed', 'reported', 'estimated', 'unknown']);
+
+function normalizeConfidenceTier(tier) {
+  const clean = (tier || '').trim().toLowerCase();
+  return CONFIDENCE_TIERS.has(clean) ? clean : null;
+}
+
+// Same JSON-column pattern as grains above - a small ordered list of
+// {label, url} citations backing the confidence tier/note, shown as the
+// profile page's own "View N sources" disclosure.
+function normalizeConfidenceSources(sources) {
+  if (!Array.isArray(sources)) return [];
+  return sources
+    .map((s) => ({ label: s && s.label ? String(s.label).trim() : '', url: s && s.url ? String(s.url).trim() : '' }))
+    .filter((s) => s.label || s.url);
+}
+
+function normalizeOptionalText(value) {
+  const clean = (value || '').toString().trim();
+  return clean || null;
+}
+
 function rowToMashBill(row) {
   if (!row) return null;
   return {
@@ -224,6 +291,18 @@ function rowToMashBill(row) {
     grains: JSON.parse(row.grains),
     source: row.source,
     updatedAt: row.updated_at,
+    parentCompany: row.parent_company || '',
+    category: row.category || '',
+    nose: row.nose || '',
+    palate: row.palate || '',
+    finish: row.finish || '',
+    tastingSource: row.tasting_source || '',
+    confidence: {
+      tier: row.confidence_tier || 'unknown',
+      note: row.confidence_note || '',
+      sources: row.confidence_sources ? JSON.parse(row.confidence_sources) : [],
+      verifiedAt: row.confidence_verified_at || '',
+    },
   };
 }
 
@@ -245,6 +324,40 @@ function validateMashBillInput({ title, grains }) {
   return { cleanTitle, cleanGrains };
 }
 
+// Shared by upsertMashBill/updateMashBillById below: every Bourbon Library
+// field beyond the original title/distillery/grains/source is optional, and
+// omitting one (undefined, as opposed to explicitly clearing it with '')
+// means "leave whatever's already there alone" - the same convention
+// updateMashBillById's own distillery handling already used before this
+// helper existed. `existing` is a rowToMashBill()-shaped object or null.
+function mashBillOptionalFieldParams({
+  parentCompany, category, nose, palate, finish, tastingSource, confidence,
+}, existing) {
+  const prev = existing || {
+    parentCompany: '', category: '', nose: '', palate: '', finish: '', tastingSource: '',
+    confidence: { tier: '', note: '', sources: [], verifiedAt: '' },
+  };
+  const conf = confidence !== undefined ? (confidence || {}) : prev.confidence;
+  return {
+    parentCompany: normalizeOptionalText(parentCompany !== undefined ? parentCompany : prev.parentCompany),
+    category: normalizeOptionalText(category !== undefined ? category : prev.category),
+    nose: normalizeOptionalText(nose !== undefined ? nose : prev.nose),
+    palate: normalizeOptionalText(palate !== undefined ? palate : prev.palate),
+    finish: normalizeOptionalText(finish !== undefined ? finish : prev.finish),
+    tastingSource: normalizeOptionalText(tastingSource !== undefined ? tastingSource : prev.tastingSource),
+    confidenceTier: normalizeConfidenceTier(conf.tier),
+    confidenceNote: normalizeOptionalText(conf.note),
+    confidenceSources: JSON.stringify(normalizeConfidenceSources(conf.sources)),
+    confidenceVerifiedAt: normalizeOptionalText(conf.verifiedAt),
+  };
+}
+
+const MASH_BILL_OPTIONAL_COLUMNS_SET = `
+  parent_company = @parentCompany, category = @category, nose = @nose, palate = @palate, finish = @finish,
+  tasting_source = @tastingSource, confidence_tier = @confidenceTier, confidence_note = @confidenceNote,
+  confidence_sources = @confidenceSources, confidence_verified_at = @confidenceVerifiedAt
+`;
+
 // Create-or-update by title (case-insensitive) - the "Save to Library"
 // button on Edit Talker's Mash Bill field always calls this, so clicking it
 // again after correcting a typo just updates the same entry in place
@@ -254,29 +367,43 @@ function validateMashBillInput({ title, grains }) {
 // than blocking on a "already exists" error.
 function upsertMashBill({
   title, distillery, grains, source,
+  parentCompany, category, nose, palate, finish, tastingSource, confidence,
 }) {
   const db = getDb();
   const { cleanTitle, cleanGrains } = validateMashBillInput({ title, grains });
   const now = nowIso();
+  const existingRow = db.prepare('SELECT id FROM mash_bills WHERE title = ? COLLATE NOCASE').get(cleanTitle);
+  const existing = existingRow ? getMashBill(existingRow.id) : null;
   const params = {
     title: cleanTitle,
     distillery: (distillery || '').trim() || null,
     grains: JSON.stringify(cleanGrains),
     source: source || 'Manual',
     updatedAt: now,
+    ...mashBillOptionalFieldParams({
+      parentCompany, category, nose, palate, finish, tastingSource, confidence,
+    }, existing),
   };
 
-  const existing = db.prepare('SELECT id FROM mash_bills WHERE title = ? COLLATE NOCASE').get(cleanTitle);
   if (existing) {
     db.prepare(`
-      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt
+      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt,
+      ${MASH_BILL_OPTIONAL_COLUMNS_SET}
       WHERE id = @id
     `).run({ ...params, id: existing.id });
     return getMashBill(existing.id);
   }
   const info = db.prepare(`
-    INSERT INTO mash_bills (title, distillery, grains, source, updated_at)
-    VALUES (@title, @distillery, @grains, @source, @updatedAt)
+    INSERT INTO mash_bills (
+      title, distillery, grains, source, updated_at,
+      parent_company, category, nose, palate, finish, tasting_source,
+      confidence_tier, confidence_note, confidence_sources, confidence_verified_at
+    )
+    VALUES (
+      @title, @distillery, @grains, @source, @updatedAt,
+      @parentCompany, @category, @nose, @palate, @finish, @tastingSource,
+      @confidenceTier, @confidenceNote, @confidenceSources, @confidenceVerifiedAt
+    )
   `).run(params);
   return getMashBill(info.lastInsertRowid);
 }
@@ -289,6 +416,7 @@ function upsertMashBill({
 // letting better-sqlite3's raw constraint error reach the caller.
 function updateMashBillById(id, {
   title, distillery, grains, source,
+  parentCompany, category, nose, palate, finish, tastingSource, confidence,
 }) {
   const db = getDb();
   const existing = getMashBill(id);
@@ -300,7 +428,8 @@ function updateMashBillById(id, {
 
   try {
     db.prepare(`
-      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt
+      UPDATE mash_bills SET title = @title, distillery = @distillery, grains = @grains, source = @source, updated_at = @updatedAt,
+      ${MASH_BILL_OPTIONAL_COLUMNS_SET}
       WHERE id = @id
     `).run({
       id,
@@ -309,6 +438,9 @@ function updateMashBillById(id, {
       grains: JSON.stringify(cleanGrains),
       source: source || existing.source,
       updatedAt: nowIso(),
+      ...mashBillOptionalFieldParams({
+        parentCompany, category, nose, palate, finish, tastingSource, confidence,
+      }, existing),
     });
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
