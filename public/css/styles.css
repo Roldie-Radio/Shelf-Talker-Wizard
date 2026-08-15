@@ -401,7 +401,7 @@ h1, h2, h3 { margin: 0; }
    .is-active: the accent fill already behind it there gives the dark ink
    plenty of contrast on its own, and stacking the paper backdrop on top of
    the accent colour would look like a sticker rather than one flat chip. */
-.rail__icon-svg { width: 20px; height: 27px; display: block; background: var(--rail-icon-bg); border-radius: 5px; }
+.rail__icon-svg { width: 20px; height: 27px; display: block; padding: 6px 7px; box-sizing: content-box; background: var(--rail-icon-bg); border-radius: 7px; }
 .rail__icon.is-active .rail__icon-svg { background: transparent; }
 .rail__icon-glyph { font-size: 1.15rem; line-height: 1; }
 .rail__spacer { flex: 1; }

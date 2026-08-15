@@ -54,6 +54,12 @@
       ],
     },
     {
+      version: '4.0.4',
+      items: [
+        'Fixed: the Bourbon Library\'s auto-seed on first launch (4.0.1) relied entirely on reaching GitHub over the network - a store PC where that\'s blocked (firewall, content filter, no internet at that moment) was left with a permanently empty library instead of ever getting the pre-loaded bourbons. It now falls back to the same seed data bundled directly into the installer whenever the GitHub fetch fails, so a fresh install always ends up populated regardless of network access - GitHub is only ever a nice-to-have for picking up a newer curated list between releases.',
+      ],
+    },
+    {
       version: '4.0.2',
       items: [
         'New: the Bourbon Library\'s pre-loaded starting set nearly doubles, from 14 to 26 bourbons - adding Eagle Rare, W.L. Weller Special Reserve, Larceny, Old Grand-Dad Bonded, Angel\'s Envy, 1792 Small Batch, Rebel Yell, George Dickel Bourbon, Evan Williams Black Label, Old Ezra 7 Year, Wilderness Trail Bottled-in-Bond Wheated, and Very Old Barton. A PC that already auto-seeded the original 14 won\'t pick these up on its own (auto-seed only ever fills a completely empty library) - run `npm run db:seed-bourbon-library` again to add them.',
