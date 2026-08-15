@@ -790,6 +790,10 @@ const BEER_STYLE_COLORS = [
   // axis above to begin with, and craft meaderies tend toward jewel-tone
   // branding anyway, so it doubles as a "this isn't a beer style" signal.
   { test: /mead|melomel|cyser|pyment|metheglin|braggot/i, bg: '#653b72', fg: '#ffffff' },
+  // Cyan/teal - the one hue family none of the malt/fruit/honey styles
+  // above touch, so seltzer reads as its own thing rather than blurring
+  // into gold (lager) or green (cider) at a glance.
+  { test: /seltzer|hard seltzer|spiked sparkling/i, bg: '#189aad', fg: '#ffffff' },
 ];
 const BEER_STYLE_FALLBACK_COLOR = { bg: '#ddd6cc', fg: '#3b2415' };
 
