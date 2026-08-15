@@ -5,11 +5,13 @@
 // just refreshes the same entries rather than duplicating them.
 //
 // The actual entries live in bourbon-library-seed-data.json, not here -
-// that file is also what server/bourbonLibrarySeed.js fetches straight from
-// GitHub to auto-seed a store PC's Bourbon Library on launch (see that
-// module's own header comment). Keeping one JSON file as the source for both
-// paths means a PC seeded locally via this script and one seeded
-// automatically over the network always end up with identical data.
+// that same file also ships bundled inside the installer (see package.json's
+// build.files) and is what server/bourbonLibrarySeed.js reads to auto-seed a
+// store PC's Bourbon Library on launch, whether that PC has internet access
+// or not (see that module's own header comment for the GitHub-first,
+// bundled-fallback order). Keeping one JSON file as the source for every
+// path means a PC seeded locally via this script and one seeded
+// automatically on launch always end up with identical data.
 //
 // These 26 are a deliberately mixed set of real, publicly-known bourbons -
 // Confirmed, Reported, and Estimated all appear (see confidence.tier
