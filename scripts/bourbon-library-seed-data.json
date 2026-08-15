@@ -167,10 +167,11 @@
     }
   },
   {
-    "title": "Wild Turkey 101",
+    "title": "Wild Turkey 101 Bourbon",
     "distillery": "Wild Turkey Distilling Co.",
     "parentCompany": "Campari Group",
     "category": "Kentucky Straight Bourbon",
+    "sku": "12046",
     "grains": [
       {
         "grain": "Corn",
@@ -2584,5 +2585,270 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "Wild Turkey 81 Bourbon",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "12044",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toffee, vanilla, and light pepper spice.",
+    "palate": "Brown sugar, oak, and baking spice, milder than 101.",
+    "finish": "Moderate, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wild Turkey Kentucky Spirit Bourbon",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "10221",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toffee, vanilla, and pepper spice, fuller from single-barrel selection.",
+    "palate": "Bold brown sugar, oak, and baking spice.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wild Turkey Rare Breed Bourbon",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Bourbon (Barrel Proof)",
+    "sku": "12048",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Bold toffee, vanilla, and oak spice.",
+    "palate": "Rich brown sugar and baking spice with real barrel-proof heat.",
+    "finish": "Long, hot, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated. Rare Breed is a barrel-proof blend of whiskeys at different ages, not a separate mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wild Turkey Russell's Reserve 10 Year Bourbon",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "11360",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toffee, vanilla, and oak, more developed from extra age.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Russell's Reserve Single Barrel",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "1973",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toffee, vanilla, and oak spice, fuller from single-barrel selection.",
+    "palate": "Bold brown sugar, oak, and baking spice.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Some whiskey trade writing claims Russell's Reserve Single Barrel is drawn from a distinct, higher-rye mash bill separate from standard Wild Turkey, but Wild Turkey/Campari has never confirmed separate percentages for it. Using the standard 75/13/12 figure as the best-available baseline - treat this one as lower-confidence than the rest of the Wild Turkey line pending better sourcing.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Wild Turkey 101 Straight Rye Whiskey",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Rye Whiskey",
+    "sku": "2873",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 75
+      },
+      {
+        "grain": "Corn",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Mint, dill, and black pepper.",
+    "palate": "Bold rye spice, brown sugar, and oak.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wild Turkey's rye mash bill mirrors its bourbon recipe with rye and corn swapped (75/13/12) - also a figure Jimmy Russell has cited directly in interviews.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wild Turkey Longbranch",
+    "distillery": "Wild Turkey Distilling Co.",
+    "parentCompany": "Campari Group",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "21414",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toffee, vanilla, and a light smoky sweetness.",
+    "palate": "Brown sugar and oak spice, mellowed by charcoal filtering.",
+    "finish": "Smooth, moderate, gently smoky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated. Longbranch is finished with a Texas mesquite and oak charcoal filtering step (developed with Matthew McConaughey) after distillation - a filtering process, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   }
 ]
