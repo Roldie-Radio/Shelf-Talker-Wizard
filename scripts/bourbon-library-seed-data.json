@@ -4029,5 +4029,340 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Jack Daniel's Whiskey Sour Mash",
+    "distillery": "Jack Daniel Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Tennessee Whiskey",
+    "sku": "12032",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Caramel, banana, and charcoal-mellowed smoothness.",
+    "palate": "Vanilla, oak, and a soft charred-oak sweetness.",
+    "finish": "Smooth, warm, moderate.",
+    "tastingSource": "Jack Daniel's Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Jack Daniel's Distillery publishes this 80/8/12 mash bill directly - it's charcoal-mellowed through the Lincoln County Process before barreling, which is what makes it Tennessee whiskey rather than labeled bourbon, though it would otherwise qualify.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jack Daniel's - Our Whiskey",
+        "url": "https://www.jackdaniels.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Jack Daniel's Frank Sinatra Bottle",
+    "distillery": "Jack Daniel Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Tennessee Whiskey",
+    "sku": "2711",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Caramel, banana, and rich toasted oak.",
+    "palate": "Vanilla, oak, and deeper char sweetness from grooved-stave barrel treatment.",
+    "finish": "Long, warm, smooth.",
+    "tastingSource": "Jack Daniel's Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Jack Daniel's Distillery publishes this 80/8/12 mash bill directly - it's charcoal-mellowed through the Lincoln County Process before barreling, which is what makes it Tennessee whiskey rather than labeled bourbon, though it would otherwise qualify. This special-edition bottling uses barrels with grooved (fluted) staves for extra wood contact - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jack Daniel's - Our Whiskey",
+        "url": "https://www.jackdaniels.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Jack Daniel's Single Barrel Heritage Toasted",
+    "distillery": "Jack Daniel Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Tennessee Whiskey (Single Barrel)",
+    "sku": "40035",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Caramel, banana, and toasted oak sweetness.",
+    "palate": "Vanilla, toasted grain, and charred-oak spice, fuller from single-barrel selection.",
+    "finish": "Long, warm, smooth.",
+    "tastingSource": "Jack Daniel's Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Jack Daniel's Distillery publishes this 80/8/12 mash bill directly - it's charcoal-mellowed through the Lincoln County Process before barreling, which is what makes it Tennessee whiskey rather than labeled bourbon, though it would otherwise qualify. The Heritage Toasted expression uses barrels with an extra toasting step before charring - a barrel-treatment difference, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jack Daniel's - Our Whiskey",
+        "url": "https://www.jackdaniels.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Jack Daniel's LOWC Barrel Proof Rye",
+    "distillery": "Jack Daniel Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Tennessee Rye Whiskey (Barrel Proof, Single Barrel)",
+    "sku": "36891",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 70
+      },
+      {
+        "grain": "Corn",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Rye spice, caramel, and dried fruit.",
+    "palate": "Bold rye pepper and brown sugar with real barrel-proof heat, charcoal-mellowed.",
+    "finish": "Long, hot, spicy.",
+    "tastingSource": "Jack Daniel's Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Jack Daniel's Rye uses its own published 70/18/12 mash bill, separate from the flagship Old No. 7 recipe. \"LOWC\" in the name suggests this is this store's own private barrel selection.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jack Daniel's - Our Whiskey",
+        "url": "https://www.jackdaniels.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "George Dickel #12 Tennessee Whisky",
+    "distillery": "Cascade Hollow Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Tennessee Whiskey",
+    "sku": "546",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 84
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Caramel, ripe banana, and oak.",
+    "palate": "Brown sugar, baking spice, and vanilla, smoothed by charcoal mellowing.",
+    "finish": "Warm, smooth, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Cascade Hollow's standard Tennessee whiskey mash bill (this 84/8/8 corn-heavy recipe) is the one Diageo discloses for the distillery in general, run through Dickel's own charcoal-mellowing process before barreling.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "George Dickel - Our Whisky",
+        "url": "https://www.georgedickel.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "George Dickel Barrel Select TN Whisky",
+    "distillery": "Cascade Hollow Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Tennessee Whiskey",
+    "sku": "696",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 84
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Caramel, ripe banana, and richer oak.",
+    "palate": "Brown sugar, baking spice, and vanilla, fuller from barrel selection.",
+    "finish": "Long, warm, smooth.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Cascade Hollow's standard Tennessee whiskey mash bill (this 84/8/8 corn-heavy recipe) is the one Diageo discloses for the distillery in general, run through Dickel's own charcoal-mellowing process before barreling.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "George Dickel - Our Whisky",
+        "url": "https://www.georgedickel.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "George Dickel Bottled in Bond Whiskey",
+    "distillery": "Cascade Hollow Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Tennessee Whiskey (Bottled-in-Bond)",
+    "sku": "25185",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 84
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Caramel, ripe banana, and oak, carried by 100 proof.",
+    "palate": "Brown sugar and baking spice with more weight than standard Dickel.",
+    "finish": "Long, warm, smooth.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Cascade Hollow's standard Tennessee whiskey mash bill (this 84/8/8 corn-heavy recipe) is the one Diageo discloses for the distillery in general, run through Dickel's own charcoal-mellowing process before barreling.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "George Dickel - Our Whisky",
+        "url": "https://www.georgedickel.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "George Dickel Rye Whisky",
+    "distillery": "Cascade Hollow Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Tennessee Rye Whiskey",
+    "sku": "215",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, black pepper, and dried fruit.",
+    "palate": "Rye spice, brown sugar, and oak.",
+    "finish": "Dry, peppery, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "George Dickel Rye has historically been sourced from MGP of Indiana's well-documented 95/5 rye mash bill, though Cascade Hollow has since added its own rye production - current sourcing per bottling isn't confirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "George Dickel Collaboration Rye",
+    "distillery": "Cascade Hollow Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Tennessee Rye Whiskey (Limited Collaboration Release)",
+    "sku": "30880",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, black pepper, and dried fruit.",
+    "palate": "Rye spice, brown sugar, and oak, similar profile to standard Dickel Rye.",
+    "finish": "Dry, peppery, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "A specific limited-edition collaboration release - I don't have reliable, release-specific sourcing details for this one. Using the standard George Dickel Rye mash bill as a placeholder; treat this as a lower-confidence guess, not a confirmed recipe for this particular release.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
