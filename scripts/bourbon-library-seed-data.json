@@ -4364,5 +4364,582 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "Green River Bourbon",
+    "distillery": "Green River Distilling Co.",
+    "parentCompany": "O.Z. Tyler Holdings (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "38583",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and light rye spice.",
+    "palate": "Caramel, oak, and gentle pepper.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Green River Distilling Co. official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Green River Distilling Co. publishes this mash bill directly on its own site.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Green River Whiskey - Our Whiskey",
+        "url": "https://greenriverwhiskey.com/our-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Green River Bourbon 250th Army Anniversary",
+    "distillery": "Green River Distilling Co.",
+    "parentCompany": "O.Z. Tyler Holdings (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "39865",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and light rye spice.",
+    "palate": "Caramel, oak, and gentle pepper.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Green River Distilling Co. official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Green River Distilling Co. publishes this mash bill directly on its own site. This is a special-edition anniversary label of the standard Green River Bourbon.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Green River Whiskey - Our Whiskey",
+        "url": "https://greenriverwhiskey.com/our-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Green River Bourbon Store Pick",
+    "distillery": "Green River Distilling Co.",
+    "parentCompany": "O.Z. Tyler Holdings (independently owned)",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "40831",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and light rye spice, fuller from single-barrel selection.",
+    "palate": "Caramel, oak, and gentle pepper.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Green River Distilling Co. official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Green River Distilling Co. publishes this mash bill directly on its own site. This appears to be this store's own single-barrel pick.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Green River Whiskey - Our Whiskey",
+        "url": "https://greenriverwhiskey.com/our-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Green River Full Proof",
+    "distillery": "Green River Distilling Co.",
+    "parentCompany": "O.Z. Tyler Holdings (independently owned)",
+    "category": "Kentucky Straight Bourbon (Full/Barrel Proof)",
+    "sku": "38582",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and rye spice, more intense at full proof.",
+    "palate": "Rich caramel and oak with real barrel-proof weight.",
+    "finish": "Long, warm.",
+    "tastingSource": "Green River Distilling Co. official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Green River Distilling Co. publishes this mash bill directly on its own site.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Green River Whiskey - Our Whiskey",
+        "url": "https://greenriverwhiskey.com/our-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Green River Wheated",
+    "distillery": "Green River Distilling Co.",
+    "parentCompany": "O.Z. Tyler Holdings (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon",
+    "sku": "38580",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Wheat",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, honey, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Green River Distilling Co. official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Green River Distilling Co. publishes this mash bill directly on its own site.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Green River Whiskey - Our Whiskey",
+        "url": "https://greenriverwhiskey.com/our-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Green River Wheated Full Proof",
+    "distillery": "Green River Distilling Co.",
+    "parentCompany": "O.Z. Tyler Holdings (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon (Full/Barrel Proof)",
+    "sku": "41283",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Wheat",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, honey, and wheat sweetness, more intense at full proof.",
+    "palate": "Rich caramel and baked bread with real barrel-proof weight.",
+    "finish": "Long, warm, mellow.",
+    "tastingSource": "Green River Distilling Co. official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Green River Distilling Co. publishes this mash bill directly on its own site.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Green River Whiskey - Our Whiskey",
+        "url": "https://greenriverwhiskey.com/our-whiskey/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bardstown Origin Series Bourbon",
+    "distillery": "Bardstown Bourbon Company",
+    "parentCompany": "Bardstown Bourbon Company (independently owned)",
+    "category": "Kentucky Straight Bourbon (High-Rye)",
+    "sku": "38578",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 36
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Bold rye spice, vanilla, and toasted grain.",
+    "palate": "Rye pepper, caramel, and baking spice.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Bardstown Bourbon Company official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Bardstown Bourbon Company publishes this 60/36/4 high-rye mash bill directly for the Origin Series - the company's first 100%-in-house-distilled release.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Origin Series Bourbon - Bardstown Bourbon Company",
+        "url": "https://www.bardstownbourbon.com/products/origin-series-bourbon/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bardstown Origin Series BIB",
+    "distillery": "Bardstown Bourbon Company",
+    "parentCompany": "Bardstown Bourbon Company (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon (Bottled-in-Bond)",
+    "sku": "38579",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread, carried by 100 proof.",
+    "finish": "Smooth, warm, moderate.",
+    "tastingSource": "Bardstown Bourbon Company official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Bardstown Bourbon Company publishes this 68/20/12 wheated mash bill directly for the Origin Series Bottled-in-Bond.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Origin Series Wheated Bottled-in-Bond - Bardstown Bourbon Company",
+        "url": "https://www.bardstownbourbon.com/products/origin-series-wheated-bottled-in-bond/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bardstown Origin Series Wheated",
+    "distillery": "Bardstown Bourbon Company",
+    "parentCompany": "Bardstown Bourbon Company (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon",
+    "sku": "38620",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Bardstown Bourbon Company official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Same published 68/20/12 wheated mash bill as Origin Series BIB, at standard (non-bonded) proof.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Origin Series Wheated Bottled-in-Bond - Bardstown Bourbon Company",
+        "url": "https://www.bardstownbourbon.com/products/origin-series-wheated-bottled-in-bond/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bardstown Single Barrel LOWC",
+    "distillery": "Bardstown Bourbon Company",
+    "parentCompany": "Bardstown Bourbon Company (independently owned)",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "41040",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 36
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Bold rye spice, vanilla, and toasted grain, fuller from single-barrel selection.",
+    "palate": "Rye pepper, caramel, and baking spice.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Using Origin Series Bourbon's published 60/36/4 mash bill as the base, since Bardstown Bourbon Company's Single Barrel program draws primarily from that recipe - this appears to be this store's own barrel pick, so the exact recipe pulled isn't independently confirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Origin Series Bourbon - Bardstown Bourbon Company",
+        "url": "https://www.bardstownbourbon.com/products/origin-series-bourbon/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Copper & Cask 250th Rye",
+    "distillery": "MGP of Indiana (Ross & Squibb Distillery)",
+    "parentCompany": "Latitude Beverage Co. (Liquor Barn private label)",
+    "category": "Straight Rye Whiskey",
+    "sku": "42230",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, black pepper, and dried fruit.",
+    "palate": "Brown sugar, cherry, and cinnamon spice.",
+    "finish": "Dry, peppery, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Copper & Cask is a Liquor Barn private-label brand, not a distillery of its own - every expression is single-barrel-selected whiskey sourced from MGP of Indiana (Ross & Squibb Distillery). This one draws on MGP's well-documented 95/5 rye mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Copper & Cask LOWC Barrel 7YR Bourbon",
+    "distillery": "MGP of Indiana (Ross & Squibb Distillery)",
+    "parentCompany": "Latitude Beverage Co. (Liquor Barn private label)",
+    "category": "Straight Bourbon (Single Barrel)",
+    "sku": "39541",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and caramel, fuller from single-barrel selection.",
+    "palate": "Black pepper, cinnamon, and brown sugar.",
+    "finish": "Spicy and warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Copper & Cask is a Liquor Barn private-label brand, not a distillery of its own - every expression is single-barrel-selected whiskey sourced from MGP of Indiana (Ross & Squibb Distillery). This one draws on MGP's well-documented 75/21/4 high-rye bourbon recipe. \"LOWC\" in the name suggests this is this store's own private barrel selection.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Copper & Cask Small Batch 12 Rye Tawny Port Toasted Oak Finish",
+    "distillery": "MGP of Indiana (Ross & Squibb Distillery)",
+    "parentCompany": "Latitude Beverage Co. (Liquor Barn private label)",
+    "category": "Straight Rye Whiskey (Tawny Port/Toasted Oak Finished)",
+    "sku": "40519",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, black pepper, and dried fruit with a tawny port sweetness.",
+    "palate": "Rye spice and brown sugar layered with port-cask richness.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Copper & Cask is a Liquor Barn private-label brand, not a distillery of its own - every expression is single-barrel-selected whiskey sourced from MGP of Indiana (Ross & Squibb Distillery). Base whiskey is MGP's 95/5 rye recipe, finished afterward in tawny port casks with toasted oak.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Copper & Cask Small Batch 13 Cigar Blend Finish",
+    "distillery": "MGP of Indiana (Ross & Squibb Distillery)",
+    "parentCompany": "Latitude Beverage Co. (Liquor Barn private label)",
+    "category": "Straight Bourbon (Cigar Blend Finished)",
+    "sku": "40518",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and a rich tobacco-toasted oak note.",
+    "palate": "Caramel and baking spice, deeper from the cigar-blend finish.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Copper & Cask is a Liquor Barn private-label brand, not a distillery of its own - every expression is single-barrel-selected whiskey sourced from MGP of Indiana (Ross & Squibb Distillery). Using MGP's standard 75/21/4 high-rye bourbon recipe as the likely base, but the exact base whiskey for this specific finished batch isn't independently confirmed.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Copper & Cask Small Batch Wheated Bourbon",
+    "distillery": "MGP of Indiana (Ross & Squibb Distillery)",
+    "parentCompany": "Latitude Beverage Co. (Liquor Barn private label)",
+    "category": "Straight Wheated Bourbon",
+    "sku": "39891",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 51
+      },
+      {
+        "grain": "Wheat",
+        "pct": 45
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Copper & Cask is a Liquor Barn private-label brand, not a distillery of its own - every expression is single-barrel-selected whiskey sourced from MGP of Indiana (Ross & Squibb Distillery). This one draws on MGP's wheated bourbon recipe (51/45/4).",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   }
 ]
