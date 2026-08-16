@@ -359,3 +359,50 @@ browser.
   Pairings share one varietal match instead of two lists that could drift
   apart &mdash; the extension that `color` field's own comment had already
   flagged as coming later.
+- **bourbon-library-autofill.html** &mdash; follow-up to mash-bill-library.html
+  and bourbon-profile-page.html above: extends the shipped Mash Bill Library
+  recall banner (`#mashBillRecallBanner`, exact-title match against
+  `mashBillLibraryCache` &mdash; see `refreshMashBillRecall` in `app.js`) to
+  also offer **Nose/Palate/Finish**, not just the grain chips. The Bourbon
+  Library's `mash_bills` row has carried tasting notes and a Mash Bill
+  Confidence tier since the profile-page work above shipped, but none of it
+  flows onto a talker today &mdash; staff either retype it by hand or reach
+  for the unrelated Find Tasting Notes external scrape instead. A pill
+  toggle compares two banner layouts against the same five real Library
+  entries: a single **Unified** banner (recommended) with a row per
+  populated field, each individually "Use"-able plus one combined "Use
+  All", versus **Two scoped banners** (the existing Mash Bill banner left
+  exactly as it ships today, plus a near-identical new one above
+  Nose/Palate/Finish). The five samples are real, current entries from
+  `scripts/bourbon-library-seed-data.json`, chosen to cover the dataset's
+  actual shape (279 entries: 239 fully researched, 39 placeholder-only, and
+  one genuine outlier &mdash; WhistlePig Snout to Tail 10YR, whose tasting
+  notes are fully sourced but whose mash bill is still the single-grain,
+  100%, Unknown-tier placeholder shape) rather than invented cases.
+  Surfaces a real gap in the shipped code along the way: `findMashBillMatch`
+  matches on title alone and never checks `isPlaceholderMashBill` the way
+  the Library's own donut-chart profile view already does (see
+  mash-bill-pie-chart.html above), so the recall banner today already
+  offers "Use It" on 40 entries' worth of fake placeholder compositions;
+  this mockup's banner reuses the same placeholder check to show "Not yet
+  researched" instead &mdash; try the Heaven Hill sample. Confidence
+  surfaces on the Mash Bill row specifically, not the banner's title line,
+  since `confidence_tier` is scored against the grain composition only
+  (WhistlePig is the one entry where a whole-banner badge would have been
+  actively wrong about the tasting notes). Overwrite safety on the two text
+  fields reuses Find Tasting Notes' own one-combined-confirmation prompt
+  verbatim; a "simulate staff already typed notes" checkbox pre-fills the
+  fields first so the guard is easy to trigger and see. Also proposes
+  closing the loop the other direction: a "Save this Nose/Palate/Finish to
+  the Bourbon Library" checkbox next to the flavor fields, mirroring the
+  existing "Save this mash bill to the Mash Bill Library" row &mdash;
+  needed because nothing today saves tasting notes from a talker back into
+  the Library (the only path in is the standalone Manage Mash Bill Library
+  dialog). No new merge logic would be needed for it either:
+  `upsertMashBill`'s title-keyed upsert already treats every optional
+  column as "omit it to leave whatever's there alone." Deliberately scoped
+  away from Distillery/Parent Company/Category/SKU/References, since none
+  of those has a matching field on the printed talker itself to autofill
+  into. Purely a `public/js/app.js` + `public/index.html` proposal &mdash;
+  `rowToMashBill` in `server/db.js` already returns every column the banner
+  needs, so no server or schema changes.
