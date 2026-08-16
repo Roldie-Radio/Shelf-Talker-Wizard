@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.3',
+      items: [
+        'Fixed: the Mash Bill donut chart showed "100% Corn" for bourbons whose mash bill genuinely hasn\'t been researched yet - that single-grain entry was always a schema placeholder, not a real finding, but the chart displayed it as confidently as a sourced recipe. Those entries (flagged "Unknown" confidence with a "Placeholder only" note) now show the same dashed "Not yet researched" ring the isolated mockup proposed, N/A instead of a percentage, and a short note explaining why - the Compare to bar button is hidden too, since there\'s nothing real to compare. Genuine 100%-single-grain whiskeys (New Riff\'s single malt, Woodinville\'s 100% rye, etc.) are unaffected.',
+      ],
+    },
+    {
       version: '4.3.2',
       items: [
         'New: a bourbon\'s profile page Mash Bill block now shows a donut chart with the exact percentage printed on any slice wide enough to hold it, plus a numeric legend beside it and a dominant-grain callout in the center - a "Compare to bar" button still shows today\'s plain proportion bar alongside it, since that\'s what actually prints on the shelf talker. Hovering a slice highlights its legend row and vice versa. The grain color palette also grew to cover every grain name in the Bourbon Library\'s research data, not just the printed talker\'s own 6-grain builder list, so grains like Red Winter Wheat or Honey Malted Barley get their own color instead of a shared grey.',
@@ -6282,6 +6288,20 @@
     return `<div class="grain-bar">${segs}</div>`;
   }
 
+  // A handful of "Unknown"-tier entries carry a single 100%-corn grain row
+  // as a schema placeholder rather than a real finding (see the seed data's
+  // own confidence notes - "Placeholder only, not a finding"), for products
+  // whose actual mash bill/sourcing isn't disclosed anywhere (KBD/Willett
+  // labels, undisclosed specialty barrels, etc.). A single grain at 100% is
+  // also how a handful of *real* single-grain whiskeys are recorded (New
+  // Riff's single malt, Woodinville's 100% rye), so the tier is what
+  // separates the two - every real single-grain entry in the library is
+  // Confirmed/Reported/Estimated, never Unknown.
+  function isPlaceholderMashBill(entry) {
+    return entry.confidence.tier === 'unknown'
+      && Array.isArray(entry.grains) && entry.grains.length === 1 && entry.grains[0].pct === 100;
+  }
+
   function polarToXY(cx, cy, r, angleDeg) {
     const rad = ((angleDeg - 90) * Math.PI) / 180;
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
@@ -6308,11 +6328,21 @@
   // own percentage/name, and any slice wide enough to hold a label (>=14%)
   // prints its exact percentage directly on it, since a legend alone forces
   // a reader to match colors by eye across the chart.
-  function mashBillDonutHtml(grains) {
+  function mashBillDonutHtml(grains, isPlaceholder) {
     const cx = 84;
     const cy = 84;
     const rOuter = 78;
     const rInner = 46;
+    if (isPlaceholder) {
+      return `
+        <div class="donut-wrap">
+          <svg viewBox="0 0 168 168"><circle cx="${cx}" cy="${cy}" r="${(rOuter + rInner) / 2}" fill="none" stroke="var(--ui-border)" stroke-width="${rOuter - rInner}" stroke-dasharray="5 6" opacity="0.7"></circle></svg>
+          <div class="donut-center">
+            <div class="donut-center__pct" style="font-size:0.8rem;color:var(--ui-muted);">Not yet<br>researched</div>
+          </div>
+        </div>
+      `;
+    }
     let angle = 0;
     const dominant = grains.reduce((a, b) => (b.pct > a.pct ? b : a), grains[0]);
     const slices = grains.map(({ grain, pct }) => {
@@ -6336,23 +6366,24 @@
     `;
   }
 
-  function mashBillLegendHtml(grains) {
+  function mashBillLegendHtml(grains, isPlaceholder) {
     return grains.map(({ grain, pct }) => `
       <div class="grain-legend2__row" data-grain="${escapeHtml(grain)}">
-        <span class="grain-legend2__swatch" style="background:${libraryGrainColor(grain)}"></span>
+        <span class="grain-legend2__swatch" style="background:${isPlaceholder ? 'var(--ui-border)' : libraryGrainColor(grain)}"></span>
         <span class="grain-legend2__name">${escapeHtml(grain)}</span>
-        <span class="grain-legend2__pct">${pct}%</span>
+        <span class="grain-legend2__pct">${isPlaceholder ? 'N/A' : `${pct}%`}</span>
       </div>
     `).join('');
   }
 
-  function mashBillVizHtml(grains) {
+  function mashBillVizHtml(grains, isPlaceholder) {
     if (!grains || !grains.length) return grainBarHtml(grains);
     return `
       <div class="mashbill-viz">
-        ${mashBillDonutHtml(grains)}
-        <div class="grain-legend2">${mashBillLegendHtml(grains)}</div>
+        ${mashBillDonutHtml(grains, isPlaceholder)}
+        <div class="grain-legend2">${mashBillLegendHtml(grains, isPlaceholder)}</div>
       </div>
+      ${isPlaceholder ? '<div class="placeholder-note">&#9888; This entry\'s mash bill hasn\'t been researched yet - the grain listed is a schema placeholder, not a real recipe. See its confidence note below.</div>' : ''}
     `;
   }
 
@@ -6539,6 +6570,7 @@
 
     const returnToCompany = libraryProfileReturnTo.mode === 'companyDetail' && libraryProfileReturnTo.company;
     const backLabel = returnToCompany ? libraryProfileReturnTo.company : 'Bourbon Library';
+    const isPlaceholder = isPlaceholderMashBill(entry);
 
     els.libraryBody.innerHTML = `
       <div class="library-crumb">
@@ -6558,14 +6590,14 @@
         <div>
           <div class="block">
             <h3>Mash Bill${citeMarkersHtml(refs, 'Mash Bill')}</h3>
-            ${mashBillVizHtml(entry.grains)}
+            ${mashBillVizHtml(entry.grains, isPlaceholder)}
             <div class="conf-block">
               <div class="conf-block__row">
                 ${confidenceBadgeHtml(entry.confidence.tier)}
                 ${confidenceMeterHtml(entry.confidence.tier)}
-                ${entry.grains && entry.grains.length ? `<button type="button" class="btn btn--small" id="libraryToggleBarBtn" style="margin-left:auto;">${libraryShowGrainBar ? 'Hide' : 'Compare to'} bar</button>` : ''}
+                ${entry.grains && entry.grains.length && !isPlaceholder ? `<button type="button" class="btn btn--small" id="libraryToggleBarBtn" style="margin-left:auto;">${libraryShowGrainBar ? 'Hide' : 'Compare to'} bar</button>` : ''}
               </div>
-              ${libraryShowGrainBar && entry.grains && entry.grains.length ? `
+              ${libraryShowGrainBar && entry.grains && entry.grains.length && !isPlaceholder ? `
                 <span class="compare-strip__label">Today's bar, for comparison:</span>
                 ${grainBarHtml(entry.grains)}
               ` : ''}

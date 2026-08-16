@@ -594,6 +594,18 @@ h1, h2, h3 { margin: 0; }
 .grain-legend2__name { font-size: 0.83rem; flex: 1; }
 .grain-legend2__pct { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3.2ch; text-align: right; }
 .compare-strip__label { font-size: 0.76rem; color: var(--ui-muted); display: block; margin-top: 0.5rem; }
+.placeholder-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--ui-low-tint);
+  border: 1px solid color-mix(in srgb, var(--ui-low) 35%, transparent);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--ui-low);
+}
 
 /* Mash Bill Confidence tiers - badge (grid card + profile header), a 4-dot
    meter (profile only), and the fuller note/sources block on the profile

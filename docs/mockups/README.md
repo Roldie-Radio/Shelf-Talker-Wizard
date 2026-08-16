@@ -34,13 +34,20 @@ browser.
   extended palette all shipped as described; the palette itself dropped
   the "Oat" vs. "Oats" split from the mockup's proposal (both map to the
   same tint, since one's the printed talker's own spelling and the other's
-  the library's) but is otherwise unchanged. The "Unknown"-tier dashed-ring
-  treatment did not ship, though &mdash; real "unknown"-tier entries don't
-  consistently use a placeholder grain list the way the mockup's one
-  example did (some, like Angel's Envy Rye Finished Caribbean Cask, carry a
-  specific researched percentage split despite the tier), so hiding the
-  chart by tier would have hidden real data on some entries. The chart
-  renders whatever `grains` an entry has, same as the bar it replaced.
+  the library's) but is otherwise unchanged. The dashed "Not yet researched"
+  ring did ship, in a second pass, but keyed off a narrower signal than the
+  mockup's plain "unknown"-tier check: real "unknown"-tier entries don't
+  consistently use a placeholder grain list the way the mockup's one example
+  did (some, like Angel's Envy Rye Finished Caribbean Cask, carry a specific
+  researched percentage split despite the tier), so `isPlaceholderMashBill`
+  in `app.js` only treats an entry as a placeholder when it's both
+  "Unknown"-tier *and* a single 100%-of-one-grain row &mdash; the exact
+  schema-default shape the seed data's own "Placeholder only, not a
+  finding" entries use, verified against every real single-grain entry in
+  the library (New Riff's single malt, Woodinville's 100% rye, etc.) to
+  confirm none of those are ever tiered "Unknown". Placeholder entries also
+  show "N/A" in place of a percentage and drop the Compare to bar button,
+  since there's nothing real to compare either.
 - **parent-company-browse.html** &mdash; proposes a second Bourbon Library
   browse mode, alongside the existing bourbon grid: a **company view**
   listing all 66 parent companies (a real duplicate-naming bug this mockup
@@ -91,8 +98,8 @@ browser.
   mockup's small sample set and render as disabled rows saying so rather
   than broken links). **Implemented** in a follow-up to this mockup, in the
   real `renderBourbonProfile` &mdash; see the "Implemented" note on
-  mash-bill-pie-chart.html above for what did and didn't carry over from
-  the design (the dashed "Unknown"-tier ring didn't ship).
+  mash-bill-pie-chart.html above for exactly which entries the dashed
+  "Not yet researched" ring applies to.
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual
