@@ -519,6 +519,38 @@ h1, h2, h3 { margin: 0; }
 .bourbon-row:hover { background: var(--ui-hover); border-color: var(--ui-accent-ink); }
 .bourbon-row__title { font-size: 0.88rem; font-weight: 700; }
 .bourbon-row__sub { font-size: 0.75rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.bourbon-row__chevron { flex: 0 0 auto; color: var(--ui-muted); font-size: 0.9rem; }
+
+/* Main grid toolbar (Card/List + Sort, see renderLibraryGrid in app.js) -
+   same row shape as .company-toolbar above. The view switch reuses
+   .preview-toggle/.toggle-btn (Live Preview's own Current Talker/Full Page
+   switch); Sort reuses the app's existing .field-select dropdown (every
+   form field already looks like this), scoped narrower here since that
+   component defaults to width:100% for a form field's own column. */
+.results-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.results-toolbar__count { font-size: 0.8rem; color: var(--ui-muted); }
+.results-toolbar__controls { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.results-toolbar .field-select { min-width: 210px; }
+.results-toolbar .field-select__trigger { width: auto; font-weight: 600; }
+.results-toolbar .field-select__dropdown { left: auto; right: 0; }
+.field-select__group-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-muted);
+  padding: 0.5em 0.7em 0.3em;
+  margin-top: 0.2em;
+}
+.field-select__group-label:first-child { margin-top: 0; }
+
+/* The "sort focus" chip (see librarySortMetricHtml in app.js) - whichever
+   field the active sort orders by, shown on every card/row in both views
+   so the number behind the order is always visible, not just the order
+   itself. Falls back to the confidence badge for Alphabetical/Confidence
+   sorts, which already have their own at-a-glance signal. */
+.sort-metric { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.76rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--ui-code-bg); color: var(--ui-ink-soft); white-space: nowrap; }
+.sort-metric__swatch { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
 
 /* Bourbon Library - card grid (see bourbonCardHtml/renderLibraryGrid in
    app.js). A real grid, unlike .history-list's flat rows, since these are

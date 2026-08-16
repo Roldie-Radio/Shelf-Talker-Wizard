@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.4',
+      items: [
+        'New: a Card/List switch and a Sort dropdown for the Bourbon Library\'s main grid - List packs more bourbons on screen at once (title, distillery, and one metric per row); Sort groups Alphabetical, Confidence, Grain % (Most Corn/Rye/Wheat/Malted Barley), Recipe complexity (fewest → most grains), and SKU. Whichever field you\'re sorting by shows up as a small chip on every card/row - "Most Wheat %" shows each bourbon\'s actual wheat percentage, "SKU" shows its SKU. Both choices are remembered per PC, so they stay put next time the Library is opened.',
+      ],
+    },
+    {
       version: '4.3.3',
       items: [
         'Fixed: the Mash Bill donut chart showed "100% Corn" for bourbons whose mash bill genuinely hasn\'t been researched yet - that single-grain entry was always a schema placeholder, not a real finding, but the chart displayed it as confidently as a sourced recipe. Those entries (flagged "Unknown" confidence with a "Placeholder only" note) now show the same dashed "Not yet researched" ring the isolated mockup proposed, N/A instead of a percentage, and a short note explaining why - the Compare to bar button is hidden too, since there\'s nothing real to compare. Genuine 100%-single-grain whiskeys (New Riff\'s single malt, Woodinville\'s 100% rye, etc.) are unaffected.',
@@ -6387,12 +6393,79 @@
     `;
   }
 
+  // Grain FAMILIES, not literal grain strings - classic wheated bourbons
+  // (Weller, Maker's Mark) record their secondary grain as "Red Winter
+  // Wheat", not "Wheat", so a literal match on "Wheat" would silently miss
+  // every one of them. Each family sums every matching grain row's
+  // percentage per entry, for the "Most X %" sorts below.
+  const LIBRARY_GRAIN_FAMILIES = {
+    corn: ['Corn'],
+    rye: ['Rye', 'Malted Rye'],
+    wheat: ['Wheat', 'Malted Wheat', 'Red Winter Wheat', 'Texas Winter Wheat'],
+    barley: ['Barley', 'Malted Barley', 'Honey Malted Barley', 'Caramel Malted Barley', "6-Row Distiller's Malt"],
+  };
+  function libraryFamilyPct(entry, family) {
+    const names = LIBRARY_GRAIN_FAMILIES[family];
+    return (entry.grains || []).reduce((sum, g) => (names.includes(g.grain) ? sum + g.pct : sum), 0);
+  }
+  function libraryGrainCount(entry) {
+    return (entry.grains || []).length;
+  }
+
+  const CONFIDENCE_TIER_RANK = {
+    confirmed: 0, reported: 1, estimated: 2, unknown: 3,
+  };
+  // Sort options for the library grid, grouped for the dropdown. `metric`
+  // (when set) picks which adaptive chip librarySortMetricHtml shows on
+  // every card/row - the field actually being sorted on, not just the
+  // resulting order. Alphabetical/Confidence sorts have no metric, so they
+  // fall back to the confidence badge, the library's existing at-a-glance
+  // signal.
+  const LIBRARY_SORTS = [
+    { group: 'Alphabetical', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => a.title.localeCompare(b.title) },
+    { group: 'Alphabetical', key: 'name-desc', label: 'Name (Z–A)', cmp: (a, b) => b.title.localeCompare(a.title) },
+    { group: 'Alphabetical', key: 'distillery-asc', label: 'Distillery (A–Z)', cmp: (a, b) => (a.distillery || '').localeCompare(b.distillery || '') || a.title.localeCompare(b.title) },
+    { group: 'Confidence', key: 'conf-best', label: 'Confirmed first', cmp: (a, b) => CONFIDENCE_TIER_RANK[a.confidence.tier] - CONFIDENCE_TIER_RANK[b.confidence.tier] || a.title.localeCompare(b.title) },
+    { group: 'Confidence', key: 'conf-needs', label: 'Needs verification first', cmp: (a, b) => CONFIDENCE_TIER_RANK[b.confidence.tier] - CONFIDENCE_TIER_RANK[a.confidence.tier] || a.title.localeCompare(b.title) },
+    { group: 'Grain %', key: 'most-corn', label: 'Most Corn %', metric: 'corn', cmp: (a, b) => libraryFamilyPct(b, 'corn') - libraryFamilyPct(a, 'corn') || a.title.localeCompare(b.title) },
+    { group: 'Grain %', key: 'most-rye', label: 'Most Rye %', metric: 'rye', cmp: (a, b) => libraryFamilyPct(b, 'rye') - libraryFamilyPct(a, 'rye') || a.title.localeCompare(b.title) },
+    { group: 'Grain %', key: 'most-wheat', label: 'Most Wheat %', metric: 'wheat', cmp: (a, b) => libraryFamilyPct(b, 'wheat') - libraryFamilyPct(a, 'wheat') || a.title.localeCompare(b.title) },
+    { group: 'Grain %', key: 'most-barley', label: 'Most Malted Barley %', metric: 'barley', cmp: (a, b) => libraryFamilyPct(b, 'barley') - libraryFamilyPct(a, 'barley') || a.title.localeCompare(b.title) },
+    { group: 'Recipe', key: 'simplest', label: 'Simplest recipe (fewest grains)', metric: 'grains', cmp: (a, b) => libraryGrainCount(a) - libraryGrainCount(b) || a.title.localeCompare(b.title) },
+    { group: 'Recipe', key: 'complex', label: 'Most complex recipe (most grains)', metric: 'grains', cmp: (a, b) => libraryGrainCount(b) - libraryGrainCount(a) || a.title.localeCompare(b.title) },
+    { group: 'SKU', key: 'sku-asc', label: 'SKU (Low–High)', metric: 'sku', cmp: (a, b) => (Number(a.sku) || Infinity) - (Number(b.sku) || Infinity) || a.title.localeCompare(b.title) },
+  ];
+  const LIBRARY_SORTS_BY_KEY = Object.fromEntries(LIBRARY_SORTS.map((s) => [s.key, s]));
+
+  // Card/List and the chosen sort persist per PC (localStorage), the same
+  // spirit as QUEUE_COLUMN_KEY above - staff shouldn't have to reselect
+  // List + Most Rye every time they open the Library.
+  const LIBRARY_GRID_VIEW_KEY = 'shelfTalkerLibraryGridView.v1';
+  const LIBRARY_SORT_KEY = 'shelfTalkerLibrarySortKey.v1';
+  function loadLibraryGridView() {
+    try {
+      return localStorage.getItem(LIBRARY_GRID_VIEW_KEY) === 'list' ? 'list' : 'card';
+    } catch {
+      return 'card';
+    }
+  }
+  function loadLibrarySortKey() {
+    try {
+      const saved = localStorage.getItem(LIBRARY_SORT_KEY);
+      return LIBRARY_SORTS_BY_KEY[saved] ? saved : 'name-asc';
+    } catch {
+      return 'name-asc';
+    }
+  }
+
   let libraryFilterQuery = '';
   let libraryTierFilter = 'all';
   let libraryViewMode = 'grid';
   let librarySelectedId = null;
   let librarySyncPollTimer = null;
   let libraryShowGrainBar = false;
+  let libraryGridView = loadLibraryGridView();
+  let librarySortKey = loadLibrarySortKey();
 
   // Parent Company browse (renderCompaniesView/renderCompanyResults/
   // renderCompanyDetail below) - two more libraryViewMode values
@@ -6473,7 +6546,27 @@
     });
   }
 
-  function bourbonCardHtml(entry) {
+  // The metric chip shown on every card/row - whichever field the active
+  // sort is actually ordering by, not just the resulting order.
+  function librarySortMetricHtml(entry, sort) {
+    if (sort.metric === 'corn' || sort.metric === 'rye' || sort.metric === 'wheat' || sort.metric === 'barley') {
+      const pct = libraryFamilyPct(entry, sort.metric);
+      const names = LIBRARY_GRAIN_FAMILIES[sort.metric];
+      const swatchGrain = (entry.grains || []).find((g) => names.includes(g.grain));
+      const color = swatchGrain ? libraryGrainColor(swatchGrain.grain) : 'var(--ui-border)';
+      return `<span class="sort-metric"><span class="sort-metric__swatch" style="background:${color}"></span>${pct}%</span>`;
+    }
+    if (sort.metric === 'grains') {
+      const n = libraryGrainCount(entry);
+      return `<span class="sort-metric">${n} grain${n === 1 ? '' : 's'}</span>`;
+    }
+    if (sort.metric === 'sku') {
+      return `<span class="sort-metric">${entry.sku ? `SKU ${escapeHtml(entry.sku)}` : 'No SKU'}</span>`;
+    }
+    return confidenceBadgeHtml(entry.confidence.tier);
+  }
+
+  function bourbonCardHtml(entry, sort) {
     return `
       <button type="button" class="bourbon-card" data-id="${entry.id}">
         <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
@@ -6481,26 +6574,104 @@
         ${grainBarHtml(entry.grains)}
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${escapeHtml(entry.category || '')}</span>
-          ${confidenceBadgeHtml(entry.confidence.tier)}
+          ${librarySortMetricHtml(entry, sort)}
         </div>
       </button>
     `;
   }
 
+  function bourbonRowHtml(entry, sort) {
+    return `
+      <button type="button" class="bourbon-row" data-id="${entry.id}">
+        <div>
+          <div class="bourbon-row__title">${escapeHtml(entry.title)}</div>
+          <div class="bourbon-row__sub">${escapeHtml(entry.distillery || 'Distillery unknown')}${entry.category ? ` &middot; ${escapeHtml(entry.category)}` : ''}</div>
+        </div>
+        ${librarySortMetricHtml(entry, sort)}
+        <span class="bourbon-row__chevron" aria-hidden="true">&rsaquo;</span>
+      </button>
+    `;
+  }
+
+  function librarySortDropdownHtml() {
+    const groups = [];
+    LIBRARY_SORTS.forEach((s) => {
+      if (!groups.length || groups[groups.length - 1].group !== s.group) groups.push({ group: s.group, items: [] });
+      groups[groups.length - 1].items.push(s);
+    });
+    return groups.map((g) => `
+      <div class="field-select__group-label">${escapeHtml(g.group)}</div>
+      ${g.items.map((s) => `
+        <button type="button" class="field-select__option" role="option" data-sort="${s.key}" aria-selected="${s.key === librarySortKey}">
+          <span class="field-select__option-check" aria-hidden="true">&#10003;</span>
+          <span class="field-select__option-label">${escapeHtml(s.label)}</span>
+        </button>
+      `).join('')}
+    `).join('');
+  }
+
   function renderLibraryGrid() {
     const rows = mashBillLibraryCache.filter((m) => libraryMatchesFilter(m) && libraryMatchesSearch(m));
+    const sort = LIBRARY_SORTS_BY_KEY[librarySortKey];
+    rows.sort(sort.cmp);
+
+    const toolbarHtml = `
+      <div class="results-toolbar">
+        <span class="results-toolbar__count">${rows.length} bourbon${rows.length === 1 ? '' : 's'}</span>
+        <div class="results-toolbar__controls">
+          <div class="preview-toggle" role="group" aria-label="Grid layout">
+            <button type="button" class="toggle-btn ${libraryGridView === 'card' ? 'is-active' : ''}" data-view="card">Card</button>
+            <button type="button" class="toggle-btn ${libraryGridView === 'list' ? 'is-active' : ''}" data-view="list">List</button>
+          </div>
+          <div class="field-select" id="librarySortSelect">
+            <button type="button" class="field-select__trigger" id="librarySortTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="field-select__value">${escapeHtml(sort.label)}</span>
+              <svg class="field-select__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="field-select__dropdown" role="listbox">${librarySortDropdownHtml()}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
     if (!rows.length) {
-      els.libraryBody.innerHTML = '<p class="help-text">No bourbons match this search/filter.</p>';
-      return;
+      els.libraryBody.innerHTML = `${toolbarHtml}<p class="help-text">No bourbons match this search/filter.</p>`;
+    } else {
+      const resultsHtml = libraryGridView === 'list'
+        ? `<div class="bourbon-list">${rows.map((e) => bourbonRowHtml(e, sort)).join('')}</div>`
+        : `<div class="bourbon-grid">${rows.map((e) => bourbonCardHtml(e, sort)).join('')}</div>`;
+      els.libraryBody.innerHTML = toolbarHtml + resultsHtml;
     }
-    els.libraryBody.innerHTML = `<div class="bourbon-grid">${rows.map(bourbonCardHtml).join('')}</div>`;
-    els.libraryBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+
+    els.libraryBody.querySelectorAll('.bourbon-card[data-id], .bourbon-row[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         librarySelectedId = Number(btn.dataset.id);
         libraryProfileReturnTo = { mode: 'grid', company: null };
         libraryViewMode = 'profile';
         libraryShowGrainBar = false;
         renderLibraryBody();
+      });
+    });
+    els.libraryBody.querySelectorAll('.preview-toggle button[data-view]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        libraryGridView = btn.dataset.view;
+        try { localStorage.setItem(LIBRARY_GRID_VIEW_KEY, libraryGridView); } catch { /* choice just won't survive a restart */ }
+        renderLibraryGrid();
+      });
+    });
+    const sortTrigger = document.getElementById('librarySortTrigger');
+    if (sortTrigger) {
+      sortTrigger.addEventListener('click', () => {
+        const wrap = document.getElementById('librarySortSelect');
+        const isOpen = wrap.classList.toggle('is-open');
+        sortTrigger.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+    els.libraryBody.querySelectorAll('.field-select__option[data-sort]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySortKey = btn.dataset.sort;
+        try { localStorage.setItem(LIBRARY_SORT_KEY, librarySortKey); } catch { /* choice just won't survive a restart */ }
+        renderLibraryGrid();
       });
     });
   }
@@ -6821,6 +6992,7 @@
           <div class="bourbon-row__sub">${escapeHtml(b.distillery || 'Distillery unknown')}${b.category ? ` &middot; ${escapeHtml(b.category)}` : ''}</div>
         </div>
         ${confidenceBadgeHtml(b.confidence.tier)}
+        <span class="bourbon-row__chevron" aria-hidden="true">&rsaquo;</span>
       </button>
     `).join('');
 
@@ -6870,6 +7042,16 @@
     libraryFilterQuery = e.target.value;
     libraryViewMode = 'grid';
     renderLibraryBody();
+  });
+
+  // Registered once (not inside renderLibraryGrid, which rebuilds
+  // #librarySortSelect on every render) - same pattern as
+  // #smartSearchFieldWrap's own outside-click-to-close listener above,
+  // re-looking up the element by id on every click so it always finds
+  // whichever copy the most recent render created.
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('librarySortSelect');
+    if (wrap && !e.target.closest('#librarySortSelect')) wrap.classList.remove('is-open');
   });
 
   // Reflects mashBillSync.js's own status (same data describeMashBillSyncStatus

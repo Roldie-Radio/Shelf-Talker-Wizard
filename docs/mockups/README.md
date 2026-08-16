@@ -123,9 +123,16 @@ browser.
   against all 279 real entries (embedded directly, trimmed to just the
   fields this view needs), which is also how this caught that the wheat
   family had to include three other spellings before "Most Wheat %" was
-  trustworthy. Design notes suggest remembering the last-picked view/sort
-  per PC (localStorage), the way Full Page/Current Talker's own choice
-  already persists.
+  trustworthy. Design notes suggested remembering the last-picked view/sort
+  per PC (localStorage) &mdash; incorrectly citing Full Page/Current
+  Talker's own toggle as already doing that; it doesn't persist at all
+  (`previewMode` just resets to `'sheet'` on every load). **Implemented**
+  in a follow-up to this mockup, in the real `renderLibraryGrid` &mdash;
+  the sort dropdown, grain-family logic, list view, and adaptive metric
+  chip all shipped as described, and the persistence idea shipped too,
+  modeled on the toggle that actually does persist (`QUEUE_COLUMN_KEY`,
+  the Queue column's own show/hide switch) instead of the mockup's
+  mistaken citation.
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual
