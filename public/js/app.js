@@ -1176,6 +1176,9 @@
     mashBillLibraryFormStatus: document.getElementById('mashBillLibraryFormStatus'),
     mashBillLibrarySyncStatus: document.getElementById('mashBillLibrarySyncStatus'),
     mashBillLibrarySyncNowBtn: document.getElementById('mashBillLibrarySyncNowBtn'),
+    mashBillLibraryGithubSyncRow: document.getElementById('mashBillLibraryGithubSyncRow'),
+    mashBillLibraryGithubSyncStatus: document.getElementById('mashBillLibraryGithubSyncStatus'),
+    mashBillLibraryGithubSyncBtn: document.getElementById('mashBillLibraryGithubSyncBtn'),
 
     exportPreviewOverlay: document.getElementById('exportPreviewOverlay'),
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
@@ -5988,6 +5991,7 @@
       ? `${count} saved mash bill${count === 1 ? '' : 's'}${mashBillLibraryQuery ? ' match' : ''}.`
       : '';
     els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
+    els.mashBillLibraryGithubSyncRow.hidden = !(data.sync && data.sync.isServer);
   }
 
   // Keeps the sync status line (and the list itself, in case another
@@ -6160,6 +6164,33 @@
       els.mashBillLibrarySyncStatus.textContent = err.message || 'Could not sync right now.';
     } finally {
       els.mashBillLibrarySyncNowBtn.disabled = false;
+    }
+  });
+
+  // Server PC only (see loadMashBillLibrary, which hides the whole row
+  // otherwise) - pulls in whatever's been added to the curated GitHub list
+  // since this library was first seeded. Additive only server-side (see
+  // syncNewBourbonLibraryEntries in bourbonLibrarySeed.js), so this never
+  // overwrites an existing entry, however it got there.
+  els.mashBillLibraryGithubSyncBtn.addEventListener('click', async () => {
+    els.mashBillLibraryGithubSyncBtn.disabled = true;
+    els.mashBillLibraryGithubSyncStatus.textContent = 'Checking GitHub...';
+    try {
+      const resp = await fetch('/api/mashbills/sync-library', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
+      renderMashBillLibraryList();
+      els.mashBillLibraryStatus.textContent = mashBillLibraryCache.length
+        ? `${mashBillLibraryCache.length} saved mash bill${mashBillLibraryCache.length === 1 ? '' : 's'}.`
+        : '';
+      els.mashBillLibraryGithubSyncStatus.textContent = data.added
+        ? `Added ${data.added} new bourbon${data.added === 1 ? '' : 's'} from ${data.source}.`
+        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+    } catch (err) {
+      els.mashBillLibraryGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+    } finally {
+      els.mashBillLibraryGithubSyncBtn.disabled = false;
     }
   });
 

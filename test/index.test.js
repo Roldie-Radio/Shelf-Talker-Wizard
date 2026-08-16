@@ -1036,3 +1036,45 @@ test('POST /api/mashbills/sync-now reports this PC\'s own data.db once isServer,
     assert.equal(body.mashBills[0].title, 'Eagle Rare');
   }));
 });
+
+// POST /api/mashbills/sync-library - the Server PC dialog's "Check GitHub
+// for New Bourbons" button (the manual, already-populated-library
+// counterpart to bourbonLibrarySeed.js's own auto-seed).
+
+test('POST /api/mashbills/sync-library is rejected on a non-Server PC', async () => {
+  await withTempDb(() => withServerAndFakes({}, async (port) => {
+    const { status, body } = await postJson(port, '/api/mashbills/sync-library', {});
+    assert.equal(status, 400);
+    assert.match(body.error, /Server PC/);
+  }));
+});
+
+test('POST /api/mashbills/sync-library adds only new titles on the Server PC, leaving an existing entry untouched', async () => {
+  await withTempDb(() => withServerAndFakes({}, async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    await postJson(port, '/api/mashbills', {
+      title: 'Buffalo Trace', distillery: 'Local Edit', grains: [{ grain: 'Corn', pct: 100 }],
+    });
+
+    await withMockFetch(
+      async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          { title: 'Buffalo Trace', distillery: 'GitHub Version', grains: [{ grain: 'Corn', pct: 90 }] },
+          { title: "Maker's Mark", distillery: "Maker's Mark Distillery", grains: [{ grain: 'Corn', pct: 70 }] },
+        ],
+      }),
+      async () => {
+        const { status, body } = await postJson(port, '/api/mashbills/sync-library', {});
+        assert.equal(status, 200);
+        assert.equal(body.added, 1);
+        assert.equal(body.skipped, 1);
+        assert.equal(body.source, 'GitHub');
+        assert.equal(body.mashBills.length, 2);
+        const buffaloTrace = body.mashBills.find((m) => m.title === 'Buffalo Trace');
+        assert.equal(buffaloTrace.distillery, 'Local Edit');
+      },
+    );
+  }));
+});

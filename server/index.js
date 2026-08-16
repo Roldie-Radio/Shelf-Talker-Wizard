@@ -18,7 +18,7 @@ const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
 const { createExportServeServer, createExportPuller } = require('./exportSync');
 const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
-const { maybeAutoSeedBourbonLibrary } = require('./bourbonLibrarySeed');
+const { maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries } = require('./bourbonLibrarySeed');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
 
@@ -535,6 +535,26 @@ function createApp({
       mashBills: mashBillPuller ? mashBillPuller.getCached() : [],
       sync: { isServer: false, ...(mashBillPuller ? mashBillPuller.getStatus() : {}) },
     });
+  });
+
+  // Backs the Server PC dialog's "Check GitHub for New Bourbons" button -
+  // the manual counterpart to maybeAutoSeedBourbonLibrary's own auto-seed,
+  // for a library that's already populated (auto-seed only ever fires once,
+  // on a completely empty library, so a store that seeded months ago never
+  // sees anything added to the curated list since without this). Server-PC
+  // only: this PC's own data.db is the only copy worth updating from
+  // GitHub - every other PC just pulls the result from it on the next
+  // mashBillPuller cycle, same as any other write here.
+  app.post('/api/mashbills/sync-library', async (req, res) => {
+    if (!getServerConfig().isServer) {
+      return res.status(400).json({ error: 'Only the Server PC can check GitHub for new bourbons - mark this PC as the Server PC first (Advanced → Server PC…).' });
+    }
+    try {
+      const { added, skipped, source } = await syncNewBourbonLibraryEntries(db);
+      res.json({ added, skipped, source, mashBills: listMashBills() });
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
   });
 
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
