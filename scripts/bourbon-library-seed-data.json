@@ -8717,5 +8717,140 @@
       "verifiedAt": ""
     },
     "references": []
+  },
+  {
+    "title": "Ben Holladay Bourbon BIB",
+    "distillery": "Holladay Distillery",
+    "parentCompany": "Holladay Distillery (independently owned)",
+    "category": "Missouri Straight Bourbon (Bottled-in-Bond)",
+    "sku": "39159",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 73
+      },
+      {
+        "grain": "Rye",
+        "pct": 15
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and light rye spice.",
+    "palate": "Caramel, baking spice, and warm oak, carried by 100 proof.",
+    "finish": "Long, warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Holladay Distillery publishes this 73/15/12 mash bill directly - a recipe dating to 1856, made entirely from Missouri-grown corn under the state's Real Missouri Bourbon law.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Ben Holladay Bourbon - Holladay Bourbon",
+        "url": "https://holladaybourbon.com/ben-holladay-bourbon/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Thomas S. Moore Chardonnay Cask Bourbon",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon (Extended Chardonnay Cask Finished)",
+    "sku": "32307",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 74
+      },
+      {
+        "grain": "Rye",
+        "pct": 18
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Vanilla, brown sugar, and a bright white-wine sweetness from the Chardonnay cask.",
+    "palate": "Caramel and oak spice layered with fruity Chardonnay-cask influence.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Thomas S. Moore uses Barton 1792 Distillery's signature high-rye mash bill (the same reported 74/18/8 figure used for 1792 and Very Old Barton), given an extended 2-5 year secondary finish in California Chardonnay casks after 5-7 years in new charred oak.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Barton 1792's New Thomas S. Moore Bourbons - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/whiskey-styles/bourbon/barton-1792s-new-thomas-s-moore-bourbons-go-the-extended-cask-finishing-route/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Blackened Whiskeys in Black Brandy Casks",
+    "distillery": "Sourced blend (undisclosed Tennessee/Kentucky/Indiana/Canadian distilleries)",
+    "parentCompany": "Blackened American Whiskey (Metallica x Dave Pickerell)",
+    "category": "Blended Straight Whiskey (Black Brandy Cask Finished)",
+    "sku": "28533",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Blackened blends sourced Tennessee, Kentucky, and Indiana bourbon with Indiana and Canadian rye from undisclosed distilleries, then finishes it in \"Black Brandy\" casks using a proprietary sonic-enhancement (\"Black Noise\") process - the blend composition changes batch to batch and isn't disclosed for any specific batch. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Orphan Barrel Muckety Muck 25YR",
+    "distillery": "Port Dundas Distillery (closed 2010)",
+    "parentCompany": "Diageo",
+    "category": "Single Grain Scotch Whisky",
+    "sku": "27133",
+    "grains": [
+      {
+        "grain": "Wheat",
+        "pct": 100
+      }
+    ],
+    "nose": "Vanilla, honey, and light toasted grain.",
+    "palate": "Soft caramel and coconut, typical of an aged single grain.",
+    "finish": "Smooth, long, mellow.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Important to flag: this is a single grain Scotch whisky from the closed Port Dundas Distillery, not a bourbon - Diageo's Orphan Barrel series includes several non-bourbon whiskeys alongside its bourbon releases. Port Dundas grain whisky was predominantly wheat-based, though the exact mash bill for this specific 25-year release isn't confirmed. Worth double-checking this is meant to be in the Bourbon Library at all.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Diageo Releases Muckety-Muck 25 Year Old Single Grain - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/whiskey-styles/scotch-whiskey/diageo-releases-muckety-muck-25-year-old-single-grain-from-orphan-barrel-line-up/",
+        "tags": [
+          "Mash Bill",
+          "Other"
+        ]
+      }
+    ]
   }
 ]
