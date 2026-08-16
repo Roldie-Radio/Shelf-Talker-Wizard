@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.2',
+      items: [
+        'New: Browse the Bourbon Library by parent company - click the "Parent companies" number in the library\'s stats row to see every company (Beam Suntory, Sazerac, and 60+ others) sized by how many bourbons it owns, then click into one to see its full lineup. Search and sort (Most bourbons / A–Z) included. Opening a bourbon from a company\'s list and clicking back returns to that company, not the full grid.',
+      ],
+    },
+    {
       version: '4.3.1',
       items: [
         'New: the Server PC can now check GitHub for new bourbons added to the Bourbon Library\'s curated list since it was first seeded, without needing a new installer or the CLI script - Tools → Mash Bill Library… → "Check GitHub for New Bourbons" (Server PC only). Only ever adds titles that aren\'t already in the library, so it can\'t overwrite a correction or an entry staff typed in themselves.',
@@ -6255,6 +6261,29 @@
   let librarySelectedId = null;
   let librarySyncPollTimer = null;
 
+  // Parent Company browse (renderCompaniesView/renderCompanyResults/
+  // renderCompanyDetail below) - two more libraryViewMode values
+  // ('companies', 'companyDetail') alongside the existing 'grid'/'profile'
+  // pair, reached via the "Parent companies" stat becoming a button (see
+  // renderLibraryChipsAndStats).
+  let libraryCompanyQuery = '';
+  let libraryCompanySort = 'count'; // 'count' | 'alpha'
+  let librarySelectedCompany = null;
+  // Where a bourbon profile's "back" breadcrumb should return to - set
+  // whenever something navigates into 'profile' mode, so opening a bourbon
+  // from inside a company's own bourbon list returns there instead of
+  // always landing back on the full grid.
+  let libraryProfileReturnTo = { mode: 'grid', company: null };
+
+  // Bucket thresholds for the three company tiers below - static cutoffs
+  // chosen against the library's shape when this shipped (Beam Suntory's
+  // 30 down to Diageo's 13 for Featured, down to 5 for Major) rather than
+  // computed proportionally, so five tiles don't become fifteen (or zero)
+  // the next time the library's overall size changes. Revisit these if the
+  // library's size or its spread across companies shifts a lot.
+  const COMPANY_FEATURED_MIN = 13;
+  const COMPANY_MAJOR_MIN = 5;
+
   function libraryMatchesFilter(entry) {
     const tier = entry.confidence.tier;
     if (libraryTierFilter === 'confirmed') return tier === 'confirmed';
@@ -6290,16 +6319,25 @@
     els.libraryChips.querySelectorAll('button[data-tier]').forEach((btn) => {
       btn.addEventListener('click', () => {
         libraryTierFilter = btn.dataset.tier;
+        libraryViewMode = 'grid';
         renderLibraryChipsAndStats();
         renderLibraryBody();
       });
     });
+    const companyCount = new Set(mashBillLibraryCache.map((m) => m.parentCompany).filter(Boolean)).size;
     els.libraryStats.innerHTML = `
       <div class="library-stat"><b>${mashBillLibraryCache.length}</b><span>Bourbons</span></div>
       <div class="library-stat"><b>${new Set(mashBillLibraryCache.map((m) => m.distillery).filter(Boolean)).size}</b><span>Distilleries</span></div>
-      <div class="library-stat"><b>${new Set(mashBillLibraryCache.map((m) => m.parentCompany).filter(Boolean)).size}</b><span>Parent companies</span></div>
+      <button type="button" class="library-stat library-stat--link" id="libraryCompaniesStatBtn">
+        <span class="library-stat__main"><b>${companyCount}</b><span>Parent companies</span></span>
+        <span class="library-stat__chevron" aria-hidden="true">&rsaquo;</span>
+      </button>
       <div class="library-stat"><b>${counts.needs}</b><span>Need verification</span></div>
     `;
+    document.getElementById('libraryCompaniesStatBtn').addEventListener('click', () => {
+      libraryViewMode = 'companies';
+      renderLibraryBody();
+    });
   }
 
   function bourbonCardHtml(entry) {
@@ -6326,6 +6364,7 @@
     els.libraryBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         librarySelectedId = Number(btn.dataset.id);
+        libraryProfileReturnTo = { mode: 'grid', company: null };
         libraryViewMode = 'profile';
         renderLibraryBody();
       });
@@ -6395,9 +6434,12 @@
         ${entry.tastingSource ? `<div class="tasting-source">Source: ${escapeHtml(entry.tastingSource)}</div>` : ''}
       </div>` : '';
 
+    const returnToCompany = libraryProfileReturnTo.mode === 'companyDetail' && libraryProfileReturnTo.company;
+    const backLabel = returnToCompany ? libraryProfileReturnTo.company : 'Bourbon Library';
+
     els.libraryBody.innerHTML = `
       <div class="library-crumb">
-        <button type="button" id="libraryCrumbBack"><span aria-hidden="true">&larr;</span> Bourbon Library</button>
+        <button type="button" id="libraryCrumbBack"><span aria-hidden="true">&larr;</span> ${escapeHtml(backLabel)}</button>
         <span class="library-crumb__sep">/</span>
         <span class="library-crumb__current">${escapeHtml(entry.title)}</span>
       </div>
@@ -6447,8 +6489,13 @@
       loadMashBillLibraryEntryIntoForm(entry);
     });
     document.getElementById('libraryCrumbBack').addEventListener('click', () => {
-      libraryViewMode = 'grid';
       librarySelectedId = null;
+      if (returnToCompany) {
+        librarySelectedCompany = libraryProfileReturnTo.company;
+        libraryViewMode = 'companyDetail';
+      } else {
+        libraryViewMode = 'grid';
+      }
       renderLibraryBody();
     });
     els.libraryBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
@@ -6459,8 +6506,196 @@
     });
   }
 
+  // ---------- Parent Company browse ----------
+  //
+  // Groups mashBillLibraryCache by parentCompany - free text on each entry
+  // (see mash_bills in db.js), so this is a straight string match, not a
+  // join against any real company table. Two entries meaning the same real
+  // company but spelled differently (a genuine bug this view caught once
+  // already - two different "Luxco" strings in the seed data) show up as
+  // two separate companies here rather than one; worth normalizing into a
+  // real lookup if that keeps happening.
+  function companyStats() {
+    const map = new Map();
+    mashBillLibraryCache.forEach((entry) => {
+      const key = entry.parentCompany || 'Independently Owned / Unknown';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(entry);
+    });
+    return Array.from(map.entries()).map(([name, bourbons]) => ({ name, count: bourbons.length, bourbons }));
+  }
+
+  function companyTileHtml(c, tierClass, maxCount) {
+    if (tierClass === 'featured') {
+      const barPct = Math.round((c.count / maxCount) * 100);
+      return `
+        <button type="button" class="company-tile company-tile--featured" data-company="${escapeHtml(c.name)}">
+          <div class="company-tile__count">${c.count}</div>
+          <div class="company-tile__name">${escapeHtml(c.name)}</div>
+          <div class="company-tile__meta">bourbons in the library</div>
+          <div class="company-tile__bar"><span style="width:${barPct}%"></span></div>
+        </button>
+      `;
+    }
+    if (tierClass === 'major') {
+      return `
+        <button type="button" class="company-tile company-tile--major" data-company="${escapeHtml(c.name)}">
+          <div class="company-tile__count">${c.count}</div>
+          <div class="company-tile__name">${escapeHtml(c.name)}</div>
+        </button>
+      `;
+    }
+    return `
+      <button type="button" class="company-tile company-tile--standard" data-company="${escapeHtml(c.name)}">
+        <span class="company-tile__name">${escapeHtml(c.name)}</span>
+        <span class="company-tile__count">${c.count}</span>
+      </button>
+    `;
+  }
+
+  // Renders the crumb + toolbar (search/sort) once per entry into this
+  // view, then hands off to renderCompanyResults for the tier grids -
+  // keeping the search input out of the region that re-renders on every
+  // keystroke is what lets it keep focus while typing.
+  function renderCompaniesView() {
+    els.libraryBody.innerHTML = `
+      <div class="library-crumb">
+        <button type="button" id="libraryCrumbBack"><span aria-hidden="true">&larr;</span> Bourbon Library</button>
+        <span class="library-crumb__sep">/</span>
+        <span class="library-crumb__current">Parent Companies</span>
+      </div>
+      <div class="company-toolbar">
+        <input type="search" id="companySearchInput" aria-label="Search parent companies" placeholder="Search parent companies&hellip;" value="${escapeHtml(libraryCompanyQuery)}" />
+        <div class="company-toolbar__sort">
+          <span>Sort:</span>
+          <button type="button" class="toggle-btn ${libraryCompanySort === 'count' ? 'is-active' : ''}" data-sort="count">Most bourbons</button>
+          <button type="button" class="toggle-btn ${libraryCompanySort === 'alpha' ? 'is-active' : ''}" data-sort="alpha">A&ndash;Z</button>
+        </div>
+      </div>
+      <div id="companyResultsBody"></div>
+    `;
+
+    document.getElementById('libraryCrumbBack').addEventListener('click', () => {
+      libraryViewMode = 'grid';
+      renderLibraryBody();
+    });
+    document.getElementById('companySearchInput').addEventListener('input', (e) => {
+      libraryCompanyQuery = e.target.value;
+      renderCompanyResults();
+    });
+    els.libraryBody.querySelectorAll('.company-toolbar__sort [data-sort]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        libraryCompanySort = btn.dataset.sort;
+        els.libraryBody.querySelectorAll('.company-toolbar__sort [data-sort]').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.sort === libraryCompanySort);
+        });
+        renderCompanyResults();
+      });
+    });
+
+    renderCompanyResults();
+  }
+
+  function renderCompanyResults() {
+    const container = document.getElementById('companyResultsBody');
+    if (!container) return;
+
+    const companies = companyStats();
+    const q = libraryCompanyQuery.trim().toLowerCase();
+    const filtered = q ? companies.filter((c) => c.name.toLowerCase().includes(q)) : companies;
+    filtered.sort((a, b) => (libraryCompanySort === 'alpha'
+      ? a.name.localeCompare(b.name)
+      : b.count - a.count || a.name.localeCompare(b.name)));
+
+    if (!filtered.length) {
+      container.innerHTML = '<p class="help-text">No parent companies match this search.</p>';
+      return;
+    }
+
+    const maxCount = Math.max(...companies.map((c) => c.count), 1);
+    const featured = filtered.filter((c) => c.count >= COMPANY_FEATURED_MIN);
+    const major = filtered.filter((c) => c.count >= COMPANY_MAJOR_MIN && c.count < COMPANY_FEATURED_MIN);
+    const standard = filtered.filter((c) => c.count < COMPANY_MAJOR_MIN);
+
+    const tierBlockHtml = (label, sub, rows, tierClass, gridClass) => (rows.length ? `
+      <div class="tier-block">
+        <div class="tier-block__head"><h3>${label}</h3><span>${sub}</span></div>
+        <div class="${gridClass}">${rows.map((c) => companyTileHtml(c, tierClass, maxCount)).join('')}</div>
+      </div>
+    ` : '');
+
+    container.innerHTML = [
+      tierBlockHtml('Featured', `${COMPANY_FEATURED_MIN}+ bourbons &middot; ${featured.length} compan${featured.length === 1 ? 'y' : 'ies'}`, featured, 'featured', 'tier-grid--featured'),
+      tierBlockHtml('Major', `${COMPANY_MAJOR_MIN}&ndash;${COMPANY_FEATURED_MIN - 1} bourbons &middot; ${major.length} compan${major.length === 1 ? 'y' : 'ies'}`, major, 'major', 'tier-grid--major'),
+      tierBlockHtml('Everyone else', `1&ndash;${COMPANY_MAJOR_MIN - 1} bourbons &middot; ${standard.length} compan${standard.length === 1 ? 'y' : 'ies'}`, standard, 'standard', 'tier-grid--standard'),
+    ].join('');
+
+    container.querySelectorAll('.company-tile[data-company]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySelectedCompany = btn.dataset.company;
+        libraryViewMode = 'companyDetail';
+        renderLibraryBody();
+      });
+    });
+  }
+
+  function renderCompanyDetail() {
+    const company = companyStats().find((c) => c.name === librarySelectedCompany);
+    if (!company) {
+      libraryViewMode = 'companies';
+      renderLibraryBody();
+      return;
+    }
+    const distilleries = new Set(company.bourbons.map((b) => b.distillery).filter(Boolean));
+    const confirmed = company.bourbons.filter((b) => b.confidence.tier === 'confirmed').length;
+    const rows = company.bourbons.slice().sort((a, b) => a.title.localeCompare(b.title)).map((b) => `
+      <button type="button" class="bourbon-row" data-id="${b.id}">
+        <div>
+          <div class="bourbon-row__title">${escapeHtml(b.title)}</div>
+          <div class="bourbon-row__sub">${escapeHtml(b.distillery || 'Distillery unknown')}${b.category ? ` &middot; ${escapeHtml(b.category)}` : ''}</div>
+        </div>
+        ${confidenceBadgeHtml(b.confidence.tier)}
+      </button>
+    `).join('');
+
+    els.libraryBody.innerHTML = `
+      <div class="library-crumb">
+        <button type="button" id="libraryCrumbBack"><span aria-hidden="true">&larr;</span> Parent Companies</button>
+        <span class="library-crumb__sep">/</span>
+        <span class="library-crumb__current">${escapeHtml(company.name)}</span>
+      </div>
+      <div class="profile-head">
+        <div>
+          <h2>${escapeHtml(company.name)}</h2>
+          <p class="profile-head__by">${company.count} bourbon${company.count === 1 ? '' : 's'} across ${distilleries.size} distiller${distilleries.size === 1 ? 'y' : 'ies'}</p>
+        </div>
+      </div>
+      <div class="library-stats">
+        <div class="library-stat"><b>${company.count}</b><span>Bourbons</span></div>
+        <div class="library-stat"><b>${distilleries.size}</b><span>Distilleries</span></div>
+        <div class="library-stat"><b>${confirmed}</b><span>Confirmed recipes</span></div>
+      </div>
+      <div class="bourbon-list">${rows}</div>
+    `;
+
+    document.getElementById('libraryCrumbBack').addEventListener('click', () => {
+      libraryViewMode = 'companies';
+      renderLibraryBody();
+    });
+    els.libraryBody.querySelectorAll('.bourbon-row[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        librarySelectedId = Number(btn.dataset.id);
+        libraryProfileReturnTo = { mode: 'companyDetail', company: librarySelectedCompany };
+        libraryViewMode = 'profile';
+        renderLibraryBody();
+      });
+    });
+  }
+
   function renderLibraryBody() {
     if (libraryViewMode === 'profile') renderBourbonProfile();
+    else if (libraryViewMode === 'companies') renderCompaniesView();
+    else if (libraryViewMode === 'companyDetail') renderCompanyDetail();
     else renderLibraryGrid();
   }
 
@@ -6515,6 +6750,10 @@
     fetchMashBillLibrary().then((data) => {
       libraryViewMode = 'grid';
       librarySelectedId = null;
+      librarySelectedCompany = null;
+      libraryCompanyQuery = '';
+      libraryCompanySort = 'count';
+      libraryProfileReturnTo = { mode: 'grid', company: null };
       els.libraryFilterInput.value = '';
       libraryFilterQuery = '';
       renderLibraryChipsAndStats();
