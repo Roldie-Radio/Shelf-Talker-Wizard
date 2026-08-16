@@ -495,3 +495,33 @@ browser.
   like every other talker field - verified end to end against the real,
   running app (not just this mockup's samples), including a
   save-to-queue-and-reload round trip.
+- **bourbon-sku-lookup-options.html** &mdash; follow-up to
+  bourbon-library-autofill.html above, picking up the gap that mockup
+  explicitly deferred: "Deliberately scoped away from
+  Distillery/Parent Company/Category/SKU/References, since none of those
+  has a matching field on the printed talker itself to autofill into."
+  Store SKU does exist as a talker field, but only for Beer
+  (`#beerFields` in index.html) - Wine/Spirits and Bourbon have no SKU
+  field at all, and the Bourbon Library's own `sku` column (added since
+  the autofill mockup shipped) is purely reference data today: staff read
+  it off the profile page and retype it elsewhere by hand. `findMashBillMatch`
+  also still only ever matches on an exact Product Title. Compares three
+  ways to let a Library SKU drive the same autofill, all reusing
+  `mashBillLibraryCache` and the existing Use/Use All actions rather than
+  proposing a new data source: **A: extend the recall banner** (add a
+  Store SKU field to Bourbon talkers, let `findMashBillMatch` check it
+  alongside title - smallest change, same banner component, but passively
+  discoverable); **B: a "Search Bourbon Library" picker** next to Product
+  Title (a searchable-by-name-or-SKU overlay over the same list the Manage
+  dialog already renders; picking a row fills Title/SKU/Mash Bill/flavor
+  fields at once - more UI, but an explicit, browsable entry point for
+  when staff don't already know the exact title or SKU); **C: a 4th
+  Search-tab method** alongside Search by Name/SKU Lookup/Scan UPC,
+  looking a SKU up against the Library instead of the WinePOS export -
+  most consistent with the existing SKU Lookup mental model, but the
+  least code reuse of the three, and the only one that doesn't build on
+  top of the other two. All three demoed against the same real seed-data
+  entry (Buffalo Trace Bourbon, SKU 15614) for continuity, with Four
+  Roses Single Barrel and Blanton's as the extra picker rows in B. Not
+  yet implemented - awaiting a decision on which direction (or
+  combination) to build for real.
