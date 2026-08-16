@@ -45,6 +45,21 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.6',
+      items: [
+        'Changed: Bourbon is now a Product Type of its own (alongside Wine / Spirits and Beer), not a Settings → Experimental Features toggle - picking it on any tab shows Store Pick, Mash Bill, and Nose/Palate/Finish automatically, with a Distiller.com source in Find Tasting Notes and Tools → Mash Bill Library… following the same switch. Nothing already on a talker is affected; the old toggle is gone from Settings.',
+        'New: with Product Type set to Bourbon, the Search tab\'s search box also previews matches from the Bourbon Library underneath it - by title or by the SKU saved on that entry - alongside whatever Search by Name/SKU Lookup/Scan UPC already does with the same typed text. Picking a result fills Product Title, Mash Bill, and Nose/Palate/Finish; Price/Size/Description still come from SKU Lookup/Scan UPC/typing by hand, since the Library doesn\'t have those.',
+        'Fixed: Store Pick is now a toggle switch (matching Also Available Chilled) instead of a plain checkbox with a description underneath - it was misaligned, and the description wasn\'t needed.',
+      ],
+    },
+    {
+      version: '4.3.5',
+      items: [
+        'New: the Mash Bill recall banner (Bourbon Library match on Product Title) now also offers Nose/Palate/Finish, not just the grain chips - a row per field the matched entry actually has, each with its own Use button plus a combined Use All. A mash bill that\'s still just an unresearched placeholder shows "Not yet researched" instead of offering it as a real suggestion. A matching "Save this Nose/Palate/Finish to the Bourbon Library" checkbox sits on the flavor fields, next to the existing "Save this mash bill to the Mash Bill Library" one.',
+        'New: a Mash Bill Confidence badge (Confirmed/Reported/Estimated/Unknown) now prints on the shelf talker itself, next to the Mash Bill label, whenever that mash bill came from the Bourbon Library recall banner rather than being typed by hand - hand-editing the grains afterward clears it, since it no longer describes what\'s actually on the card.',
+      ],
+    },
+    {
       version: '4.3.4',
       items: [
         'New: a Card/List switch and a Sort dropdown for the Bourbon Library\'s main grid - List packs more bourbons on screen at once (title, distillery, and one metric per row); Sort groups Alphabetical, Confidence, Grain % (Most Corn/Rye/Wheat/Malted Barley), Recipe complexity (fewest → most grains), and SKU. Whichever field you\'re sorting by shows up as a small chip on every card/row - "Most Wheat %" shows each bourbon\'s actual wheat percentage, "SKU" shows its SKU. Both choices are remembered per PC, so they stay put next time the Library is opened.',
