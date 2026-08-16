@@ -49,6 +49,16 @@ browser.
   All company counts and bourbon lists are the real, current library data
   (embedded directly from `scripts/bourbon-library-seed-data.json`), not
   placeholders.
+- **parent-company-entry-point.html** &mdash; follow-up to parent-company-browse.html
+  above: shows the real, current Bourbon Library home screen (rail, header
+  band, search/chips/stats, bourbon grid) with one addition &mdash; the
+  existing **"Parent companies" stat** in the stats row becomes a button
+  (hover state, chevron) rather than a new toolbar control living
+  somewhere else, since that stat is already advertising the number every
+  time staff open the library. Clicking it swaps `#libraryBody` into the
+  company browse view from the previous mockup, exactly the way switching
+  to a bourbon's own profile page already works today; the rail's Bourbon
+  Library icon is the way back, always one click away.
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual
