@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.1',
+      items: [
+        'New: the Server PC can now check GitHub for new bourbons added to the Bourbon Library\'s curated list since it was first seeded, without needing a new installer or the CLI script - Tools → Mash Bill Library… → "Check GitHub for New Bourbons" (Server PC only). Only ever adds titles that aren\'t already in the library, so it can\'t overwrite a correction or an entry staff typed in themselves.',
+      ],
+    },
+    {
       version: '4.3.0',
       items: [
         'New: Bourbon Library entries can now carry a SKU (Manage Mash Bill Library dialog, and shown on the profile page under Distillery & Ownership) so staff can look a bottle\'s SKU up straight from its library entry when building a talker.',
