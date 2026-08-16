@@ -60,6 +60,12 @@
       ],
     },
     {
+      version: '4.2.3',
+      items: [
+        'Changed: the Search by Name/SKU Lookup/Scan UPC toggle is gone, along with the separate "Product Name" field it used to show - the single Search field above now handles typing a product name directly, with the matching results dropdown right underneath it.',
+      ],
+    },
+    {
       version: '4.2.2',
       items: [
         'New: the Search tab now opens with one Search field above Search by Name/SKU Lookup/Scan UPC - type a product name, a SKU, or scan a UPC and it detects which and switches to (and runs) the matching lookup automatically, so picking a method first is no longer required day to day. The three panels and their toggle are still there underneath as a manual override.',
@@ -872,11 +878,10 @@
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
-    // Search's own method chooser (Search by Name / SKU Lookup / Scan UPC) -
-    // one level down from the three tabs above, switching which
-    // .method-panel is visible inside the Search tab-panel. See
-    // activateMethod below.
-    methodToggleBtns: document.querySelectorAll('.method-toggle .toggle-btn'),
+    // Search's three sub-panels (Search by Name / SKU Lookup / Scan UPC) -
+    // one level down from the three tabs above. Which one is visible inside
+    // the Search tab-panel is decided automatically from what's typed into
+    // smartSearchInput - see setActiveMethodPanel/runSmartSearch below.
     methodPanels: document.querySelectorAll('.method-panel'),
     smartSearchInput: document.getElementById('smartSearchInput'),
     smartSearchHint: document.getElementById('smartSearchHint'),
@@ -1021,7 +1026,6 @@
     importHtmlInput: document.getElementById('importHtmlInput'),
     importHtmlBtn: document.getElementById('importHtmlBtn'),
 
-    nameSearchInput: document.getElementById('nameSearchInput'),
     nameSearchSpinner: document.getElementById('nameSearchSpinner'),
     nameSearchResults: document.getElementById('nameSearchResults'),
     nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
@@ -1494,32 +1498,18 @@
     });
   });
 
-  // ---------- Search's own method chooser ----------
+  // ---------- Search's panel switching ----------
 
   // Search by Name, SKU Lookup, and Scan UPC used to be three separate
   // top-level tabs (each its own .tab/.tab-panel, handled by activateTab
-  // above); they're now one level down, as a radiogroup of .toggle-btns
-  // inside the Search tab-panel switching which .method-panel is visible.
-  // Mirrors activateTab's own is-active/hidden-state bookkeeping, just with
-  // the role="radio" attributes (aria-checked) that pattern uses instead of
-  // role="tab"'s aria-selected.
-  // Split from activateMethod below so smart search's routing (see further
-  // down) can switch panels without also triggering the scan-focus side
-  // effect below - stealing focus away from the smart search field mid-scan
-  // or mid-type would send the rest of what's being typed to the wrong
-  // input.
-  function setActiveMethodPanel(btn) {
-    els.methodToggleBtns.forEach((b) => {
-      const isActive = b === btn;
-      b.classList.toggle('is-active', isActive);
-      b.setAttribute('aria-checked', String(isActive));
-    });
-    els.methodPanels.forEach((p) => p.classList.toggle('is-active', p.dataset.methodPanel === btn.dataset.method));
-  }
+  // above), then a manually-picked radiogroup of buttons one level down;
+  // there's no manual picker anymore, so which .method-panel is visible is
+  // decided entirely by smart search's own detection below.
+  let activeSearchMethod = 'searchName';
 
-  function activateMethod(btn) {
-    setActiveMethodPanel(btn);
-    focusScanIfActive();
+  function setActiveMethodPanel(method) {
+    activeSearchMethod = method;
+    els.methodPanels.forEach((p) => p.classList.toggle('is-active', p.dataset.methodPanel === method));
   }
 
   // Scan UPC is meant for walking up and scanning immediately - put the
@@ -1530,23 +1520,17 @@
   // needs this: a scanner is the only "device" that starts typing without
   // clicking anything first.
   function focusScanIfActive() {
-    const activeMethod = [...els.methodToggleBtns].find((b) => b.classList.contains('is-active'));
     const searchTabActive = document.querySelector('.tab[data-tab="search"]').classList.contains('is-active');
-    if (searchTabActive && activeMethod && activeMethod.dataset.method === 'scan') els.scanUpcInput.focus();
+    if (searchTabActive && activeSearchMethod === 'scan') els.scanUpcInput.focus();
   }
 
-  els.methodToggleBtns.forEach((btn) => {
-    btn.addEventListener('click', () => activateMethod(btn));
-  });
+  // ---------- Smart search (routes to the panel above automatically) ----------
 
-  // ---------- Smart search (routes to the method above automatically) ----------
-
-  // One field above the method toggle that guesses which of the three
-  // lookups below applies, so day-to-day use doesn't require picking a
-  // method first: any letters means a product name, a short all-digit
-  // string is a SKU, a long one is a UPC. It drives the three panels above
-  // rather than replacing them - see the comment on #smartSearchFieldWrap
-  // in index.html for why.
+  // The only entry point into Search - guesses which of the three lookups
+  // below applies, so day-to-day use doesn't require picking a method: any
+  // letters means a product name, a short all-digit string is a SKU, a long
+  // one is a UPC. It drives the three panels below rather than replacing
+  // them - see the comment on #smartSearchFieldWrap in index.html for why.
   const SMART_SEARCH_UPC_MIN_DIGITS = 8; // UPC-A/EAN-13 run 12-13 digits, UPC-E 8 - store SKUs here are shorter
   // Our own self-printed labels barcode the store's SKU as "A" + that SKU
   // zero-padded to 7 digits (e.g. A0042420 for item 42420) rather than a
@@ -1568,10 +1552,6 @@
     return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
   }
 
-  function smartSearchMethodBtn(method) {
-    return [...els.methodToggleBtns].find((b) => b.dataset.method === method);
-  }
-
   function runSmartSearch(rawValue) {
     const mode = detectSmartSearchMode(rawValue);
     if (mode === 'internalUpc') {
@@ -1580,16 +1560,26 @@
     } else {
       els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
     }
+    if (mode !== 'name') {
+      // Leaving name mode (or clearing the field) - any in-flight/rendered
+      // name search is now stale, same as if the old separate Product Name
+      // field had been cleared.
+      clearTimeout(nameSearchDebounce);
+      if (nameSearchSelectedProduct) clearNameSearchSelection();
+      closeNameSearchResults();
+    }
     if (!mode) return;
     const targetMethod = mode === 'upc' ? 'scan' : mode === 'sku' || mode === 'internalUpc' ? 'sku' : 'searchName';
-    const targetBtn = smartSearchMethodBtn(targetMethod);
-    if (targetBtn && !targetBtn.classList.contains('is-active')) setActiveMethodPanel(targetBtn);
+    if (targetMethod !== activeSearchMethod) setActiveMethodPanel(targetMethod);
     if (mode === 'name') {
-      // Set + dispatch rather than calling runNameSearch directly so Search
-      // by Name's own input handler still runs unchanged - same debounce,
-      // same clearNameSearchSelection() if a prior pick is now stale.
-      els.nameSearchInput.value = rawValue;
-      els.nameSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      // Picking a result sets this field's value to that product's title too
+      // (see selectNameSearchProduct) - without clearing the prior selection
+      // here, editing that text afterward would leave a stale "selected"
+      // product (and an enabled Add to Queue button) that no longer matches
+      // what's actually typed.
+      if (nameSearchSelectedProduct) clearNameSearchSelection();
+      clearTimeout(nameSearchDebounce);
+      nameSearchDebounce = setTimeout(() => runNameSearch(rawValue), 200);
     } else if (mode === 'sku') {
       els.skuInput.value = rawValue.trim();
     } else if (mode === 'internalUpc') {
@@ -1601,13 +1591,42 @@
 
   els.smartSearchInput.addEventListener('input', () => runSmartSearch(els.smartSearchInput.value));
 
+  els.smartSearchInput.addEventListener('focus', () => {
+    if (nameSearchResults.length && detectSmartSearchMode(els.smartSearchInput.value) === 'name') {
+      renderNameSearchResults();
+    }
+  });
+
   // A barcode scanner types its code fast and finishes with Enter (see
   // wireEnterTriggersClick below) - it may land in this field rather than
   // Scan UPC's own, so Enter here needs to trigger the matching lookup
-  // button itself, not just sync the value like every other keystroke does.
+  // button itself when scanning/SKU. When Search by Name's results dropdown
+  // is open, arrow keys move through it and Enter picks the highlighted row
+  // instead - the same keyboard nav the old separate Product Name field had.
   els.smartSearchInput.addEventListener('keydown', (e) => {
+    const resultsOpen = !els.nameSearchResults.hidden && nameSearchResults.length;
+    if (resultsOpen && e.key === 'ArrowDown') {
+      e.preventDefault();
+      nameSearchFocusIndex = Math.min(nameSearchFocusIndex + 1, nameSearchResults.length - 1);
+      renderNameSearchResults();
+      return;
+    }
+    if (resultsOpen && e.key === 'ArrowUp') {
+      e.preventDefault();
+      nameSearchFocusIndex = Math.max(nameSearchFocusIndex - 1, 0);
+      renderNameSearchResults();
+      return;
+    }
+    if (resultsOpen && e.key === 'Escape') {
+      closeNameSearchResults();
+      return;
+    }
     if (e.key !== 'Enter') return;
     e.preventDefault();
+    if (resultsOpen && nameSearchResults[nameSearchFocusIndex]) {
+      selectNameSearchProduct(nameSearchResults[nameSearchFocusIndex]);
+      return;
+    }
     const mode = detectSmartSearchMode(els.smartSearchInput.value);
     runSmartSearch(els.smartSearchInput.value);
     if (mode === 'sku' || mode === 'internalUpc') els.skuLookupBtn.click();
@@ -4684,9 +4703,9 @@
   // faster one for whatever staff picked next and clobber it - same
   // "newest wins" guard nameSearchAbortController gives the ranked list
   // above, but that AbortController is about to be reused for a fresh
-  // keystroke search the moment a result's clicked (see els.nameSearchInput's
-  // 'input' listener clearing the prior selection), so this pick's own
-  // in-flight Untappd request needs a guard that isn't tied to it.
+  // keystroke search the moment a result's clicked (see runSmartSearch's
+  // clearNameSearchSelection() call above), so this pick's own in-flight
+  // Untappd request needs a guard that isn't tied to it.
   let nameSearchSelectToken = 0;
 
   // Below this many characters, a search isn't run at all - a 1-character
@@ -4698,16 +4717,16 @@
   function closeNameSearchResults() {
     els.nameSearchResults.hidden = true;
     els.nameSearchResults.innerHTML = '';
-    els.nameSearchInput.setAttribute('aria-expanded', 'false');
-    els.nameSearchInput.removeAttribute('aria-activedescendant');
+    els.smartSearchInput.setAttribute('aria-expanded', 'false');
+    els.smartSearchInput.removeAttribute('aria-activedescendant');
     nameSearchFocusIndex = -1;
   }
 
   function renderNameSearchResults() {
     if (!nameSearchResults.length) {
-      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.nameSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Edit Talker.</div>`;
+      els.nameSearchResults.innerHTML = `<div class="search-results__empty">No matches for &ldquo;${escapeHtml(els.smartSearchInput.value.trim())}&rdquo; in the export file. Try a different spelling, or add it on Edit Talker.</div>`;
       els.nameSearchResults.hidden = false;
-      els.nameSearchInput.setAttribute('aria-expanded', 'true');
+      els.smartSearchInput.setAttribute('aria-expanded', 'true');
       return;
     }
     els.nameSearchResults.innerHTML = nameSearchResults.map((p, i) => {
@@ -4726,11 +4745,11 @@
       `;
     }).join('');
     els.nameSearchResults.hidden = false;
-    els.nameSearchInput.setAttribute('aria-expanded', 'true');
+    els.smartSearchInput.setAttribute('aria-expanded', 'true');
     if (nameSearchFocusIndex >= 0) {
-      els.nameSearchInput.setAttribute('aria-activedescendant', `nameSearchResult-${nameSearchFocusIndex}`);
+      els.smartSearchInput.setAttribute('aria-activedescendant', `nameSearchResult-${nameSearchFocusIndex}`);
     } else {
-      els.nameSearchInput.removeAttribute('aria-activedescendant');
+      els.smartSearchInput.removeAttribute('aria-activedescendant');
     }
   }
 
@@ -4943,9 +4962,9 @@
     // re-enable Save for a selection that no longer exists.
     clearNameSearchSelection();
     nameSearchResults = [];
-    els.nameSearchInput.value = '';
+    els.smartSearchInput.value = '';
     els.nameSearchStatus.textContent = message || 'Added to queue! Search for the next product.';
-    els.nameSearchInput.focus();
+    els.smartSearchInput.focus();
     return true;
   }
 
@@ -4961,7 +4980,7 @@
   async function selectNameSearchProduct(product) {
     const myToken = ++nameSearchSelectToken;
     nameSearchSelectedProduct = product;
-    els.nameSearchInput.value = product.title;
+    els.smartSearchInput.value = product.title;
     closeNameSearchResults();
     els.nameSearchSaveBtn.disabled = false;
     const isBeer = currentCategory === 'beer';
@@ -5044,40 +5063,10 @@
     }
   }
 
-  els.nameSearchInput.addEventListener('input', () => {
-    // Picking a result sets the input's value to that product's title too
-    // (see selectNameSearchProduct) - without clearing the prior selection
-    // here, editing that text afterward would leave a stale "selected"
-    // product (and an enabled Add to Queue button) that no longer matches
-    // what's actually typed.
-    if (nameSearchSelectedProduct) clearNameSearchSelection();
-    clearTimeout(nameSearchDebounce);
-    nameSearchDebounce = setTimeout(() => runNameSearch(els.nameSearchInput.value), 200);
-  });
-
-  els.nameSearchInput.addEventListener('focus', () => {
-    if (nameSearchResults.length && els.nameSearchInput.value.trim().length >= NAME_SEARCH_MIN_CHARS) {
-      renderNameSearchResults();
-    }
-  });
-
-  els.nameSearchInput.addEventListener('keydown', (e) => {
-    if (els.nameSearchResults.hidden || !nameSearchResults.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      nameSearchFocusIndex = Math.min(nameSearchFocusIndex + 1, nameSearchResults.length - 1);
-      renderNameSearchResults();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      nameSearchFocusIndex = Math.max(nameSearchFocusIndex - 1, 0);
-      renderNameSearchResults();
-    } else if (e.key === 'Enter' && nameSearchResults[nameSearchFocusIndex]) {
-      e.preventDefault();
-      selectNameSearchProduct(nameSearchResults[nameSearchFocusIndex]);
-    } else if (e.key === 'Escape') {
-      closeNameSearchResults();
-    }
-  });
+  // Typing, focus, and arrow/Enter/Escape keyboard nav for this combobox are
+  // all wired on els.smartSearchInput itself now (see runSmartSearch and its
+  // neighboring focus/keydown listeners above) - this field is the only
+  // entry point, there's no separate Product Name input anymore.
 
   els.nameSearchResults.addEventListener('click', (e) => {
     const row = e.target.closest('.search-result');
@@ -5087,7 +5076,7 @@
   });
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('#nameSearchFieldWrap')) closeNameSearchResults();
+    if (!e.target.closest('#smartSearchFieldWrap')) closeNameSearchResults();
   });
 
   els.nameSearchSaveBtn.addEventListener('click', () => addNameSearchToQueue());
