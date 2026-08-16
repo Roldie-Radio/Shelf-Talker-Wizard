@@ -491,12 +491,53 @@ h1, h2, h3 { margin: 0; }
 .bourbon-card__sub { font-size: 0.78rem; color: var(--ui-muted); }
 .bourbon-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.1rem; }
 
-/* Mash Bill grain proportion bar - same colors/data as the printed talker's
-   own bar (see grainBarHtml/MASH_BILL_GRAIN_COLORS), just a plain flex bar
-   here instead of the print version's calc(var(--w)...) sizing. */
+/* Mash Bill grain proportion bar (see grainBarHtml/LIBRARY_GRAIN_COLORS) -
+   the grid card's only visualization, and the profile page's "Compare to
+   bar" fallback next to the donut chart below. */
 .grain-bar { display: flex; width: 100%; height: 7px; border-radius: 4px; overflow: hidden; background: var(--ui-code-bg); }
 .grain-bar span { height: 100%; }
 .grain-bar--empty { background: var(--ui-code-bg); }
+
+/* Mash Bill donut chart (profile page only, see mashBillVizHtml in app.js) -
+   replaces the plain bar there with a donut + numeric legend so every
+   grain's exact percentage is visible regardless of slice size, plus a
+   center callout for the dominant grain. Hovering a slice highlights its
+   legend row and vice versa via .is-hot. */
+.mashbill-viz { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+.donut-wrap { position: relative; flex: 0 0 auto; width: 168px; height: 168px; }
+.donut-wrap svg { width: 100%; height: 100%; display: block; }
+.donut-slice { cursor: pointer; transition: opacity 0.12s ease; }
+.donut-slice:hover, .donut-slice.is-hot { opacity: 0.82; }
+.donut-slice-label {
+  font-size: 12px;
+  font-weight: 700;
+  fill: #fff;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 2px;
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.donut-center__pct { font-size: 1.3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.donut-center__grain { font-size: 0.68rem; color: var(--ui-muted); margin-top: 0.15rem; max-width: 80px; line-height: 1.2; }
+.grain-legend2 { flex: 1 1 200px; display: flex; flex-direction: column; gap: 0.45rem; min-width: 160px; }
+.grain-legend2__row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.35rem; border-radius: 6px; }
+.grain-legend2__row.is-hot { background: var(--ui-hover); }
+.grain-legend2__swatch { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
+.grain-legend2__name { font-size: 0.83rem; flex: 1; }
+.grain-legend2__pct { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3.2ch; text-align: right; }
+.compare-strip__label { font-size: 0.76rem; color: var(--ui-muted); display: block; margin-top: 0.5rem; }
 
 /* Mash Bill Confidence tiers - badge (grid card + profile header), a 4-dot
    meter (profile only), and the fuller note/sources block on the profile

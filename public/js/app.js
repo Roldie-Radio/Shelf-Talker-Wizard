@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.2',
+      items: [
+        'New: a bourbon\'s profile page Mash Bill block now shows a donut chart with the exact percentage printed on any slice wide enough to hold it, plus a numeric legend beside it and a dominant-grain callout in the center - a "Compare to bar" button still shows today\'s plain proportion bar alongside it, since that\'s what actually prints on the shelf talker. Hovering a slice highlights its legend row and vice versa. The grain color palette also grew to cover every grain name in the Bourbon Library\'s research data, not just the printed talker\'s own 6-grain builder list, so grains like Red Winter Wheat or Honey Malted Barley get their own color instead of a shared grey.',
+      ],
+    },
+    {
       version: '4.3.1',
       items: [
         'New: the Server PC can now check GitHub for new bourbons added to the Bourbon Library\'s curated list since it was first seeded, without needing a new installer or the CLI script - Tools → Mash Bill Library… → "Check GitHub for New Bourbons" (Server PC only). Only ever adds titles that aren\'t already in the library, so it can\'t overwrite a correction or an entry staff typed in themselves.',
@@ -6238,15 +6244,115 @@
     return `<span class="conf-meter" style="color:var(${meta.colorVar});">${dots}</span>`;
   }
 
-  // Same grain colors the printed card's own Mash Bill bar uses
-  // (MASH_BILL_GRAIN_COLORS is a plain global defined in card.js - see the
-  // WINE_PAIRING_RULES comment elsewhere in this file for the same
-  // cross-script convention), so a bourbon's card-grid/profile-page bar
-  // here always matches what would print on its talker.
+  // Extended grain color palette for the Bourbon Library (bar, donut chart,
+  // legend) - deliberately separate from MASH_BILL_GRAIN_COLORS in card.js,
+  // which is a closed 6-grain list matched against the Mash Bill builder's
+  // own <select> for the printed talker. Library research entries carry
+  // real-world grain names outside that list (wheat/barley sub-types, a
+  // smoked malt), grouped here by family so a legend full of "malted X"
+  // entries still reads as related rather than falling back to one grey
+  // swatch that makes several different grains indistinguishable.
+  const LIBRARY_GRAIN_COLORS = {
+    Corn: '#d9a441',
+    Rye: '#8a3a2c',
+    Wheat: '#c9b464',
+    'Malted Barley': '#a67c3d',
+    'Malted Rye': '#6e2a1f',
+    Oat: '#ddd0ad',
+    Oats: '#ddd0ad',
+    Barley: '#c7b78f',
+    'Red Winter Wheat': '#b89a4e',
+    'Texas Winter Wheat': '#cfa646',
+    'Malted Wheat': '#e0c583',
+    'Honey Malted Barley': '#c99a4a',
+    'Caramel Malted Barley': '#8f6a30',
+    "6-Row Distiller's Malt": '#b6903f',
+    'Mesquite Smoked Malt': '#5f4a37',
+  };
+  const LIBRARY_GRAIN_FALLBACK_COLOR = '#b8ab98';
+
+  function libraryGrainColor(grain) {
+    return LIBRARY_GRAIN_COLORS[grain] || LIBRARY_GRAIN_FALLBACK_COLOR;
+  }
+
   function grainBarHtml(grains) {
     if (!grains || !grains.length) return '<div class="grain-bar grain-bar--empty"></div>';
-    const segs = grains.map((g) => `<span style="width:${g.pct}%;background:${MASH_BILL_GRAIN_COLORS[g.grain] || MASH_BILL_GRAIN_FALLBACK_COLOR}"></span>`).join('');
+    const segs = grains.map((g) => `<span style="width:${g.pct}%;background:${libraryGrainColor(g.grain)}"></span>`).join('');
     return `<div class="grain-bar">${segs}</div>`;
+  }
+
+  function polarToXY(cx, cy, r, angleDeg) {
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function mashBillArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+    const large = endAngle - startAngle > 180 ? 1 : 0;
+    const p1 = polarToXY(cx, cy, rOuter, startAngle);
+    const p2 = polarToXY(cx, cy, rOuter, endAngle);
+    const p3 = polarToXY(cx, cy, rInner, endAngle);
+    const p4 = polarToXY(cx, cy, rInner, startAngle);
+    return [
+      `M ${p1.x} ${p1.y}`,
+      `A ${rOuter} ${rOuter} 0 ${large} 1 ${p2.x} ${p2.y}`,
+      `L ${p3.x} ${p3.y}`,
+      `A ${rInner} ${rInner} 0 ${large} 0 ${p4.x} ${p4.y}`,
+      'Z',
+    ].join(' ');
+  }
+
+  // Donut chart for a Mash Bill's grain list, on the profile page only (the
+  // printed talker keeps buildMashBillHtml's stacked bar in card.js - see
+  // "Compare to bar" below). The center callout shows the dominant grain's
+  // own percentage/name, and any slice wide enough to hold a label (>=14%)
+  // prints its exact percentage directly on it, since a legend alone forces
+  // a reader to match colors by eye across the chart.
+  function mashBillDonutHtml(grains) {
+    const cx = 84;
+    const cy = 84;
+    const rOuter = 78;
+    const rInner = 46;
+    let angle = 0;
+    const dominant = grains.reduce((a, b) => (b.pct > a.pct ? b : a), grains[0]);
+    const slices = grains.map(({ grain, pct }) => {
+      const start = angle;
+      const end = angle + (pct / 100) * 360;
+      angle = end;
+      const mid = (start + end) / 2;
+      const labelPos = polarToXY(cx, cy, (rOuter + rInner) / 2, mid);
+      const showLabel = pct >= 14;
+      return `<path class="donut-slice" data-grain="${escapeHtml(grain)}" d="${mashBillArcPath(cx, cy, rOuter, rInner, start, end)}" fill="${libraryGrainColor(grain)}"></path>
+        ${showLabel ? `<text class="donut-slice-label" x="${labelPos.x}" y="${labelPos.y}">${pct}%</text>` : ''}`;
+    }).join('');
+    return `
+      <div class="donut-wrap">
+        <svg viewBox="0 0 168 168">${slices}</svg>
+        <div class="donut-center">
+          <div class="donut-center__pct">${dominant.pct}%</div>
+          <div class="donut-center__grain">${escapeHtml(dominant.grain)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function mashBillLegendHtml(grains) {
+    return grains.map(({ grain, pct }) => `
+      <div class="grain-legend2__row" data-grain="${escapeHtml(grain)}">
+        <span class="grain-legend2__swatch" style="background:${libraryGrainColor(grain)}"></span>
+        <span class="grain-legend2__name">${escapeHtml(grain)}</span>
+        <span class="grain-legend2__pct">${pct}%</span>
+      </div>
+    `).join('');
+  }
+
+  function mashBillVizHtml(grains) {
+    if (!grains || !grains.length) return grainBarHtml(grains);
+    return `
+      <div class="mashbill-viz">
+        ${mashBillDonutHtml(grains)}
+        <div class="grain-legend2">${mashBillLegendHtml(grains)}</div>
+      </div>
+    `;
   }
 
   let libraryFilterQuery = '';
@@ -6254,6 +6360,7 @@
   let libraryViewMode = 'grid';
   let librarySelectedId = null;
   let librarySyncPollTimer = null;
+  let libraryShowGrainBar = false;
 
   function libraryMatchesFilter(entry) {
     const tier = entry.confidence.tier;
@@ -6327,6 +6434,7 @@
       btn.addEventListener('click', () => {
         librarySelectedId = Number(btn.dataset.id);
         libraryViewMode = 'profile';
+        libraryShowGrainBar = false;
         renderLibraryBody();
       });
     });
@@ -6413,12 +6521,17 @@
         <div>
           <div class="block">
             <h3>Mash Bill${citeMarkersHtml(refs, 'Mash Bill')}</h3>
-            ${grainBarHtml(entry.grains)}
+            ${mashBillVizHtml(entry.grains)}
             <div class="conf-block">
               <div class="conf-block__row">
                 ${confidenceBadgeHtml(entry.confidence.tier)}
                 ${confidenceMeterHtml(entry.confidence.tier)}
+                ${entry.grains && entry.grains.length ? `<button type="button" class="btn btn--small" id="libraryToggleBarBtn" style="margin-left:auto;">${libraryShowGrainBar ? 'Hide' : 'Compare to'} bar</button>` : ''}
               </div>
+              ${libraryShowGrainBar && entry.grains && entry.grains.length ? `
+                <span class="compare-strip__label">Today's bar, for comparison:</span>
+                ${grainBarHtml(entry.grains)}
+              ` : ''}
               ${entry.confidence.note ? `<p class="conf-block__note">${escapeHtml(entry.confidence.note)}</p>` : ''}
               ${entry.confidence.verifiedAt ? `<div class="conf-block__verified">Last verified ${escapeHtml(entry.confidence.verifiedAt)}</div>` : ''}
             </div>
@@ -6454,9 +6567,35 @@
     els.libraryBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         librarySelectedId = Number(btn.dataset.id);
+        libraryShowGrainBar = false;
         renderBourbonProfile();
       });
     });
+    const toggleBarBtn = document.getElementById('libraryToggleBarBtn');
+    if (toggleBarBtn) {
+      toggleBarBtn.addEventListener('click', () => {
+        libraryShowGrainBar = !libraryShowGrainBar;
+        renderBourbonProfile();
+      });
+    }
+    // Hovering a donut slice highlights its legend row and vice versa, so a
+    // reader can match a color to its exact percentage either direction.
+    const donutWrap = els.libraryBody.querySelector('.donut-wrap');
+    const legendWrap = els.libraryBody.querySelector('.grain-legend2');
+    if (donutWrap && legendWrap) {
+      const setHotGrain = (grain, on) => {
+        donutWrap.querySelectorAll(`.donut-slice[data-grain="${CSS.escape(grain)}"]`).forEach((el) => el.classList.toggle('is-hot', on));
+        legendWrap.querySelectorAll(`.grain-legend2__row[data-grain="${CSS.escape(grain)}"]`).forEach((el) => el.classList.toggle('is-hot', on));
+      };
+      donutWrap.querySelectorAll('.donut-slice').forEach((el) => {
+        el.addEventListener('mouseenter', () => setHotGrain(el.dataset.grain, true));
+        el.addEventListener('mouseleave', () => setHotGrain(el.dataset.grain, false));
+      });
+      legendWrap.querySelectorAll('.grain-legend2__row').forEach((el) => {
+        el.addEventListener('mouseenter', () => setHotGrain(el.dataset.grain, true));
+        el.addEventListener('mouseleave', () => setHotGrain(el.dataset.grain, false));
+      });
+    }
   }
 
   function renderLibraryBody() {
@@ -6515,6 +6654,7 @@
     fetchMashBillLibrary().then((data) => {
       libraryViewMode = 'grid';
       librarySelectedId = null;
+      libraryShowGrainBar = false;
       els.libraryFilterInput.value = '';
       libraryFilterQuery = '';
       renderLibraryChipsAndStats();
