@@ -52,6 +52,14 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.0',
+      items: [
+        'New: Bourbon Library entries can now carry a SKU (Manage Mash Bill Library dialog, and shown on the profile page under Distillery & Ownership) so staff can look a bottle\'s SKU up straight from its library entry when building a talker.',
+        'New: the Bourbon Library\'s pre-loaded starting set grows from 26 to 279 bourbons, covering effectively every bourbon, rye, and American whiskey product this store carries - researched and confidence-graded individually (Confirmed/Reported/Estimated/Unknown, per bottle) rather than assumed. A PC that already auto-seeded an earlier set won\'t pick these up on its own (auto-seed only ever fills a completely empty library) - run `npm run db:seed-bourbon-library` again to add them.',
+        'Fixed: Bourbon Library citations (References & Sources) saved through the seed data script weren\'t actually reaching the app - they were written to a field upsertMashBill never reads. Existing entries\' citations are repaired as part of this release\'s seed data; new saves have always gone to the right place.',
+      ],
+    },
+    {
       version: '4.2.3',
       items: [
         'Changed: the Search by Name/SKU Lookup/Scan UPC toggle is gone, along with the separate "Product Name" field it used to show - the single Search field above now handles typing a product name directly, with the matching results dropdown right underneath it.',
@@ -1146,6 +1154,7 @@
     mashBillLibraryFormDistilleryInput: document.getElementById('mashBillLibraryFormDistilleryInput'),
     mashBillLibraryFormParentCompanyInput: document.getElementById('mashBillLibraryFormParentCompanyInput'),
     mashBillLibraryFormCategoryInput: document.getElementById('mashBillLibraryFormCategoryInput'),
+    mashBillLibraryFormSkuInput: document.getElementById('mashBillLibraryFormSkuInput'),
     mashBillLibraryFormGrain: document.getElementById('mashBillLibraryFormGrain'),
     mashBillLibraryFormPct: document.getElementById('mashBillLibraryFormPct'),
     mashBillLibraryFormAddGrainBtn: document.getElementById('mashBillLibraryFormAddGrainBtn'),
@@ -5864,6 +5873,7 @@
     els.mashBillLibraryFormDistilleryInput.value = '';
     els.mashBillLibraryFormParentCompanyInput.value = '';
     els.mashBillLibraryFormCategoryInput.value = '';
+    els.mashBillLibraryFormSkuInput.value = '';
     els.mashBillLibraryFormPct.value = '';
     els.mashBillLibraryFormNoseInput.value = '';
     els.mashBillLibraryFormPalateInput.value = '';
@@ -5891,6 +5901,7 @@
     els.mashBillLibraryFormDistilleryInput.value = entry.distillery || '';
     els.mashBillLibraryFormParentCompanyInput.value = entry.parentCompany || '';
     els.mashBillLibraryFormCategoryInput.value = entry.category || '';
+    els.mashBillLibraryFormSkuInput.value = entry.sku || '';
     els.mashBillLibraryFormNoseInput.value = entry.nose || '';
     els.mashBillLibraryFormPalateInput.value = entry.palate || '';
     els.mashBillLibraryFormFinishInput.value = entry.finish || '';
@@ -6102,6 +6113,7 @@
         source: 'Manual',
         parentCompany: els.mashBillLibraryFormParentCompanyInput.value.trim(),
         category: els.mashBillLibraryFormCategoryInput.value.trim(),
+        sku: els.mashBillLibraryFormSkuInput.value.trim(),
         nose: els.mashBillLibraryFormNoseInput.value.trim(),
         palate: els.mashBillLibraryFormPalateInput.value.trim(),
         finish: els.mashBillLibraryFormFinishInput.value.trim(),
@@ -6382,6 +6394,7 @@
             <div><dt>Distillery</dt><dd>${escapeHtml(entry.distillery || 'Unknown')}</dd></div>
             ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
             ${entry.category ? `<div><dt>Style</dt><dd>${escapeHtml(entry.category)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.distillery)} entries</dt>

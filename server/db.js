@@ -77,7 +77,8 @@ function applySchema(db) {
       confidence_tier TEXT,
       confidence_note TEXT,
       confidence_sources TEXT,
-      confidence_verified_at TEXT
+      confidence_verified_at TEXT,
+      sku TEXT
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_mash_bills_title_unique ON mash_bills (title COLLATE NOCASE);
   `);
@@ -98,7 +99,7 @@ function applyMashBillColumns(db) {
   const existing = new Set(db.pragma('table_info(mash_bills)').map((col) => col.name));
   const wanted = [
     'parent_company', 'category', 'nose', 'palate', 'finish', 'tasting_source',
-    'confidence_tier', 'confidence_note', 'confidence_sources', 'confidence_verified_at',
+    'confidence_tier', 'confidence_note', 'confidence_sources', 'confidence_verified_at', 'sku',
   ];
   for (const column of wanted) {
     if (!existing.has(column)) db.exec(`ALTER TABLE mash_bills ADD COLUMN ${column} TEXT`);
@@ -304,6 +305,7 @@ function rowToMashBill(row) {
     updatedAt: row.updated_at,
     parentCompany: row.parent_company || '',
     category: row.category || '',
+    sku: row.sku || '',
     nose: row.nose || '',
     palate: row.palate || '',
     finish: row.finish || '',
@@ -342,16 +344,17 @@ function validateMashBillInput({ title, grains }) {
 // updateMashBillById's own distillery handling already used before this
 // helper existed. `existing` is a rowToMashBill()-shaped object or null.
 function mashBillOptionalFieldParams({
-  parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+  parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
 }, existing) {
   const prev = existing || {
-    parentCompany: '', category: '', nose: '', palate: '', finish: '', tastingSource: '',
+    parentCompany: '', category: '', sku: '', nose: '', palate: '', finish: '', tastingSource: '',
     confidence: { tier: '', note: '', verifiedAt: '' }, references: [],
   };
   const conf = confidence !== undefined ? (confidence || {}) : prev.confidence;
   return {
     parentCompany: normalizeOptionalText(parentCompany !== undefined ? parentCompany : prev.parentCompany),
     category: normalizeOptionalText(category !== undefined ? category : prev.category),
+    sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
     nose: normalizeOptionalText(nose !== undefined ? nose : prev.nose),
     palate: normalizeOptionalText(palate !== undefined ? palate : prev.palate),
     finish: normalizeOptionalText(finish !== undefined ? finish : prev.finish),
@@ -364,7 +367,7 @@ function mashBillOptionalFieldParams({
 }
 
 const MASH_BILL_OPTIONAL_COLUMNS_SET = `
-  parent_company = @parentCompany, category = @category, nose = @nose, palate = @palate, finish = @finish,
+  parent_company = @parentCompany, category = @category, sku = @sku, nose = @nose, palate = @palate, finish = @finish,
   tasting_source = @tastingSource, confidence_tier = @confidenceTier, confidence_note = @confidenceNote,
   confidence_sources = @confidenceSources, confidence_verified_at = @confidenceVerifiedAt
 `;
@@ -378,7 +381,7 @@ const MASH_BILL_OPTIONAL_COLUMNS_SET = `
 // than blocking on a "already exists" error.
 function upsertMashBill({
   title, distillery, grains, source,
-  parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+  parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
 }) {
   const db = getDb();
   const { cleanTitle, cleanGrains } = validateMashBillInput({ title, grains });
@@ -392,7 +395,7 @@ function upsertMashBill({
     source: source || 'Manual',
     updatedAt: now,
     ...mashBillOptionalFieldParams({
-      parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+      parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
     }, existing),
   };
 
@@ -407,12 +410,12 @@ function upsertMashBill({
   const info = db.prepare(`
     INSERT INTO mash_bills (
       title, distillery, grains, source, updated_at,
-      parent_company, category, nose, palate, finish, tasting_source,
+      parent_company, category, sku, nose, palate, finish, tasting_source,
       confidence_tier, confidence_note, confidence_sources, confidence_verified_at
     )
     VALUES (
       @title, @distillery, @grains, @source, @updatedAt,
-      @parentCompany, @category, @nose, @palate, @finish, @tastingSource,
+      @parentCompany, @category, @sku, @nose, @palate, @finish, @tastingSource,
       @confidenceTier, @confidenceNote, @confidenceSources, @confidenceVerifiedAt
     )
   `).run(params);
@@ -427,7 +430,7 @@ function upsertMashBill({
 // letting better-sqlite3's raw constraint error reach the caller.
 function updateMashBillById(id, {
   title, distillery, grains, source,
-  parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+  parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
 }) {
   const db = getDb();
   const existing = getMashBill(id);
@@ -450,7 +453,7 @@ function updateMashBillById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...mashBillOptionalFieldParams({
-        parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+        parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
       }, existing),
     });
   } catch (err) {
