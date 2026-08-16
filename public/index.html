@@ -326,11 +326,13 @@
                Display Signs), plus the experimentalBourbonEnabled gate (see
                applyFormMode in app.js). -->
           <div class="field" id="storePickField">
-            <label class="server-pc-checkbox">
-              <input type="checkbox" id="fStorePick" />
-              Store Pick
-            </label>
-            <p class="help-text">Prints a "Store Pick" ribbon in the corner - independent of Talker Style, so it can still show up alongside a Closeout badge if a store pick goes on clearance.</p>
+            <div class="store-pick-toggle-row">
+              <span class="store-pick-toggle-row__label">Store Pick</span>
+              <label class="switch">
+                <input type="checkbox" id="fStorePick" />
+                <span class="switch__track"><span class="switch__thumb"></span></span>
+              </label>
+            </div>
           </div>
 
           <div class="field-group" id="mashBillField">

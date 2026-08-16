@@ -2477,6 +2477,15 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    the top of this file), since nothing here is a bare <input> anymore. */
 .chilled-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .chilled-toggle-row__label { font-size: 0.9rem; }
+
+/* Store Pick (#fStorePick/#storePickField) - same switch-not-checkbox fix
+   as Also Available Chilled right above, and for the same reason: it used
+   to be a bare checkbox via .server-pc-checkbox, which put it in the path
+   of .field input's width:100% (see near the top of this file) and left
+   the box and label misaligned. Own class rather than reusing
+   .chilled-toggle-row - same shape, different field. */
+.store-pick-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.store-pick-toggle-row__label { font-size: 0.9rem; }
 .switch { position: relative; display: inline-flex; align-items: center; flex: none; }
 /* The [type="checkbox"] in this selector isn't for matching - it's always
    a checkbox here - it's extra specificity (class + type + attribute) to
