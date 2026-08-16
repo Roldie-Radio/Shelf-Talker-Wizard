@@ -462,7 +462,63 @@ h1, h2, h3 { margin: 0; }
 .library-stat { display: flex; flex-direction: column; }
 .library-stat b { font-size: 1.05rem; }
 .library-stat span { font-size: 0.7rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+/* The "Parent companies" stat doubles as the entry point into the company
+   browse view below (see renderLibraryChipsAndStats/renderCompaniesView in
+   app.js) - same look as every other stat at rest, so it doesn't read as a
+   bolted-on control, with a hover state and chevron that only a real
+   button would have. */
+.library-stat--link { border: none; background: none; cursor: pointer; padding: 0.3rem 0.5rem; margin: -0.3rem -0.5rem; border-radius: 8px; flex-direction: row; align-items: center; gap: 0.35rem; }
+.library-stat--link:hover { background: var(--ui-hover); }
+.library-stat--link .library-stat__main { display: flex; flex-direction: column; }
+.library-stat--link .library-stat__chevron { font-size: 0.85rem; transition: transform 0.12s ease, color 0.12s ease; }
+.library-stat--link:hover .library-stat__chevron { transform: translateX(2px); color: var(--ui-accent-ink); }
 .library-body { padding: 1.3rem 1.5rem 2rem; }
+
+/* ---------- Bourbon Library - Parent Company browse (renderCompaniesView/
+   renderCompanyResults/renderCompanyDetail in app.js) - a third view mode
+   alongside the grid and a bourbon's own profile page, reached via the
+   "Parent companies" stat above. Companies are bucketed into three fixed
+   tiers by bourbon count (see COMPANY_FEATURED_MIN/COMPANY_MAJOR_MIN in
+   app.js) rather than a literal proportional treemap, which gets
+   unreadable fast once there are 60+ companies with names as long as
+   "Latitude Beverage Co. (Liquor Barn private label)" - prominence comes
+   from tier membership, card size, and type weight together. */
+.company-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+.company-toolbar input[type="search"] { flex: 1 1 240px; min-width: 180px; font: inherit; font-size: 0.9rem; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--ui-border); background: var(--ui-field); color: var(--ui-ink); }
+.company-toolbar__sort { display: flex; gap: 0.35rem; align-items: center; }
+.company-toolbar__sort span { font-size: 0.76rem; color: var(--ui-muted); margin-right: 0.15rem; }
+
+.tier-block { margin-bottom: 1.5rem; }
+.tier-block__head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem; }
+.tier-block__head h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin: 0; }
+.tier-block__head span { font-size: 0.75rem; color: var(--ui-muted); }
+
+.tier-grid--featured { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.9rem; }
+.tier-grid--major { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
+.tier-grid--standard { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.55rem; }
+
+.company-tile { text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: 10px; display: flex; flex-direction: column; gap: 0.45rem; border: 1px solid var(--ui-border); background: var(--ui-panel); }
+.company-tile:hover { border-color: var(--ui-accent-ink); background: var(--ui-hover); }
+.company-tile--featured { padding: 1rem 1.1rem; }
+.company-tile--featured .company-tile__count { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.company-tile--featured .company-tile__name { font-size: 0.95rem; font-weight: 700; }
+.company-tile--featured .company-tile__meta { font-size: 0.74rem; color: var(--ui-muted); }
+.company-tile__bar { height: 5px; border-radius: 3px; background: var(--ui-code-bg); overflow: hidden; }
+.company-tile__bar span { display: block; height: 100%; background: var(--ui-accent); border-radius: 3px; }
+.company-tile--major { padding: 0.8rem 0.9rem; }
+.company-tile--major .company-tile__count { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.company-tile--major .company-tile__name { font-size: 0.84rem; font-weight: 700; }
+.company-tile--standard { padding: 0.55rem 0.7rem; flex-direction: row; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.company-tile--standard .company-tile__name { font-size: 0.79rem; font-weight: 600; }
+.company-tile--standard .company-tile__count { font-size: 0.7rem; font-weight: 700; color: var(--ui-muted); background: var(--ui-code-bg); padding: 0.1rem 0.4rem; border-radius: 999px; flex: 0 0 auto; }
+
+/* Company detail (drill-down) - reuses .library-stats/.library-stat as-is
+   for its own count/distilleries/confirmed row. */
+.bourbon-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.bourbon-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--ui-border); background: var(--ui-panel); border-radius: 8px; padding: 0.6rem 0.8rem; }
+.bourbon-row:hover { background: var(--ui-hover); border-color: var(--ui-accent-ink); }
+.bourbon-row__title { font-size: 0.88rem; font-weight: 700; }
+.bourbon-row__sub { font-size: 0.75rem; color: var(--ui-muted); margin-top: 0.1rem; }
 
 /* Bourbon Library - card grid (see bourbonCardHtml/renderLibraryGrid in
    app.js). A real grid, unlike .history-list's flat rows, since these are
