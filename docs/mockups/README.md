@@ -100,6 +100,32 @@ browser.
   real `renderBourbonProfile` &mdash; see the "Implemented" note on
   mash-bill-pie-chart.html above for exactly which entries the dashed
   "Not yet researched" ring applies to.
+- **bourbon-library-sort-view.html** &mdash; adds a **Card / List** view
+  switch and a **Sort** dropdown to the Bourbon Library's main grid, in a
+  new toolbar row above the results &mdash; the same spot the Parent
+  Company browse view's own search+sort toolbar already established. Both
+  controls reuse existing components rather than introducing new ones: the
+  view switch is the app's `.preview-toggle`/`.toggle-btn` segmented
+  control (already used for Live Preview's Current Talker/Full Page
+  switch), and Sort is the app's own `.field-select` dropdown (every form
+  field in the app already looks like this), grouped into Alphabetical,
+  Confidence, **Grain %** (Most Corn/Rye/Wheat/Malted Barley), Recipe
+  (Simplest/Most complex by grain count), and SKU. List view reuses
+  `.bourbon-list`/`.bourbon-row` from the Parent Company drill-down
+  verbatim, extended with a metric slot + chevron. Whichever field the
+  active sort orders by shows up as a small chip on every card/row in
+  either view, not just the resulting order &mdash; e.g. "Most Corn %"
+  shows each entry's actual corn percentage, "SKU (Low&ndash;High)" shows
+  its SKU. The grain-% sorts sum grain **families**, not literal grain
+  strings &mdash; classic wheated bourbons (Weller, Maker's Mark) record
+  their secondary grain as "Red Winter Wheat," not "Wheat," so a literal
+  match would have silently missed every one of them; verified live
+  against all 279 real entries (embedded directly, trimmed to just the
+  fields this view needs), which is also how this caught that the wheat
+  family had to include three other spellings before "Most Wheat %" was
+  trustworthy. Design notes suggest remembering the last-picked view/sort
+  per PC (localStorage), the way Full Page/Current Talker's own choice
+  already persists.
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual
