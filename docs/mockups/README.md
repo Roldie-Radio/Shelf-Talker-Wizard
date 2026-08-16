@@ -428,3 +428,48 @@ browser.
   one grain in it first, exactly as the mockup assumed &mdash; saving is
   disabled with an explanation rather than attempting a doomed request
   when neither an existing entry nor any chips exist yet.
+- **mash-bill-certainty-badge.html** &mdash; follow-up to
+  bourbon-library-autofill.html above: Mash Bill Confidence
+  (Confirmed/Reported/Estimated/Unknown) shows up in the recall banner and
+  the Library's own profile page, but has never printed on an actual shelf
+  talker &mdash; a shopper reading a mash bill percentage off the shelf has
+  no way to know whether that's a distillery-published fact or a
+  trade-press estimate. Proposes a small marker on the printed Mash Bill
+  block, and works out what it would actually take to get a confidence
+  value onto an individual talker rather than just a Library entry: a new
+  `talker.mashBillConfidence` field, set alongside `currentMashBill`
+  whenever the autofill banner's "Use"/"Use All" (Mash Bill row) is
+  clicked, and cleared the moment the chip list is hand-edited afterward
+  (`addMashBillGrain` or the `remove-mashbill` handler) since the rating no
+  longer describes what's actually on the card &mdash; a hand-typed mash
+  bill that was never autofilled carries no confidence and shows no badge
+  under any style, since there's no honest basis for one. Stored on the
+  talker itself rather than re-derived from the Library at render time, to
+  match Print History's existing snapshot philosophy (a reprint months
+  later shouldn't change because the Library entry it came from was since
+  edited or deleted). A pill toggle compares three print treatments against
+  four real/realistic samples (Buffalo Trace: Reported, Four Roses Single
+  Barrel: Confirmed, Blanton's: Estimated, a hand-typed "Store Brand
+  Kentucky Bourbon": no badge under any style) &mdash; **A: always show the
+  tier** as plain text next to the label, **B: a dot meter** matching the
+  staff UI's own `.conf-meter` language, and **C: quiet, only if not
+  Confirmed** (recommended) &mdash; nothing extra on the common case, a
+  small &dagger; plus one short footnote line otherwise. Recommendation
+  reasons from two angles a mockup could easily gloss over: Confirmed/
+  Reported/Estimated/Unknown are staff research-methodology terms, not
+  shopper vocabulary, so printing "ESTIMATED" verbatim reads as a defect
+  notice rather than a research footnote (Style C collapses all
+  non-Confirmed tiers into one plain-language line instead); and dots read
+  clearly in the app's own UI where staff already know the convention, but
+  are meaningless to a shopper with no legend in front of them, which is
+  why Style B isn't the pick despite being the most visually consistent
+  with the rest of the app. All three styles stay inside the card's
+  existing fixed print palette (`--ink`/`--muted` only, reusing the Mash
+  Bill label's own colors) rather than bringing the staff badge's
+  green/amber/red tint onto paper, which the mockup calls out as a real
+  expansion of `public/css/styles.css`'s deliberately small, fixed print
+  color set if it were ever proposed. Explicitly out of scope: no manual
+  confidence picker for a hand-typed mash bill, no retroactive badges on
+  talkers already printed/queued before this would ship (an absent
+  `mashBillConfidence` already reads as "no badge"), and Quarter Size
+  talkers never show the Mash Bill block at all regardless.
