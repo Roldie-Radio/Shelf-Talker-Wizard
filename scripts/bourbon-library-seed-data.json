@@ -5097,7 +5097,7 @@
   {
     "title": "Yellowstone 93 Proof Kentucky Bourbon",
     "distillery": "Limestone Branch Distillery",
-    "parentCompany": "Luxco/MGP Ingredients",
+    "parentCompany": "Luxco (MGP Ingredients)",
     "category": "Kentucky Straight Bourbon",
     "sku": "10949",
     "grains": [
@@ -5136,7 +5136,7 @@
   {
     "title": "Yellowstone American Single Malt Whiskey",
     "distillery": "Limestone Branch Distillery",
-    "parentCompany": "Luxco/MGP Ingredients",
+    "parentCompany": "Luxco (MGP Ingredients)",
     "category": "American Single Malt Whiskey",
     "sku": "34357",
     "grains": [
@@ -5167,7 +5167,7 @@
   {
     "title": "Yellowstone Rum Cask Bourbon",
     "distillery": "Limestone Branch Distillery",
-    "parentCompany": "Luxco/MGP Ingredients",
+    "parentCompany": "Luxco (MGP Ingredients)",
     "category": "Kentucky Straight Bourbon (Rum Cask Finished)",
     "sku": "36982",
     "grains": [
@@ -5206,7 +5206,7 @@
   {
     "title": "Yellowstone Toasted Cask Bourbon",
     "distillery": "Limestone Branch Distillery",
-    "parentCompany": "Luxco/MGP Ingredients",
+    "parentCompany": "Luxco (MGP Ingredients)",
     "category": "Kentucky Straight Bourbon (Toasted Barrel Finished)",
     "sku": "36983",
     "grains": [

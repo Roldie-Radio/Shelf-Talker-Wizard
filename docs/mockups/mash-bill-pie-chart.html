@@ -1,0 +1,511 @@
+<title>Mash Bill Pie Chart — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted from Shelf Talker Wizard's own public/css/styles.css,
+   same set every other mockup in this folder uses, so this sits in the
+   same visual system rather than inventing a second one.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+  --ui-low: #a8391a;
+  --ui-low-tint: rgba(168, 57, 26, 0.1);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:focus-visible, input:focus-visible, .lib2-row:focus-visible, .toggle-btn:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+.toggle-btn { border: 1px solid var(--ui-border); background: var(--ui-btn); padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; color: var(--ui-muted); font-family: inherit; }
+.toggle-btn.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+
+.layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; align-items: stretch; min-height: 640px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+/* ---------- left: sample picker ---------- */
+.lib-pane { border-right: 1px solid var(--ui-border); background: var(--ui-panel-alt); padding: 1rem; display: flex; flex-direction: column; min-width: 0; gap: 0.4rem; }
+.lib-pane__label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin: 0 0 0.3rem; }
+.lib2-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+.lib2-row { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 0.55rem 0.65rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.2rem; width: 100%; }
+.lib2-row:hover { background: var(--ui-hover); }
+.lib2-row.is-selected { background: var(--ui-panel); border-color: var(--ui-border); box-shadow: 0 1px 0 var(--ui-shadow); }
+.lib2-row__title { font-weight: 700; font-size: 0.86rem; }
+.lib2-row__sub { font-size: 0.74rem; color: var(--ui-muted); }
+.lib2-row__meta { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; }
+
+/* ---------- confidence badge + dot meter (shared, real app classes) ---------- */
+.conf-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.14rem 0.5rem 0.14rem 0.4rem; border-radius: 999px; border: 1px solid transparent; }
+.conf-badge--confirmed { background: var(--ui-good-tint); color: var(--ui-good); border-color: color-mix(in srgb, var(--ui-good) 40%, transparent); }
+.conf-badge--reported  { background: var(--ui-warn-tint); color: var(--ui-warn); border-color: color-mix(in srgb, var(--ui-warn) 40%, transparent); }
+.conf-badge--estimated { background: var(--ui-low-tint);  color: var(--ui-low);  border-color: color-mix(in srgb, var(--ui-low) 40%, transparent); }
+.conf-badge--unknown   { background: var(--ui-code-bg);   color: var(--ui-muted); }
+
+/* ---------- right: profile page ---------- */
+.profile-pane { padding: 1.4rem 1.6rem 1.8rem; min-width: 0; overflow-y: auto; }
+.profile-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1.2rem; }
+.profile-head h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+.profile-head__by { margin: 0.25rem 0 0; font-size: 0.88rem; color: var(--ui-ink-soft); }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; }
+.tag { font-size: 0.72rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.18rem 0.55rem; border-radius: 999px; }
+
+.block { border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.1rem 1.2rem; background: var(--ui-panel); margin-bottom: 1.1rem; }
+.block h3 { font-size: 0.92rem; margin-bottom: 0.9rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.block h3 .view-toggle { margin-left: auto; }
+
+.mashbill-viz { display: flex; gap: 1.6rem; align-items: center; flex-wrap: wrap; }
+@media (max-width: 620px) { .mashbill-viz { flex-direction: column; align-items: stretch; } }
+
+.donut-wrap { position: relative; flex: 0 0 auto; width: 200px; height: 200px; }
+.donut-wrap svg { width: 100%; height: 100%; display: block; }
+.donut-slice { cursor: pointer; transition: opacity 0.12s ease; transform-origin: 100px 100px; }
+.donut-slice:hover, .donut-slice.is-hot { opacity: 0.82; }
+.donut-slice-label { font-size: 12px; font-weight: 700; fill: #fff; text-anchor: middle; dominant-baseline: middle; pointer-events: none; paint-order: stroke; stroke: rgba(0,0,0,0.35); stroke-width: 2px; }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.donut-center__pct { font-size: 1.5rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.donut-center__grain { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.2rem; max-width: 90px; line-height: 1.2; }
+
+.grain-legend2 { flex: 1 1 220px; display: flex; flex-direction: column; gap: 0.5rem; min-width: 180px; }
+.grain-legend2__row { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.4rem; border-radius: 6px; }
+.grain-legend2__row.is-hot { background: var(--ui-hover); }
+.grain-legend2__swatch { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
+.grain-legend2__name { font-size: 0.85rem; flex: 1; }
+.grain-legend2__pct { font-size: 0.92rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3.4ch; text-align: right; }
+
+.grain-bar--old { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15); margin-top: 0.2rem; }
+.grain-bar--old span { height: 100%; }
+
+.placeholder-note { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.85rem; padding: 0.55rem 0.7rem; background: var(--ui-low-tint); border: 1px solid color-mix(in srgb, var(--ui-low) 35%, transparent); border-radius: 8px; font-size: 0.8rem; color: var(--ui-low); }
+
+.compare-strip { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem; }
+.compare-strip__label { font-size: 0.76rem; color: var(--ui-muted); }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+
+table.palette { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+table.palette th, table.palette td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--ui-border); vertical-align: middle; }
+table.palette th { color: var(--ui-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.table-wrap { overflow-x: auto; }
+.swatch-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 0.5rem; vertical-align: middle; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed feature &middot; not part of the running app</p>
+    <h1>Mash Bill Pie Chart</h1>
+    <p>
+      Today a Bourbon Library profile page's Mash Bill block is a single stacked bar (<code>grainBarHtml</code> in
+      <code>app.js</code>) with a text legend underneath. This mockup proposes a <strong>donut chart with the
+      percentage printed on every slice</strong> as the primary visualization, keeping a numeric legend beside it
+      so the exact figures are never more than a glance away. Pick a bourbon on the left &mdash; the eight samples
+      are chosen from the real 279-entry library to cover a 2-grain rye, a wheated bourbon, a 4-grain "triple malt"
+      recipe, an all-non-corn mash bill, a smoked-malt specialty grain, and an unresearched placeholder.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Bourbon Library</div>
+    </div>
+
+    <div class="layout">
+      <div class="lib-pane">
+        <p class="lib-pane__label">Sample bourbons (real library data)</p>
+        <div class="lib2-list" id="libList"></div>
+      </div>
+      <div class="profile-pane" id="profilePane"></div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Why a donut instead of a plain pie</h3>
+        <p>The hole leaves room for a center callout &mdash; the dominant grain's own percentage and name, the
+        single fact a staff member glancing at the page is most likely to want first. A plain pie has no natural
+        place to put that without covering a slice.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Where the number goes</h3>
+        <p>A slice wide enough to hold its own label (roughly &ge;12%) gets the percentage printed directly on
+        it. Thinner slices &mdash; a 2% malted barley kicker, say &mdash; would be unreadable crammed into their
+        own sliver, so every grain's exact percentage still lives in the legend beside the chart regardless of
+        slice size, in the same bold tabular-numeral style either way.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Hover ties the two halves together</h3>
+        <p>Hovering (or focusing) a slice highlights its legend row and vice versa &mdash; try it on the 4-grain
+        Rabbit Hole Cavehill sample, where three slices sit close in size. Encodes the same "state in both form
+        and number" idea the confidence badges already use elsewhere on this page.</p>
+      </div>
+      <div class="notes-card">
+        <h3>The old bar isn't gone, just demoted</h3>
+        <p>The existing stacked bar still appears &mdash; smaller, under a "Compare to bar" toggle in the block
+        header &mdash; since it's what currently prints on the shelf talker itself (<code>buildMashBillHtml</code>
+        in <code>card.js</code>) and staff may want the two side by side while this rolls out. The chart is a
+        profile-page-only addition; nothing about what actually prints changes.</p>
+      </div>
+    </div>
+
+    <div class="notes-card notes-card--warn">
+      <h3>Open question: an extended grain color palette</h3>
+      <p>
+        <code>MASH_BILL_GRAIN_COLORS</code> today only covers six grains (Corn, Rye, Wheat, Malted Barley, Malted
+        Rye, Oat) &mdash; enough for what a hand-typed shelf talker mash bill has ever used. The Bourbon Library's
+        279 researched entries introduced real grain names outside that list (Red Winter Wheat, Malted Wheat,
+        Honey/Caramel Malted Barley, 6-Row Distiller's Malt, Mesquite Smoked Malt, plain "Barley", "Oats"), which
+        currently all fall back to one flat grey swatch &mdash; fine on a 3-segment bar, but two different
+        malted-barley variants sharing a color on the same pie chart reads as a bug, not a design choice. This
+        mockup proposes the palette below: family-grouped tints so related grains stay visually related, plus one
+        deliberately different color for genuinely different concepts (a smoked malt isn't "a shade of barley").
+        This needs sign-off before implementation, not something to decide silently in code.
+      </p>
+      <div class="table-wrap">
+        <table class="palette" id="paletteTable"></table>
+      </div>
+    </div>
+
+    <div class="notes-card">
+      <h3>The "Unknown" placeholder case</h3>
+      <p>Heaven Hill Grain to Glass is a real library entry with no researched mash bill yet &mdash; its single
+      "Corn 100%" row exists only because the schema requires at least one grain (see its confidence note in the
+      seed data). A full donut ring in the Corn color would misrepresent that as a real 100%-corn recipe, so an
+      <code>unknown</code>-tier entry instead renders the ring as a dashed, half-opacity placeholder with an
+      explicit "not yet researched" note where the center callout would normally sit &mdash; select it on the left
+      to see this.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// Extended grain color palette proposal - family-grouped, see the
+// "Open question" design note above. GRAIN_COLORS_TODAY is exactly
+// card.js's real MASH_BILL_GRAIN_COLORS; GRAIN_COLORS_PROPOSED adds
+// the rest, grouped by family with the existing six left untouched.
+// ---------------------------------------------------------------
+const GRAIN_COLORS_TODAY = {
+  Corn: '#d9a441', Rye: '#8a3a2c', Wheat: '#c9b464',
+  'Malted Barley': '#a67c3d', 'Malted Rye': '#6e2a1f', Oat: '#ddd0ad',
+};
+const GRAIN_COLORS_PROPOSED = {
+  ...GRAIN_COLORS_TODAY,
+  'Red Winter Wheat': '#b89a4e',
+  'Texas Winter Wheat': '#cfa646',
+  'Malted Wheat': '#e0c583',
+  'Honey Malted Barley': '#c99a4a',
+  'Caramel Malted Barley': '#8f6a30',
+  "6-Row Distiller's Malt": '#b6903f',
+  Barley: '#c7b78f',
+  Oats: '#ddd0ad',
+  'Mesquite Smoked Malt': '#5f4a37',
+};
+const FALLBACK_COLOR = '#b8ab98';
+const PALETTE_FAMILY = {
+  Corn: 'Corn', Rye: 'Rye family', 'Malted Rye': 'Rye family',
+  Wheat: 'Wheat family', 'Red Winter Wheat': 'Wheat family', 'Texas Winter Wheat': 'Wheat family', 'Malted Wheat': 'Wheat family',
+  'Malted Barley': 'Malt family', 'Honey Malted Barley': 'Malt family', 'Caramel Malted Barley': 'Malt family', "6-Row Distiller's Malt": 'Malt family',
+  Barley: 'Malt family (unmalted)', Oat: 'Oat', Oats: 'Oat',
+  'Mesquite Smoked Malt': 'Specialty (deliberately distinct)',
+};
+
+const TIER_META = {
+  confirmed: { label: 'Confirmed', colorVar: '--ui-good' },
+  reported:  { label: 'Reported',  colorVar: '--ui-warn' },
+  estimated: { label: 'Estimated', colorVar: '--ui-low' },
+  unknown:   { label: 'Unknown',   colorVar: '--ui-muted' },
+};
+
+// Real entries, verbatim from scripts/bourbon-library-seed-data.json.
+const bourbons = [
+  {
+    id: 1, title: 'Buffalo Trace Bourbon', distillery: 'Buffalo Trace Distillery', parent: 'Sazerac Company',
+    category: 'Kentucky Straight Bourbon', tier: 'reported',
+    grains: [{ g: 'Corn', p: 90 }, { g: 'Rye', p: 8 }, { g: 'Malted Barley', p: 2 }],
+  },
+  {
+    id: 2, title: 'Sazerac Straight Rye Whiskey', distillery: 'MGP of Indiana (Lawrenceburg, IN)', parent: 'Sazerac Company',
+    category: 'Kentucky Straight Rye Whiskey', tier: 'reported',
+    grains: [{ g: 'Rye', p: 95 }, { g: 'Malted Barley', p: 5 }],
+  },
+  {
+    id: 3, title: "Maker's Mark Kentucky Bourbon", distillery: "Maker's Mark Distillery", parent: 'Beam Suntory',
+    category: 'Kentucky Straight Bourbon', tier: 'confirmed',
+    grains: [{ g: 'Corn', p: 70 }, { g: 'Red Winter Wheat', p: 16 }, { g: 'Malted Barley', p: 14 }],
+  },
+  {
+    id: 4, title: 'Rabbit Hole Cavehill Bourbon', distillery: 'Rabbit Hole Distillery', parent: 'Pernod Ricard',
+    category: 'Kentucky Straight Bourbon (Four Grain Triple Malt)', tier: 'confirmed',
+    grains: [{ g: 'Corn', p: 70 }, { g: 'Malted Wheat', p: 10 }, { g: 'Malted Barley', p: 10 }, { g: 'Honey Malted Barley', p: 10 }],
+  },
+  {
+    id: 5, title: 'Ransom The Emerald American Whiskey', distillery: 'Ransom Wine & Spirits', parent: 'Ransom Wine & Spirits (independently owned)',
+    category: 'Straight American Whiskey (Irish-Style Pot Still)', tier: 'reported',
+    grains: [{ g: 'Malted Barley', p: 40 }, { g: 'Barley', p: 30 }, { g: 'Rye', p: 20 }, { g: 'Oats', p: 10 }],
+  },
+  {
+    id: 6, title: 'Bulleit Mesquite Smoked Malt Bourbon', distillery: 'Bulleit Distilling Co.', parent: 'Diageo',
+    category: 'Kentucky Straight Bourbon (Smoked Malt, No Rye)', tier: 'confirmed',
+    grains: [{ g: 'Corn', p: 65 }, { g: 'Mesquite Smoked Malt', p: 30 }, { g: 'Malted Barley', p: 5 }],
+  },
+  {
+    id: 7, title: 'TX Texas Straight Bourbon', distillery: 'Firestone & Robertson Distilling Co.', parent: 'Pernod Ricard',
+    category: 'Texas Straight Bourbon (Wheated)', tier: 'reported',
+    grains: [{ g: 'Corn', p: 70 }, { g: 'Texas Winter Wheat', p: 20 }, { g: "6-Row Distiller's Malt", p: 10 }],
+  },
+  {
+    id: 8, title: 'Heaven Hill Grain to Glass Specialty Barrel Bourbon', distillery: 'Heaven Hill Distillery', parent: 'Heaven Hill Brands (Shapira family, privately held)',
+    category: 'Kentucky Straight Bourbon', tier: 'unknown',
+    grains: [{ g: 'Corn', p: 100 }], isPlaceholder: true,
+  },
+];
+
+let selectedId = 1;
+
+function color(grain) { return GRAIN_COLORS_PROPOSED[grain] || FALLBACK_COLOR; }
+
+function badgeHtml(tier) {
+  const meta = TIER_META[tier];
+  return `<span class="conf-badge conf-badge--${tier}">${meta.label}</span>`;
+}
+
+// ---- donut geometry ----
+function polarToXY(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+  const large = endAngle - startAngle > 180 ? 1 : 0;
+  const p1 = polarToXY(cx, cy, rOuter, startAngle);
+  const p2 = polarToXY(cx, cy, rOuter, endAngle);
+  const p3 = polarToXY(cx, cy, rInner, endAngle);
+  const p4 = polarToXY(cx, cy, rInner, startAngle);
+  return [
+    `M ${p1.x} ${p1.y}`,
+    `A ${rOuter} ${rOuter} 0 ${large} 1 ${p2.x} ${p2.y}`,
+    `L ${p3.x} ${p3.y}`,
+    `A ${rInner} ${rInner} 0 ${large} 0 ${p4.x} ${p4.y}`,
+    'Z',
+  ].join(' ');
+}
+
+function donutHtml(grains, tier) {
+  const cx = 100, cy = 100, rOuter = 92, rInner = 56;
+  let angle = 0;
+  const dominant = grains.reduce((a, b) => (b.p > a.p ? b : a), grains[0]);
+
+  if (tier === 'unknown') {
+    return {
+      svg: `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="${(rOuter + rInner) / 2}" fill="none"
+        stroke="var(--ui-border)" stroke-width="${rOuter - rInner}" stroke-dasharray="6 7" opacity="0.7"/></svg>`,
+      center: `<div class="donut-center__pct" style="font-size:0.95rem;color:var(--ui-muted);">Not yet<br>researched</div>`,
+    };
+  }
+
+  const slices = grains.map(({ g, p }) => {
+    const start = angle;
+    const end = angle + (p / 100) * 360;
+    angle = end;
+    const mid = (start + end) / 2;
+    const labelPos = polarToXY(cx, cy, (rOuter + rInner) / 2, mid);
+    const showLabel = p >= 12;
+    return `
+      <path class="donut-slice" data-grain="${g}" d="${arcPath(cx, cy, rOuter, rInner, start, end)}" fill="${color(g)}"></path>
+      ${showLabel ? `<text class="donut-slice-label" x="${labelPos.x}" y="${labelPos.y}">${p}%</text>` : ''}
+    `;
+  }).join('');
+
+  return {
+    svg: `<svg viewBox="0 0 200 200">${slices}</svg>`,
+    center: `<div class="donut-center__pct">${dominant.p}%</div><div class="donut-center__grain">${dominant.g}</div>`,
+  };
+}
+
+function legendHtml(grains) {
+  return grains.map(({ g, p }) => `
+    <div class="grain-legend2__row" data-grain="${g}">
+      <span class="grain-legend2__swatch" style="background:${color(g)}"></span>
+      <span class="grain-legend2__name">${g}</span>
+      <span class="grain-legend2__pct">${p}%</span>
+    </div>
+  `).join('');
+}
+
+function oldBarHtml(grains) {
+  return grains.map(({ g, p }) => `<span style="width:${p}%;background:${color(g)}"></span>`).join('');
+}
+
+function renderList() {
+  document.getElementById('libList').innerHTML = bourbons.map((b) => `
+    <button type="button" class="lib2-row ${b.id === selectedId ? 'is-selected' : ''}" data-id="${b.id}">
+      <span class="lib2-row__title">${b.title}</span>
+      <span class="lib2-row__sub">${b.grains.length} grain${b.grains.length === 1 ? '' : 's'}${b.isPlaceholder ? ' &middot; placeholder' : ''}</span>
+      <span class="lib2-row__meta">${badgeHtml(b.tier)}</span>
+    </button>
+  `).join('');
+  document.querySelectorAll('.lib2-row[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderAll(); });
+  });
+}
+
+let showOldBar = false;
+
+function renderProfile() {
+  const b = bourbons.find((x) => x.id === selectedId);
+  const pane = document.getElementById('profilePane');
+  const { svg, center } = donutHtml(b.grains, b.tier);
+
+  pane.innerHTML = `
+    <div class="profile-head">
+      <div>
+        <h2>${b.title}</h2>
+        <p class="profile-head__by">${b.distillery} &middot; <strong>${b.parent}</strong></p>
+        <div class="profile-tags"><span class="tag">${b.category}</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>
+        Mash Bill
+        <button type="button" class="btn btn--small view-toggle" id="toggleBarBtn">${showOldBar ? 'Hide' : 'Compare to'} bar</button>
+      </h3>
+      <div class="mashbill-viz">
+        <div class="donut-wrap" id="donutWrap">
+          ${svg}
+          <div class="donut-center">${center}</div>
+        </div>
+        <div class="grain-legend2" id="legendWrap">${legendHtml(b.grains)}</div>
+      </div>
+      ${b.isPlaceholder ? `<div class="placeholder-note">⚠ This entry's grain list is a schema placeholder (the mash bill requires &ge;1 grain row), not a real recipe &mdash; see its confidence note.</div>` : ''}
+      ${showOldBar ? `
+        <div class="compare-strip">
+          <span class="compare-strip__label">Today's bar, for comparison:</span>
+        </div>
+        <div class="grain-bar--old">${oldBarHtml(b.grains)}</div>
+      ` : ''}
+      <div style="margin-top:0.9rem;"><span class="conf-badge conf-badge--${b.tier}">Mash Bill Confidence: ${TIER_META[b.tier].label}</span></div>
+    </div>
+  `;
+
+  document.getElementById('toggleBarBtn').addEventListener('click', () => { showOldBar = !showOldBar; renderProfile(); });
+
+  // Hover sync between donut slices and legend rows.
+  const donutWrap = document.getElementById('donutWrap');
+  const legendWrap = document.getElementById('legendWrap');
+  function setHot(grain, on) {
+    donutWrap.querySelectorAll(`.donut-slice[data-grain="${CSS.escape(grain)}"]`).forEach((el) => el.classList.toggle('is-hot', on));
+    legendWrap.querySelectorAll(`.grain-legend2__row[data-grain="${CSS.escape(grain)}"]`).forEach((el) => el.classList.toggle('is-hot', on));
+  }
+  donutWrap.querySelectorAll('.donut-slice').forEach((el) => {
+    el.addEventListener('mouseenter', () => setHot(el.dataset.grain, true));
+    el.addEventListener('mouseleave', () => setHot(el.dataset.grain, false));
+  });
+  legendWrap.querySelectorAll('.grain-legend2__row').forEach((el) => {
+    el.addEventListener('mouseenter', () => setHot(el.dataset.grain, true));
+    el.addEventListener('mouseleave', () => setHot(el.dataset.grain, false));
+  });
+}
+
+function renderAll() {
+  showOldBar = false;
+  renderList();
+  renderProfile();
+}
+renderAll();
+
+// ---- palette proposal table ----
+const paletteRows = Object.entries(GRAIN_COLORS_PROPOSED).map(([grain, hex]) => `
+  <tr>
+    <td><span class="swatch-dot" style="background:${hex}"></span>${grain}</td>
+    <td>${PALETTE_FAMILY[grain] || ''}</td>
+    <td>${GRAIN_COLORS_TODAY[grain] ? 'Existing (unchanged)' : 'New'}</td>
+    <td style="font-variant-numeric: tabular-nums;">${hex}</td>
+  </tr>
+`).join('');
+document.getElementById('paletteTable').innerHTML = `
+  <thead><tr><th>Grain</th><th>Family</th><th>Status</th><th>Hex</th></tr></thead>
+  <tbody>${paletteRows}</tbody>
+`;
+</script>

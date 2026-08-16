@@ -4,6 +4,51 @@ Standalone, self-contained HTML mockups for proposed UI changes &mdash; not part
 the running app, just click-through prototypes for review. Open one directly in a
 browser.
 
+- **mash-bill-pie-chart.html** &mdash; proposes replacing the Bourbon Library
+  profile page's Mash Bill stacked bar with a **donut chart**, the exact
+  percentage printed directly on any slice wide enough to hold it (roughly
+  &ge;12%), plus a numeric legend beside it so every grain's percentage is
+  always visible regardless of slice size. The center of the donut callouts
+  the dominant grain's own percentage and name. Hovering a slice highlights
+  its legend row and vice versa. The old bar isn't removed &mdash; a
+  **Compare to bar** toggle in the block header still shows it, since it's
+  what actually prints on the shelf talker (`buildMashBillHtml` in
+  `card.js`); the chart is a profile-page-only addition. The eight sample
+  bourbons are real library entries chosen to cover a 2-grain rye, a wheated
+  bourbon, a 4-grain "triple malt" recipe, an all-non-corn mash bill
+  (Ransom Emerald), a smoked-malt specialty grain (Bulleit Mesquite Smoked
+  Malt), and the "Unknown"-tier placeholder case (Heaven Hill Grain to
+  Glass), which renders as a dashed, half-opacity ring with a "not yet
+  researched" note instead of presenting its schema-required placeholder
+  grain as a real recipe. Also proposes an **extended grain color
+  palette** &mdash; `MASH_BILL_GRAIN_COLORS` in `card.js` only covers six
+  grains today, but the Bourbon Library's 279 researched entries introduced
+  real grain names outside that list (Red Winter Wheat, Malted Wheat,
+  Honey/Caramel Malted Barley, 6-Row Distiller's Malt, Mesquite Smoked
+  Malt, plain "Barley", "Oats") that currently all collapse to one grey
+  fallback swatch; the mockup's design notes include a full proposed
+  palette table (family-grouped tints, one deliberately distinct color for
+  the smoked malt) that needs sign-off before implementation.
+- **parent-company-browse.html** &mdash; proposes a second Bourbon Library
+  browse mode, alongside the existing bourbon grid: a **company view**
+  listing all 66 parent companies (a real duplicate-naming bug this mockup
+  surfaced &mdash; "Luxco (MGP Ingredients)" vs. "Luxco/MGP Ingredients"
+  for the same company &mdash; was fixed in the seed data as a result,
+  dropping the count from 67), tiered by bourbon count into **Featured**
+  (13+, currently the top 5 &mdash; Beam Suntory, Sazerac, Heaven Hill,
+  Brown-Forman, Diageo), **Major** (5&ndash;12), and everyone else
+  (1&ndash;4), each tier rendered at its own card size/density rather than
+  a literal proportional treemap (unreadable at 66 items with company
+  names as long as "Latitude Beverage Co. (Liquor Barn private label)").
+  Sort toggle (Most bourbons / A&ndash;Z, defaulting to count-descending)
+  plus a live company-name search. Clicking any company (any tier) drills
+  into a detail view listing every one of its bourbons with a breadcrumb
+  back &mdash; the same grid&rarr;profile&rarr;back relationship
+  `libraryViewMode` already gives the bourbon grid, proposed here as a
+  third mode on that same state machine rather than a separate screen.
+  All company counts and bourbon lists are the real, current library data
+  (embedded directly from `scripts/bourbon-library-seed-data.json`), not
+  placeholders.
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual
