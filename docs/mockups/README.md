@@ -522,6 +522,29 @@ browser.
   least code reuse of the three, and the only one that doesn't build on
   top of the other two. All three demoed against the same real seed-data
   entry (Buffalo Trace Bourbon, SKU 15614) for continuity, with Four
-  Roses Single Barrel and Blanton's as the extra picker rows in B. Not
-  yet implemented - awaiting a decision on which direction (or
-  combination) to build for real.
+  Roses Single Barrel and Blanton's as the extra picker rows in B.
+  **Implemented**, as a variant of C: the existing single smart search box
+  on the Search tab (`#smartSearchInput`) now also searches the Bourbon
+  Library, by title or `sku`, whenever Product Type is Bourbon - shown as
+  a live preview list underneath the box (`#bourbonSearchResults`) rather
+  than a 4th method-panel pill, since staff shouldn't have to pick a mode
+  first for something that already auto-detects name vs. SKU vs. UPC.
+  Deliberately additive rather than a replacement for any of C's three
+  panels: `detectSmartSearchMode`'s routing, and Search by Name/SKU
+  Lookup/Scan UPC underneath it, keep working completely unchanged for a
+  Bourbon product exactly as they already do for Wine/Spirits - typing a
+  SKU still activates SKU Lookup and pulls price/size from WinePOS same as
+  before, the Library preview just shows up alongside it. Entirely
+  client-side against the already-fetched `mashBillLibraryCache` (a plain
+  array filter, exact-SKU matches sorted first), no new endpoint. Picking
+  a result fills Product Title plus whatever the recall banner's "Use All"
+  already fills (Mash Bill, Nose/Palate/Finish) - overwriting outright
+  rather than the banner's per-field confirm-before-overwrite, since
+  picking a search result is a deliberate, one-shot choice, same as every
+  other Search-tab result pick. Price/size/description stay blank (the
+  Library has none to offer), called out explicitly in the confirmation
+  message rather than left silently unexplained. Option A (a Store SKU
+  field on Bourbon talkers) and Option B (a dedicated picker overlay)
+  weren't needed to satisfy this - the existing search box and result-list
+  pattern already covered it once SKU became a second match key instead of
+  only title.

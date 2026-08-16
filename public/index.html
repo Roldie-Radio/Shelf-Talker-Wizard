@@ -760,6 +760,17 @@
             <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
           </div>
           <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
+          <!-- Product Type: Bourbon only (see refreshBourbonSearchResults in
+               app.js) - matches the same typed text against the Bourbon
+               Library's own title/sku fields, entirely client-side against
+               mashBillLibraryCache, purely additive next to the export-driven
+               dropdown above rather than replacing any of the three panels
+               below (SKU Lookup/Scan UPC still pull price/size from WinePOS
+               for a Bourbon product exactly as they already do for Wine/
+               Spirits). Deliberately not .search-results/position:absolute
+               like the dropdown above - this sits in normal flow so the two
+               can never visually overlap. -->
+          <div class="bourbon-search-results" id="bourbonSearchResults" hidden></div>
         </div>
         <p class="help-text" id="smartSearchHint" role="status" aria-live="polite">&nbsp;</p>
 
