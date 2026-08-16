@@ -8852,5 +8852,386 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Bhakta 2011 Bourbon",
+    "distillery": "Likely Cascade Hollow Distilling Co. (undisclosed, Tennessee-distilled)",
+    "parentCompany": "BHAKTA Spirits (independently owned)",
+    "category": "Straight Bourbon (Armagnac Cask Finished)",
+    "sku": "39689",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 84
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Caramel, ripe banana, and a rich brandy sweetness from the Armagnac casks.",
+    "palate": "Brown sugar, baking spice, and dried fruit from the Armagnac finish.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "BHAKTA doesn't officially disclose its source, but the stated Tennessee origin plus a mash bill identical to Cascade Hollow Distilling Co. (George Dickel's distillery) makes that the widely-suspected source - not confirmed. Aged 12 years 10 months and finished in vintage Armagnac casks (1973/1975/1985) after the fact.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "BHAKTA 2011 Bourbon - BHAKTA Spirits",
+        "url": "https://bhaktaspirits.com/products/bhakta-2011-bourbon",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Beyond Distilling Bourbon",
+    "distillery": "Beyond Distilling Company",
+    "parentCompany": "Beyond Distilling Company (independently owned)",
+    "category": "South Carolina Straight Bourbon (Wheated)",
+    "sku": "41579",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Wheat",
+        "pct": 25
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Vanilla, caramel, and soft wheat sweetness.",
+    "palate": "Brown sugar and baked bread, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Beyond Distilling publishes this 70/25/5 wheated mash bill directly - double distilled and aged 4.5 years in #4 alligator-char new American oak at their South Carolina distillery.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Beyond Distilling Company - Bourbon",
+        "url": "https://beyonddistillingcompany.com/bourbon/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Ransom The Emerald American Whiskey",
+    "distillery": "Ransom Wine & Spirits",
+    "parentCompany": "Ransom Wine & Spirits (independently owned)",
+    "category": "Straight American Whiskey (Irish-Style Pot Still)",
+    "sku": "21527",
+    "grains": [
+      {
+        "grain": "Malted Barley",
+        "pct": 40
+      },
+      {
+        "grain": "Barley",
+        "pct": 30
+      },
+      {
+        "grain": "Rye",
+        "pct": 20
+      },
+      {
+        "grain": "Oats",
+        "pct": 10
+      }
+    ],
+    "nose": "Toasted grain, honey, and a distinct oat creaminess.",
+    "palate": "Malty sweetness, light rye spice, and a smooth pot-still character unlike a typical bourbon.",
+    "finish": "Smooth, moderate, grainy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "The Emerald 1865 recreates a 150-year-old Irish pot-still mash bill (malted barley, unmalted barley, malted rye, and rolled oats) uncovered by cocktail historian David Wondrich - not a bourbon at all despite being sold in similar company, and the exact percentages above are illustrative of the grain mix rather than a precisely confirmed ratio.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Ransom The Emerald 1865 - distiller.com",
+        "url": "https://distiller.com/spirits/ransom-the-emerald-1865-straight-american-whiskey",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Watershed Distillery Bourbon BIB",
+    "distillery": "Watershed Distillery",
+    "parentCompany": "Watershed Distillery (independently owned)",
+    "category": "Ohio Straight Bourbon (Bottled-in-Bond, High-Rye)",
+    "sku": "41447",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Watershed confirms its Bottled-in-Bond release is a high-rye recipe but keeps exact percentages private - their separate standard Bourbon uses a published four-grain mash bill (60% corn, 35% combined rye/wheat, 5% spelt), but that figure isn't confirmed to apply to this BIB expression. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Bottled-In-Bond Bourbon - Watershed Distillery",
+        "url": "https://www.watersheddistillery.com/bottled-in-bond",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Wolves Rye Hop Whiskey",
+    "distillery": "Charbay Distillery (Ukiah, CA) + MGP of Indiana (blend)",
+    "parentCompany": "Wolves Whiskey (independently owned)",
+    "category": "Straight Rye Whiskey (Blended, Beer-Distilled Components)",
+    "sku": "33672",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 74
+      },
+      {
+        "grain": "Corn",
+        "pct": 13
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 13
+      }
+    ],
+    "nose": "Rye spice, dried fruit, and an unusual hoppy/malty complexity.",
+    "palate": "Bold rye pepper layered with beer-derived malt and hop character.",
+    "finish": "Long, warm, distinctive.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Wolves blends MGP-sourced Indiana rye with barrels selected in partnership with Willett (74% rye mash bill, the figure shown) and two beer-distilled whiskeys made from actual craft stout and pale ale beers at Charbay Distillery - the \"Hop Flavored\" label designation is a TTB technicality (no hops were added after distillation), not a flavoring additive. The overall blend ratio across all these components isn't published.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Wolves Rye Whiskey & Hop Flavored Whiskey Review - The Daily Pour",
+        "url": "https://thedailypour.com/spirit/wolves-rye-whiskey-hop-flavored-whiskey/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Nelson Bros. Whiskey Sherry Cask",
+    "distillery": "Nelson's Green Brier Distillery (blend, sourced Indiana/Kentucky + house Tennessee)",
+    "parentCompany": "Nelson's Green Brier Distillery (independently owned)",
+    "category": "Blended Straight Bourbon (High-Rye, Oloroso Sherry Cask Finished)",
+    "sku": "33455",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 36
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Wedding cake, black cherry, and a rich sherry sweetness.",
+    "palate": "Brown sugar, plum, and amaretto with oak and cr\u00e8me br\u00fbl\u00e9e notes from the sherry finish.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "The Nelson Brothers line blends high-rye bourbon sourced from Indiana and Kentucky with Nelson's own in-house Tennessee distillate before finishing select barrels in Oloroso sherry casks - the exact blend ratio and mash bill aren't published, so this uses a common MGP-style high-rye figure as an illustrative placeholder.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Nelson Bros. Sherry Cask - Nelson's Green Brier Distillery",
+        "url": "https://greenbrierdistillery.com/products/nelson-bros-sherry-cask",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Harlem Standard Bourbon",
+    "distillery": "MGP of Indiana (blended/bottled in Bardstown, KY)",
+    "parentCompany": "Harlem Standard (independently owned)",
+    "category": "Straight Bourbon (Four Grain, High-Rye)",
+    "sku": "33727",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Harlem Standard sources whiskey distilled at MGP of Indiana (a four-grain corn/wheat/rye/malted barley high-rye recipe), blended and bottled in Bardstown, KY - exact percentages aren't published. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Harlem Standard Straight Bourbon Whiskey Four-Grain",
+        "url": "https://harlemstandard.com/whiskey-list/bourbon-4-grain-111-proof/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hooten Young Jack Carr Warrior Proof 16YR",
+    "distillery": "MGP of Indiana",
+    "parentCompany": "Hooten Young (independently owned)",
+    "category": "Straight Bourbon (Barrel Proof, Limited Collaboration)",
+    "sku": "39175",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 99
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 1
+      }
+    ],
+    "nose": "Sweet corn, vanilla, and clove.",
+    "palate": "Baked apple, brown sugar, and gentle spice, smoothed by the high-corn recipe despite barrel-proof strength.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Distilled at MGP of Indiana with a published 99/1 near-maximum-corn mash bill, aged 16 years, bottled at 125 proof for this collaboration with author/former Navy SEAL Jack Carr.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Hooten Young Jack Carr Warrior Proof American Whiskey Review - Breaking Bourbon",
+        "url": "https://www.breakingbourbon.com/review/hooten-young-jack-carr-warrior-proof-american-whiskey",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Louisville Kentucky Series 8 Year 100 Proof Bourbon",
+    "distillery": "Bardstown Bourbon Company",
+    "parentCompany": "Old Louisville Whiskey Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Single Barrel Series)",
+    "sku": "40427",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 78
+      },
+      {
+        "grain": "Rye",
+        "pct": 10
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Vanilla, caramel, and toasted oak.",
+    "palate": "Brown sugar, baking spice, and dried fruit, carried by 100 proof.",
+    "finish": "Long, warm, oaky.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Old Louisville sources this from early production runs at Bardstown Bourbon Company, reportedly using this 78/10/12 mash bill, aged 8.5 years.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Louisville The Kentucky Series Bourbon Review - Bourbon Obsessed",
+        "url": "https://bourbonobsessed.com/old-louisville-the-kentucky-series-bourbon-review/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Stonestreet Straight Bourbon",
+    "distillery": "Bardstown Bourbon Company / Green River Distilling Co. (sourced)",
+    "parentCompany": "Jackson Family Wines",
+    "category": "Kentucky Straight Bourbon (High-Wheat)",
+    "sku": "41075",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Wheat",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Vanilla, honey, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread with gentle spice, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Stonestreet's published 70/21/9 high-wheat mash bill has been used for both its Founder's Edition (sourced from Bardstown Bourbon Company) and its standard release (sourced from Green River Distilling Co.) - Jackson Family Wines doesn't specify which source backs any individual bottle.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Introducing Stonestreet Bourbon: A Family-Owned Legacy - Bourbon Lens",
+        "url": "https://bourbonlens.com/stonestreet-bourbon-founders-edition/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
   }
 ]
