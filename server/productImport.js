@@ -2033,12 +2033,12 @@ async function lookupSkuFromHtml({ html, url, category }) {
 // findTastingNotes tries each in order (unless a specific one was
 // requested) and stops at the first that returns something; adding a third
 // source later is just one more entry here. `experimental: true` marks a
-// provider as gated behind the "Experimental Features -> Bourbon Shelf
-// Talkers" toggle in Settings (see the client's own note in app.js) -
-// Distiller is the one so far, since (unlike Wine.com/Vivino, which are at
-// least confirmed to exist and confirmed-blocked) its scraper has never
-// been confirmed against the live site at all. findTastingNotes below
-// skips every experimental provider unless the caller explicitly opts in.
+// provider as gated behind Product Type: Bourbon (see the client's own
+// note in app.js) - Distiller is the one so far, since (unlike
+// Wine.com/Vivino, which are at least confirmed to exist and
+// confirmed-blocked) its scraper has never been confirmed against the
+// live site at all. findTastingNotes below skips every experimental
+// provider unless the caller explicitly opts in.
 const TASTING_NOTE_PROVIDERS = [
   { name: 'Wine.com', search: searchWineCom },
   { name: 'Vivino', search: searchVivino },
@@ -2052,8 +2052,8 @@ const TASTING_NOTE_PROVIDER_NAMES = TASTING_NOTE_PROVIDERS.map((p) => p.name);
 
 // Subset of the above that's experimental (see the note on
 // TASTING_NOTE_PROVIDERS) - the client uses this to grey/filter those
-// specific options out of the Source dropdown while the toggle is off,
-// rather than hardcoding "Distiller" by name on the client side too.
+// specific options out of the Source dropdown unless Product Type is
+// Bourbon, rather than hardcoding "Distiller" by name on the client side too.
 const TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES = TASTING_NOTE_PROVIDERS
   .filter((p) => p.experimental)
   .map((p) => p.name);
@@ -2062,10 +2062,10 @@ const TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES = TASTING_NOTE_PROVIDERS
 // list - what the "Find Tasting Notes" dialog sends once staff choose a
 // specific site from the dropdown, rather than the default "Any source"
 // (which still tries them in order, same as before that dialog existed).
-// `allowExperimental` is the server-side half of the Bourbon Shelf Talkers
-// toggle (see app.js) - the client already keeps Distiller out of the
-// dropdown and out of its own "Any source" expectations while the toggle
-// is off, but this is what actually stops a request from reaching it: the
+// `allowExperimental` is the server-side enforcement of Product Type ===
+// Bourbon (see app.js) - the client already keeps Distiller out of the
+// dropdown and out of its own "Any source" expectations unless Bourbon is
+// selected, but this is what actually stops a request from reaching it: the
 // client is what a browser's dev tools can edit, this function is not.
 async function findTastingNotes({ title, vintage, source, allowExperimental }) {
   if (!title || !title.trim()) {
@@ -2077,10 +2077,7 @@ async function findTastingNotes({ title, vintage, source, allowExperimental }) {
     const named = TASTING_NOTE_PROVIDERS.find((p) => p.name === source);
     if (!named) throw new Error(`Unknown tasting notes source: "${source}".`);
     if (named.experimental && !allowExperimental) {
-      throw new Error(
-        `${source} is an experimental source - turn on Experimental Features `
-        + '-> Bourbon Shelf Talkers in Settings first.'
-      );
+      throw new Error(`${source} is only available for Product Type: Bourbon.`);
     }
     providers = [named];
   } else {

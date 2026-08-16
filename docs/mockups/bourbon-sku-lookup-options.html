@@ -1,0 +1,531 @@
+<title>Bourbon SKU Lookup Options — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted verbatim from public/css/styles.css's own :root and
+   [data-theme="dark"] blocks (same copy bourbon-library-autofill.html
+   uses), so this reads as the real app's own chrome, not an approximation.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --accent: #8a5f27;
+  --amber-band: #bd8436;
+  --sale-red: #d21f1f;
+  --muted: #6b645a;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-overlay: rgba(20, 18, 15, 0.5);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-overlay: rgba(0, 0, 0, 0.65);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-overlay: rgba(0, 0, 0, 0.65);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 92ch; }
+.intro h1 { font-size: 1.55rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.95rem; }
+.intro p strong { color: var(--ui-ink); }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem; padding: 0.85rem 1rem; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); position: sticky; top: 0.75rem; z-index: 20; box-shadow: 0 8px 20px var(--ui-shadow); }
+.controls__group { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.controls__label { font-size: 0.78rem; font-weight: 700; color: var(--ui-ink-soft); }
+.pill-group { display: inline-flex; gap: 0.25rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.2rem; flex-wrap: wrap; }
+.pill { border: none; background: transparent; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.79rem; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--ui-ink-soft); }
+.pill.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.pill:hover:not(.is-active) { background: var(--ui-hover); }
+
+.layout2 { display: grid; grid-template-columns: 440px 1fr; gap: 1.2rem; align-items: start; }
+@media (max-width: 980px) { .layout2 { grid-template-columns: 1fr; } }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; }
+
+.form-panel { padding: 1.1rem 1.15rem 1.3rem; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; font-size: 0.85rem; font-weight: 600; }
+.field span { color: var(--ui-ink-soft); }
+.field input, .field textarea, .field select { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font-weight: 400; width: 100%; resize: vertical; }
+.field input:focus-visible, .btn:focus-visible, .pill:focus-visible, .picker-row:focus-visible, .toggle-btn:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+.help-text { font-size: 0.76rem; color: var(--ui-muted); font-weight: 400; margin: 0.3rem 0 0; line-height: 1.4; }
+.field-group { padding-top: 0.75rem; margin-top: 0.4rem; border-top: 1px solid var(--ui-border); }
+.field-group__head { font-size: 0.85rem; font-weight: 700; color: var(--ui-ink); margin-bottom: 0.55rem; }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--small { padding: 0.32rem 0.65rem; font-size: 0.78rem; }
+.toggle-btn { border: 1px solid var(--ui-border); background: var(--ui-btn); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.79rem; font-weight: 700; cursor: pointer; color: var(--ui-muted); font-family: inherit; }
+.toggle-btn.is-active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; min-height: 1.9rem; }
+.chip-row:empty::after { content: "Nothing filled in yet."; font-size: 0.78rem; color: var(--ui-muted); font-style: italic; }
+.chip { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 999px; padding: 0.28rem 0.65rem; font-size: 0.8rem; font-weight: 600; }
+.chip__swatch { width: 0.6rem; height: 0.6rem; border-radius: 2px; flex: 0 0 auto; }
+
+.filled-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: 700; color: var(--ui-good); background: var(--ui-good-tint); border-radius: 999px; padding: 0.15rem 0.55rem; margin-left: 0.5rem; vertical-align: middle; }
+.new-tag { font-weight: 400; color: var(--ui-accent-ink); font-size: 0.78rem; }
+
+/* ---------- Real .mashbill-recall/.af-rows, lifted from styles.css - see
+   bourbon-library-autofill.html for the same copy. Option A's banner is
+   this exact component, just triggered by a SKU match instead of a title
+   match. ---------- */
+.mashbill-recall { margin-bottom: 0.7rem; padding: 0.55rem 0.7rem; border: 1px solid var(--ui-border); border-left: 3px solid var(--ui-accent); border-radius: 6px; background: var(--ui-panel-alt); font-size: 0.82rem; }
+.mashbill-recall__title { font-weight: 700; margin-bottom: 0.25rem; }
+.mashbill-recall__meta { color: var(--ui-muted); font-size: 0.74rem; margin: 0.2rem 0 0.4rem; }
+.af-rows { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.5rem 0; }
+.af-row { display: grid; grid-template-columns: 92px 1fr; gap: 0.5rem; align-items: baseline; }
+.af-label { font-weight: 700; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ui-ink-soft); }
+.af-value { font-size: 0.82rem; color: var(--ui-ink); line-height: 1.35; }
+.mashbill-recall__actions { display: flex; gap: 0.4rem; margin-top: 0.55rem; }
+
+/* ---------- Option B: a picker overlay contained inside the device-frame
+   "screen" (position: absolute against the frame's own position: relative),
+   not a real fixed-position modal - keeps it visually inside the mock. ---------- */
+.picker-overlay { position: absolute; inset: 0; background: var(--ui-overlay); display: flex; align-items: flex-start; justify-content: center; padding: 1.4rem 1rem; z-index: 5; }
+.picker-modal { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 10px; width: 100%; max-width: 360px; max-height: 100%; overflow: auto; box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+.picker-modal__head { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--ui-border); }
+.picker-modal__head h3 { font-size: 0.92rem; }
+.picker-modal__close { border: none; background: transparent; color: var(--ui-muted); font-size: 1.15rem; cursor: pointer; line-height: 1; padding: 0.2rem; }
+.picker-search { margin: 0.7rem 0.85rem 0.55rem; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); font: inherit; width: calc(100% - 1.7rem); }
+.picker-list { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 0.85rem 0.85rem; }
+.picker-row { display: flex; align-items: center; gap: 0.6rem; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.5rem 0.6rem; background: var(--ui-panel); cursor: pointer; text-align: left; font-family: inherit; width: 100%; }
+.picker-row:hover { background: var(--ui-btn-hover); border-color: var(--ui-accent); }
+.picker-row__body { flex: 1; min-width: 0; }
+.picker-row__title { font-weight: 700; font-size: 0.85rem; color: var(--ui-ink); }
+.picker-row__meta { font-size: 0.73rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.picker-row__go { color: var(--ui-accent-ink); font-size: 1.05rem; flex: 0 0 auto; }
+
+/* ---------- Option C: confirm card after a SKU lookup ---------- */
+.method-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.confirm-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-alt); margin-top: 0.9rem; }
+.confirm-card__title { font-weight: 700; font-size: 0.92rem; margin-bottom: 0.15rem; }
+.confirm-card__meta { font-size: 0.75rem; color: var(--ui-muted); margin-bottom: 0.6rem; }
+.confirm-card__rows { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.81rem; margin-bottom: 0.7rem; color: var(--ui-ink-soft); }
+.confirm-card__rows b { color: var(--ui-ink); font-weight: 700; margin-right: 0.3rem; }
+
+/* ---------- Explanatory side panel ---------- */
+.notes-panel { display: flex; flex-direction: column; gap: 0.7rem; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.1rem 1.2rem; }
+.notes-panel h2 { font-size: 1rem; }
+.notes-panel p { margin: 0; font-size: 0.84rem; color: var(--ui-ink-soft); line-height: 1.6; }
+.notes-panel ol, .notes-panel ul { margin: 0; padding-left: 1.15rem; font-size: 0.84rem; color: var(--ui-ink-soft); line-height: 1.65; }
+.notes-panel li strong { color: var(--ui-ink); }
+.effort-row { display: flex; gap: 1.5rem; flex-wrap: wrap; padding: 0.7rem 0.85rem; background: var(--ui-panel-sunken); border-radius: 8px; }
+.effort-stat { display: flex; flex-direction: column; gap: 0.1rem; }
+.effort-stat strong { font-size: 0.85rem; color: var(--ui-ink); }
+.effort-stat span { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-muted); }
+
+.wrap-panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.wrap-panel h2 { font-size: 1.1rem; }
+.wrap-panel p { margin: 0; font-size: 0.88rem; color: var(--ui-ink-soft); line-height: 1.6; }
+table.compare { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+table.compare th, table.compare td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--ui-border); vertical-align: top; }
+table.compare th { color: var(--ui-muted); font-size: 0.71rem; text-transform: uppercase; letter-spacing: 0.04em; }
+table.compare td strong { color: var(--ui-ink); }
+</style>
+
+<div class="page">
+
+  <div class="intro">
+    <p class="eyebrow">Proposed workflow &middot; not part of the running app</p>
+    <h1>Bourbon Library SKU Lookup</h1>
+    <p>
+      Right now <strong>Store SKU</strong> only exists on the Edit Talker form for Beer (<code>#beerFields</code> in
+      index.html) &mdash; Wine/Spirits and Bourbon talkers have no SKU field at all. Meanwhile every Bourbon Library
+      entry has carried its own <code>sku</code> since a past release, but nothing on the talker form reads it: staff
+      have to open the Library, find the SKU by eye, then type it somewhere else by hand. And the recall banner that
+      already autofills Mash Bill/Nose/Palate/Finish (<code>findMashBillMatch</code> in app.js) only ever matches on
+      an exact <strong>Product Title</strong>, never on SKU. Three ways to close that gap, below &mdash; all three
+      reuse <code>mashBillLibraryCache</code> and the existing Use/Use All actions, they just differ in <em>where</em>
+      staff trigger the match from.
+    </p>
+  </div>
+
+  <div class="controls">
+    <div class="controls__group">
+      <span class="controls__label">Option:</span>
+      <div class="pill-group" role="group" aria-label="Compare SKU lookup approaches">
+        <button type="button" class="pill is-active" data-option="a">A &middot; Extend the recall banner</button>
+        <button type="button" class="pill" data-option="b">B &middot; Pick from Bourbon Library</button>
+        <button type="button" class="pill" data-option="c">C &middot; New Search-tab method</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       OPTION A - extend the existing recall banner with a SKU match
+       ============================================================ -->
+  <div class="option-view" data-option-view="a">
+    <div class="layout2">
+      <div class="device-frame">
+        <div class="device-chrome">
+          <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+          <div class="device-chrome__label">Edit Talker &middot; Product Type: Bourbon</div>
+        </div>
+        <div class="form-panel">
+          <label class="field">
+            <span>Product Title *</span>
+            <input type="text" id="aTitle" maxlength="120" placeholder="Fills in once a SKU matches below" />
+          </label>
+
+          <label class="field">
+            <span>Store SKU (optional) <span class="new-tag">&mdash; new for Bourbon</span></span>
+            <input type="text" id="aSku" inputmode="numeric" maxlength="20" placeholder="Try 15614" />
+          </label>
+          <p class="help-text">Beer-only today (see <code>#beerFields</code>). Showing it for Bourbon too is what gives the recall match a second key to check besides title.</p>
+
+          <div id="aBanner"></div>
+
+          <div class="field-group">
+            <div class="field-group__head">Mash Bill (optional)</div>
+            <div class="chip-row" id="aChipRow"></div>
+            <p class="help-text">Same chips, same field, same "Save this mash bill to the Mash Bill Library" checkbox below it &mdash; untouched.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes-panel">
+        <h2>How it works</h2>
+        <ol>
+          <li>Add a <strong>Store SKU</strong> field to Bourbon talkers (today it's Beer-only).</li>
+          <li><code>findMashBillMatch(title)</code> becomes <code>findMashBillMatch({ title, sku })</code> &mdash; checks SKU first, falls back to the existing exact-title match.</li>
+          <li>Same <code>#mashBillRecallBanner</code>, same Use/Use All buttons, same "hidden, never deleted" behavior. Zero new endpoints, zero new UI components.</li>
+          <li>Product Title gets filled in as part of "Use All" too, same as the other fields &mdash; a SKU match doesn't already know the title the way a title match trivially does.</li>
+        </ol>
+        <div class="effort-row">
+          <div class="effort-stat"><strong>Small</strong><span>Build effort</span></div>
+          <div class="effort-stat"><strong>High</strong><span>Code reuse</span></div>
+          <div class="effort-stat"><strong>Passive</strong><span>Discoverability</span></div>
+        </div>
+        <p>Best when staff already know the SKU and are filling the form top-to-bottom anyway &mdash; it just quietly does the right thing as they type.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       OPTION B - explicit "pick from the library" search/browse
+       ============================================================ -->
+  <div class="option-view" data-option-view="b" hidden>
+    <div class="layout2">
+      <div class="device-frame">
+        <div class="device-chrome">
+          <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+          <div class="device-chrome__label">Edit Talker &middot; Product Type: Bourbon</div>
+        </div>
+        <div class="form-panel">
+          <label class="field">
+            <span>Product Title * <span id="bFilledBadge" class="filled-badge" hidden>✓ Filled from Library</span></span>
+            <input type="text" id="bTitle" maxlength="120" placeholder="—" />
+          </label>
+
+          <button type="button" class="btn" id="bOpenPicker">🔍 Search Bourbon Library&hellip;</button>
+          <p class="help-text">Opens a searchable list of every Library entry, by name or SKU &mdash; no need to already know the exact title.</p>
+
+          <label class="field">
+            <span>Store SKU (optional)</span>
+            <input type="text" id="bSku" maxlength="20" placeholder="—" />
+          </label>
+
+          <div class="field-group">
+            <div class="field-group__head">Mash Bill (optional)</div>
+            <div class="chip-row" id="bChipRow"></div>
+          </div>
+        </div>
+
+        <div class="picker-overlay" id="bOverlay" hidden>
+          <div class="picker-modal">
+            <div class="picker-modal__head">
+              <h3>Search Bourbon Library</h3>
+              <button type="button" class="picker-modal__close" id="bClose" aria-label="Close">&times;</button>
+            </div>
+            <input type="text" class="picker-search" placeholder="Search by name or SKU…" />
+            <div class="picker-list">
+              <button type="button" class="picker-row" data-pick="buffalo">
+                <div class="picker-row__body">
+                  <div class="picker-row__title">Buffalo Trace Bourbon</div>
+                  <div class="picker-row__meta">SKU 15614 &middot; Corn / Rye / Malted Barley &middot; Reported</div>
+                </div>
+                <span class="picker-row__go">→</span>
+              </button>
+              <button type="button" class="picker-row" data-pick="fourroses">
+                <div class="picker-row__body">
+                  <div class="picker-row__title">Four Roses Single Barrel Bourbon</div>
+                  <div class="picker-row__meta">SKU 25067 &middot; Corn / Rye / Malted Barley &middot; Confirmed</div>
+                </div>
+                <span class="picker-row__go">→</span>
+              </button>
+              <button type="button" class="picker-row" data-pick="blantons">
+                <div class="picker-row__body">
+                  <div class="picker-row__title">Blanton's The Original Bourbon</div>
+                  <div class="picker-row__meta">SKU 12017 &middot; Corn / Rye / Malted Barley &middot; Estimated</div>
+                </div>
+                <span class="picker-row__go">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes-panel">
+        <h2>How it works</h2>
+        <ol>
+          <li>A new button next to Product Title opens a picker over the same <code>mashBillLibraryCache</code> the Manage dialog already lists from.</li>
+          <li>Its search box filters by name <em>or</em> SKU (<code>renderMashBillLibraryList</code>'s filter gains one more field to check).</li>
+          <li>Picking a row fills Product Title, Store SKU, Mash Bill, and Nose/Palate/Finish all at once &mdash; picking <em>is</em> the autofill action, no separate "Use All" click needed.</li>
+        </ol>
+        <div class="effort-row">
+          <div class="effort-stat"><strong>Medium</strong><span>Build effort</span></div>
+          <div class="effort-stat"><strong>Medium</strong><span>Code reuse</span></div>
+          <div class="effort-stat"><strong>Explicit</strong><span>Discoverability</span></div>
+        </div>
+        <p>Best when staff aren't sure of the exact title or SKU and want to browse/search for it, the same way they'd search the Manage dialog today.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       OPTION C - a 4th Search-tab method sourced from the Library
+       ============================================================ -->
+  <div class="option-view" data-option-view="c" hidden>
+    <div class="layout2">
+      <div class="device-frame">
+        <div class="device-chrome">
+          <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+          <div class="device-chrome__label">Search</div>
+        </div>
+        <div class="form-panel">
+          <div class="method-row" role="group" aria-label="Search method">
+            <button type="button" class="toggle-btn" data-method="name">Search by Name</button>
+            <button type="button" class="toggle-btn" data-method="sku">SKU Lookup</button>
+            <button type="button" class="toggle-btn" data-method="upc">Scan UPC</button>
+            <button type="button" class="toggle-btn is-active" data-method="library">Bourbon Library</button>
+          </div>
+
+          <label class="field">
+            <span>Bourbon Library SKU</span>
+            <input type="text" id="cSku" inputmode="numeric" maxlength="20" value="15614" />
+          </label>
+          <p class="help-text">Matched against the SKU already saved on a Bourbon Library entry &mdash; not the WinePOS export SKU Lookup (above) reads from.</p>
+          <button type="button" class="btn btn--primary" id="cLookupBtn">Look Up</button>
+
+          <div class="confirm-card" id="cConfirm" hidden>
+            <div class="confirm-card__title">Buffalo Trace Bourbon</div>
+            <div class="confirm-card__meta">Buffalo Trace Distillery &middot; Sazerac Company &middot; Mash Bill: Reported</div>
+            <div class="confirm-card__rows">
+              <div><b>Mash Bill</b>Corn 90% / Rye 8% / Malted Barley 2%</div>
+              <div><b>Nose</b>Vanilla, brown sugar, and mint with a subtle spiciness.</div>
+            </div>
+            <button type="button" class="btn btn--primary btn--small">Use This Match → Edit Talker</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes-panel">
+        <h2>How it works</h2>
+        <ol>
+          <li>A 4th pill joins Search by Name / SKU Lookup / Scan UPC, each already its own <code>.method-panel</code> in index.html.</li>
+          <li>Its panel looks up the typed SKU against <code>mashBillLibraryCache</code> instead of the WinePOS export, and shows a confirm card &mdash; same pattern as the existing "Pick the Right Beer"/Confirm Untappd Match popups.</li>
+          <li>"Use This Match" jumps to Edit Talker pre-filled, same as the other three methods already do.</li>
+        </ol>
+        <div class="effort-row">
+          <div class="effort-stat"><strong>Medium&ndash;Large</strong><span>Build effort</span></div>
+          <div class="effort-stat"><strong>Low</strong><span>Code reuse</span></div>
+          <div class="effort-stat"><strong>High</strong><span>Discoverability</span></div>
+        </div>
+        <p>Best when SKU-driven lookup should feel exactly like the existing SKU Lookup flow staff already use daily &mdash; at the cost of being the most new, separate code path of the three.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap-panel">
+    <h2>Comparing all three</h2>
+    <table class="compare">
+      <thead>
+        <tr><th>Option</th><th>Effort</th><th>Reuses existing code</th><th>Discoverability</th><th>Best when&hellip;</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A &middot; Extend the recall banner</strong></td>
+          <td>Small</td>
+          <td>High &mdash; same banner component, one new match key</td>
+          <td>Passive &mdash; only shows up once staff type a SKU</td>
+          <td>You already know the SKU and are filling the form top-to-bottom anyway</td>
+        </tr>
+        <tr>
+          <td><strong>B &middot; Pick from Bourbon Library</strong></td>
+          <td>Medium</td>
+          <td>Medium &mdash; reuses the Manage dialog's list, new picker chrome</td>
+          <td>Explicit &mdash; a visible button invites the action</td>
+          <td>You're not sure of the exact title or SKU and want to browse/search</td>
+        </tr>
+        <tr>
+          <td><strong>C &middot; New Search-tab method</strong></td>
+          <td>Medium&ndash;Large</td>
+          <td>Low &mdash; a new, mostly separate lookup path</td>
+          <td>High &mdash; sits right next to the 3 lookup methods staff already use</td>
+          <td>SKU-driven lookup should feel identical to the existing SKU Lookup flow</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      None of these are mutually exclusive &mdash; B is really just a nicer front door onto the same match logic A
+      adds, and either could ship first with the other layered on later. C is the odd one out: it's the most
+      discoverable, but the only one that doesn't build on top of the other two.
+    </p>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var GRAIN_COLORS = { Corn: '#d9a441', Rye: '#8a3a2c', 'Malted Barley': '#a67c3d' };
+  var BUFFALO_TRACE = {
+    title: 'Buffalo Trace Bourbon',
+    sku: '15614',
+    distillery: 'Buffalo Trace Distillery',
+    grains: [{ grain: 'Corn', pct: 90 }, { grain: 'Rye', pct: 8 }, { grain: 'Malted Barley', pct: 2 }],
+    nose: 'Vanilla, brown sugar, and mint with a subtle spiciness.',
+    palate: 'Brown sugar and spice, balanced with oak, toffee, and dark fruit.',
+    finish: 'Long, smooth, and pleasant.',
+  };
+  var LIBRARY_ENTRIES = {
+    buffalo: BUFFALO_TRACE,
+    fourroses: {
+      title: 'Four Roses Single Barrel Bourbon', sku: '25067', distillery: 'Four Roses Distillery',
+      grains: [{ grain: 'Corn', pct: 60 }, { grain: 'Rye', pct: 35 }, { grain: 'Malted Barley', pct: 5 }],
+      nose: 'Ripe berries, plum, and spice.', palate: 'Full-bodied and mellow, with red berries, caramel, and a spicy rye kick.', finish: 'Long and warm.',
+    },
+    blantons: {
+      title: "Blanton's The Original Bourbon", sku: '12017', distillery: 'Buffalo Trace Distillery',
+      grains: [{ grain: 'Corn', pct: 75 }, { grain: 'Rye', pct: 15 }, { grain: 'Malted Barley', pct: 10 }],
+      nose: 'Nutty, with hints of citrus, honey, and vanilla.', palate: 'Rich caramel and toffee balanced with dried fruit and a hint of spice.', finish: 'Long and dry, with a touch of leather.',
+    },
+  };
+
+  function chipRowHtml(grains) {
+    return grains.map(function (g) {
+      return '<span class="chip"><span class="chip__swatch" style="background:' + (GRAIN_COLORS[g.grain] || '#b8ab98') + '"></span>' + g.grain + ' ' + g.pct + '%</span>';
+    }).join('');
+  }
+
+  // ---------- Top-level option switcher ----------
+  var pills = document.querySelectorAll('.controls .pill[data-option]');
+  var views = document.querySelectorAll('.option-view');
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      pills.forEach(function (p) { p.classList.toggle('is-active', p === pill); });
+      views.forEach(function (v) { v.hidden = v.dataset.optionView !== pill.dataset.option; });
+    });
+  });
+
+  // ---------- Option A: typing the real SKU shows the recall banner ----------
+  var aSku = document.getElementById('aSku');
+  var aTitle = document.getElementById('aTitle');
+  var aBanner = document.getElementById('aBanner');
+  var aChipRow = document.getElementById('aChipRow');
+
+  function renderABanner() {
+    var match = aSku.value.trim() === BUFFALO_TRACE.sku ? BUFFALO_TRACE : null;
+    if (!match) { aBanner.innerHTML = ''; return; }
+    aBanner.innerHTML =
+      '<div class="mashbill-recall">' +
+        '<div class="mashbill-recall__title">📚 SKU ' + match.sku + ' matched "' + match.title + '" in the Bourbon Library</div>' +
+        '<div class="mashbill-recall__meta">' + match.distillery + '</div>' +
+        '<div class="af-rows">' +
+          '<div class="af-row"><span class="af-label">Mash Bill</span><span class="af-value">' + match.grains.map(function (g) { return g.grain + ' ' + g.pct + '%'; }).join(' / ') + '</span></div>' +
+          '<div class="af-row"><span class="af-label">Nose</span><span class="af-value">' + match.nose + '</span></div>' +
+        '</div>' +
+        '<div class="mashbill-recall__actions">' +
+          '<button type="button" class="btn btn--small" id="aUseAll">Use All</button>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('aUseAll').addEventListener('click', function () {
+      aTitle.value = match.title;
+      aChipRow.innerHTML = chipRowHtml(match.grains);
+    });
+  }
+  aSku.addEventListener('input', renderABanner);
+
+  // ---------- Option B: picker overlay ----------
+  var bOpenPicker = document.getElementById('bOpenPicker');
+  var bOverlay = document.getElementById('bOverlay');
+  var bClose = document.getElementById('bClose');
+  var bTitle = document.getElementById('bTitle');
+  var bSku = document.getElementById('bSku');
+  var bChipRow = document.getElementById('bChipRow');
+  var bFilledBadge = document.getElementById('bFilledBadge');
+
+  bOpenPicker.addEventListener('click', function () { bOverlay.hidden = false; });
+  bClose.addEventListener('click', function () { bOverlay.hidden = true; });
+  document.querySelectorAll('.picker-row[data-pick]').forEach(function (row) {
+    row.addEventListener('click', function () {
+      var entry = LIBRARY_ENTRIES[row.dataset.pick];
+      bTitle.value = entry.title;
+      bSku.value = entry.sku;
+      bChipRow.innerHTML = chipRowHtml(entry.grains);
+      bFilledBadge.hidden = false;
+      bOverlay.hidden = true;
+    });
+  });
+
+  // ---------- Option C: method pills (cosmetic) + lookup confirm card ----------
+  document.querySelectorAll('.method-row .toggle-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.method-row .toggle-btn').forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+    });
+  });
+  document.getElementById('cLookupBtn').addEventListener('click', function () {
+    document.getElementById('cConfirm').hidden = document.getElementById('cSku').value.trim() !== BUFFALO_TRACE.sku;
+  });
+})();
+</script>

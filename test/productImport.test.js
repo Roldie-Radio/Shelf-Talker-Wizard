@@ -1506,11 +1506,10 @@ test('findTastingNotes turns a persistently blocked Distiller response into an a
 });
 
 // ================================================================
-// The "Experimental Features -> Bourbon Shelf Talkers" gate (Settings) -
-// Distiller is the one provider marked experimental (see
-// TASTING_NOTE_PROVIDERS), and findTastingNotes has to actually enforce
-// that server-side, not just trust the dropdown filtering app.js already
-// does client-side (see the note above findTastingNotes).
+// The Product Type: Bourbon gate - Distiller is the one provider marked
+// experimental (see TASTING_NOTE_PROVIDERS), and findTastingNotes has to
+// actually enforce that server-side, not just trust the dropdown filtering
+// app.js already does client-side (see the note above findTastingNotes).
 // ================================================================
 
 test('TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES lists only Distiller', () => {
@@ -1524,7 +1523,7 @@ test('findTastingNotes rejects an explicit source: "Distiller" without allowExpe
     async () => {
       await assert.rejects(
         () => findTastingNotes({ title: 'Buffalo Trace Bourbon', source: 'Distiller' }),
-        /Distiller is an experimental source - turn on Experimental Features -> Bourbon Shelf Talkers in Settings first\./
+        /Distiller is only available for Product Type: Bourbon\./
       );
     }
   );

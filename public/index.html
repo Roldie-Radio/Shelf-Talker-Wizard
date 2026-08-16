@@ -96,11 +96,11 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="wine-pairing-rules" id="winePairingRulesMenuItem">
           <span>Wine Pairing Rules&hellip;</span>
         </button>
-        <!-- Bourbon Shelf Talkers only (Settings -> Experimental Features) -
-             hidden outright rather than shown-disabled while the toggle is
-             off, same as Store Pick/Mash Bill/Nose-Palate-Finish on Edit
-             Talker itself (see applyExperimentalBourbon in app.js, which
-             toggles .hidden on every [data-requires-bourbon] element). -->
+        <!-- Product Type: Bourbon only - hidden outright rather than
+             shown-disabled unless the current talker's Product Type is
+             Bourbon, same as Store Pick/Mash Bill/Nose-Palate-Finish on Edit
+             Talker itself (see applyFormMode in app.js, which toggles
+             .hidden on every [data-requires-bourbon] element). -->
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="mash-bill-library" data-requires-bourbon hidden>
           <span>Mash Bill Library&hellip;</span>
         </button>
@@ -270,6 +270,7 @@
             <span id="productTypeFieldLabelManual">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
+              <option value="bourbon">Bourbon</option>
               <option value="beer">Beer</option>
             </select>
           </div>
@@ -319,18 +320,19 @@
             </div>
           </div>
 
-          <!-- Store Pick, Mash Bill, and Nose/Palate/Finish are the
-               "Bourbon Shelf Talkers" experimental feature (Settings ->
-               Experimental Features) - all three share the same visibility
-               rule as Awards below (Shelf Talkers only, hidden for Beer/
-               Display Signs), plus the experimentalBourbonEnabled gate (see
-               applyFormMode in app.js). -->
+          <!-- Store Pick, Mash Bill, and Nose/Palate/Finish are Bourbon-only
+               fields - all three share the same visibility rule as Awards
+               below (Shelf Talkers only, hidden for Beer/Display Signs),
+               plus a Product Type: Bourbon gate (see applyFormMode in
+               app.js). -->
           <div class="field" id="storePickField">
-            <label class="server-pc-checkbox">
-              <input type="checkbox" id="fStorePick" />
-              Store Pick
-            </label>
-            <p class="help-text">Prints a "Store Pick" ribbon in the corner - independent of Talker Style, so it can still show up alongside a Closeout badge if a store pick goes on clearance.</p>
+            <div class="store-pick-toggle-row">
+              <span class="store-pick-toggle-row__label">Store Pick</span>
+              <label class="switch">
+                <input type="checkbox" id="fStorePick" />
+                <span class="switch__track"><span class="switch__thumb"></span></span>
+              </label>
+            </div>
           </div>
 
           <div class="field-group" id="mashBillField">
@@ -663,6 +665,7 @@
             <span id="productTypeFieldLabelImport">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
+              <option value="bourbon">Bourbon</option>
               <option value="beer">Beer</option>
             </select>
           </div>
@@ -719,6 +722,7 @@
             <span id="productTypeFieldLabelSearch">Product Type</span>
             <select class="product-type-select" aria-label="Product category">
               <option value="wine">Wine / Spirits</option>
+              <option value="bourbon">Bourbon</option>
               <option value="beer">Beer</option>
             </select>
           </div>
@@ -756,6 +760,17 @@
             <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
           </div>
           <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
+          <!-- Product Type: Bourbon only (see refreshBourbonSearchResults in
+               app.js) - matches the same typed text against the Bourbon
+               Library's own title/sku fields, entirely client-side against
+               mashBillLibraryCache, purely additive next to the export-driven
+               dropdown above rather than replacing any of the three panels
+               below (SKU Lookup/Scan UPC still pull price/size from WinePOS
+               for a Bourbon product exactly as they already do for Wine/
+               Spirits). Deliberately not .search-results/position:absolute
+               like the dropdown above - this sits in normal flow so the two
+               can never visually overlap. -->
+          <div class="bourbon-search-results" id="bourbonSearchResults" hidden></div>
         </div>
         <p class="help-text" id="smartSearchHint" role="status" aria-live="polite">&nbsp;</p>
 
@@ -1257,7 +1272,7 @@
       <div class="help-content">
 
         <h3>Adding a shelf talker</h3>
-        <p>There are three tabs on the left for adding a product. Every one of them opens with the same two dropdowns: <strong>Type</strong> (<strong>Shelf Talker</strong>, <strong>Small Display</strong>, or <strong>Large Display</strong>) and <strong>Product Type</strong> (<strong>Wine / Spirits</strong> or <strong>Beer</strong>) &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example). Both are shared across all three tabs: change either one on any tab and it stays set that way when you switch tabs.</p>
+        <p>There are three tabs on the left for adding a product. Every one of them opens with the same two dropdowns: <strong>Type</strong> (<strong>Shelf Talker</strong>, <strong>Small Display</strong>, or <strong>Large Display</strong>) and <strong>Product Type</strong> (<strong>Wine / Spirits</strong>, <strong>Bourbon</strong>, or <strong>Beer</strong>) &mdash; the fields below change to match (a Beer entry shows Brewery/Style/ABV/IBU instead of Ratings and Vintage, for example, and a Bourbon entry adds Mash Bill, Nose/Palate/Finish, and Store Pick on top of everything Wine / Spirits gets). Both are shared across all three tabs: change either one on any tab and it stays set that way when you switch tabs.</p>
         <ul>
           <li><strong>Edit Talker</strong> &mdash; fill in the form yourself. <strong>Vintage</strong> (Wine / Spirits only) prints centered on its own line right under the product title, in the same style as the description. For Wine / Spirits, the <strong>Find Tasting Notes</strong> button under Description searches the web using the Product Title (and Vintage, if set) and fills the field in for you &mdash; see "Finding tasting notes automatically" below. <strong>Awards or Other Ratings</strong> (Wine / Spirits only) is free-text below the numeric Ratings list, for medals or other honors that don't fit the reviewer/score format &mdash; it prints in the same bold style as Ratings, in the color you pick with the swatch next to the field. <strong>Case Price</strong> (Large Display only, optional) prints bottom-right in the same bold style as Regular Price &mdash; Shelf Talkers and Small Display Signs have no room for it, so the field is hidden for those.</li>
           <li><strong>Website</strong> &mdash; paste a URL and let the app fill in what it can. See "Importing from a website" below.</li>
@@ -1350,7 +1365,7 @@
     </div>
   </div>
 
-  <!-- Tools > Mash Bill Library… (Bourbon Shelf Talkers only - see the
+  <!-- Tools > Mash Bill Library… (Product Type: Bourbon only - see the
        hidden [data-requires-bourbon] menu item above). A shared,
        Server-PC-hosted table of researched grain compositions (see
        server/db.js's mash_bills table and server/mashBillSync.js), so a
@@ -1658,12 +1673,6 @@
 
         <div class="settings-section">
           <h3 class="settings-section-title">Experimental Features</h3>
-          <label class="server-pc-checkbox">
-            <input type="checkbox" id="experimentalBourbonCheckbox" />
-            Bourbon Shelf Talkers
-          </label>
-          <p class="help-text">Adds Nose / Palate / Finish fields to Wine/Spirits Shelf Talkers (with a Distiller.com source in "Find Tasting Notes" that fills them in automatically - Distiller's scraper hasn't been confirmed against the live site yet, so always double-check what it finds before printing), a Mash Bill proportion bar, and a Store Pick corner ribbon. Off by default; turning it off again hides all three without deleting anything already on a talker.</p>
-
           <label class="server-pc-checkbox">
             <input type="checkbox" id="experimentalPairingsCheckbox" />
             Wine Food Pairings
