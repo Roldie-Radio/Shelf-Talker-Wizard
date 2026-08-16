@@ -59,6 +59,25 @@ browser.
   company browse view from the previous mockup, exactly the way switching
   to a bourbon's own profile page already works today; the rail's Bourbon
   Library icon is the way back, always one click away.
+- **mash-bill-pie-chart-profile-page.html** &mdash; follow-up to
+  mash-bill-pie-chart.html above: drops the same donut chart into the
+  **real, complete profile page** &mdash; breadcrumb, tags, the Mash Bill
+  block's confidence badge/meter/note and citation markers, the Tasting
+  Notes block, the Distillery &amp; Ownership sidebar with its sibling-entry
+  list, and the References &amp; Sources section &mdash; instead of the
+  isolated component view the first mockup showed. Only the plain
+  `.grain-bar` at the top of the Mash Bill block is replaced; everything
+  else is untouched real `renderBourbonProfile` markup, reused verbatim
+  down to class names. Four real sample bourbons cover the cases that
+  matter in context: Buffalo Trace Bourbon (11 siblings at its distillery,
+  clicking one re-renders the whole profile, chart included), Rabbit Hole
+  Cavehill Bourbon (the 4-grain case with a real citation), Sazerac
+  Straight Rye Whiskey (zero siblings, so the sidebar's sibling list is
+  absent entirely rather than shown empty), and Heaven Hill Grain to Glass
+  Specialty Barrel Bourbon (the "Unknown"-tier placeholder case, a dashed
+  ring plus its 17-entry sibling list, most of which fall outside this
+  mockup's small sample set and render as disabled rows saying so rather
+  than broken links).
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual

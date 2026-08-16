@@ -1,0 +1,518 @@
+<title>Pie Chart in the Full Profile Page — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted from Shelf Talker Wizard's own public/css/styles.css,
+   same set every other mockup in this folder uses.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+  --ui-low: #a8391a;
+  --ui-low-tint: rgba(168, 57, 26, 0.1);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  --ui-low: #e88f5f; --ui-low-tint: rgba(232, 143, 95, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:focus-visible, .lib2-row:focus-visible, a:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+.layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; align-items: stretch; min-height: 680px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+/* ---------- left: sample picker ---------- */
+.lib-pane { border-right: 1px solid var(--ui-border); background: var(--ui-panel-alt); padding: 1rem; display: flex; flex-direction: column; min-width: 0; gap: 0.4rem; }
+.lib-pane__label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin: 0 0 0.3rem; }
+.lib2-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+.lib2-row { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 0.55rem 0.65rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.2rem; width: 100%; }
+.lib2-row:hover { background: var(--ui-hover); }
+.lib2-row.is-selected { background: var(--ui-panel); border-color: var(--ui-border); box-shadow: 0 1px 0 var(--ui-shadow); }
+.lib2-row__title { font-weight: 700; font-size: 0.86rem; }
+.lib2-row__sub { font-size: 0.74rem; color: var(--ui-muted); }
+
+/* ---------- right: the real profile page - classes/markup copied
+   verbatim from public/css/styles.css + renderBourbonProfile in app.js ---------- */
+.profile-pane { padding: 1.4rem 1.6rem 1.8rem; min-width: 0; overflow-y: auto; }
+
+.conf-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+.conf-meter { display: inline-flex; gap: 0.2rem; }
+.conf-meter span { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-border); }
+.conf-meter span.is-on { background: currentColor; }
+.conf-block { margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid var(--ui-border); }
+.conf-block__row { display: flex; align-items: center; gap: 0.6rem; }
+.conf-block__note { font-size: 0.85rem; color: var(--ui-ink-soft); margin: 0.5rem 0 0; line-height: 1.45; }
+.conf-block__verified { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.35rem; }
+.cite { display: inline-flex; align-items: center; justify-content: center; min-width: 15px; height: 15px; padding: 0 3px; margin-left: 0.3rem; border-radius: 4px; background: var(--ui-code-bg); color: var(--ui-accent-ink); font-size: 0.65rem; font-weight: 700; text-decoration: none; vertical-align: 2px; border: 1px solid var(--ui-border); }
+.cite:hover { background: var(--ui-accent); color: var(--ui-on-accent); border-color: var(--ui-accent); }
+
+.library-crumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; margin-bottom: 0.9rem; }
+.library-crumb button { display: inline-flex; align-items: center; gap: 0.35rem; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: var(--ui-accent-ink); background: var(--ui-code-bg); border: none; border-radius: 6px; padding: 0.32rem 0.65rem 0.32rem 0.5rem; cursor: pointer; }
+.library-crumb button:hover { background: var(--ui-hover); }
+.library-crumb__sep { color: var(--ui-muted); }
+.library-crumb__current { color: var(--ui-muted); font-weight: 600; }
+
+.profile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.profile-head h2 { margin: 0; font-size: 1.4rem; }
+.profile-head__by { margin: 0.2rem 0 0; color: var(--ui-muted); font-size: 0.9rem; }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.2rem 0.5rem; border-radius: 6px; background: var(--ui-code-bg); color: var(--ui-ink-soft); }
+.profile-grid { display: grid; grid-template-columns: 1fr 280px; gap: 1.2rem; align-items: start; }
+@media (max-width: 760px) { .profile-grid { grid-template-columns: 1fr; } }
+.block { border: 1px solid var(--ui-border); background: var(--ui-panel); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.block h3 { margin: 0 0 0.6rem; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.tasting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+@media (max-width: 560px) { .tasting-grid { grid-template-columns: 1fr; } }
+.tasting-card h4 { margin: 0 0 0.25rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ui-muted); }
+.tasting-card p { margin: 0; font-size: 0.86rem; line-height: 1.45; }
+.tasting-source { margin-top: 0.6rem; font-size: 0.74rem; color: var(--ui-muted); }
+.info-card dl { margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.info-card dl > div { display: flex; justify-content: space-between; gap: 0.8rem; }
+.info-card dt { color: var(--ui-muted); font-size: 0.82rem; }
+.info-card dd { margin: 0; font-weight: 600; font-size: 0.82rem; text-align: right; }
+.info-card__siblings-label { display: block; margin: 0.9rem 0 0.45rem; color: var(--ui-muted); font-size: 0.82rem; }
+.sibling-list { display: flex; flex-direction: column; gap: 0.35rem; max-height: 260px; overflow-y: auto; }
+.sibling-btn { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border: 1px solid var(--ui-border); background: var(--ui-panel-sunken); border-radius: 7px; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.82rem; color: inherit; cursor: pointer; text-align: left; }
+.sibling-btn:hover { border-color: var(--ui-accent-ink); }
+
+.refs__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.refs__head h3 { margin: 0; }
+.refs__head span { font-size: 0.76rem; color: var(--ui-muted); }
+.ref-row { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.6rem; padding: 0.65rem 0; border-top: 1px solid var(--ui-border); }
+.ref-row:first-of-type { margin-top: 0.7rem; }
+.ref-row__n { font-size: 0.78rem; font-weight: 700; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+.ref-row__main a { color: var(--ui-accent-ink); font-weight: 600; font-size: 0.87rem; text-decoration: none; }
+.ref-row__main a:hover { text-decoration: underline; }
+.ref-row__main > span { font-size: 0.87rem; font-weight: 600; }
+.ref-row__url { display: block; font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ref-row__tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.ref-row__tag { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ui-ink-soft); background: var(--ui-panel-alt); border: 1px solid var(--ui-border); padding: 0.1rem 0.4rem; border-radius: 4px; }
+
+/* ---------- NEW: donut chart, in place of the plain .grain-bar inside
+   the Mash Bill block (see mash-bill-pie-chart.html for the isolated
+   version of this component and its design notes/palette proposal). ---------- */
+.mashbill-viz { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+.donut-wrap { position: relative; flex: 0 0 auto; width: 168px; height: 168px; }
+.donut-wrap svg { width: 100%; height: 100%; display: block; }
+.donut-slice { cursor: pointer; transition: opacity 0.12s ease; }
+.donut-slice:hover, .donut-slice.is-hot { opacity: 0.82; }
+.donut-slice-label { font-size: 12px; font-weight: 700; fill: #fff; text-anchor: middle; dominant-baseline: middle; pointer-events: none; paint-order: stroke; stroke: rgba(0,0,0,0.35); stroke-width: 2px; }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.donut-center__pct { font-size: 1.3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.donut-center__grain { font-size: 0.68rem; color: var(--ui-muted); margin-top: 0.15rem; max-width: 80px; line-height: 1.2; }
+.grain-legend2 { flex: 1 1 200px; display: flex; flex-direction: column; gap: 0.45rem; min-width: 160px; }
+.grain-legend2__row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.35rem; border-radius: 6px; }
+.grain-legend2__row.is-hot { background: var(--ui-hover); }
+.grain-legend2__swatch { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
+.grain-legend2__name { font-size: 0.83rem; flex: 1; }
+.grain-legend2__pct { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3.2ch; text-align: right; }
+.grain-bar--old { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15); margin-top: 0.2rem; }
+.grain-bar--old span { height: 100%; }
+.compare-strip__label { font-size: 0.76rem; color: var(--ui-muted); display: block; margin-top: 0.5rem; }
+.placeholder-note { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.85rem; padding: 0.55rem 0.7rem; background: var(--ui-low-tint); border: 1px solid color-mix(in srgb, var(--ui-low) 35%, transparent); border-radius: 8px; font-size: 0.8rem; color: var(--ui-low); }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p { margin: 0; font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed feature &middot; not part of the running app</p>
+    <h1>Pie Chart in the full Bourbon Profile Page</h1>
+    <p>
+      Same donut chart as the earlier pie chart mockup, but shown here inside the <strong>real, complete profile
+      page</strong> &mdash; breadcrumb, tags, Mash Bill and Tasting Notes blocks, the Distillery &amp; Ownership
+      sidebar with its sibling-entry list, and the References &amp; Sources section at the bottom &mdash; instead
+      of the isolated component view. Pick a bourbon on the left: Buffalo Trace has 11 siblings at its distillery,
+      Rabbit Hole Cavehill shows the 4-grain case with citations, Sazerac Rye has none, and Heaven Hill Grain to
+      Glass is the "Unknown" placeholder case with a long sibling list of its own.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Bourbon Library</div>
+    </div>
+
+    <div class="layout">
+      <div class="lib-pane">
+        <p class="lib-pane__label">Sample bourbons (real library data)</p>
+        <div class="lib2-list" id="libList"></div>
+      </div>
+      <div class="profile-pane" id="profilePane"></div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Nothing else on the page changes</h3>
+        <p>The chart replaces only the plain <code>.grain-bar</code> at the top of the Mash Bill block. The
+        confidence badge/meter/note below it, the citation markers next to each heading, the sibling list, and the
+        References &amp; Sources section are all untouched real <code>renderBourbonProfile</code> output.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Siblings still swap the chart correctly</h3>
+        <p>Clicking a name in "Other &hellip; entries" (right sidebar) re-renders the whole profile for that
+        bourbon, donut included &mdash; try it from Buffalo Trace to Eagle Rare or Blanton's, both a different
+        recipe within the same distillery family.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GRAIN_COLORS = {
+  Corn: '#d9a441', Rye: '#8a3a2c', Wheat: '#c9b464',
+  'Malted Barley': '#a67c3d', 'Malted Rye': '#6e2a1f', Oat: '#ddd0ad',
+  'Red Winter Wheat': '#b89a4e', 'Texas Winter Wheat': '#cfa646', 'Malted Wheat': '#e0c583',
+  'Honey Malted Barley': '#c99a4a', 'Caramel Malted Barley': '#8f6a30', "6-Row Distiller's Malt": '#b6903f',
+  Barley: '#c7b78f', Oats: '#ddd0ad', 'Mesquite Smoked Malt': '#5f4a37',
+};
+const FALLBACK_COLOR = '#b8ab98';
+
+const TIER_META = {
+  confirmed: { label: 'Confirmed', dots: 4, colorVar: '--ui-good' },
+  reported: { label: 'Reported', dots: 3, colorVar: '--ui-warn' },
+  estimated: { label: 'Estimated', dots: 2, colorVar: '--ui-low' },
+  unknown: { label: 'Unknown', dots: 0, colorVar: '--ui-muted' },
+};
+
+// Real entries, verbatim from scripts/bourbon-library-seed-data.json,
+// including real siblings (same distillery), tasting notes, and citations.
+const bourbons = [
+  {
+    id: 1, title: 'Buffalo Trace Bourbon', distillery: 'Buffalo Trace Distillery', parent: 'Sazerac Company',
+    category: 'Kentucky Straight Bourbon', tier: 'reported',
+    grains: [{ g: 'Corn', p: 90 }, { g: 'Rye', p: 8 }, { g: 'Malted Barley', p: 2 }],
+    nose: 'Vanilla, brown sugar, and mint with a subtle spiciness.',
+    palate: 'Brown sugar and spice, balanced with oak, toffee, and dark fruit.',
+    finish: 'Long, smooth, and pleasant.',
+    tastingSource: 'Buffalo Trace Distillery official product notes',
+    note: 'Buffalo Trace Distillery confirms it uses two mash bills but does not publish exact percentages to consumers. This low-rye recipe (used for Buffalo Trace, Eagle Rare, and others in that family) is the figure most consistently cited across whiskey trade writing, not an official distillery number.',
+    references: [{ label: 'Buffalo Trace Distillery - Our Process', url: 'https://www.buffalotracedistillery.com', tags: ['Mash Bill'] }],
+    siblings: ["Blanton's The Original Bourbon", 'Eagle Rare Single Barrel Bourbon', 'W.L. Weller Special Reserve', 'Benchmark Full Proof Bourbon', 'Benchmark Single Barrel Bourbon', 'Benchmark Small Batch Bourbon', 'E.H. Taylor Single Barrel Bourbon', 'Elmer T. Lee Single Barrel Bourbon', 'Rock Hill Farms Single Barrel Bourbon', 'Buffalo Trace Rye Recipe Kosher Bourbon', 'Buffalo Trace Wheat Recipe Kosher Bourbon'],
+  },
+  {
+    id: 2, title: 'Rabbit Hole Cavehill Bourbon', distillery: 'Rabbit Hole Distillery', parent: 'Pernod Ricard',
+    category: 'Kentucky Straight Bourbon (Four Grain Triple Malt)', tier: 'confirmed',
+    grains: [{ g: 'Corn', p: 70 }, { g: 'Malted Wheat', p: 10 }, { g: 'Malted Barley', p: 10 }, { g: 'Honey Malted Barley', p: 10 }],
+    nose: 'Toasted grain, honey, and dried fruit.',
+    palate: 'Caramel, baking spice, and a malty sweetness from the triple-malt recipe.',
+    finish: 'Smooth, moderate, malty.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    note: 'Rabbit Hole publishes this mash bill directly for Cavehill, its flagship - corn plus three different malted grains (malted wheat, malted barley, and honey malted barley).',
+    references: [{ label: 'Cavehill - 4 Grain Triple Malt Bourbon - Rabbit Hole Distillery', url: 'https://www.rabbitholedistillery.com/pages/cavehill', tags: ['Mash Bill'] }],
+    siblings: ['Rabbit Hole Heigold Bourbon', 'Rabbit Hole PX Sherry Cask Bourbon', 'Rabbit Hole Boxergrail Rye'],
+  },
+  {
+    id: 3, title: 'Sazerac Straight Rye Whiskey', distillery: 'MGP of Indiana (Lawrenceburg, IN)', parent: 'Sazerac Company',
+    category: 'Kentucky Straight Rye Whiskey', tier: 'reported',
+    grains: [{ g: 'Rye', p: 95 }, { g: 'Malted Barley', p: 5 }],
+    nose: 'Mint, black pepper, and dried fruit.',
+    palate: 'Brown sugar, cherry, and cinnamon spice.',
+    finish: 'Dry, peppery, and warm.',
+    tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    note: "Sazerac Rye has long been sourced from MGP of Indiana's well-documented 95/5 rye mash bill, the same recipe behind numerous other sourced rye brands - Sazerac itself has expanded its own rye production at Buffalo Trace in recent years, so current-bottle sourcing may be shifting away from MGP, but that transition isn't publicly confirmed batch-by-batch.",
+    references: [{ label: 'MGP Ingredients - Distillery Products', url: 'https://www.mgpingredients.com', tags: ['Mash Bill', 'Distillery & Ownership'] }],
+    siblings: [],
+  },
+  {
+    id: 4, title: 'Heaven Hill Grain to Glass Specialty Barrel Bourbon', distillery: 'Heaven Hill Distillery', parent: 'Heaven Hill Brands (Shapira family, privately held)',
+    category: 'Kentucky Straight Bourbon', tier: 'unknown',
+    grains: [{ g: 'Corn', p: 100 }], isPlaceholder: true,
+    nose: '', palate: '', finish: '', tastingSource: 'Common tasting note consensus (whiskey trade press)',
+    note: 'Placeholder only - grain composition for this specialty label has not been researched yet. The single-grain listing above is a non-answer, not a finding; replace it (and the tasting notes) once someone confirms the actual recipe.',
+    references: [],
+    siblings: ['Larceny Small Batch Bourbon', 'Elijah Craig Bourbon', 'Elijah Craig Single Barrel Store Pick', 'Elijah Craig Toasted Barrel', 'Evan Williams Bourbon', 'Evan Williams Bourbon White Label B&Bond', 'Evan Williams Single Barrel Bourbon', 'Evan Williams Single Barrel 250th', 'Evan Williams 1783 Small Batch', 'Heaven Hill Bottled in Bond 7 Year', 'Heaven Hill Bourbon', 'Henry McKenna Bourbon', 'Fighting Cock 6YR 103 Proof', 'Old Fitzgerald 7 Year BIB', 'Elijah Craig Rye', 'Mellow Corn Bourbon', 'Larceny Small Batch Bourbon Barrel Proof'],
+  },
+];
+
+let selectedId = 1;
+let showOldBar = false;
+
+function color(grain) { return GRAIN_COLORS[grain] || FALLBACK_COLOR; }
+function badgeHtml(tier) {
+  const meta = TIER_META[tier];
+  return `<span class="conf-badge" style="color:var(${meta.colorVar});background:var(${meta.colorVar}-tint, var(--ui-code-bg));">${meta.label}</span>`;
+}
+// Real confidenceBadgeHtml uses explicit tint tokens per tier - replicate exactly.
+const TIER_TINT = { confirmed: '--ui-good-tint', reported: '--ui-warn-tint', estimated: '--ui-low-tint', unknown: '--ui-code-bg' };
+function realBadgeHtml(tier) {
+  const meta = TIER_META[tier];
+  return `<span class="conf-badge" style="color:var(${meta.colorVar});background:var(${TIER_TINT[tier]});">${meta.label}</span>`;
+}
+function meterHtml(tier) {
+  const meta = TIER_META[tier];
+  const dots = [0, 1, 2, 3].map((i) => `<span class="${i < meta.dots ? 'is-on' : ''}"></span>`).join('');
+  return `<span class="conf-meter" style="color:var(${meta.colorVar});">${dots}</span>`;
+}
+
+function polarToXY(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+  const large = endAngle - startAngle > 180 ? 1 : 0;
+  const p1 = polarToXY(cx, cy, rOuter, startAngle);
+  const p2 = polarToXY(cx, cy, rOuter, endAngle);
+  const p3 = polarToXY(cx, cy, rInner, endAngle);
+  const p4 = polarToXY(cx, cy, rInner, startAngle);
+  return [`M ${p1.x} ${p1.y}`, `A ${rOuter} ${rOuter} 0 ${large} 1 ${p2.x} ${p2.y}`, `L ${p3.x} ${p3.y}`, `A ${rInner} ${rInner} 0 ${large} 0 ${p4.x} ${p4.y}`, 'Z'].join(' ');
+}
+function donutHtml(grains, tier) {
+  const cx = 84, cy = 84, rOuter = 78, rInner = 46;
+  if (tier === 'unknown') {
+    return {
+      svg: `<svg viewBox="0 0 168 168"><circle cx="84" cy="84" r="${(rOuter + rInner) / 2}" fill="none" stroke="var(--ui-border)" stroke-width="${rOuter - rInner}" stroke-dasharray="5 6" opacity="0.7"/></svg>`,
+      center: `<div class="donut-center__pct" style="font-size:0.8rem;color:var(--ui-muted);">Not yet<br>researched</div>`,
+    };
+  }
+  let angle = 0;
+  const dominant = grains.reduce((a, b) => (b.p > a.p ? b : a), grains[0]);
+  const slices = grains.map(({ g, p }) => {
+    const start = angle; const end = angle + (p / 100) * 360; angle = end;
+    const mid = (start + end) / 2;
+    const labelPos = polarToXY(cx, cy, (rOuter + rInner) / 2, mid);
+    const showLabel = p >= 14;
+    return `<path class="donut-slice" data-grain="${g}" d="${arcPath(cx, cy, rOuter, rInner, start, end)}" fill="${color(g)}"></path>
+      ${showLabel ? `<text class="donut-slice-label" x="${labelPos.x}" y="${labelPos.y}">${p}%</text>` : ''}`;
+  }).join('');
+  return {
+    svg: `<svg viewBox="0 0 168 168">${slices}</svg>`,
+    center: `<div class="donut-center__pct">${dominant.p}%</div><div class="donut-center__grain">${dominant.g}</div>`,
+  };
+}
+function legendHtml(grains) {
+  return grains.map(({ g, p }) => `
+    <div class="grain-legend2__row" data-grain="${g}">
+      <span class="grain-legend2__swatch" style="background:${color(g)}"></span>
+      <span class="grain-legend2__name">${g}</span>
+      <span class="grain-legend2__pct">${p}%</span>
+    </div>
+  `).join('');
+}
+function oldBarHtml(grains) {
+  return grains.map(({ g, p }) => `<span style="width:${p}%;background:${color(g)}"></span>`).join('');
+}
+function citeMarkersHtml(references, tag) {
+  return references.map((r, i) => ({ r, n: i + 1 })).filter(({ r }) => (r.tags || []).includes(tag))
+    .map(({ n }) => `<a class="cite" href="#ref-${n}" title="Jump to source ${n}">${n}</a>`).join('');
+}
+function referencesSectionHtml(refs) {
+  if (!refs.length) return '';
+  const rows = refs.map((r, i) => `
+    <div class="ref-row" id="ref-${i + 1}">
+      <div class="ref-row__n">${i + 1}</div>
+      <div class="ref-row__main">
+        ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.label || r.url}</a><span class="ref-row__url">${r.url}</span>` : `<span>${r.label}</span>`}
+        ${r.tags && r.tags.length ? `<div class="ref-row__tags">${r.tags.map((t) => `<span class="ref-row__tag">${t}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  return `
+    <div class="block refs">
+      <div class="refs__head"><h3>References &amp; Sources</h3><span>${refs.length} source${refs.length === 1 ? '' : 's'} cited</span></div>
+      ${rows}
+    </div>
+  `;
+}
+
+function renderList() {
+  document.getElementById('libList').innerHTML = bourbons.map((b) => `
+    <button type="button" class="lib2-row ${b.id === selectedId ? 'is-selected' : ''}" data-id="${b.id}">
+      <span class="lib2-row__title">${b.title}</span>
+      <span class="lib2-row__sub">${b.grains.length} grain${b.grains.length === 1 ? '' : 's'}${b.siblings.length ? `, ${b.siblings.length} siblings` : ', no siblings'}</span>
+    </button>
+  `).join('');
+  document.querySelectorAll('.lib2-row[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); showOldBar = false; renderAll(); });
+  });
+}
+
+function findByTitle(title) { return bourbons.find((x) => x.title === title); }
+
+function renderProfile() {
+  const b = bourbons.find((x) => x.id === selectedId);
+  const pane = document.getElementById('profilePane');
+  const { svg, center } = donutHtml(b.grains, b.tier);
+  const refs = b.references;
+
+  const tastingHtml = (b.nose || b.palate || b.finish) ? `
+    <div class="block">
+      <h3>Tasting Notes${citeMarkersHtml(refs, 'Tasting Notes')}</h3>
+      <div class="tasting-grid">
+        <div class="tasting-card"><h4>Nose</h4><p>${b.nose || '&mdash;'}</p></div>
+        <div class="tasting-card"><h4>Palate</h4><p>${b.palate || '&mdash;'}</p></div>
+        <div class="tasting-card"><h4>Finish</h4><p>${b.finish || '&mdash;'}</p></div>
+      </div>
+      ${b.tastingSource ? `<div class="tasting-source">Source: ${b.tastingSource}</div>` : ''}
+    </div>` : '';
+
+  const siblingBourbons = b.siblings.map((t) => findByTitle(t)).filter(Boolean);
+  // Some siblings aren't in this mockup's 4-entry sample set - show the
+  // real count regardless, with a note, rather than silently truncating.
+  const siblingListHtml = b.siblings.length ? `
+    <dt class="info-card__siblings-label">Other ${b.distillery} entries (${b.siblings.length})</dt>
+    <div class="sibling-list">
+      ${b.siblings.map((title) => {
+    const sib = findByTitle(title);
+    return sib
+      ? `<button type="button" class="sibling-btn" data-id="${sib.id}"><span>${sib.title}</span>${realBadgeHtml(sib.tier)}</button>`
+      : `<button type="button" class="sibling-btn" disabled title="Not included in this mockup's sample set" style="opacity:0.55;cursor:default;"><span>${title}</span></button>`;
+  }).join('')}
+    </div>` : '';
+
+  pane.innerHTML = `
+    <div class="library-crumb">
+      <button type="button" id="libraryCrumbBack"><span aria-hidden="true">&larr;</span> Bourbon Library</button>
+      <span class="library-crumb__sep">/</span>
+      <span class="library-crumb__current">${b.title}</span>
+    </div>
+    <div class="profile-head">
+      <div>
+        <h2>${b.title}</h2>
+        <p class="profile-head__by">${b.distillery} &middot; <strong>${b.parent}</strong></p>
+        <div class="profile-tags"><span class="tag">${b.category}</span></div>
+      </div>
+      <button type="button" class="btn btn--small">Edit in Library</button>
+    </div>
+    <div class="profile-grid">
+      <div>
+        <div class="block">
+          <h3>Mash Bill${citeMarkersHtml(refs, 'Mash Bill')}</h3>
+          <div class="mashbill-viz">
+            <div class="donut-wrap" id="donutWrap">${svg}<div class="donut-center">${center}</div></div>
+            <div class="grain-legend2" id="legendWrap">${legendHtml(b.grains)}</div>
+          </div>
+          ${b.isPlaceholder ? `<div class="placeholder-note">⚠ This entry's grain list is a schema placeholder, not a real recipe - see its confidence note below.</div>` : ''}
+          ${showOldBar ? `
+            <span class="compare-strip__label">Today's bar, for comparison:</span>
+            <div class="grain-bar--old">${oldBarHtml(b.grains)}</div>
+          ` : ''}
+          <div class="conf-block">
+            <div class="conf-block__row">
+              ${realBadgeHtml(b.tier)}
+              ${meterHtml(b.tier)}
+              <button type="button" class="btn btn--small" id="toggleBarBtn" style="margin-left:auto;">${showOldBar ? 'Hide' : 'Compare to'} bar</button>
+            </div>
+            <p class="conf-block__note">${b.note}</p>
+          </div>
+        </div>
+        ${tastingHtml}
+      </div>
+      <div class="block info-card">
+        <h3>Distillery &amp; Ownership${citeMarkersHtml(refs, 'Distillery & Ownership')}</h3>
+        <dl>
+          <div><dt>Distillery</dt><dd>${b.distillery}</dd></div>
+          <div><dt>Parent company</dt><dd>${b.parent}</dd></div>
+          <div><dt>Style</dt><dd>${b.category}</dd></div>
+        </dl>
+        ${siblingListHtml}
+      </div>
+    </div>
+    ${referencesSectionHtml(refs)}
+  `;
+
+  document.getElementById('toggleBarBtn').addEventListener('click', () => { showOldBar = !showOldBar; renderProfile(); });
+  document.getElementById('libraryCrumbBack').addEventListener('click', () => { /* mockup: no grid view to return to */ });
+  pane.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); showOldBar = false; renderAll(); });
+  });
+
+  const donutWrap = document.getElementById('donutWrap');
+  const legendWrap = document.getElementById('legendWrap');
+  function setHot(grain, on) {
+    donutWrap.querySelectorAll(`.donut-slice[data-grain="${CSS.escape(grain)}"]`).forEach((el) => el.classList.toggle('is-hot', on));
+    legendWrap.querySelectorAll(`.grain-legend2__row[data-grain="${CSS.escape(grain)}"]`).forEach((el) => el.classList.toggle('is-hot', on));
+  }
+  donutWrap.querySelectorAll('.donut-slice').forEach((el) => {
+    el.addEventListener('mouseenter', () => setHot(el.dataset.grain, true));
+    el.addEventListener('mouseleave', () => setHot(el.dataset.grain, false));
+  });
+  legendWrap.querySelectorAll('.grain-legend2__row').forEach((el) => {
+    el.addEventListener('mouseenter', () => setHot(el.dataset.grain, true));
+    el.addEventListener('mouseleave', () => setHot(el.dataset.grain, false));
+  });
+}
+
+function renderAll() { renderList(); renderProfile(); }
+renderAll();
+</script>
