@@ -90,6 +90,45 @@ async function autoSeedBourbonLibrary(db) {
   return { seeded, source };
 }
 
+// Manual counterpart to autoSeedBourbonLibrary above, for a library that's
+// already populated: the "Server PC" dialog's "Check GitHub for New
+// Bourbons" button (server/index.js's POST /api/mashbills/sync-library)
+// calls this. Auto-seed only ever fires once, on a completely empty
+// library, so a store that seeded months ago never sees entries added to
+// the curated list since - this is how they catch up without waiting for
+// a new installer or running the CLI script by hand.
+//
+// Deliberately additive only: an entry whose title already exists locally
+// (case-insensitive, same matching upsertMashBill's own unique index uses)
+// is left alone rather than overwritten, so this can never silently
+// clobber a correction or a from-scratch entry staff typed in themselves.
+// Re-running it is always safe - already-added titles are just skipped
+// again next time.
+async function syncNewBourbonLibraryEntries(db) {
+  const existingTitles = new Set(db.listMashBills().map((m) => m.title.trim().toLowerCase()));
+  const { entries, source } = await loadSeedEntries();
+  let added = 0;
+  let skipped = 0;
+  for (const entry of entries) {
+    const title = (entry && entry.title || '').trim().toLowerCase();
+    if (!title || existingTitles.has(title)) {
+      skipped += 1;
+      continue;
+    }
+    try {
+      db.upsertMashBill(entry);
+      existingTitles.add(title);
+      added += 1;
+    } catch (err) {
+      // One malformed entry shouldn't sink the rest of the batch - same
+      // spirit as autoSeedBourbonLibrary above.
+      console.warn(`Bourbon Library GitHub sync: skipped "${entry && entry.title}" - ${err.message}`);
+      skipped += 1;
+    }
+  }
+  return { added, skipped, source };
+}
+
 // Fire-and-forget entry point for start() in index.js: never throws, never
 // keeps the app waiting before its UI is usable. Only the GitHub fetch
 // (loadSeedEntries' first attempt) can really fail slowly here - the
@@ -110,5 +149,5 @@ function maybeAutoSeedBourbonLibrary(db) {
 }
 
 module.exports = {
-  autoSeedBourbonLibrary, maybeAutoSeedBourbonLibrary, GITHUB_SEED_URL, BUNDLED_SEED_PATH,
+  autoSeedBourbonLibrary, maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries, GITHUB_SEED_URL, BUNDLED_SEED_PATH,
 };

@@ -1475,6 +1475,20 @@
         <div class="reviewer-manager__add">
           <button type="button" class="btn btn--small" id="mashBillLibrarySyncNowBtn">Sync Now</button>
         </div>
+
+        <!-- Server PC only (see loadMashBillLibrary in app.js, which hides
+             this row on any other PC) - pulls new entries added to the
+             curated GitHub list since this library was first seeded.
+             Additive only: never touches a title that already exists
+             locally, so it can't overwrite a correction or a from-scratch
+             entry staff typed in themselves. -->
+        <div id="mashBillLibraryGithubSyncRow" hidden>
+          <p class="help-text">This PC is the Server PC - it can check for bourbons added to the curated list since this library was last synced.</p>
+          <p class="help-text" id="mashBillLibraryGithubSyncStatus" role="status" aria-live="polite"></p>
+          <div class="reviewer-manager__add">
+            <button type="button" class="btn btn--small" id="mashBillLibraryGithubSyncBtn">Check GitHub for New Bourbons</button>
+          </div>
+        </div>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="mashBillLibraryCloseFooterBtn">Close</button>
