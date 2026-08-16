@@ -2950,6 +2950,34 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   color: var(--muted);
   margin-bottom: calc(var(--w) * 0.012 * var(--price-fit, 1));
 }
+/* Mash Bill Confidence badge - printed next to the label whenever
+   talker.mashBillConfidence is set (see mashBillConfidenceBadgeHtml in
+   card.js). Same pill shape as the staff-facing .conf-badge (Bourbon
+   Library recall banner, Library profile page) below, but fixed colors
+   instead of that badge's themed --ui-good/--ui-warn/--ui-low/--ui-muted -
+   this one prints, and print colors don't re-point with dark mode/accent
+   theme the way the rest of the app's UI does (see the "PRINT palette"
+   comment at the top of this file). Values match the light-mode/default
+   hex those tokens themselves resolve to, so the two badges read as the
+   same color family even though one is fixed and one isn't. Not
+   uppercase/letter-spaced like its label, unlike everything else in this
+   block - reads as its own small pill rather than blending into the
+   label's own all-caps run. */
+.card__mashbill-tier {
+  display: inline-block;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: calc(var(--w) * 0.024 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.006 * var(--price-fit, 1)) calc(var(--w) * 0.016 * var(--price-fit, 1));
+  border-radius: 999px;
+  margin-left: calc(var(--w) * 0.01);
+}
+.card__mashbill-tier--confirmed { color: #2e7d32; background: rgba(46, 125, 50, 0.12); }
+.card__mashbill-tier--reported { color: #96590a; background: rgba(191, 128, 15, 0.14); }
+.card__mashbill-tier--estimated { color: #a8391a; background: rgba(168, 57, 26, 0.12); }
+.card__mashbill-tier--unknown { color: #6b645a; background: rgba(107, 100, 90, 0.12); }
 .card__mashbill-bar {
   display: flex;
   width: 100%;

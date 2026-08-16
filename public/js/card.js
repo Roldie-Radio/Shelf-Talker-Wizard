@@ -117,6 +117,30 @@ const MASH_BILL_GRAIN_COLORS = {
 };
 const MASH_BILL_GRAIN_FALLBACK_COLOR = '#b8ab98';
 
+// Mash Bill Confidence badge (Confirmed/Reported/Estimated/Unknown) -
+// printed next to the label when talker.mashBillConfidence is set (see its
+// own declaration in app.js: only ever set by the Bourbon Library recall
+// banner's "Use"/"Use All" on the Mash Bill row, cleared the moment the
+// chip list is hand-edited afterward). Same tiers/labels the staff-facing
+// .conf-badge already uses (recall banner, Library profile page), but
+// fixed hex colors here instead of the themed --ui-good/--ui-warn/
+// --ui-low/--ui-muted tokens that badge reads - everything that actually
+// prints on a card is fixed regardless of the app's current light/dark
+// mode or accent theme (see the "PRINT palette" comment at the top of
+// styles.css), so this can't just reuse those CSS variables as-is.
+const MASH_BILL_CONFIDENCE_PRINT_META = {
+  confirmed: { label: 'Confirmed', className: 'card__mashbill-tier--confirmed' },
+  reported: { label: 'Reported', className: 'card__mashbill-tier--reported' },
+  estimated: { label: 'Estimated', className: 'card__mashbill-tier--estimated' },
+  unknown: { label: 'Unknown', className: 'card__mashbill-tier--unknown' },
+};
+
+function mashBillConfidenceBadgeHtml(tier) {
+  const meta = MASH_BILL_CONFIDENCE_PRINT_META[tier];
+  if (!meta) return '';
+  return ` <span class="card__mashbill-tier ${meta.className}">${meta.label}</span>`;
+}
+
 // Mash Bill - a stacked proportion bar (see .card__mashbill-bar in
 // styles.css), the closest analog on a spirits talker to a wine's varietal:
 // a shopper can read "mostly corn, sweeter" vs. "high rye, spicier" from the
@@ -144,10 +168,11 @@ function buildMashBillHtml(talker) {
       </span>
     `;
   }).join('');
+  const confidenceHtml = mashBillConfidenceBadgeHtml(talker.mashBillConfidence);
 
   return `
     <div class="card__mashbill">
-      <div class="card__mashbill-label">Mash Bill</div>
+      <div class="card__mashbill-label">Mash Bill${confidenceHtml}</div>
       <div class="card__mashbill-bar">${barHtml}</div>
       <div class="card__mashbill-legend">${legendHtml}</div>
     </div>

@@ -754,6 +754,18 @@
       time" pattern as currentRatings above. */
   let currentMashBill = [];
 
+  /** Which Mash Bill Confidence tier (see CONFIDENCE_TIER_META further
+      down) the grains above came from, if any - set alongside
+      currentMashBill whenever the Bourbon Library recall banner's "Use"/
+      "Use All" (Mash Bill row) fills it in, so the printed card can show
+      the same tier the Library rated it. null for a mash bill that was
+      typed by hand and never autofilled - there's no Library rating to
+      show for that. Cleared the moment the chip list is hand-edited after
+      an autofill (see addMashBillGrain/the remove-mashbill handler below),
+      since at that point the composition on the card may no longer be
+      exactly what the Library's tier was rating. */
+  let currentMashBillConfidence = null;
+
   /** Wine Profile dot values currently attached to whatever's in the form -
       one 0-5 integer per WINE_PROFILE_CATEGORIES entry (card.js), 0 meaning
       "not rated yet". Always carries all five keys (never partial) so
@@ -1929,6 +1941,7 @@
       awardsColor: els.awardsColor.value,
       isStorePick: els.storePick.checked,
       mashBill: currentMashBill.slice(),
+      mashBillConfidence: currentMashBillConfidence,
       nose: els.nose.value.trim(),
       palate: els.palate.value.trim(),
       finish: els.finish.value.trim(),
@@ -2004,6 +2017,7 @@
     // doesn't restore a checkbox the form no longer shows for beer.
     if (currentCategory === 'beer') els.chilled.checked = false;
     currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
+    currentMashBillConfidence = CONFIDENCE_TIER_META[talker.mashBillConfidence] ? talker.mashBillConfidence : null;
     renderMashBillList();
     // Same reasoning as resetForm() above - "Save to Library" is per-
     // editing-session state, not something a loaded talker carries.
@@ -2076,6 +2090,7 @@
     renderProfilePicker();
     els.profileSuggestStatus.textContent = 'Type a Product Title, then click Suggest Profile.';
     currentMashBill = [];
+    currentMashBillConfidence = null;
     renderMashBillList();
     // "Save to Library" is per-editing-session state, not part of the
     // talker itself - form.reset() above already unchecks the checkbox
@@ -2179,11 +2194,15 @@
     `).join('');
   }
 
+  // Both hand-edit paths below clear currentMashBillConfidence - see its
+  // own declaration further up for why a hand edit invalidates whatever
+  // tier an earlier autofill brought in.
   function addMashBillGrain() {
     const grain = els.mashBillGrain.value;
     const pct = els.mashBillPct.value.trim();
     if (!grain || !pct) return;
     currentMashBill.push({ grain, pct });
+    currentMashBillConfidence = null;
     els.mashBillPct.value = '';
     renderMashBillList();
     refreshPreview();
@@ -2199,6 +2218,7 @@
     if (!btn) return;
     const idx = Number(btn.closest('[data-mashbill-index]').dataset.mashbillIndex);
     currentMashBill.splice(idx, 1);
+    currentMashBillConfidence = null;
     renderMashBillList();
     refreshPreview();
   });
@@ -2396,6 +2416,7 @@
     if (overwriting && !confirm('Replace the current tasting notes with the Bourbon Library\'s?')) return;
     if (hasMash) {
       currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
+      currentMashBillConfidence = match.confidence.tier;
       renderMashBillList();
     }
     flavorTargets.forEach((f) => { flavorFieldEl(f).value = match[f]; });
@@ -2414,6 +2435,7 @@
       // the string the chip UI already expects) - still fully editable
       // afterward, same as any other chip added by hand.
       currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
+      currentMashBillConfidence = match.confidence.tier;
       renderMashBillList();
       refreshPreview();
     } else if (action === 'use-flavor') {

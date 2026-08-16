@@ -473,3 +473,25 @@ browser.
   talkers already printed/queued before this would ship (an absent
   `mashBillConfidence` already reads as "no badge"), and Quarter Size
   talkers never show the Mash Bill block at all regardless.
+  **Implemented**, with one deliberate change from the recommendation
+  above: always show the tier (Style A's behavior, including Confirmed),
+  styled as an actual `.conf-badge`-shaped pill rather than plain text -
+  the real request was "always show, but in the same badge style as the
+  Bourbon Library," not Style C. The pill can't literally reuse
+  `.conf-badge`'s own CSS as-is, though, since that badge reads its colors
+  from the themed `--ui-good`/`--ui-warn`/`--ui-low`/`--ui-muted` tokens,
+  which re-point with dark mode and the accent theme - fine for a
+  staff-facing screen element, wrong for something that's supposed to
+  print the same regardless of how the app happens to look on screen right
+  now. `MASH_BILL_CONFIDENCE_PRINT_META` in `card.js` and
+  `.card__mashbill-tier--*` in `styles.css` carry the same four tiers with
+  fixed hex values instead, anchored to those tokens' own light-mode/
+  default colors so the two badges still read as the same color family.
+  Data model shipped exactly as designed: a new `talker.mashBillConfidence`
+  field, set alongside `currentMashBill` by the recall banner's "Use"/"Use
+  All" (Mash Bill row), cleared by `addMashBillGrain`/the `remove-mashbill`
+  handler the moment the chip list is hand-edited afterward, and carried
+  through `readForm`/`fillForm`/the Queue's own JSON serialization exactly
+  like every other talker field - verified end to end against the real,
+  running app (not just this mockup's samples), including a
+  save-to-queue-and-reload round trip.
