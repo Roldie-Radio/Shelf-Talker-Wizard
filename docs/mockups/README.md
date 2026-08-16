@@ -405,4 +405,26 @@ browser.
   of those has a matching field on the printed talker itself to autofill
   into. Purely a `public/js/app.js` + `public/index.html` proposal &mdash;
   `rowToMashBill` in `server/db.js` already returns every column the banner
-  needs, so no server or schema changes.
+  needs, so no server or schema changes. **Implemented** in a follow-up to
+  this mockup &mdash; the unified banner (not the two-scoped alternative),
+  the placeholder guard, the Mash-Bill-row confidence badge, and the
+  combined-confirmation overwrite guard on the flavor fields all shipped
+  as described, verified against the real, running 279-entry seeded
+  library rather than just the five samples here. The "Save this
+  Nose/Palate/Finish to the Bourbon Library" checkbox shipped too, but the
+  mockup's own claim that `upsertMashBill`'s "omit to leave alone"
+  convention meant "no new merge logic needed" turned out to only be true
+  of the *optional* columns (nose/palate/finish, etc.) &mdash;
+  `upsertMashBill` itself still validates grains as required on every
+  write, even one that only touches tasting notes, so it can't be used
+  to add notes to an existing entry without also resending its grains.
+  The real save button works around this the other way: PUT
+  `/api/mashbills/:id` (`updateMashBillById`) falls back to whatever
+  grains are already on the row when grains is omitted from the request,
+  so saving onto a title the Library already has an entry for goes
+  through that endpoint instead, touching nose/palate/finish only. POST
+  (create) is still used for a title with no existing entry, which still
+  needs the Edit Talker form's own Mash Bill chip list to have at least
+  one grain in it first, exactly as the mockup assumed &mdash; saving is
+  disabled with an explanation rather than attempting a doomed request
+  when neither an existing entry nor any chips exist yet.

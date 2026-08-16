@@ -337,21 +337,18 @@
             <div class="field-head">
               <span>Mash Bill (optional)</span>
             </div>
-            <!-- Mash Bill Library recall - shown when the current Product
+            <!-- Bourbon Library recall - shown when the current Product
                  Title exactly matches a saved entry (see
-                 refreshMashBillRecall in app.js). Only ever a suggestion:
-                 "Use It" copies the saved grains into the chip list below,
-                 still fully editable afterward - nothing here fills the
-                 chips on its own. -->
-            <div class="mashbill-recall no-print" id="mashBillRecallBanner" hidden>
-              <div class="mashbill-recall__title" id="mashBillRecallTitle"></div>
-              <div class="mashbill-recall__grains" id="mashBillRecallGrains"></div>
-              <div class="mashbill-recall__meta" id="mashBillRecallMeta"></div>
-              <div class="mashbill-recall__actions">
-                <button type="button" class="btn btn--small btn--primary" id="mashBillRecallUseBtn">Use It</button>
-                <button type="button" class="btn btn--small btn--ghost" id="mashBillRecallDismissBtn">Not This One</button>
-              </div>
-            </div>
+                 refreshMashBillRecall in app.js), with one row per field the
+                 entry actually has (Mash Bill, Nose, Palate, Finish) - a
+                 placeholder-only mash bill (see isPlaceholderMashBill) shows
+                 as "Not yet researched" rather than a fake suggestion. Only
+                 ever a suggestion: each row's own "Use" (or "Use All") copies
+                 that value into the matching field below, still fully
+                 editable afterward - nothing here fills anything on its own.
+                 Fully built/torn down by JS (innerHTML), not fixed markup,
+                 since which rows exist varies per entry. -->
+            <div class="mashbill-recall no-print" id="mashBillRecallBanner" hidden></div>
             <div class="ratings-builder">
               <select id="fMashBillGrain" aria-label="Grain">
                 <option value="Corn">Corn</option>
@@ -400,6 +397,26 @@
               <span>Finish (optional)</span>
               <textarea id="fFinish" rows="2" maxlength="200" placeholder="Long and warm, a whisper of black pepper"></textarea>
             </label>
+
+            <!-- Closes the loop the other direction from Mash Bill's own
+                 save box above: saves Nose/Palate/Finish to the same
+                 title's Bourbon Library entry (PUT by id if one already
+                 exists, so the grains already on file are left untouched;
+                 POST to create one if not, which needs the chip list above
+                 to have at least one grain first - see
+                 els.tastingNotesSaveBtn's click handler in app.js). Reuses
+                 .mashbill-save's styling verbatim - it's the same shape,
+                 just saving different fields. -->
+            <div class="mashbill-save">
+              <label class="server-pc-checkbox">
+                <input type="checkbox" id="tastingNotesSaveCheckbox" />
+                Save this Nose/Palate/Finish to the Bourbon Library
+              </label>
+              <div class="mashbill-save__row" id="tastingNotesSaveRow" hidden>
+                <button type="button" class="btn btn--small" id="tastingNotesSaveBtn">Save to Library</button>
+              </div>
+              <p class="help-text" id="tastingNotesSaveStatus" role="status" aria-live="polite"></p>
+            </div>
           </div>
 
           <!-- Wine/Spirits-only, same visibility rule as Food Pairing

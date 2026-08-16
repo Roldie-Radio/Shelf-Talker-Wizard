@@ -1388,13 +1388,14 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .reviewer-manager__list { display: flex; flex-direction: column; gap: 0.25rem; }
 .reviewer-manager__list .rating-chip { background: var(--ui-panel); }
 
-/* ---------- Mash Bill Library ----------
-   Two touch points: the recall banner + "Save to Library" row on Edit
-   Talker's own Mash Bill field (see refreshMashBillRecall/saveMashBillToLibrary
-   in app.js), and the Tools -> Mash Bill Library... dialog itself, which
-   reuses .history-list/.history-item (search results) and
-   .settings-section/.reviewer-manager__add (its own add/edit form) rather
-   than introducing new list/form styling. */
+/* ---------- Mash Bill Library / Bourbon Library ----------
+   Three touch points: the recall banner on Edit Talker's Mash Bill field
+   (now offering Nose/Palate/Finish too, not just grains - see
+   refreshMashBillRecall in app.js), the matching "Save to Library" rows on
+   both the Mash Bill and Nose/Palate/Finish fields, and the Tools -> Mash
+   Bill Library... dialog itself, which reuses .history-list/.history-item
+   (search results) and .settings-section/.reviewer-manager__add (its own
+   add/edit form) rather than introducing new list/form styling. */
 
 .mashbill-recall {
   margin-bottom: 0.6rem;
@@ -1408,6 +1409,21 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .mashbill-recall__title { font-weight: 700; margin-bottom: 0.25rem; }
 .mashbill-recall__meta { color: var(--ui-muted); font-size: 0.74rem; margin-top: 0.2rem; }
 .mashbill-recall__actions { display: flex; gap: 0.4rem; margin-top: 0.45rem; }
+
+/* One row per field the matched Bourbon Library entry has (Mash Bill,
+   Nose, Palate, Finish) - see refreshMashBillRecall in app.js. The Mash
+   Bill row's own confidence badge reuses .conf-badge as-is (see the Mash
+   Bill Confidence section below); a muted row (nothing researched for
+   that field yet, or a placeholder-shaped mash bill - see
+   isPlaceholderMashBill) drops its "Use" button rather than offering a
+   suggestion with nothing behind it. */
+.af-rows { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.5rem 0; }
+.af-row { display: flex; gap: 0.5rem; align-items: baseline; }
+.af-row--muted { color: var(--ui-muted); }
+.af-label { flex: 0 0 5.5em; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ui-ink-soft); display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.af-value { flex: 1 1 auto; min-width: 0; }
+.af-value--muted { color: var(--ui-muted); font-style: italic; }
+.af-row .btn { flex: 0 0 auto; }
 
 .mashbill-save { margin-top: 0.6rem; }
 .mashbill-save__row { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
