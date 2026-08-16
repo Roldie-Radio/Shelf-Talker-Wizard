@@ -26,14 +26,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Buffalo Trace Distillery confirms it uses two mash bills but does not publish exact percentages to consumers. This low-rye recipe (used for Buffalo Trace, Eagle Rare, and others in that family) is the figure most consistently cited across whiskey trade writing, not an official distillery number.",
-      "sources": [
-        {
-          "label": "Buffalo Trace Distillery - Our Process",
-          "url": "https://www.buffalotracedistillery.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Four Roses Single Barrel Bourbon",
@@ -62,14 +65,17 @@
     "confidence": {
       "tier": "confirmed",
       "note": "Four Roses is unusually transparent about its process, publicly documenting both of its mash bills (a 75/20/5 recipe and this 60/35/5 high-rye recipe) and which of its ten bourbon recipes go into each product. Single Barrel is built from recipe OBSV - this mash bill with the V yeast strain.",
-      "sources": [
-        {
-          "label": "Four Roses - Our Bourbon",
-          "url": "https://fourrosesbourbon.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Four Roses - Our Bourbon",
+        "url": "https://fourrosesbourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Blanton's The Original Bourbon",
@@ -98,9 +104,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Blanton's is drawn from Buffalo Trace's second, higher-rye mash bill, but Sazerac has never published its exact percentages the way it hasn't for Mash Bill #1 either. These figures are an approximation based on the range most often reported by whiskey writers - treat them as a starting estimate, not a distillery-confirmed recipe.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "Michter's US*1 Bourbon",
@@ -128,15 +134,16 @@
     "confidence": {
       "tier": "estimated",
       "note": "Michter's does not publicly disclose mash bill percentages for any of its whiskeys. These figures are a rough placeholder based on typical medium-rye Kentucky bourbon proportions, not a distillery-confirmed recipe - replace this entry as soon as better information turns up.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
-    "title": "Redemption Bourbon",
+    "title": "Redemption Bourbon 9 Year Barrel Proof",
     "distillery": "MGP of Indiana",
     "parentCompany": "Deutsch Family Wine & Spirits",
     "category": "Straight Bourbon",
+    "sku": "26943",
     "grains": [
       {
         "grain": "Corn",
@@ -158,14 +165,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Redemption is a sourced whiskey distilled at MGP of Indiana, which doesn't publish mash bills directly to consumers. This 75/21/4 'high-rye bourbon' recipe is one of the most extensively and consistently documented mash bills in whiskey writing, since it's the base for many sourced brands beyond just Redemption.",
-      "sources": [
-        {
-          "label": "MGP Ingredients - Distillery Products",
-          "url": "https://www.mgpingredients.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Wild Turkey 101 Bourbon",
@@ -194,14 +204,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Wild Turkey doesn't publish an official mash bill sheet to consumers, but this 75/13/12 ratio is the figure longtime master distiller Jimmy Russell has cited directly in interviews over the years, which is why it's treated as reported rather than merely estimated.",
-      "sources": [
-        {
-          "label": "Wild Turkey Distilling Co. - Our Bourbon",
-          "url": "https://www.wildturkeybourbon.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Wild Turkey Distilling Co. - Our Bourbon",
+        "url": "https://www.wildturkeybourbon.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Maker's Mark Kentucky Bourbon",
@@ -230,14 +243,17 @@
     "confidence": {
       "tier": "confirmed",
       "note": "Maker's Mark is one of the small handful of distilleries that states its exact mash bill publicly - this 70/16/14 wheated recipe (wheat standing in for rye) is published directly by the distillery, not inferred from trade writing.",
-      "sources": [
-        {
-          "label": "Maker's Mark - How It's Made",
-          "url": "https://www.makersmark.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Maker's Mark - How It's Made",
+        "url": "https://www.makersmark.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Woodford Reserve Bourbon Distillers Select",
@@ -266,14 +282,17 @@
     "confidence": {
       "tier": "confirmed",
       "note": "Brown-Forman publishes this 72/18/10 mash bill directly for Woodford Reserve - it's the same base recipe (Brown-Forman's higher-rye mash bill) used across several of the company's bourbon brands.",
-      "sources": [
-        {
-          "label": "Woodford Reserve - Our Process",
-          "url": "https://www.woodfordreserve.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Woodford Reserve - Our Process",
+        "url": "https://www.woodfordreserve.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Old Forester Bourbon",
@@ -302,14 +321,17 @@
     "confidence": {
       "tier": "confirmed",
       "note": "Old Forester shares Brown-Forman's 72/18/10 mash bill with Woodford Reserve - the company has been open about using the same base recipe across its bourbon brands, with barrel treatment and proofing driving the difference between them.",
-      "sources": [
-        {
-          "label": "Old Forester - Our Whiskey",
-          "url": "https://www.oldforester.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Old Forester - Our Whiskey",
+        "url": "https://www.oldforester.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Jim Beam Bourbon",
@@ -338,14 +360,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Beam Suntory doesn't publish exact mash bill percentages to consumers, but this 75/13/12 'small grain' recipe is Jim Beam's standard bourbon mash bill, consistently cited across whiskey trade writing and shared by several Beam-produced brands (this one, Knob Creek, Booker's, and others).",
-      "sources": [
-        {
-          "label": "Jim Beam - Our Bourbon",
-          "url": "https://www.jimbeam.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Jim Beam - Our Bourbon",
+        "url": "https://www.jimbeam.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Knob Creek 9 Year Small Batch Bourbon",
@@ -374,14 +399,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Knob Creek is drawn from Jim Beam's standard 75/13/12 mash bill (the same recipe as Jim Beam White Label), aged longer and bottled at higher proof - Beam Suntory hasn't published exact figures to consumers, but this ratio is the one consistently cited for the whole Beam standard-bourbon family.",
-      "sources": [
-        {
-          "label": "Knob Creek - Our Story",
-          "url": "https://www.knobcreek.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Knob Creek - Our Story",
+        "url": "https://www.knobcreek.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Basil Hayden's Bourbon",
@@ -410,55 +438,24 @@
     "confidence": {
       "tier": "reported",
       "note": "Basil Hayden's uses Beam's high-rye mash bill, the same recipe shared with Old Grand-Dad - not published in exact form by Beam Suntory, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for that recipe family.",
-      "sources": [
-        {
-          "label": "Basil Hayden's - Our Bourbon",
-          "url": "https://www.basilhaydens.com"
-        }
-      ],
       "verifiedAt": ""
-    }
-  },
-  {
-    "title": "Elijah Craig Small Batch",
-    "distillery": "Heaven Hill Distillery",
-    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
-    "category": "Kentucky Straight Bourbon",
-    "grains": [
+    },
+    "references": [
       {
-        "grain": "Corn",
-        "pct": 75
-      },
-      {
-        "grain": "Rye",
-        "pct": 13
-      },
-      {
-        "grain": "Malted Barley",
-        "pct": 12
+        "label": "Basil Hayden's - Our Bourbon",
+        "url": "https://www.basilhaydens.com",
+        "tags": [
+          "Mash Bill"
+        ]
       }
-    ],
-    "nose": "Vanilla, toasted oak, and caramel corn.",
-    "palate": "Smoky oak, nutmeg, and butterscotch.",
-    "finish": "Long, spicy, and slightly smoky.",
-    "tastingSource": "Common tasting note consensus (whiskey trade press)",
-    "confidence": {
-      "tier": "reported",
-      "note": "Heaven Hill doesn't publish exact mash bill percentages to consumers, but this 75/13/12 recipe is Heaven Hill's standard (non-wheated) bourbon mash bill, consistently cited across whiskey trade writing and distinct from the wheated mash bill behind Larceny.",
-      "sources": [
-        {
-          "label": "Elijah Craig - Our Whiskey",
-          "url": "https://elijahcraig.com"
-        }
-      ],
-      "verifiedAt": ""
-    }
+    ]
   },
   {
     "title": "Bulleit Bourbon",
     "distillery": "Bulleit Distilling Co. (formerly sourced from Four Roses)",
     "parentCompany": "Diageo",
     "category": "Kentucky Straight Bourbon",
+    "sku": "4215",
     "grains": [
       {
         "grain": "Corn",
@@ -480,9 +477,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Diageo has described Bulleit as a high-rye bourbon but hasn't published exact percentages, and production has shifted over time from Four Roses-distilled stock to Diageo's own Bulleit Distilling Co. at the Stitzel-Weller site - this 68/28/4 figure is the ratio most consistently cited in whiskey trade writing, treat it as an approximation rather than a confirmed recipe.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "Eagle Rare Single Barrel Bourbon",
@@ -511,14 +508,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Eagle Rare is drawn from the same low-rye Mash Bill #1 as Buffalo Trace itself - Sazerac confirms the shared recipe but, as with Buffalo Trace, doesn't publish exact percentages to consumers. This 90/8/2 figure is the one most consistently cited across whiskey trade writing for that mash bill.",
-      "sources": [
-        {
-          "label": "Buffalo Trace Distillery - Our Process",
-          "url": "https://www.buffalotracedistillery.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Buffalo Trace Distillery - Our Process",
+        "url": "https://www.buffalotracedistillery.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "W.L. Weller Special Reserve",
@@ -546,15 +546,16 @@
     "confidence": {
       "tier": "estimated",
       "note": "Weller uses Buffalo Trace's wheated mash bill (wheat standing in for rye) - the same recipe behind Pappy Van Winkle - but Sazerac has never published its exact percentages. This 75/16/9 figure is the ratio most frequently cited across whiskey trade writing, not a distillery-confirmed number.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
-    "title": "Larceny Small Batch",
+    "title": "Larceny Small Batch Bourbon",
     "distillery": "Heaven Hill Distillery",
     "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
     "category": "Kentucky Straight Wheated Bourbon",
+    "sku": "28314",
     "grains": [
       {
         "grain": "Corn",
@@ -576,9 +577,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Larceny is built from Heaven Hill's wheated mash bill (wheat standing in for rye), distinct from the standard recipe behind Elijah Craig - Heaven Hill hasn't published exact figures to consumers, so this 68/20/12 ratio is an approximation drawn from whiskey trade writing, not a confirmed number.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "Old Grand-Dad Bonded",
@@ -606,14 +607,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Old Grand-Dad shares Beam's high-rye mash bill with Basil Hayden's, bonded at 100 proof instead of Basil Hayden's lower proof - not published in exact form by Beam Suntory, but this 63/27/10 ratio is the figure most consistently cited across whiskey trade writing for that recipe family.",
-      "sources": [
-        {
-          "label": "Old Grand-Dad - Our Bourbon",
-          "url": "https://www.oldgranddad.com"
-        }
-      ],
       "verifiedAt": ""
-    }
+    },
+    "references": [
+      {
+        "label": "Old Grand-Dad - Our Bourbon",
+        "url": "https://www.oldgranddad.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   },
   {
     "title": "Angel's Envy Bourbon Port Wine Barrels",
@@ -642,9 +646,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Angel's Envy has never published a mash bill for its base bourbon (distilled at its own Louisville site since 2016, sourced before that), and its defining trait - a finish in tawny port pipes - happens after distillation anyway. This 72/18/10 figure is a rough, low-confidence placeholder based on typical Kentucky bourbon proportions, not a confirmed recipe.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "Ridgemont 1792 Small Batch Bourbon",
@@ -673,15 +677,16 @@
     "confidence": {
       "tier": "estimated",
       "note": "Sazerac markets 1792 as a higher-rye bourbon but hasn't published exact percentages for the Barton 1792 Distillery's recipe. This 74/18/8 figure is an approximation drawn from whiskey trade writing, not a distillery-confirmed number.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
-    "title": "Rebel Yell",
+    "title": "Rebel Yell Bourbon 100 Proof",
     "distillery": "Lux Row Distillers",
     "parentCompany": "Luxco (MGP Ingredients)",
     "category": "Kentucky Straight Wheated Bourbon",
+    "sku": "27873",
     "grains": [
       {
         "grain": "Corn",
@@ -703,9 +708,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Rebel Yell has always been a wheated bourbon (wheat standing in for rye) - historically sourced, now distilled at Lux Row Distillers - but Luxco hasn't published its exact recipe. This figure is a rough estimate based on the wheated-mash-bill ratios most commonly reported for the category, not a confirmed number.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "George Dickel Bourbon",
@@ -733,49 +738,17 @@
     "confidence": {
       "tier": "reported",
       "note": "Cascade Hollow's standard Tennessee whiskey mash bill (this 84/8/8 corn-heavy recipe) is the one Diageo discloses for the distillery in general; the Bourbon expression skips the charcoal-mellowing (Lincoln County Process) step so it can legally be sold as bourbon, but a bourbon-specific mash bill split hasn't been separately published.",
-      "sources": [
-        {
-          "label": "George Dickel - Our Whisky",
-          "url": "https://www.georgedickel.com"
-        }
-      ],
       "verifiedAt": ""
-    }
-  },
-  {
-    "title": "Evan Williams Black Label",
-    "distillery": "Heaven Hill Distillery",
-    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
-    "category": "Kentucky Straight Bourbon",
-    "grains": [
+    },
+    "references": [
       {
-        "grain": "Corn",
-        "pct": 75
-      },
-      {
-        "grain": "Rye",
-        "pct": 13
-      },
-      {
-        "grain": "Malted Barley",
-        "pct": 12
+        "label": "George Dickel - Our Whisky",
+        "url": "https://www.georgedickel.com",
+        "tags": [
+          "Mash Bill"
+        ]
       }
-    ],
-    "nose": "Vanilla, caramel corn, and light oak.",
-    "palate": "Brown sugar and oak with a hint of banana.",
-    "finish": "Short to moderate, warm.",
-    "tastingSource": "Common tasting note consensus (whiskey trade press)",
-    "confidence": {
-      "tier": "reported",
-      "note": "Evan Williams is drawn from Heaven Hill's standard (non-wheated) bourbon mash bill, the same recipe family as Elijah Craig - Heaven Hill doesn't publish exact percentages to consumers, but this 75/13/12 ratio is the one consistently cited across whiskey trade writing.",
-      "sources": [
-        {
-          "label": "Evan Williams - Our Bourbon",
-          "url": "https://www.evanwilliams.com"
-        }
-      ],
-      "verifiedAt": ""
-    }
+    ]
   },
   {
     "title": "Old Ezra 7 Year Barrel Strength",
@@ -803,9 +776,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Old Ezra has historically been sourced from Heaven Hill's standard non-wheated mash bill (the same recipe family as Elijah Craig and Evan Williams), though Luxco doesn't confirm this directly. Treat this 75/13/12 figure as an approximation based on its known sourcing history, not a confirmed recipe.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "Wilderness Trail Bottled-in-Bond Wheated",
@@ -833,15 +806,16 @@
     "confidence": {
       "tier": "estimated",
       "note": "Wilderness Trail's founders (both former food scientists) have discussed using a high-wheat mash bill and their own proprietary sweet mash process in interviews, but haven't published exact percentages. This figure is a rough estimate based on those interviews and general wheated-bourbon proportions, not a confirmed recipe.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
-    "title": "Very Old Barton",
+    "title": "Very Old Barton Bourbon",
     "distillery": "Barton 1792 Distillery",
     "parentCompany": "Sazerac Company",
     "category": "Kentucky Straight Bourbon",
+    "sku": "25354",
     "grains": [
       {
         "grain": "Corn",
@@ -863,9 +837,9 @@
     "confidence": {
       "tier": "estimated",
       "note": "Very Old Barton is Barton 1792 Distillery's value-tier bourbon - Sazerac hasn't published its mash bill, and it isn't confirmed to share 1792 Small Batch's recipe. This figure is a rough placeholder based on typical Kentucky bourbon proportions, not a confirmed number - replace as soon as better information turns up.",
-      "sources": [],
       "verifiedAt": ""
-    }
+    },
+    "references": []
   },
   {
     "title": "Benchmark Full Proof Bourbon",
@@ -9837,5 +9811,75 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Redemption Bourbon Cognac Cask",
+    "distillery": "MGP of Indiana",
+    "parentCompany": "Deutsch Family Wine & Spirits",
+    "category": "Straight Bourbon (Cognac Cask Finished)",
+    "sku": "30343",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 75
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Rye spice, vanilla, and a rich cognac sweetness.",
+    "palate": "Black pepper, cinnamon, and brown sugar layered with grape-brandy richness.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same MGP of Indiana 75/21/4 high-rye bourbon recipe as standard Redemption, finished afterward in cognac casks - a barrel-treatment step, not a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "MGP Ingredients - Distillery Products",
+        "url": "https://www.mgpingredients.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Larceny Small Batch Bourbon Barrel Proof",
+    "distillery": "Heaven Hill Distillery",
+    "parentCompany": "Heaven Hill Brands (Shapira family, privately held)",
+    "category": "Kentucky Straight Wheated Bourbon (Barrel Proof)",
+    "sku": "25642",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Wheat",
+        "pct": 20
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Brown sugar, ripe banana, and honeysuckle, more intense at barrel proof.",
+    "palate": "Rich caramel and vanilla with real barrel-proof heat.",
+    "finish": "Long, warm, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Larceny is built from Heaven Hill's wheated mash bill (wheat standing in for rye), distinct from the standard recipe behind Elijah Craig - Heaven Hill hasn't published exact figures to consumers, so this 68/20/12 ratio is an approximation drawn from whiskey trade writing, not a confirmed number. Same base as standard Larceny Small Batch, bottled undiluted at barrel proof.",
+      "verifiedAt": ""
+    },
+    "references": []
   }
 ]
