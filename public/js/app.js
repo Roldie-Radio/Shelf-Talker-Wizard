@@ -16,19 +16,12 @@
   // the inline pre-paint script in index.html reads.
   const QUEUE_COLUMN_KEY = 'shelfTalkerQueueColumnVisible.v1';
   const MENU_SIZES = ['compact', 'comfortable', 'large', 'xlarge'];
-  // Settings -> Experimental Features -> Bourbon Shelf Talkers: gates the
-  // Nose/Palate/Finish fields and the Distiller.com tasting-notes source in
-  // one switch (see applyExperimentalBourbon below). Off by default -
-  // Distiller's own scraper is unconfirmed against the live site (see
-  // productImport.js), so this stays opt-in rather than showing up for
-  // every store the moment it ships.
-  const EXPERIMENTAL_BOURBON_KEY = 'shelfTalkerExperimentalBourbon.v1';
   // Settings -> Experimental Features -> Wine Food Pairings: gates the Food
   // Pairing Suggestions field (see applyExperimentalPairings below) and the
   // "Pairs Well With" block it prints (buildPairingsHtml in card.js). Off
-  // by default, same reasoning as Bourbon above - this is a new, unreviewed
-  // suggestion engine (WINE_PAIRING_RULES in card.js), so it stays opt-in
-  // rather than showing up for every store the moment it ships.
+  // by default - this is a new, unreviewed suggestion engine
+  // (WINE_PAIRING_RULES in card.js), so it stays opt-in rather than showing
+  // up for every store the moment it ships.
   const EXPERIMENTAL_PAIRINGS_KEY = 'shelfTalkerExperimentalPairings.v1';
   // Settings -> Experimental Features -> Wine Profile: gates the Wine
   // Profile field (see applyExperimentalWineProfile below) and the 1-5 dot
@@ -780,31 +773,20 @@
   let currentSignType = 'talker'; // 'talker' | 'sign'
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
-  let currentCategory = 'wine'; // 'wine' | 'beer'
+  let currentCategory = 'wine'; // 'wine' | 'bourbon' | 'beer'
 
-  // Settings -> Experimental Features -> Bourbon Shelf Talkers (see
-  // EXPERIMENTAL_BOURBON_KEY above and applyExperimentalBourbon further
-  // down) - read once at load, then kept in sync with the checkbox from
-  // there on.
-  let experimentalBourbonEnabled = false;
+  // Settings -> Experimental Features -> Wine Food Pairings - read once at
+  // load, then kept in sync with the checkbox from there on.
+  let experimentalPairingsEnabled = false;
   try {
-    experimentalBourbonEnabled = localStorage.getItem(EXPERIMENTAL_BOURBON_KEY) === 'true';
+    experimentalPairingsEnabled = localStorage.getItem(EXPERIMENTAL_PAIRINGS_KEY) === 'true';
   } catch {
     // Same as reviewers/queue below - an unavailable store just means this
     // stays at its off-by-default value.
   }
 
-  // Settings -> Experimental Features -> Wine Food Pairings - same pattern
-  // as experimentalBourbonEnabled right above.
-  let experimentalPairingsEnabled = false;
-  try {
-    experimentalPairingsEnabled = localStorage.getItem(EXPERIMENTAL_PAIRINGS_KEY) === 'true';
-  } catch {
-    // Same as above - stays at its off-by-default value.
-  }
-
   // Settings -> Experimental Features -> Wine Profile - same pattern as
-  // experimentalBourbonEnabled/experimentalPairingsEnabled above.
+  // experimentalPairingsEnabled right above.
   let experimentalProfileEnabled = false;
   try {
     experimentalProfileEnabled = localStorage.getItem(EXPERIMENTAL_PROFILE_KEY) === 'true';
@@ -1239,7 +1221,6 @@
     settingsCloseFooterBtn: document.getElementById('settingsCloseFooterBtn'),
     settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
-    experimentalBourbonCheckbox: document.getElementById('experimentalBourbonCheckbox'),
     experimentalPairingsCheckbox: document.getElementById('experimentalPairingsCheckbox'),
     experimentalProfileCheckbox: document.getElementById('experimentalProfileCheckbox'),
 
@@ -1403,57 +1384,24 @@
     });
   });
 
-  // ---------- Experimental Features (Settings -> Bourbon Shelf Talkers) ----------
-
-  // A single switch for everything the bourbon/spirits work in this session
-  // added: the Nose/Palate/Finish fields (applyFormMode's flavorFields
-  // line) and the Distiller.com source in "Find Tasting Notes"
-  // (renderTastingNotesSourceOptions/runTastingNotesSearch below). Also
-  // published onto window.ShelfTalkerSettings so card.js - a separate
-  // script, sharing this page's global scope the same way it already
-  // shares window.ShelfTalkerLayout with layout.js - can gate printing
-  // Nose/Palate/Finish the instant this is switched off, even for a talker
-  // that already has that data from before. Nothing here is ever deleted:
-  // fillForm/readForm don't check this flag at all, so a hidden field's
-  // value round-trips through a save untouched, and switching the toggle
-  // back on immediately shows/prints it again.
-  window.ShelfTalkerSettings = window.ShelfTalkerSettings || {};
-
-  function applyExperimentalBourbon(enabled) {
-    experimentalBourbonEnabled = enabled;
-    window.ShelfTalkerSettings.experimentalBourbon = enabled;
-    els.experimentalBourbonCheckbox.checked = enabled;
-    // Tools > Mash Bill Library… (see index.html) - hidden outright while
-    // the toggle is off, same as Store Pick/Mash Bill/Nose-Palate-Finish on
-    // Edit Talker itself, rather than shown-disabled like the Electron-only
-    // items (data-requires-electron) - this isn't "unavailable in this
-    // environment", it's a feature the store hasn't opted into yet.
-    document.querySelectorAll('[data-requires-bourbon]').forEach((el) => { el.hidden = !enabled; });
-    // Refreshes the Mash Bill Library cache right as the feature turns on,
-    // so the very first talker made after flipping the toggle can already
-    // show a recall banner rather than waiting on whatever load already
-    // happened (or didn't) before the toggle was on.
-    if (enabled) fetchMashBillLibrary().then(refreshMashBillRecall);
-    applyFormMode();
-    renderTastingNotesSourceOptions();
-    if (previewMode === 'single') renderPreview();
-  }
-
-  els.experimentalBourbonCheckbox.addEventListener('change', () => {
-    applyExperimentalBourbon(els.experimentalBourbonCheckbox.checked);
-    try {
-      localStorage.setItem(EXPERIMENTAL_BOURBON_KEY, String(els.experimentalBourbonCheckbox.checked));
-    } catch {
-      // Same as theme/accent above - the choice just won't survive a restart.
-    }
-  });
-
   // ---------- Experimental Features (Settings -> Wine Food Pairings) ----------
   //
-  // Same shape as applyExperimentalBourbon right above: one switch gates
-  // the Food Pairing Suggestions field (applyFormMode's pairingsField line)
-  // and, via window.ShelfTalkerSettings, whether card.js prints the "Pairs
-  // Well With" block (buildPairingsHtml). Nothing here is ever deleted:
+  // Published onto window.ShelfTalkerSettings so card.js - a separate
+  // script, sharing this page's global scope the same way it already
+  // shares window.ShelfTalkerLayout with layout.js - can gate printing the
+  // instant a toggle here is switched off, even for a talker that already
+  // has that data from before. Nothing here is ever deleted: fillForm/
+  // readForm don't check these flags at all, so a hidden field's value
+  // round-trips through a save untouched, and switching a toggle back on
+  // immediately shows/prints it again. (Bourbon Shelf Talkers used to be
+  // one of these too - it's a real Product Type now instead, see
+  // applyFormMode's isBourbon.)
+  window.ShelfTalkerSettings = window.ShelfTalkerSettings || {};
+
+  // One switch gates the Food Pairing Suggestions field (applyFormMode's
+  // pairingsField line) and, via window.ShelfTalkerSettings, whether
+  // card.js prints the "Pairs Well With" block (buildPairingsHtml).
+  // Nothing here is ever deleted:
   // readForm/fillForm don't check this flag, so pairings already picked on
   // a talker round-trip through a save untouched and reappear the instant
   // the toggle goes back on. Also hides/shows Tools > Wine Pairing Rules…
@@ -1717,6 +1665,7 @@
 
   function applyFormMode() {
     const isBeer = currentCategory === 'beer';
+    const isBourbon = currentCategory === 'bourbon';
     const isSign = currentSignType === 'sign';
     const isSmallSign = isSign && currentSignSize === 'small';
 
@@ -1744,13 +1693,20 @@
     // Pick/Mash Bill/Nose/Palate/Finish only ever render onto the .card
     // printout (see buildStorePickRibbonHtml/buildMashBillHtml/
     // buildFlavorHtml in card.js), so a Display Sign would offer input with
-    // no visible effect. Also gated behind Settings -> Experimental
-    // Features -> Bourbon Shelf Talkers (see applyExperimentalBourbon) -
-    // off by default, so these fields stay out of the way until a store
-    // opts in.
-    els.storePickField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
-    els.mashBillField.hidden = isBeer || isSign || !experimentalBourbonEnabled;
-    els.flavorFields.hidden = isBeer || isSign || !experimentalBourbonEnabled;
+    // no visible effect. Tied to Product Type = Bourbon (isSign already
+    // rules out isBeer here, since a talker can't be both) rather than a
+    // separate experimental toggle - these are just what a Bourbon Shelf
+    // Talker has, the same way Beer Fields further down are just what a
+    // Beer one has.
+    els.storePickField.hidden = isSign || !isBourbon;
+    els.mashBillField.hidden = isSign || !isBourbon;
+    els.flavorFields.hidden = isSign || !isBourbon;
+    // Tools > Mash Bill Library… (see index.html's [data-requires-bourbon]
+    // menu item) - same rule as the fields above: relevant only while a
+    // Bourbon talker is the one being edited, so it disappears the moment
+    // Product Type switches away rather than staying visible for a wine or
+    // beer talker it has nothing to do with.
+    document.querySelectorAll('[data-requires-bourbon]').forEach((el) => { el.hidden = !isBourbon; });
     // Mash Bill field just changed visibility (or the Product Title may
     // have too, on the fillForm() call path) - re-check whether the recall
     // banner should be showing (see refreshMashBillRecall below).
@@ -1869,19 +1825,34 @@
     applyFormMode();
   }
 
+  // 'wine' is the fallback for anything unrecognized - a value from a save
+  // that predates Bourbon becoming its own category, or a corrupt one -
+  // same "assume it's the common case" default currentCategory always had
+  // for beer/not-beer, just extended to a third real value. Shared between
+  // setCategory and fillForm below so the two can't drift apart on what
+  // counts as a valid category.
+  function normalizeCategory(value) {
+    return value === 'beer' || value === 'bourbon' ? value : 'wine';
+  }
+
   function setCategory(category) {
-    currentCategory = category === 'beer' ? 'beer' : 'wine';
-    // Purple reads as the store's beer theme, amber as wine/spirits - only
-    // while composing a new entry, though. Switching category mid-edit
-    // (editId set) must not silently overwrite an already-saved item's
-    // deliberately-chosen theme just because someone toggled the label.
+    currentCategory = normalizeCategory(category);
+    // Purple reads as the store's beer theme, amber as wine/spirits/bourbon
+    // - only while composing a new entry, though. Switching category
+    // mid-edit (editId set) must not silently overwrite an already-saved
+    // item's deliberately-chosen theme just because someone toggled the
+    // label.
     if (!els.editId.value) els.theme.value = currentCategory === 'beer' ? 'purple' : 'amber';
-    // Beer Name tends to run longer than a wine/spirits Product Title
-    // (brewery + beer + container all crammed in), so it clips more often -
-    // default its Auto-size toggle on for beer the same way, and only while
-    // composing new (same guard as Theme above).
+    // Beer Name tends to run longer than a wine/spirits/bourbon Product
+    // Title (brewery + beer + container all crammed in), so it clips more
+    // often - default its Auto-size toggle on for beer the same way, and
+    // only while composing new (same guard as Theme above).
     if (!els.editId.value) els.titleAutoSize.checked = currentCategory === 'beer';
     applyFormMode();
+    // Distiller.com's place in the Find Tasting Notes source list depends
+    // on category now too (see renderTastingNotesSourceOptions) - re-check
+    // it every time category changes, not just when the dialog opens.
+    renderTastingNotesSourceOptions();
   }
 
   els.typeSelects.forEach((select) => {
@@ -1962,8 +1933,9 @@
     currentSignType = talker.signType === 'sign' ? 'sign' : 'talker';
     currentSignSize = talker.signSize === 'small' ? 'small' : 'large';
     currentTalkerSize = ['half', 'quarter'].includes(talker.talkerSize) ? talker.talkerSize : 'full';
-    currentCategory = talker.category === 'beer' ? 'beer' : 'wine';
+    currentCategory = normalizeCategory(talker.category);
     applyFormMode();
+    renderTastingNotesSourceOptions();
     els.title.value = talker.title || '';
     els.titleFontSize.value = talker.titleFontSize || DEFAULT_FONT_SIZE_PT[currentSignType].title;
     // Same beer default as setCategory/resetForm (see their own comments) -
@@ -2238,11 +2210,11 @@
   //    above under the current Product Title.
   //
   // `mashBillLibraryCache` is this client's own copy of the shared library,
-  // refreshed on load, when the Bourbon toggle turns on, and after any
-  // write this client makes - not on a recurring poll, since the server
-  // side already keeps every PC's data current every ~30s regardless (see
-  // mashBillSync.js) and recall only needs to be "current as of a moment
-  // ago", not live-updating while staff are mid-edit.
+  // refreshed on load and after any write this client makes - not on a
+  // recurring poll, since the server side already keeps every PC's data
+  // current every ~30s regardless (see mashBillSync.js) and recall only
+  // needs to be "current as of a moment ago", not live-updating while
+  // staff are mid-edit.
   let mashBillLibraryCache = [];
   // Which Product Title the recall banner was last dismissed for ("Use It"
   // counts as a dismissal too, once the chips reflect the match) - reset
@@ -3912,20 +3884,25 @@
   // every provider in order, same as before this dialog existed.
   const ANY_TASTING_NOTES_SOURCE = 'Any source (recommended)';
   let tastingNotesSourceNames = [];
-  // Which of the above are gated behind Settings -> Experimental Features ->
-  // Bourbon Shelf Talkers (Distiller, today - see the server's own
+  // Which of the above only make sense for Product Type = Bourbon
+  // (Distiller, today - see the server's own
   // TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES) - read from the server rather
   // than hardcoded, same reasoning as tastingNotesSourceNames itself below.
+  // "Experimental" in these names is legacy from when this list was gated
+  // by the Bourbon Shelf Talkers toggle rather than Product Type itself -
+  // the server's own naming (TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES)
+  // didn't change, since the underlying idea (sources that don't apply to
+  // every product) is the same either way.
   let tastingNotesExperimentalSourceNames = [];
   let tastingNotesSourcesLoaded = false;
 
   function renderTastingNotesSourceOptions() {
     const current = els.tastingNotesSourceSelect.value;
-    // Experimental sources (Distiller) only show up in the dropdown once
-    // the Settings toggle is on - the server enforces this too (see
+    // Bourbon-only sources (Distiller) only show up in the dropdown while
+    // Product Type is Bourbon - the server enforces this too (see
     // findTastingNotes in productImport.js), this is just keeping staff
     // from picking an option that would immediately error.
-    const visibleNames = experimentalBourbonEnabled
+    const visibleNames = currentCategory === 'bourbon'
       ? tastingNotesSourceNames
       : tastingNotesSourceNames.filter((name) => !tastingNotesExperimentalSourceNames.includes(name));
     const options = [ANY_TASTING_NOTES_SOURCE, ...visibleNames];
@@ -3992,7 +3969,7 @@
       const resp = await fetch('/api/tasting-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, vintage, source, allowExperimental: experimentalBourbonEnabled }),
+        body: JSON.stringify({ title, vintage, source, allowExperimental: currentCategory === 'bourbon' }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not find tasting notes.');
@@ -7937,7 +7914,6 @@
     onOpen: () => {
       applyAccent(currentAccent());
       applyMenuSize(currentMenuSize());
-      els.experimentalBourbonCheckbox.checked = experimentalBourbonEnabled;
       els.experimentalPairingsCheckbox.checked = experimentalPairingsEnabled;
       els.experimentalProfileCheckbox.checked = experimentalProfileEnabled;
     },
@@ -8466,9 +8442,15 @@
 
   applyTheme(currentTheme());
   applyAccent(currentAccent());
-  // Also runs applyFormMode() - see applyExperimentalBourbon's own comment
-  // above for why the two need to move together.
-  applyExperimentalBourbon(experimentalBourbonEnabled);
+  // Sets up the form's initial field visibility (Bourbon fields included -
+  // no separate opt-in needed for those anymore, see applyFormMode's
+  // isBourbon) and syncs the Type/Product Type dropdowns to match.
+  applyFormMode();
+  renderTastingNotesSourceOptions();
+  // Warms the Mash Bill Library cache on load rather than waiting for
+  // Product Type to be switched to Bourbon for the first time, so the
+  // recall banner can already show something the moment it does.
+  fetchMashBillLibrary().then(refreshMashBillRecall);
   applyExperimentalPairings(experimentalPairingsEnabled);
   applyExperimentalWineProfile(experimentalProfileEnabled);
   // Unlike pairingsList/ratingsList (legitimately empty until something's

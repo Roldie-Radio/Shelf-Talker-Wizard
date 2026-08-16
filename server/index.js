@@ -104,10 +104,9 @@ function createApp({
   // Populates the Source dropdown in the "Find Tasting Notes" dialog - a
   // plain list of provider names, so a new provider added to
   // TASTING_NOTE_PROVIDERS shows up there without an app.js change.
-  // `experimental` names the subset gated behind Settings' "Experimental
-  // Features -> Bourbon Shelf Talkers" toggle - the client filters those
-  // out of the dropdown while the toggle is off (see
-  // renderTastingNotesSourceOptions in app.js).
+  // `experimental` names the subset gated behind Product Type: Bourbon -
+  // the client filters those out of the dropdown unless Bourbon is selected
+  // (see renderTastingNotesSourceOptions in app.js).
   app.get('/api/tasting-notes/sources', (req, res) => {
     res.json({ sources: TASTING_NOTE_PROVIDER_NAMES, experimental: TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES });
   });

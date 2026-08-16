@@ -1801,20 +1801,21 @@ function buildCardElement(talker) {
   // rather than rendered and then hidden by CSS.
   const isQuarter = talkerSize === 'quarter';
   const isBeer = talker.category === 'beer';
+  // Product Type -> Bourbon (see the product-type-select options in
+  // index.html) - Mash Bill/Nose-Palate-Finish/Store Pick print whenever the
+  // talker's own category says Bourbon, no Settings toggle involved. Changing
+  // a saved talker's Product Type away from Bourbon stops these from printing
+  // immediately without touching the underlying data, same as switching it
+  // back does.
+  const isBourbon = talker.category === 'bourbon';
   card.dataset.category = isBeer ? 'beer' : 'wine';
-  // Settings -> Experimental Features -> Bourbon Shelf Talkers (see
-  // applyExperimentalBourbon in app.js, which publishes this) - read fresh
-  // on every render rather than cached, so switching the toggle off stops a
-  // talker's Nose/Palate/Finish from printing immediately, even one that
-  // already had that data from before the toggle existed or was last on.
-  // window.ShelfTalkerSettings may not exist at all yet (e.g. a test harness
-  // that loads card.js without app.js), hence the defensive check rather
-  // than a bare property read.
-  const experimentalBourbon = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalBourbon);
-  // Same gate, same reasoning, published by applyExperimentalPairings in
-  // app.js - a talker that already has pairings picked stops printing them
-  // the instant the toggle goes off, and shows them again the instant it
-  // goes back on, same "hidden, never deleted" behavior as Bourbon above.
+  // Same "hidden, never deleted" behavior as Bourbon above, but still
+  // toggle-driven - published by applyExperimentalPairings in app.js, read
+  // fresh on every render so a talker that already has pairings picked stops
+  // printing them the instant the toggle goes off, and shows them again the
+  // instant it goes back on. window.ShelfTalkerSettings may not exist at all
+  // yet (e.g. a test harness that loads card.js without app.js), hence the
+  // defensive check rather than a bare property read.
   const experimentalPairings = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalPairings);
   // Same gate, same reasoning, published by applyExperimentalWineProfile in
   // app.js - a talker that already has dots picked stops printing the Wine
@@ -1824,12 +1825,11 @@ function buildCardElement(talker) {
   const experimentalWineProfile = !!(window.ShelfTalkerSettings && window.ShelfTalkerSettings.experimentalWineProfile);
   const rightBadgeHtml = (isBeer && !isQuarter) ? buildRightBadgeHtml(talker) : '';
   const countryFlagHtml = (isBeer && !isQuarter) ? buildCountryFlagHtml(talker) : '';
-  // Wine/Spirits-only, same experimentalBourbon/isQuarter guard as Mash
-  // Bill/Nose-Palate-Finish below - beer never sets isStorePick (the
-  // checkbox is hidden for beer, see applyFormMode in app.js), so this and
-  // rightBadgeHtml above never both apply to the same talker even though
-  // they share the badge-right corner.
-  const storePickRibbonHtml = (!isBeer && !isQuarter && experimentalBourbon) ? buildStorePickRibbonHtml(talker) : '';
+  // Bourbon-only, same isQuarter guard as Mash Bill/Nose-Palate-Finish below
+  // - beer never sets isStorePick (the checkbox is hidden for beer, see
+  // applyFormMode in app.js), so this and rightBadgeHtml above never both
+  // apply to the same talker even though they share the badge-right corner.
+  const storePickRibbonHtml = (isBourbon && !isQuarter) ? buildStorePickRibbonHtml(talker) : '';
   const titleClasses = ['card__title'];
   if (rightBadgeHtml || storePickRibbonHtml) titleClasses.push('card__title--badge-right');
   if (countryFlagHtml) titleClasses.push('card__title--badge-left');
@@ -1867,8 +1867,8 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
-      ${(isBeer || !experimentalBourbon) ? '' : buildMashBillHtml(talker)}
-      ${(isBeer || !experimentalBourbon) ? '' : buildFlavorHtml(talker)}
+      ${isBourbon ? buildMashBillHtml(talker) : ''}
+      ${isBourbon ? buildFlavorHtml(talker) : ''}
       ${isBeer ? '' : buildRatingsHtml(talker, ratingsStyle)}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}

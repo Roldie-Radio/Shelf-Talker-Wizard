@@ -29,9 +29,9 @@
   /* Secondary ink. #8a8378 was used for this and fails WCAG AA on white
      (~3.8:1); this is the same family at ~5.8:1. */
   --muted: #6b645a;
-  /* Store Pick ribbon (Bourbon Shelf Talkers, Settings -> Experimental
-     Features - see .card__pick-ribbon below) - deliberately its own colour
-     family (a deep oxblood/gold "wax seal" pair), not reused from
+  /* Store Pick ribbon (Product Type: Bourbon - see .card__pick-ribbon
+     below) - deliberately its own colour family (a deep oxblood/gold "wax
+     seal" pair), not reused from
      --sale-red/--chilled-blue/the CLOSEOUT!! yellow, since this badge marks
      provenance, not a pricing state, and can appear alongside any of them. */
   --pick-ribbon-bg: #6e1f1f;
