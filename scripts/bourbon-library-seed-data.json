@@ -9233,5 +9233,609 @@
         ]
       }
     ]
+  },
+  {
+    "title": "Early Times Whisky",
+    "distillery": "Early Times Distillery (Brown-Forman legacy site)",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Whisky",
+    "sku": "12021",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 79
+      },
+      {
+        "grain": "Rye",
+        "pct": 11
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 10
+      }
+    ],
+    "nose": "Vanilla, brown sugar, and light oak.",
+    "palate": "Caramel, baking spice, and mild grain sweetness.",
+    "finish": "Short to moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Early Times uses its own 79/11/10 mash bill, distinct from the 72/18/10 recipe behind Woodford Reserve and Old Forester despite sharing distillery heritage. Sazerac purchased the brand from Brown-Forman in 2020.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Early Times - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Early_Times",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Gentleman Jack Rare Whiskey",
+    "distillery": "Jack Daniel Distillery",
+    "parentCompany": "Brown-Forman Corporation",
+    "category": "Tennessee Whiskey",
+    "sku": "12022",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 80
+      },
+      {
+        "grain": "Rye",
+        "pct": 8
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 12
+      }
+    ],
+    "nose": "Caramel, banana, and a smoother charcoal-mellowed sweetness.",
+    "palate": "Vanilla, oak, and soft charred-oak sweetness.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Jack Daniel's Distillery official product notes",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Gentleman Jack shares Jack Daniel's published 80/8/12 mash bill - its signature trait is a second charcoal-mellowing pass after aging, a filtering step rather than a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Jack Daniel's - Our Whiskey",
+        "url": "https://www.jackdaniels.com",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bulleit Rye",
+    "distillery": "MGP of Indiana (proprietary specification, aged partly at Bulleit's own warehouses)",
+    "parentCompany": "Diageo",
+    "category": "Straight Rye Whiskey",
+    "sku": "25512",
+    "grains": [
+      {
+        "grain": "Rye",
+        "pct": 95
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Mint, black pepper, and citrus.",
+    "palate": "Rye spice, brown sugar, and oak.",
+    "finish": "Long, dry, peppery.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Bulleit Rye is distilled at MGP of Indiana to Bulleit's own proprietary specification of the well-documented 95/5 rye mash bill, aged 4-7 years partly in Bulleit's own warehouses.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "How the '95/5' Rye Mash Bill Went From MGP Signature to Craft Staple - VinePair",
+        "url": "https://vinepair.com/articles/95-5-rye-mgp-signature-to-craft-whiskey-staple/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bulleit Bourbon Single Barrel P/B",
+    "distillery": "Bulleit Distilling Co. (formerly sourced from Four Roses)",
+    "parentCompany": "Diageo",
+    "category": "Kentucky Straight Bourbon (Single Barrel)",
+    "sku": "26085",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 68
+      },
+      {
+        "grain": "Rye",
+        "pct": 28
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Nutmeg, oak, and green apple, fuller from single-barrel selection.",
+    "palate": "Bold rye spice with vanilla, maple, and citrus.",
+    "finish": "Long, dry, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Same estimated 68/28/4 figure as standard Bulleit Bourbon - Diageo hasn't published exact percentages, and this is a single-barrel selection of that same base whiskey.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Bulleit Mesquite Smoked Malt Bourbon",
+    "distillery": "Bulleit Distilling Co.",
+    "parentCompany": "Diageo",
+    "category": "Kentucky Straight Bourbon (Smoked Malt, No Rye)",
+    "sku": "41331",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 65
+      },
+      {
+        "grain": "Mesquite Smoked Malt",
+        "pct": 30
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 5
+      }
+    ],
+    "nose": "Toasted grain, sweet smoke, and vanilla.",
+    "palate": "Savory mesquite smoke layered with caramel sweetness - no rye spice.",
+    "finish": "Long, smoky, sweet.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "confirmed",
+      "note": "Diageo publishes this 65/30/5 mash bill directly - Bulleit's first bourbon to drop rye entirely, replacing it with mesquite-smoked malted barley.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Bulleit Mesquite Smoked Malt - Bulleit Frontier Whiskey",
+        "url": "https://www.bulleit.com/whiskeys/bulleit-mesquite-smoked-malt",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bowman Brothers Small Batch",
+    "distillery": "A. Smith Bowman Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Virginia Straight Bourbon",
+    "sku": "769",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 36
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Vanilla, caramel, and rye spice.",
+    "palate": "Brown sugar, oak, and baking spice from triple distillation.",
+    "finish": "Warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "A. Smith Bowman (Sazerac's Virginia distillery) triple-distills a corn/rye/malted barley mash bill for its whole line, but the exact percentages aren't publicly confirmed - using Buffalo Trace's high-rye figure as a placeholder since Sazerac's Virginia and Kentucky operations are closely linked, not a confirmed number.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "A. Smith Bowman Distillery - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/A._Smith_Bowman_Distillery",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "John J. Bowman Single Barrel",
+    "distillery": "A. Smith Bowman Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Virginia Straight Bourbon (Single Barrel)",
+    "sku": "770",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 36
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Vanilla, caramel, and rye spice, fuller from single-barrel selection and extra age.",
+    "palate": "Brown sugar, oak, and baking spice.",
+    "finish": "Long, warm, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Same mash bill situation as Bowman Brothers - A. Smith Bowman's exact percentages aren't publicly confirmed. Aged 10 years, triple distilled, bottled at 100 proof.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "A. Smith Bowman Distillery - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/A._Smith_Bowman_Distillery",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Isaac Bowman Port Barrel",
+    "distillery": "A. Smith Bowman Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Virginia Straight Bourbon (Port Cask Finished)",
+    "sku": "20964",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 60
+      },
+      {
+        "grain": "Rye",
+        "pct": 36
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 4
+      }
+    ],
+    "nose": "Vanilla, caramel, and a rich port-cask sweetness.",
+    "palate": "Brown sugar and baking spice layered with dried fruit and red-wine richness.",
+    "finish": "Long, warm, fruity.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Same A. Smith Bowman base as Bowman Brothers, finished afterward in ruby port casks - a barrel-treatment step, not independently confirmed as a different mash bill.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "A. Smith Bowman Distillery - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/A._Smith_Bowman_Distillery",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Old Maysville Club Rye",
+    "distillery": "Old Pogue Distillery",
+    "parentCompany": "Old Pogue Distillery (Pogue family, independently owned)",
+    "category": "Kentucky Straight Rye Malt Whiskey",
+    "sku": "19078",
+    "grains": [
+      {
+        "grain": "Malted Rye",
+        "pct": 100
+      }
+    ],
+    "nose": "Mint, dill, and toasted grain.",
+    "palate": "Rye spice and malt sweetness, rounder than an unmalted rye.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Old Pogue publishes this as a 100% malted rye mash bill (rye malt rather than standard unmalted rye), following a Pogue family formulation over a century old.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Old Maysville Club Bottled In Bond Rye Malt Whisky",
+        "url": "https://www.mashandgrape.com/products/oldmaysvilleclubbottledinbondryemaltwhisky",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Blue Note Juke Joint Bourbon",
+    "distillery": "B.R. Distilling Co. (sourced, undisclosed Kentucky distillery)",
+    "parentCompany": "B.R. Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "29808",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and light rye spice.",
+    "palate": "Caramel, oak, and gentle pepper.",
+    "finish": "Smooth, moderate, warm.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Blue Note reports this 70/21/9 mash bill for Juke Joint, sourced from an undisclosed Kentucky distillery, bottled unfiltered at 93 proof by B.R. Distilling Co. in Memphis, TN.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Blue Note Juke Joint - Blue Note Bourbon",
+        "url": "https://www.bluenotebourbon.com/products/juke-joint/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Blue Note Juke Joint Uncut LOWC Pick",
+    "distillery": "B.R. Distilling Co. (sourced, undisclosed Kentucky distillery)",
+    "parentCompany": "B.R. Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Single Barrel, Uncut)",
+    "sku": "32735",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and rye spice, fuller from single-barrel selection.",
+    "palate": "Caramel, oak, and gentle pepper at cask strength.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Same 70/21/9 base as standard Juke Joint, bottled uncut/unfiltered at barrel proof. \"LOWC\" in the name suggests this is this store's own private barrel selection.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Blue Note Juke Joint - Blue Note Bourbon",
+        "url": "https://www.bluenotebourbon.com/products/juke-joint/",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Blue Note Toasted Bourbon",
+    "distillery": "B.R. Distilling Co. (sourced, undisclosed Kentucky distillery)",
+    "parentCompany": "B.R. Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Bourbon (Toasted Barrel Finished)",
+    "sku": "41800",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Toasted corn, vanilla, and a rounder toasted-oak sweetness.",
+    "palate": "Caramel and gentle pepper with deeper toasted-oak notes.",
+    "finish": "Smooth, warm, moderately long.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Using Juke Joint's reported 70/21/9 mash bill as the base for this toasted-barrel finished expression - not independently confirmed for this specific release.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Blue Note Wheated Bourbon",
+    "distillery": "B.R. Distilling Co. (sourced, undisclosed Kentucky distillery)",
+    "parentCompany": "B.R. Distilling Co. (independently owned)",
+    "category": "Kentucky Straight Wheated Bourbon",
+    "sku": "41635",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Wheat",
+        "pct": 21
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 9
+      }
+    ],
+    "nose": "Honey, vanilla, and soft wheat sweetness.",
+    "palate": "Caramel and baked bread, no rye bite.",
+    "finish": "Smooth, mellow, moderate.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Blue Note's wheated expression presumably swaps wheat for rye in a similar ratio to Juke Joint's 70/21/9 recipe - not independently confirmed.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Cream of Kentucky Cask Strength Bourbon",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon (Cask Strength)",
+    "sku": "37857",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Cream of Kentucky is a historic brand revived by Sazerac at Barton 1792 Distillery - no public source confirms whether it shares 1792's reported 74/18/8 recipe or uses something else. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Cream of Kentucky Small Batch Bourbon",
+    "distillery": "Barton 1792 Distillery",
+    "parentCompany": "Sazerac Company",
+    "category": "Kentucky Straight Bourbon",
+    "sku": "37859",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 100
+      }
+    ],
+    "nose": "",
+    "palate": "",
+    "finish": "",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "unknown",
+      "note": "Same situation as the Cask Strength expression - no public source confirms this revived historic brand's exact mash bill. Placeholder only, not a finding.",
+      "verifiedAt": ""
+    },
+    "references": []
+  },
+  {
+    "title": "Heaven's Door Private Barrel Cask Strength Bourbon",
+    "distillery": "Undisclosed (rumored Tennessee, possibly George Dickel-adjacent)",
+    "parentCompany": "Heaven's Door Spirits (Bob Dylan)",
+    "category": "Straight Bourbon (Single Barrel, Cask Strength)",
+    "sku": "35194",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 70
+      },
+      {
+        "grain": "Rye",
+        "pct": 22
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 8
+      }
+    ],
+    "nose": "Caramel, vanilla, and rye spice, fuller from single-barrel selection.",
+    "palate": "Brown sugar, baking spice, and dried fruit at barrel-proof strength.",
+    "finish": "Long, hot, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "estimated",
+      "note": "Heaven's Door's Tennessee Straight Bourbon carries this reported 70/22/8 mash bill, though the source distillery remains officially undisclosed (widely rumored, not confirmed). This is a private single-barrel selection of that same line.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Heaven's Door - The Spirits Educator",
+        "url": "https://www.thespiritseducator.com/heavens-door",
+        "tags": [
+          "Mash Bill",
+          "Distillery & Ownership"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Breckenridge Bourbon Rum Cask",
+    "distillery": "Breckenridge Distillery",
+    "parentCompany": "Breckenridge Distillery (independently owned)",
+    "category": "Straight Bourbon (Blended, Rum Cask Finished)",
+    "sku": "39691",
+    "grains": [
+      {
+        "grain": "Corn",
+        "pct": 56
+      },
+      {
+        "grain": "Rye",
+        "pct": 38
+      },
+      {
+        "grain": "Malted Barley",
+        "pct": 6
+      }
+    ],
+    "nose": "Toasted corn, rye spice, and a tropical rum-cask sweetness.",
+    "palate": "Bold rye pepper and caramel with molasses notes from the rum finish.",
+    "finish": "Long, warm, spicy.",
+    "tastingSource": "Common tasting note consensus (whiskey trade press)",
+    "confidence": {
+      "tier": "reported",
+      "note": "Breckenridge publishes this 56/38/6 high-rye mash bill for its bourbon (a blend of in-house Colorado distillate and sourced Kentucky/Tennessee/Indiana whiskey), finished afterward in rum casks.",
+      "verifiedAt": ""
+    },
+    "references": [
+      {
+        "label": "Breckenridge Bourbon - The Whiskey Wash",
+        "url": "https://thewhiskeywash.com/reviews/whiskey-review-breckenridge-bourbon/",
+        "tags": [
+          "Mash Bill"
+        ]
+      }
+    ]
   }
 ]
