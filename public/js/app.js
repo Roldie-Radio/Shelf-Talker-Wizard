@@ -52,6 +52,14 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.0',
+      items: [
+        'New: Bourbon Library entries can now carry a SKU (Manage Mash Bill Library dialog, and shown on the profile page under Distillery & Ownership) so staff can look a bottle\'s SKU up straight from its library entry when building a talker.',
+        'New: the Bourbon Library\'s pre-loaded starting set grows from 26 to 279 bourbons, covering effectively every bourbon, rye, and American whiskey product this store carries - researched and confidence-graded individually (Confirmed/Reported/Estimated/Unknown, per bottle) rather than assumed. A PC that already auto-seeded an earlier set won\'t pick these up on its own (auto-seed only ever fills a completely empty library) - run `npm run db:seed-bourbon-library` again to add them.',
+        'Fixed: Bourbon Library citations (References & Sources) saved through the seed data script weren\'t actually reaching the app - they were written to a field upsertMashBill never reads. Existing entries\' citations are repaired as part of this release\'s seed data; new saves have always gone to the right place.',
+      ],
+    },
+    {
       version: '4.2.2',
       items: [
         'New: the Search tab now opens with one Search field above Search by Name/SKU Lookup/Scan UPC - type a product name, a SKU, or scan a UPC and it detects which and switches to (and runs) the matching lookup automatically, so picking a method first is no longer required day to day. The three panels and their toggle are still there underneath as a manual override.',
