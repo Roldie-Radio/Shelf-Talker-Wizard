@@ -28,7 +28,19 @@ browser.
   Malt, plain "Barley", "Oats") that currently all collapse to one grey
   fallback swatch; the mockup's design notes include a full proposed
   palette table (family-grouped tints, one deliberately distinct color for
-  the smoked malt) that needs sign-off before implementation.
+  the smoked malt) that needs sign-off before implementation. **Implemented**
+  in a follow-up to this mockup (`mashBillVizHtml`/`LIBRARY_GRAIN_COLORS` in
+  `app.js`) &mdash; the donut, legend, hover-sync, Compare to bar toggle, and
+  extended palette all shipped as described; the palette itself dropped
+  the "Oat" vs. "Oats" split from the mockup's proposal (both map to the
+  same tint, since one's the printed talker's own spelling and the other's
+  the library's) but is otherwise unchanged. The "Unknown"-tier dashed-ring
+  treatment did not ship, though &mdash; real "unknown"-tier entries don't
+  consistently use a placeholder grain list the way the mockup's one
+  example did (some, like Angel's Envy Rye Finished Caribbean Cask, carry a
+  specific researched percentage split despite the tier), so hiding the
+  chart by tier would have hidden real data on some entries. The chart
+  renders whatever `grains` an entry has, same as the bar it replaced.
 - **parent-company-browse.html** &mdash; proposes a second Bourbon Library
   browse mode, alongside the existing bourbon grid: a **company view**
   listing all 66 parent companies (a real duplicate-naming bug this mockup
@@ -77,7 +89,10 @@ browser.
   Specialty Barrel Bourbon (the "Unknown"-tier placeholder case, a dashed
   ring plus its 17-entry sibling list, most of which fall outside this
   mockup's small sample set and render as disabled rows saying so rather
-  than broken links).
+  than broken links). **Implemented** in a follow-up to this mockup, in the
+  real `renderBourbonProfile` &mdash; see the "Implemented" note on
+  mash-bill-pie-chart.html above for what did and didn't carry over from
+  the design (the dashed "Unknown"-tier ring didn't ship).
 - **search-tab-consolidation.html** &mdash; groups the **Search by Name**, **SKU
   Lookup**, and **Scan UPC** tabs under one new **Search** tab, cutting the form
   panel's top-level tab row from five tabs to three. Every top-level tab (Manual
