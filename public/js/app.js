@@ -754,6 +754,18 @@
       time" pattern as currentRatings above. */
   let currentMashBill = [];
 
+  /** Which Mash Bill Confidence tier (see CONFIDENCE_TIER_META further
+      down) the grains above came from, if any - set alongside
+      currentMashBill whenever the Bourbon Library recall banner's "Use"/
+      "Use All" (Mash Bill row) fills it in, so the printed card can show
+      the same tier the Library rated it. null for a mash bill that was
+      typed by hand and never autofilled - there's no Library rating to
+      show for that. Cleared the moment the chip list is hand-edited after
+      an autofill (see addMashBillGrain/the remove-mashbill handler below),
+      since at that point the composition on the card may no longer be
+      exactly what the Library's tier was rating. */
+  let currentMashBillConfidence = null;
+
   /** Wine Profile dot values currently attached to whatever's in the form -
       one 0-5 integer per WINE_PROFILE_CATEGORIES entry (card.js), 0 meaning
       "not rated yet". Always carries all five keys (never partial) so
@@ -963,11 +975,6 @@
     addMashBillBtn: document.getElementById('addMashBillBtn'),
     mashBillList: document.getElementById('mashBillList'),
     mashBillRecallBanner: document.getElementById('mashBillRecallBanner'),
-    mashBillRecallTitle: document.getElementById('mashBillRecallTitle'),
-    mashBillRecallGrains: document.getElementById('mashBillRecallGrains'),
-    mashBillRecallMeta: document.getElementById('mashBillRecallMeta'),
-    mashBillRecallUseBtn: document.getElementById('mashBillRecallUseBtn'),
-    mashBillRecallDismissBtn: document.getElementById('mashBillRecallDismissBtn'),
     mashBillSaveCheckbox: document.getElementById('mashBillSaveCheckbox'),
     mashBillSaveRow: document.getElementById('mashBillSaveRow'),
     mashBillSaveDistillery: document.getElementById('mashBillSaveDistillery'),
@@ -977,6 +984,10 @@
     nose: document.getElementById('fNose'),
     palate: document.getElementById('fPalate'),
     finish: document.getElementById('fFinish'),
+    tastingNotesSaveCheckbox: document.getElementById('tastingNotesSaveCheckbox'),
+    tastingNotesSaveRow: document.getElementById('tastingNotesSaveRow'),
+    tastingNotesSaveBtn: document.getElementById('tastingNotesSaveBtn'),
+    tastingNotesSaveStatus: document.getElementById('tastingNotesSaveStatus'),
     profileField: document.getElementById('profileField'),
     suggestProfileBtn: document.getElementById('suggestProfileBtn'),
     profileSuggestStatus: document.getElementById('profileSuggestStatus'),
@@ -1930,6 +1941,7 @@
       awardsColor: els.awardsColor.value,
       isStorePick: els.storePick.checked,
       mashBill: currentMashBill.slice(),
+      mashBillConfidence: currentMashBillConfidence,
       nose: els.nose.value.trim(),
       palate: els.palate.value.trim(),
       finish: els.finish.value.trim(),
@@ -2005,12 +2017,16 @@
     // doesn't restore a checkbox the form no longer shows for beer.
     if (currentCategory === 'beer') els.chilled.checked = false;
     currentMashBill = Array.isArray(talker.mashBill) ? talker.mashBill.slice() : [];
+    currentMashBillConfidence = CONFIDENCE_TIER_META[talker.mashBillConfidence] ? talker.mashBillConfidence : null;
     renderMashBillList();
     // Same reasoning as resetForm() above - "Save to Library" is per-
     // editing-session state, not something a loaded talker carries.
     els.mashBillSaveCheckbox.checked = false;
     els.mashBillSaveRow.hidden = true;
     els.mashBillSaveStatus.textContent = '';
+    els.tastingNotesSaveCheckbox.checked = false;
+    els.tastingNotesSaveRow.hidden = true;
+    els.tastingNotesSaveStatus.textContent = '';
     mashBillRecallDismissedFor = '';
     els.nose.value = talker.nose || '';
     els.palate.value = talker.palate || '';
@@ -2074,6 +2090,7 @@
     renderProfilePicker();
     els.profileSuggestStatus.textContent = 'Type a Product Title, then click Suggest Profile.';
     currentMashBill = [];
+    currentMashBillConfidence = null;
     renderMashBillList();
     // "Save to Library" is per-editing-session state, not part of the
     // talker itself - form.reset() above already unchecks the checkbox
@@ -2081,6 +2098,8 @@
     // row it reveals needs hiding by hand.
     els.mashBillSaveRow.hidden = true;
     els.mashBillSaveStatus.textContent = '';
+    els.tastingNotesSaveRow.hidden = true;
+    els.tastingNotesSaveStatus.textContent = '';
     mashBillRecallDismissedFor = '';
     hideError();
     refreshPreview();
@@ -2175,11 +2194,15 @@
     `).join('');
   }
 
+  // Both hand-edit paths below clear currentMashBillConfidence - see its
+  // own declaration further up for why a hand edit invalidates whatever
+  // tier an earlier autofill brought in.
   function addMashBillGrain() {
     const grain = els.mashBillGrain.value;
     const pct = els.mashBillPct.value.trim();
     if (!grain || !pct) return;
     currentMashBill.push({ grain, pct });
+    currentMashBillConfidence = null;
     els.mashBillPct.value = '';
     renderMashBillList();
     refreshPreview();
@@ -2195,6 +2218,7 @@
     if (!btn) return;
     const idx = Number(btn.closest('[data-mashbill-index]').dataset.mashbillIndex);
     currentMashBill.splice(idx, 1);
+    currentMashBillConfidence = null;
     renderMashBillList();
     refreshPreview();
   });
@@ -2275,6 +2299,53 @@
   // alone runs ten different recipe codes across its lineup), so a
   // wrong-but-confident suggestion risks a worse mistake on the printed
   // talker than just showing nothing.
+  //
+  // One row per field the matched entry actually has - Mash Bill (guarded
+  // against isPlaceholderMashBill, so one of the Library's unresearched
+  // placeholder entries shows "Not yet researched" instead of offering a
+  // fake composition), Nose, Palate, Finish. Each row's own "Use" applies
+  // just that field; "Use All" applies everything the entry has at once.
+  // Banner is fully rebuilt (innerHTML) on every render, since which rows
+  // exist varies per entry - the click listener further down is delegated
+  // on the banner container itself so it keeps working across rebuilds.
+  function flavorFieldEl(field) {
+    return { nose: els.nose, palate: els.palate, finish: els.finish }[field];
+  }
+
+  function mashBillRecallMashRowHtml(match) {
+    const hasMash = Array.isArray(match.grains) && match.grains.length > 0 && !isPlaceholderMashBill(match);
+    if (!hasMash) {
+      return `
+        <div class="af-row af-row--muted">
+          <div class="af-label">Mash Bill</div>
+          <div class="af-value af-value--muted">Not yet researched</div>
+        </div>`;
+    }
+    return `
+      <div class="af-row">
+        <div class="af-label">Mash Bill ${confidenceBadgeHtml(match.confidence.tier)}</div>
+        <div class="af-value">${escapeHtml(describeMashBillGrains(match.grains))}</div>
+        <button type="button" class="btn btn--small" data-recall-action="use-mash">Use</button>
+      </div>`;
+  }
+
+  function mashBillRecallFlavorRowHtml(match, field, label) {
+    const value = match[field];
+    if (!value) {
+      return `
+        <div class="af-row af-row--muted">
+          <div class="af-label">${label}</div>
+          <div class="af-value af-value--muted">Not yet researched</div>
+        </div>`;
+    }
+    return `
+      <div class="af-row">
+        <div class="af-label">${label}</div>
+        <div class="af-value">${escapeHtml(value)}</div>
+        <button type="button" class="btn btn--small" data-recall-action="use-flavor" data-field="${field}">Use</button>
+      </div>`;
+  }
+
   function refreshMashBillRecall() {
     if (els.mashBillField.hidden) { els.mashBillRecallBanner.hidden = true; return; }
     const title = els.title.value.trim();
@@ -2282,10 +2353,36 @@
     const match = findMashBillMatch(title);
     if (!match) { els.mashBillRecallBanner.hidden = true; return; }
 
-    els.mashBillRecallTitle.textContent = `📚 Saved mash bill found for "${match.title}"`;
-    els.mashBillRecallGrains.textContent = describeMashBillGrains(match.grains);
+    const hasMash = Array.isArray(match.grains) && match.grains.length > 0 && !isPlaceholderMashBill(match);
+    const hasTasting = !!(match.nose || match.palate || match.finish);
+
+    if (!hasMash && !hasTasting) {
+      els.mashBillRecallBanner.innerHTML = `
+        <div class="mashbill-recall__title">📚 "${escapeHtml(match.title)}" is in the Bourbon Library, but nothing's been researched yet.</div>
+        <div class="mashbill-recall__meta">Add what you know from Tools &rarr; Mash Bill Library&hellip;</div>
+      `;
+      els.mashBillRecallBanner.hidden = false;
+      return;
+    }
+
+    const rows = [
+      mashBillRecallMashRowHtml(match),
+      ...FLAVOR_ROWS.map(([label, field]) => mashBillRecallFlavorRowHtml(match, field, label)),
+    ].join('');
     const updated = match.updatedAt ? formatHistoryTimestamp(match.updatedAt) : '';
-    els.mashBillRecallMeta.textContent = `Source: ${match.source || 'Manual'}${updated ? ` · Updated ${updated}` : ''}`;
+    const metaBits = [`Source: ${escapeHtml(match.source || 'Manual')}`];
+    if (updated) metaBits.push(`Updated ${updated}`);
+    if (match.tastingSource) metaBits.push(escapeHtml(match.tastingSource));
+
+    els.mashBillRecallBanner.innerHTML = `
+      <div class="mashbill-recall__title">📚 Bourbon Library match found for "${escapeHtml(match.title)}"</div>
+      <div class="af-rows">${rows}</div>
+      <div class="mashbill-recall__meta">${metaBits.join(' &middot; ')}</div>
+      <div class="mashbill-recall__actions">
+        <button type="button" class="btn btn--small btn--primary" data-recall-action="use-all">Use All</button>
+        <button type="button" class="btn btn--small btn--ghost" data-recall-action="dismiss">Not This One</button>
+      </div>
+    `;
     els.mashBillRecallBanner.hidden = false;
   }
 
@@ -2294,22 +2391,71 @@
     refreshMashBillRecall();
   });
 
-  els.mashBillRecallUseBtn.addEventListener('click', () => {
-    const match = findMashBillMatch(els.title.value.trim());
-    if (!match) return;
-    // Copies into the same {grain, pct} shape addMashBillGrain() itself
-    // builds (pct as the string the chip UI already expects) - still fully
-    // editable afterward, same as any other chip added by hand.
-    currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
-    renderMashBillList();
+  // One combined confirmation covers every flavor field a click would
+  // overwrite - same "Replace the current tasting notes with these?"
+  // pattern Find Tasting Notes' own confirm step already uses further down,
+  // not a separate popup per field. Mash Bill's own chip list has never
+  // asked this before "Use" overwrites it, so it still doesn't here either.
+  function applyMashBillRecallFlavorField(match, field) {
+    const value = match[field];
+    if (!value) return;
+    const el = flavorFieldEl(field);
+    if (el.value.trim() && el.value.trim() !== value.trim()
+        && !confirm(`Replace the current ${field} with the Bourbon Library's?`)) return;
+    el.value = value;
     refreshPreview();
-    mashBillRecallDismissedFor = els.title.value.trim();
-    els.mashBillRecallBanner.hidden = true;
-  });
+  }
 
-  els.mashBillRecallDismissBtn.addEventListener('click', () => {
-    mashBillRecallDismissedFor = els.title.value.trim();
-    els.mashBillRecallBanner.hidden = true;
+  function applyMashBillRecallAll(match) {
+    const hasMash = Array.isArray(match.grains) && match.grains.length > 0 && !isPlaceholderMashBill(match);
+    const flavorTargets = ['nose', 'palate', 'finish'].filter((f) => match[f]);
+    const overwriting = flavorTargets.some((f) => {
+      const el = flavorFieldEl(f);
+      return el.value.trim() && el.value.trim() !== match[f].trim();
+    });
+    if (overwriting && !confirm('Replace the current tasting notes with the Bourbon Library\'s?')) return;
+    if (hasMash) {
+      currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
+      currentMashBillConfidence = match.confidence.tier;
+      renderMashBillList();
+    }
+    flavorTargets.forEach((f) => { flavorFieldEl(f).value = match[f]; });
+    refreshPreview();
+  }
+
+  els.mashBillRecallBanner.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-recall-action]');
+    if (!btn) return;
+    const title = els.title.value.trim();
+    const match = findMashBillMatch(title);
+    if (!match) return;
+    const { recallAction: action, field } = btn.dataset;
+    if (action === 'use-mash') {
+      // Same {grain, pct} shape addMashBillGrain() itself builds (pct as
+      // the string the chip UI already expects) - still fully editable
+      // afterward, same as any other chip added by hand.
+      currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
+      currentMashBillConfidence = match.confidence.tier;
+      renderMashBillList();
+      refreshPreview();
+    } else if (action === 'use-flavor') {
+      applyMashBillRecallFlavorField(match, field);
+    } else if (action === 'use-all') {
+      applyMashBillRecallAll(match);
+      mashBillRecallDismissedFor = title;
+      els.mashBillRecallBanner.hidden = true;
+      return;
+    } else if (action === 'dismiss') {
+      mashBillRecallDismissedFor = title;
+      els.mashBillRecallBanner.hidden = true;
+      return;
+    }
+    // A single-row "Use" (mash, or one flavor field) applies just that
+    // field and leaves the banner open, in case staff wants another row
+    // too - only "Use All"/"Not This One" above actually dismiss the whole
+    // match. Re-renders regardless (harmless - same match, same HTML) to
+    // match the mutate-then-re-render pattern the rest of this file uses.
+    refreshMashBillRecall();
   });
 
   els.mashBillSaveCheckbox.addEventListener('change', () => {
@@ -2353,6 +2499,75 @@
       els.mashBillSaveStatus.textContent = withServerPcHint(err.message) || 'Could not save to the Mash Bill Library.';
     } finally {
       els.mashBillSaveBtn.disabled = false;
+    }
+  });
+
+  els.tastingNotesSaveCheckbox.addEventListener('change', () => {
+    els.tastingNotesSaveRow.hidden = !els.tastingNotesSaveCheckbox.checked;
+  });
+
+  // Closes the loop the other direction from the Mash Bill save button
+  // above: saves Nose/Palate/Finish onto the same title's Bourbon Library
+  // entry. Two different endpoints depending on whether that entry already
+  // exists, because they have different requirements around grains:
+  //  - updateMashBillById (PUT by id, server/db.js) falls back to whatever
+  //    grains are already on the row when grains is omitted from the
+  //    request, so an existing entry can be updated with just tasting
+  //    notes - its mash bill (real, placeholder, or absent) is left alone.
+  //  - upsertMashBill (POST, title-keyed) has no such fallback - it always
+  //    validates grains on every write, even one only meant to touch
+  //    tasting notes - so creating a brand-new entry this way needs the
+  //    Mash Bill chip list above to have at least one grain in it already.
+  els.tastingNotesSaveBtn.addEventListener('click', async () => {
+    const title = els.title.value.trim();
+    if (!title) {
+      els.tastingNotesSaveStatus.textContent = 'Enter a Product Title first.';
+      return;
+    }
+    const nose = els.nose.value.trim();
+    const palate = els.palate.value.trim();
+    const finish = els.finish.value.trim();
+    if (!nose && !palate && !finish) {
+      els.tastingNotesSaveStatus.textContent = 'Add a Nose, Palate, or Finish note first.';
+      return;
+    }
+    const existing = findMashBillMatch(title);
+    if (!existing && !currentMashBill.length) {
+      els.tastingNotesSaveStatus.textContent = `"${title}" isn't in the Bourbon Library yet - add at least one Mash Bill grain first, or this can't be saved on its own.`;
+      return;
+    }
+    els.tastingNotesSaveBtn.disabled = true;
+    els.tastingNotesSaveStatus.textContent = 'Saving...';
+    try {
+      const resp = existing
+        ? await fetch(`/api/mashbills/${existing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nose, palate, finish }),
+        })
+        : await fetch('/api/mashbills', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            grains: currentMashBill.map((m) => ({ grain: m.grain, pct: Number(m.pct) })),
+            nose,
+            palate,
+            finish,
+            source: 'Manual',
+          }),
+        });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save to the Bourbon Library.');
+      await fetchMashBillLibrary();
+      // Same reasoning as the Mash Bill save button above - it's now
+      // exactly what's saved, no reason to also suggest itself back.
+      mashBillRecallDismissedFor = title;
+      els.tastingNotesSaveStatus.textContent = `Saved "${title}"'s tasting notes to the Bourbon Library.`;
+    } catch (err) {
+      els.tastingNotesSaveStatus.textContent = withServerPcHint(err.message) || 'Could not save to the Bourbon Library.';
+    } finally {
+      els.tastingNotesSaveBtn.disabled = false;
     }
   });
 

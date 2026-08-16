@@ -1388,13 +1388,14 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .reviewer-manager__list { display: flex; flex-direction: column; gap: 0.25rem; }
 .reviewer-manager__list .rating-chip { background: var(--ui-panel); }
 
-/* ---------- Mash Bill Library ----------
-   Two touch points: the recall banner + "Save to Library" row on Edit
-   Talker's own Mash Bill field (see refreshMashBillRecall/saveMashBillToLibrary
-   in app.js), and the Tools -> Mash Bill Library... dialog itself, which
-   reuses .history-list/.history-item (search results) and
-   .settings-section/.reviewer-manager__add (its own add/edit form) rather
-   than introducing new list/form styling. */
+/* ---------- Mash Bill Library / Bourbon Library ----------
+   Three touch points: the recall banner on Edit Talker's Mash Bill field
+   (now offering Nose/Palate/Finish too, not just grains - see
+   refreshMashBillRecall in app.js), the matching "Save to Library" rows on
+   both the Mash Bill and Nose/Palate/Finish fields, and the Tools -> Mash
+   Bill Library... dialog itself, which reuses .history-list/.history-item
+   (search results) and .settings-section/.reviewer-manager__add (its own
+   add/edit form) rather than introducing new list/form styling. */
 
 .mashbill-recall {
   margin-bottom: 0.6rem;
@@ -1408,6 +1409,21 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .mashbill-recall__title { font-weight: 700; margin-bottom: 0.25rem; }
 .mashbill-recall__meta { color: var(--ui-muted); font-size: 0.74rem; margin-top: 0.2rem; }
 .mashbill-recall__actions { display: flex; gap: 0.4rem; margin-top: 0.45rem; }
+
+/* One row per field the matched Bourbon Library entry has (Mash Bill,
+   Nose, Palate, Finish) - see refreshMashBillRecall in app.js. The Mash
+   Bill row's own confidence badge reuses .conf-badge as-is (see the Mash
+   Bill Confidence section below); a muted row (nothing researched for
+   that field yet, or a placeholder-shaped mash bill - see
+   isPlaceholderMashBill) drops its "Use" button rather than offering a
+   suggestion with nothing behind it. */
+.af-rows { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.5rem 0; }
+.af-row { display: flex; gap: 0.5rem; align-items: baseline; }
+.af-row--muted { color: var(--ui-muted); }
+.af-label { flex: 0 0 5.5em; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ui-ink-soft); display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.af-value { flex: 1 1 auto; min-width: 0; }
+.af-value--muted { color: var(--ui-muted); font-style: italic; }
+.af-row .btn { flex: 0 0 auto; }
 
 .mashbill-save { margin-top: 0.6rem; }
 .mashbill-save__row { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
@@ -2934,6 +2950,34 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   color: var(--muted);
   margin-bottom: calc(var(--w) * 0.012 * var(--price-fit, 1));
 }
+/* Mash Bill Confidence badge - printed next to the label whenever
+   talker.mashBillConfidence is set (see mashBillConfidenceBadgeHtml in
+   card.js). Same pill shape as the staff-facing .conf-badge (Bourbon
+   Library recall banner, Library profile page) below, but fixed colors
+   instead of that badge's themed --ui-good/--ui-warn/--ui-low/--ui-muted -
+   this one prints, and print colors don't re-point with dark mode/accent
+   theme the way the rest of the app's UI does (see the "PRINT palette"
+   comment at the top of this file). Values match the light-mode/default
+   hex those tokens themselves resolve to, so the two badges read as the
+   same color family even though one is fixed and one isn't. Not
+   uppercase/letter-spaced like its label, unlike everything else in this
+   block - reads as its own small pill rather than blending into the
+   label's own all-caps run. */
+.card__mashbill-tier {
+  display: inline-block;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: calc(var(--w) * 0.024 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.006 * var(--price-fit, 1)) calc(var(--w) * 0.016 * var(--price-fit, 1));
+  border-radius: 999px;
+  margin-left: calc(var(--w) * 0.01);
+}
+.card__mashbill-tier--confirmed { color: #2e7d32; background: rgba(46, 125, 50, 0.12); }
+.card__mashbill-tier--reported { color: #96590a; background: rgba(191, 128, 15, 0.14); }
+.card__mashbill-tier--estimated { color: #a8391a; background: rgba(168, 57, 26, 0.12); }
+.card__mashbill-tier--unknown { color: #6b645a; background: rgba(107, 100, 90, 0.12); }
 .card__mashbill-bar {
   display: flex;
   width: 100%;

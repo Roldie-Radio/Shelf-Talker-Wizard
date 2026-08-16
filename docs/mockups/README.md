@@ -359,3 +359,139 @@ browser.
   Pairings share one varietal match instead of two lists that could drift
   apart &mdash; the extension that `color` field's own comment had already
   flagged as coming later.
+- **bourbon-library-autofill.html** &mdash; follow-up to mash-bill-library.html
+  and bourbon-profile-page.html above: extends the shipped Mash Bill Library
+  recall banner (`#mashBillRecallBanner`, exact-title match against
+  `mashBillLibraryCache` &mdash; see `refreshMashBillRecall` in `app.js`) to
+  also offer **Nose/Palate/Finish**, not just the grain chips. The Bourbon
+  Library's `mash_bills` row has carried tasting notes and a Mash Bill
+  Confidence tier since the profile-page work above shipped, but none of it
+  flows onto a talker today &mdash; staff either retype it by hand or reach
+  for the unrelated Find Tasting Notes external scrape instead. A pill
+  toggle compares two banner layouts against the same five real Library
+  entries: a single **Unified** banner (recommended) with a row per
+  populated field, each individually "Use"-able plus one combined "Use
+  All", versus **Two scoped banners** (the existing Mash Bill banner left
+  exactly as it ships today, plus a near-identical new one above
+  Nose/Palate/Finish). The five samples are real, current entries from
+  `scripts/bourbon-library-seed-data.json`, chosen to cover the dataset's
+  actual shape (279 entries: 239 fully researched, 39 placeholder-only, and
+  one genuine outlier &mdash; WhistlePig Snout to Tail 10YR, whose tasting
+  notes are fully sourced but whose mash bill is still the single-grain,
+  100%, Unknown-tier placeholder shape) rather than invented cases.
+  Surfaces a real gap in the shipped code along the way: `findMashBillMatch`
+  matches on title alone and never checks `isPlaceholderMashBill` the way
+  the Library's own donut-chart profile view already does (see
+  mash-bill-pie-chart.html above), so the recall banner today already
+  offers "Use It" on 40 entries' worth of fake placeholder compositions;
+  this mockup's banner reuses the same placeholder check to show "Not yet
+  researched" instead &mdash; try the Heaven Hill sample. Confidence
+  surfaces on the Mash Bill row specifically, not the banner's title line,
+  since `confidence_tier` is scored against the grain composition only
+  (WhistlePig is the one entry where a whole-banner badge would have been
+  actively wrong about the tasting notes). Overwrite safety on the two text
+  fields reuses Find Tasting Notes' own one-combined-confirmation prompt
+  verbatim; a "simulate staff already typed notes" checkbox pre-fills the
+  fields first so the guard is easy to trigger and see. Also proposes
+  closing the loop the other direction: a "Save this Nose/Palate/Finish to
+  the Bourbon Library" checkbox next to the flavor fields, mirroring the
+  existing "Save this mash bill to the Mash Bill Library" row &mdash;
+  needed because nothing today saves tasting notes from a talker back into
+  the Library (the only path in is the standalone Manage Mash Bill Library
+  dialog). No new merge logic would be needed for it either:
+  `upsertMashBill`'s title-keyed upsert already treats every optional
+  column as "omit it to leave whatever's there alone." Deliberately scoped
+  away from Distillery/Parent Company/Category/SKU/References, since none
+  of those has a matching field on the printed talker itself to autofill
+  into. Purely a `public/js/app.js` + `public/index.html` proposal &mdash;
+  `rowToMashBill` in `server/db.js` already returns every column the banner
+  needs, so no server or schema changes. **Implemented** in a follow-up to
+  this mockup &mdash; the unified banner (not the two-scoped alternative),
+  the placeholder guard, the Mash-Bill-row confidence badge, and the
+  combined-confirmation overwrite guard on the flavor fields all shipped
+  as described, verified against the real, running 279-entry seeded
+  library rather than just the five samples here. The "Save this
+  Nose/Palate/Finish to the Bourbon Library" checkbox shipped too, but the
+  mockup's own claim that `upsertMashBill`'s "omit to leave alone"
+  convention meant "no new merge logic needed" turned out to only be true
+  of the *optional* columns (nose/palate/finish, etc.) &mdash;
+  `upsertMashBill` itself still validates grains as required on every
+  write, even one that only touches tasting notes, so it can't be used
+  to add notes to an existing entry without also resending its grains.
+  The real save button works around this the other way: PUT
+  `/api/mashbills/:id` (`updateMashBillById`) falls back to whatever
+  grains are already on the row when grains is omitted from the request,
+  so saving onto a title the Library already has an entry for goes
+  through that endpoint instead, touching nose/palate/finish only. POST
+  (create) is still used for a title with no existing entry, which still
+  needs the Edit Talker form's own Mash Bill chip list to have at least
+  one grain in it first, exactly as the mockup assumed &mdash; saving is
+  disabled with an explanation rather than attempting a doomed request
+  when neither an existing entry nor any chips exist yet.
+- **mash-bill-certainty-badge.html** &mdash; follow-up to
+  bourbon-library-autofill.html above: Mash Bill Confidence
+  (Confirmed/Reported/Estimated/Unknown) shows up in the recall banner and
+  the Library's own profile page, but has never printed on an actual shelf
+  talker &mdash; a shopper reading a mash bill percentage off the shelf has
+  no way to know whether that's a distillery-published fact or a
+  trade-press estimate. Proposes a small marker on the printed Mash Bill
+  block, and works out what it would actually take to get a confidence
+  value onto an individual talker rather than just a Library entry: a new
+  `talker.mashBillConfidence` field, set alongside `currentMashBill`
+  whenever the autofill banner's "Use"/"Use All" (Mash Bill row) is
+  clicked, and cleared the moment the chip list is hand-edited afterward
+  (`addMashBillGrain` or the `remove-mashbill` handler) since the rating no
+  longer describes what's actually on the card &mdash; a hand-typed mash
+  bill that was never autofilled carries no confidence and shows no badge
+  under any style, since there's no honest basis for one. Stored on the
+  talker itself rather than re-derived from the Library at render time, to
+  match Print History's existing snapshot philosophy (a reprint months
+  later shouldn't change because the Library entry it came from was since
+  edited or deleted). A pill toggle compares three print treatments against
+  four real/realistic samples (Buffalo Trace: Reported, Four Roses Single
+  Barrel: Confirmed, Blanton's: Estimated, a hand-typed "Store Brand
+  Kentucky Bourbon": no badge under any style) &mdash; **A: always show the
+  tier** as plain text next to the label, **B: a dot meter** matching the
+  staff UI's own `.conf-meter` language, and **C: quiet, only if not
+  Confirmed** (recommended) &mdash; nothing extra on the common case, a
+  small &dagger; plus one short footnote line otherwise. Recommendation
+  reasons from two angles a mockup could easily gloss over: Confirmed/
+  Reported/Estimated/Unknown are staff research-methodology terms, not
+  shopper vocabulary, so printing "ESTIMATED" verbatim reads as a defect
+  notice rather than a research footnote (Style C collapses all
+  non-Confirmed tiers into one plain-language line instead); and dots read
+  clearly in the app's own UI where staff already know the convention, but
+  are meaningless to a shopper with no legend in front of them, which is
+  why Style B isn't the pick despite being the most visually consistent
+  with the rest of the app. All three styles stay inside the card's
+  existing fixed print palette (`--ink`/`--muted` only, reusing the Mash
+  Bill label's own colors) rather than bringing the staff badge's
+  green/amber/red tint onto paper, which the mockup calls out as a real
+  expansion of `public/css/styles.css`'s deliberately small, fixed print
+  color set if it were ever proposed. Explicitly out of scope: no manual
+  confidence picker for a hand-typed mash bill, no retroactive badges on
+  talkers already printed/queued before this would ship (an absent
+  `mashBillConfidence` already reads as "no badge"), and Quarter Size
+  talkers never show the Mash Bill block at all regardless.
+  **Implemented**, with one deliberate change from the recommendation
+  above: always show the tier (Style A's behavior, including Confirmed),
+  styled as an actual `.conf-badge`-shaped pill rather than plain text -
+  the real request was "always show, but in the same badge style as the
+  Bourbon Library," not Style C. The pill can't literally reuse
+  `.conf-badge`'s own CSS as-is, though, since that badge reads its colors
+  from the themed `--ui-good`/`--ui-warn`/`--ui-low`/`--ui-muted` tokens,
+  which re-point with dark mode and the accent theme - fine for a
+  staff-facing screen element, wrong for something that's supposed to
+  print the same regardless of how the app happens to look on screen right
+  now. `MASH_BILL_CONFIDENCE_PRINT_META` in `card.js` and
+  `.card__mashbill-tier--*` in `styles.css` carry the same four tiers with
+  fixed hex values instead, anchored to those tokens' own light-mode/
+  default colors so the two badges still read as the same color family.
+  Data model shipped exactly as designed: a new `talker.mashBillConfidence`
+  field, set alongside `currentMashBill` by the recall banner's "Use"/"Use
+  All" (Mash Bill row), cleared by `addMashBillGrain`/the `remove-mashbill`
+  handler the moment the chip list is hand-edited afterward, and carried
+  through `readForm`/`fillForm`/the Queue's own JSON serialization exactly
+  like every other talker field - verified end to end against the real,
+  running app (not just this mockup's samples), including a
+  save-to-queue-and-reload round trip.
