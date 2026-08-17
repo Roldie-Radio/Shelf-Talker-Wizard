@@ -112,8 +112,14 @@ function pushIssue(title, sku, kind, detail) {
 // own history). Otherwise a stub's SKU would look "already saved" forever
 // and a later real enrichment run would silently skip it - never actually
 // getting enriched.
+//
+// A SKU already marked Variety Pack (see the beers table's variety_pack
+// comment in db.js) counts as handled too, even with none of those fields
+// filled in - a variety pack has no Untappd page to find, so running the
+// search on it every import would just add another guaranteed no-match to
+// the file's own noMatch count for no benefit.
 function isEnriched(beer) {
-  return !!(beer.brewery || beer.style || beer.abv || beer.ibu || beer.untappdRating || beer.description);
+  return !!(beer.varietyPack || beer.brewery || beer.style || beer.abv || beer.ibu || beer.untappdRating || beer.description);
 }
 
 async function runImport(products, db) {

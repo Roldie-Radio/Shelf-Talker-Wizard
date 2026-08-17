@@ -574,6 +574,36 @@ test('upsertBeer updates the existing entry in place on a repeat save (case-inse
   });
 });
 
+test('upsertBeer persists varietyPack, and an omitted varietyPack on a repeat save leaves it alone - false is a real value here, not "unset"', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({ title: '2ND FAVOR HEAVY SPECTRUM 4PK', varietyPack: true, sku: '41788' });
+    assert.equal(first.varietyPack, true);
+
+    // A repeat save with no varietyPack in the request leaves the flag as
+    // it already was - same "undefined leaves it alone" rule every other
+    // optional field follows (see the test above), just for a boolean.
+    const second = db.upsertBeer({ title: '2ND FAVOR HEAVY SPECTRUM 4PK', style: 'Mixed Pack', sku: '41788' });
+    assert.equal(second.id, first.id);
+    assert.equal(second.varietyPack, true);
+
+    // Explicitly saving `false` really does clear it, unlike leaving it
+    // omitted.
+    const third = db.upsertBeer({ title: '2ND FAVOR HEAVY SPECTRUM 4PK', varietyPack: false, sku: '41788' });
+    assert.equal(third.varietyPack, false);
+  });
+});
+
+test('upsertBeer persists size as plain text, and an omitted size on a repeat save leaves it alone (same convention as every other optional text field)', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({ title: 'DOGFISH HEAD 60 MIN IPA 6PK CAN', size: '6-Pack', sku: '111' });
+    assert.equal(first.size, '6-Pack');
+
+    const second = db.upsertBeer({ title: 'DOGFISH HEAD 60 MIN IPA 6PK CAN', style: 'American IPA', sku: '111' });
+    assert.equal(second.id, first.id);
+    assert.equal(second.size, '6-Pack');
+  });
+});
+
 test('upsertBeer rejects a missing title', () => {
   withTempDb(() => {
     assert.throws(() => db.upsertBeer({ title: '' }), { code: 'TITLE_REQUIRED' });
@@ -591,6 +621,7 @@ test('a new beer entry defaults every optional field to an empty string, not nul
       brewery: '',
       location: '',
       style: '',
+      size: '',
       abv: '',
       ibu: '',
       untappdRating: '',
@@ -598,6 +629,7 @@ test('a new beer entry defaults every optional field to an empty string, not nul
       description: '',
       sku: '',
       upc: '',
+      varietyPack: false,
       source: 'Manual',
       updatedAt: entry.updatedAt,
     });

@@ -29,13 +29,16 @@ const { parseDelimited } = require('./upcCatalog');
 // fields rather than a real column - reimporting either verbatim would be
 // meaningless at best. Every imported row's source is set to 'Import'
 // instead (see importBeerBibleCsv below), the same label a bulk product-
-// export import already uses.
+// export import already uses. Variety Pack IS reimported (see
+// VARIETY_PACK_COLUMN/parseVarietyPackCell below) - unlike Researched, it's
+// a real, staff-set column of its own, not a derived one.
 const BEER_CSV_COLUMNS = {
   title: 'title',
   'beer name (untappd)': 'beerName',
   brewery: 'brewery',
   location: 'location',
   style: 'style',
+  size: 'size',
   abv: 'abv',
   ibu: 'ibu',
   'untappd rating': 'untappdRating',
@@ -44,6 +47,18 @@ const BEER_CSV_COLUMNS = {
   upc: 'upc',
   'tasting notes': 'description',
 };
+
+// Handled outside BEER_CSV_COLUMNS/the generic fields loop below, since
+// every other column there is plain text ("only set it if the cell isn't
+// blank" - see the fields loop's own comment) while this one is a
+// Yes/No boolean Export CSV writes (see exportBeerBibleCsv in app.js) -
+// a blank/"No" cell is still a meaningful value to import (explicitly not a
+// variety pack), not "nothing to say" the way a blank Brewery cell is.
+const VARIETY_PACK_COLUMN = 'variety pack';
+
+function parseVarietyPackCell(raw) {
+  return /^yes$/i.test((raw || '').trim());
+}
 
 function normalizeHeader(h) {
   return (h || '').trim().toLowerCase();
@@ -68,8 +83,14 @@ function importBeerBibleCsv(db, csvText) {
   }
   const [headerRow, ...dataRows] = rows;
   const colFor = {};
+  let varietyPackCol;
   headerRow.forEach((h, i) => {
-    const key = BEER_CSV_COLUMNS[normalizeHeader(h)];
+    const normalized = normalizeHeader(h);
+    if (normalized === VARIETY_PACK_COLUMN) {
+      if (varietyPackCol === undefined) varietyPackCol = i;
+      return;
+    }
+    const key = BEER_CSV_COLUMNS[normalized];
     if (key && colFor[key] === undefined) colFor[key] = i;
   });
   if (colFor.title === undefined) {
@@ -93,6 +114,7 @@ function importBeerBibleCsv(db, csvText) {
       const value = (row[idx] || '').trim();
       if (value) fields[key] = value;
     });
+    if (varietyPackCol !== undefined) fields.varietyPack = parseVarietyPackCell(row[varietyPackCol]);
     try {
       db.upsertBeer(fields);
       imported += 1;
