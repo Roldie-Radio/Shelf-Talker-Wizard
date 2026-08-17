@@ -7439,15 +7439,17 @@
 
   // ---------- The Beer Bible (rail view) ----------
   //
-  // A bare-scaffold browse screen over the shared `beers` data (see
-  // server/db.js) - search and a card grid, mirroring the Bourbon Library
-  // above but without its profile page, confidence tiers, or parent-company
-  // browse (nothing analogous exists for Beer yet). Adding/editing/deleting
-  // goes through the form modal below (opened via #beerBibleAddBtn, or a
-  // card's own click - there's no separate profile page here, so a click
-  // opens straight into Edit); this section itself never writes anything
-  // beyond what that form does, only reads beerBibleCache and re-fetches it
-  // after the form modal changes something.
+  // A browse/profile screen over the shared `beers` data (see server/db.js)
+  // - search, a card grid, and a per-beer profile page - mirroring the
+  // Bourbon Library above but without its confidence tiers or
+  // parent-company browse (nothing analogous exists for Beer: its numbers
+  // come from a store's own Untappd export or a manual entry, not
+  // conflicting industry sources, so there's nothing to arbitrate the way
+  // Mash Bill Confidence does). Adding/editing/deleting goes through the
+  // form modal below (opened via #beerBibleAddBtn, or the profile page's
+  // own Edit button); this section itself never writes anything beyond
+  // what that form does, only reads beerBibleCache and re-fetches it after
+  // the form modal changes something.
   //
   // Two things the Bourbon Library also has that this deliberately doesn't
   // yet: cross-register sync (this PC's own data.db is always the only
@@ -7458,6 +7460,11 @@
 
   let beerBibleCache = [];
   let beerBibleFilterQuery = '';
+  // 'grid' (search + card grid) or 'profile' (one beer's own page) - same
+  // two-mode shape as libraryViewMode/atlasViewMode above. beerBibleSelectedId
+  // is only meaningful while in 'profile'.
+  let beerBibleViewMode = 'grid';
+  let beerBibleSelectedId = null;
 
   async function fetchBeerBible() {
     try {
@@ -7489,6 +7496,27 @@
     `;
   }
 
+  // The rating dot meter (grid cards, profile "At a Glance", sibling list)
+  // - the same half-fill-dot idea as the printed shelf talker's own
+  // Untappd Rating widget (buildBeerRatingHtml in card.js), redrawn small
+  // for the app chrome rather than reusing that widget's print-scaled
+  // .card__beer-dot classes directly (those are sized in calc(var(--w)...)
+  // card-width units, meaningless outside the printed card). A rating of
+  // exactly 0 is treated as "no rating" same as that widget, since it's
+  // Untappd's own sentinel for "no computed average yet", not a real score.
+  function ratingDotsHtml(rating) {
+    const num = Number(rating);
+    const hasRating = rating != null && String(rating).trim() !== '' && Number.isFinite(num) && num > 0;
+    const clamped = hasRating ? Math.max(0, Math.min(5, num)) : 0;
+    const dots = Array.from({ length: 5 }, (_, i) => {
+      const fill = clamped - i;
+      const cls = fill >= 1 ? 'is-full' : fill > 0 ? 'is-half' : '';
+      return `<span class="rating-dot ${cls}"></span>`;
+    }).join('');
+    const title = hasRating ? `${clamped.toFixed(2)} / 5 on Untappd` : 'No Untappd rating on file';
+    return `<span class="rating-dots" title="${title}">${dots}</span>`;
+  }
+
   // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
   // generic card grid the Bourbon Library and The Pairing Atlas's own wine
   // cards already share, just without a grain bar in the middle.
@@ -7508,7 +7536,7 @@
         <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
-          <span class="bourbon-card__sub">${entry.untappdRating ? `&#9733; ${escapeHtml(entry.untappdRating)}` : ''}</span>
+          ${entry.untappdRating ? ratingDotsHtml(entry.untappdRating) : ''}
         </div>
       </button>
     `;
@@ -7525,15 +7553,147 @@
     els.beerBibleBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => beerCardHtml(entry)).join('')}</div>`;
     els.beerBibleBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const entry = beerBibleCache.find((b) => b.id === Number(btn.dataset.id));
-        beerBibleModal.open();
-        if (entry) loadBeerBibleEntryIntoForm(entry);
+        beerBibleSelectedId = Number(btn.dataset.id);
+        beerBibleViewMode = 'profile';
+        renderBeerBibleBody();
       });
     });
   }
 
+  // One stat tile for the profile page's "At a Glance" block (ABV, IBU) -
+  // the Untappd Rating tile is its own function below since it also needs
+  // the dot meter and rating count, not just a plain value.
+  function beerStatCardHtml(label, value) {
+    return `
+      <div class="beer-stat-card">
+        <div class="beer-stat-card__label">${escapeHtml(label)}</div>
+        ${value ? `<div class="beer-stat-card__value">${escapeHtml(value)}</div>` : '<div class="beer-stat-card__value beer-stat-card__value--empty">Not on file</div>'}
+      </div>
+    `;
+  }
+
+  function beerRatingStatCardHtml(entry) {
+    const num = Number(entry.untappdRating);
+    const hasRating = entry.untappdRating != null && String(entry.untappdRating).trim() !== '' && Number.isFinite(num) && num > 0;
+    const count = Number(entry.untappdRatingCount);
+    const hasCount = entry.untappdRatingCount != null && String(entry.untappdRatingCount).trim() !== '' && Number.isFinite(count);
+    return `
+      <div class="beer-stat-card">
+        <div class="beer-stat-card__label">Untappd Rating</div>
+        <div class="beer-stat-card__value ${hasRating ? '' : 'beer-stat-card__value--empty'}">${hasRating ? num.toFixed(2) : 'Not on file'}</div>
+        <div class="beer-stat-card__sub">
+          ${ratingDotsHtml(entry.untappdRating)}
+          ${hasCount ? `<span class="rating-num">${count.toLocaleString('en-US')} rating${count === 1 ? '' : 's'}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Human-readable version of the `source` values upsertBeer/importBeers
+  // actually write (see server/db.js and server/beerBibleImport.js) - shown
+  // under Tasting Notes so staff can tell an Untappd-sourced description
+  // apart from one they typed in themselves.
+  const BEER_SOURCE_LABELS = {
+    Manual: 'Typed in by staff',
+    Import: 'Pulled in from a product export',
+    Export: 'From the curated Beer Bible list on GitHub',
+  };
+
+  // The Beer Bible's profile page (renderBeerBibleGrid's card click, or the
+  // sibling list below) - a read-focused layout over one `beers` row, the
+  // same "view, not a new editing surface" relationship
+  // renderBourbonProfile/renderAtlasProfile above have to their own data:
+  // every field here still lives in the `beers` table and is still edited
+  // through the same add/edit form (loadBeerBibleEntryIntoForm), reached
+  // here via the Edit button instead of a card click.
+  function renderBeerBibleProfile() {
+    const entry = beerBibleCache.find((b) => b.id === beerBibleSelectedId);
+    if (!entry) {
+      beerBibleViewMode = 'grid';
+      renderBeerBibleBody();
+      return;
+    }
+    const siblings = beerBibleCache.filter((b) => b.id !== entry.id && entry.brewery && b.brewery === entry.brewery);
+
+    els.beerBibleBody.innerHTML = `
+      <div class="library-crumb">
+        <button type="button" id="beerBibleCrumbBack"><span aria-hidden="true">&larr;</span> The Beer Bible</button>
+        <span class="library-crumb__sep">/</span>
+        <span class="library-crumb__current">${escapeHtml(entry.title)}</span>
+      </div>
+      <div class="profile-head">
+        <div>
+          <h2>${escapeHtml(entry.title)}</h2>
+          <p class="profile-head__by">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.location ? ` &middot; <strong>${escapeHtml(entry.location)}</strong>` : ''}</p>
+          ${entry.style ? `<div class="profile-tags"><span class="tag">${escapeHtml(entry.style)}</span></div>` : ''}
+        </div>
+        <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
+      </div>
+      <div class="profile-grid">
+        <div>
+          <div class="block">
+            <h3>At a Glance</h3>
+            <div class="beer-stat-grid">
+              ${beerStatCardHtml('ABV', entry.abv)}
+              ${beerStatCardHtml('IBU', entry.ibu)}
+              ${beerRatingStatCardHtml(entry)}
+            </div>
+          </div>
+          <div class="block desc-block">
+            <h3>Tasting Notes</h3>
+            ${entry.description ? `<p>${escapeHtml(entry.description)}</p>` : '<p class="help-text">No description on file yet - add one from the edit form.</p>'}
+            ${entry.description ? `<div class="desc-source">Source: ${escapeHtml(BEER_SOURCE_LABELS[entry.source] || entry.source)}</div>` : ''}
+          </div>
+        </div>
+        <div class="block info-card">
+          <h3>Beer &amp; Brewery</h3>
+          <dl>
+            <div><dt>Brewery</dt><dd>${escapeHtml(entry.brewery || 'Unknown')}</dd></div>
+            ${entry.location ? `<div><dt>Location</dt><dd>${escapeHtml(entry.location)}</dd></div>` : ''}
+            ${entry.style ? `<div><dt>Style</dt><dd>${escapeHtml(entry.style)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
+          </dl>
+          ${siblings.length ? `
+            <dt class="info-card__siblings-label">Other ${escapeHtml(entry.brewery)} entries</dt>
+            <div class="sibling-list">
+              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(s.title)}</span>${s.untappdRating ? ratingDotsHtml(s.untappdRating) : ''}</button>`).join('')}
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+    document.getElementById('beerBibleEditBtn').addEventListener('click', () => {
+      beerBibleModal.open();
+      loadBeerBibleEntryIntoForm(entry);
+    });
+    document.getElementById('beerBibleCrumbBack').addEventListener('click', () => {
+      beerBibleSelectedId = null;
+      beerBibleViewMode = 'grid';
+      renderBeerBibleBody();
+    });
+    els.beerBibleBody.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleSelectedId = Number(btn.dataset.id);
+        renderBeerBibleProfile();
+      });
+    });
+  }
+
+  // Dispatcher - grid vs profile, same shape as renderLibraryBody/
+  // renderAtlasBody above. Every place that used to call renderBeerBibleGrid
+  // directly after a save/delete/GitHub sync now calls this instead, so
+  // saving from the profile's own Edit button re-renders that same profile
+  // with the fresh data instead of dropping back to the grid - and deleting
+  // (or a sibling-list beer somehow having vanished) falls back to the grid
+  // automatically, since renderBeerBibleProfile above does that itself when
+  // beerBibleSelectedId no longer matches anything in beerBibleCache.
+  function renderBeerBibleBody() {
+    if (beerBibleViewMode === 'profile') renderBeerBibleProfile();
+    else renderBeerBibleGrid();
+  }
+
   els.beerBibleFilterInput.addEventListener('input', (e) => {
     beerBibleFilterQuery = e.target.value;
+    beerBibleViewMode = 'grid';
     renderBeerBibleGrid();
   });
 
@@ -7545,8 +7705,10 @@
     fetchBeerBible().then(() => {
       els.beerBibleFilterInput.value = '';
       beerBibleFilterQuery = '';
+      beerBibleViewMode = 'grid';
+      beerBibleSelectedId = null;
       renderBeerBibleStats();
-      renderBeerBibleGrid();
+      renderBeerBibleBody();
     });
   }
 
@@ -7612,9 +7774,14 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
       beerBibleModal.close();
+      // The deleted entry can't have a profile page anymore - always back
+      // to the grid, rather than leaving it to renderBeerBibleProfile's own
+      // "entry not found" fallback.
+      beerBibleViewMode = 'grid';
+      beerBibleSelectedId = null;
       await fetchBeerBible();
       renderBeerBibleStats();
-      renderBeerBibleGrid();
+      renderBeerBibleBody();
     } catch (err) {
       els.beerBibleFormStatus.textContent = err.message || 'Could not delete that entry.';
     }
@@ -7628,9 +7795,10 @@
   });
 
   // Always resets to a blank "Add an entry manually" form on open - the
-  // Edit path (renderBeerBibleGrid's card click, above) opens first, then
-  // calls loadBeerBibleEntryIntoForm afterward to fill it back in, same
-  // order the Bourbon Library's own libraryEditBtn handler uses.
+  // Edit path (the profile page's own Edit button, in renderBeerBibleProfile
+  // above) opens first, then calls loadBeerBibleEntryIntoForm afterward to
+  // fill it back in, same order the Bourbon Library's own libraryEditBtn
+  // handler uses.
   const beerBibleModal = createModal({
     overlay: els.beerBibleOverlay,
     closeBtns: [els.beerBibleCloseBtn, els.beerBibleCloseFooterBtn],
@@ -7674,7 +7842,12 @@
       beerBibleModal.close();
       await fetchBeerBible();
       renderBeerBibleStats();
-      renderBeerBibleGrid();
+      // beerBibleSelectedId/beerBibleViewMode are untouched by opening this
+      // form, so a save made from an existing beer's profile page (Edit
+      // button) lands back on that same profile with the fresh data -
+      // Add Entry only ever opens from the grid, so that path still lands
+      // back on the grid same as before.
+      renderBeerBibleBody();
     } catch (err) {
       els.beerBibleFormStatus.textContent = err.message || 'Could not save that entry.';
     } finally {
@@ -7716,7 +7889,10 @@
       if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
       beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
       renderBeerBibleStats();
-      renderBeerBibleGrid();
+      // Additive-or-merge only (see the comment above) - a beer open on the
+      // profile page is never touched by this, so renderBeerBibleBody keeps
+      // whichever view was already showing rather than forcing back to grid.
+      renderBeerBibleBody();
       els.beerBibleGithubSyncStatus.textContent = describeBeerBibleSyncResult(data);
     } catch (err) {
       els.beerBibleGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
