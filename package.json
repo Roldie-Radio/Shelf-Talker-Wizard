@@ -29,7 +29,8 @@
   },
   "devDependencies": {
     "electron": "^31.3.1",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "xlsx": "^0.18.5"
   },
   "build": {
     "appId": "com.liquoroutletwinecellars.shelftalkerwizard",
