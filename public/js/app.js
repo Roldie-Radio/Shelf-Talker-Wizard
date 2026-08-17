@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.12',
+      items: [
+        'New: The Beer Bible grid now has research-status chips (All / Researched / Needs research - handy for working through a freshly-imported product list), source chips (typed in by staff / from a product export / from the curated GitHub list), a Style filter, and a sort dropdown (Name, Brewery, Untappd rating, ABV, SKU) with a Card/List view toggle - the same toolbar the Bourbon Library already has.',
+      ],
+    },
+    {
       version: '4.3.11',
       items: [
         'New: The Rum Repository (a permanent sidebar rail icon, next to The Beer Bible) - a shared, store-wide record of researched rums: Distillery, Region, Style, ABV, Age Statement, Tasting Notes, and SKU. Click the rail icon to browse/search every saved rum as a card grid, Add Rum to research a new one, or click a card to edit or delete it. A Check GitHub for New Rums button pulls in a curated list the same way The Beer Bible\'s own GitHub sync does.',
