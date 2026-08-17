@@ -284,6 +284,70 @@ test('switching a looked-up SKU to Beer re-runs the lookup and actually runs the
   }));
 });
 
+// Coverage for applyBeerBibleFallback: a beer SKU lookup whose live Untappd
+// search comes back empty (Algolia hits: []) still gets a fully-filled-in
+// result when the Beer Bible already has a researched entry under the exact
+// same (case-insensitive) title the store page resolved to.
+test('a beer SKU lookup that misses on Untappd falls back to a matching Beer Bible entry', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const created = await postJson(port, '/api/beers', {
+      title: 'michelob ultra',
+      brewery: 'Anheuser-Busch',
+      style: 'Light Lager',
+      abv: '4.2%',
+      untappdRating: '3.5',
+      description: 'A crisp, refreshing light lager.',
+    });
+    assert.equal(created.status, 201);
+
+    await withMockFetch(
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('09144') });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaHitsResponse([]) });
+        return mockResponse({ body: storeProductHtml });
+      },
+      async () => {
+        const result = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Michelob ULTRA');
+        assert.equal(result.body.untappdError, undefined);
+        assert.equal(result.body.untappdSource, 'Beer Bible');
+        assert.equal(result.body.brewery, 'Anheuser-Busch');
+        assert.equal(result.body.style, 'Light Lager');
+        assert.equal(result.body.abv, '4.2%');
+        assert.equal(result.body.untappdRating, '3.5');
+        assert.equal(result.body.description, 'A crisp, refreshing light lager.');
+      }
+    );
+  }));
+});
+
+// A Beer Bible entry that's just a bare title stub (no brewery/style/ABV/
+// rating/description on file - see isEnriched in beerBibleImport.js) has
+// nothing more to offer than a real Untappd miss already leaves in place,
+// so it must not mask that miss - untappdError still surfaces so staff know
+// to look into it, rather than a false "resolved" result with every field
+// still blank.
+test('a bare-stub Beer Bible entry does not mask a real Untappd miss', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/beers', { title: 'Michelob ULTRA' });
+
+    await withMockFetch(
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('09144') });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaHitsResponse([]) });
+        return mockResponse({ body: storeProductHtml });
+      },
+      async () => {
+        const result = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.match(result.body.untappdError, /Could not find/);
+        assert.equal(result.body.untappdSource, undefined);
+      }
+    );
+  }));
+});
+
 // Regression coverage for the product cache's removal: a live attempt that
 // fails outright (site blocked, Untappd down, a network hiccup) used to
 // fall back to the last thing that DID resolve, marked stale - now it's

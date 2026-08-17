@@ -996,6 +996,7 @@
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
     untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
     untappdConfirmAcceptBtn: document.getElementById('untappdConfirmAcceptBtn'),
+    untappdConfirmHeading: document.getElementById('untappdConfirmTitle'),
     untappdConfirmTitleText: document.getElementById('untappdConfirmTitleText'),
     untappdConfirmBrewery: document.getElementById('untappdConfirmBrewery'),
     untappdConfirmMeta: document.getElementById('untappdConfirmMeta'),
@@ -4784,6 +4785,13 @@
   function openUntappdConfirm(data) {
     return new Promise((resolve) => {
       untappdConfirmResolve = resolve;
+      // data.untappdSource is only ever set when a live Untappd search came
+      // back empty and this instead came from a matching Beer Bible entry
+      // (see applyBeerBibleFallback in index.js) - the heading says so
+      // rather than claiming a fresh "Untappd Match" that never happened,
+      // since the fields underneath (and how stale they might be) came from
+      // this store's own saved research, not a live lookup.
+      els.untappdConfirmHeading.textContent = data.untappdSource === 'Beer Bible' ? 'Confirm Beer Bible Match' : 'Confirm Untappd Match';
       // data.beerName is Untappd's own name for the matched beer (see
       // mergeUntappdBeer's comment) - shown here instead of data.title
       // (the store-sourced Product Title, already visible on the form/
