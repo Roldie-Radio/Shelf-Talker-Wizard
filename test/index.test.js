@@ -1369,32 +1369,126 @@ test('DELETE /api/beers/:id deletes and 404s for an unknown id', async () => {
   }));
 });
 
-test('POST /api/beers/sync-library adds only new titles, leaving an existing entry untouched - not gated behind Server PC', async () => {
+// POST /api/beers/:id/research - the Beer Bible's one-click Research button
+// (grid card + profile page). Read-only: it runs the same live Untappd
+// search Search by Name/SKU Lookup/Scan UPC already do, off the entry's own
+// title, and hands the result straight back without saving anything -
+// saving only happens once staff accept a confident match or pick one off a
+// tie, via the existing PUT /api/beers/:id (see app.js).
+test('POST /api/beers/:id/research runs a live Untappd search off the entry\'s own title and returns the match, unsaved', async () => {
   await withTempDb(() => withServer(async (port) => {
-    // Deliberately not marked isServer - unlike /api/mashbills/sync-library,
-    // this route works on any PC (see the beers table comment in db.js).
-    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', brewery: 'Local Edit' });
-
+    const created = await postJson(port, '/api/beers', { title: 'LANCASTER MILK STOUT CAN' });
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'lancaster-milk-stout', bid: 9001, beer_name: 'Milk Stout', brewery_name: 'Lancaster Brewing Company' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Milk Stout by Lancaster Brewing Company | Untappd" />',
+      body: '<p class="brewery"><a href="#">Lancaster Brewing Company</a></p><p class="style">Milk / Sweet Stout</p>'
+        + '<div class="details"><p class="abv">5.50% ABV</p></div>',
+    });
     await withMockFetch(
-      async () => ({
-        ok: true,
-        status: 200,
-        json: async () => [
-          { title: 'Slack Tide Flounder Pounder', brewery: 'GitHub Version' },
-          { title: 'Michelob ULTRA', brewery: 'Anheuser-Busch' },
-        ],
-      }),
+      async (url) => (url.includes('algolia.net') ? mockResponse({ body: algoliaBody }) : mockResponse({ body: untappdBeerHtml })),
       async () => {
-        const { status, body } = await postJson(port, '/api/beers/sync-library', {});
-        assert.equal(status, 200);
-        assert.equal(body.added, 1);
-        assert.equal(body.skipped, 1);
-        assert.equal(body.source, 'GitHub');
-        assert.equal(body.beers.length, 2);
-        const flounderPounder = body.beers.find((b) => b.title === 'Slack Tide Flounder Pounder');
-        assert.equal(flounderPounder.brewery, 'Local Edit');
-      },
+        const result = await postJson(port, `/api/beers/${created.body.id}/research`, {});
+        assert.equal(result.status, 200);
+        assert.equal(result.body.brewery, 'Lancaster Brewing Company');
+        assert.equal(result.body.style, 'Milk / Sweet Stout');
+        assert.equal(result.body.abv, '5.5%');
+        assert.equal(result.body.untappdError, undefined);
+      }
     );
+    // Read-only - the entry itself is untouched until a follow-up PUT.
+    const stillUnresearched = await getJson(port, '/api/beers');
+    assert.equal(stillUnresearched.body.beers[0].brewery, '');
+  }));
+});
+
+test('POST /api/beers/:id/research surfaces untappdCandidates for a tie, and untappdError for no match, without failing the request', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const tied = await postJson(port, '/api/beers', { title: 'Daylily' });
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'autodidact-beer-daylily', bid: 1, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+      { beer_slug: 'fox-farm-brewery-daylily', bid: 2, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
+    ]);
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaBody }),
+      async () => {
+        const result = await postJson(port, `/api/beers/${tied.body.id}/research`, {});
+        assert.equal(result.status, 200);
+        assert.equal(result.body.untappdCandidates.length, 2);
+        assert.deepEqual(result.body.untappdCandidates.map((c) => c.brewery), ['Autodidact Beer', 'Fox Farm Brewery']);
+      }
+    );
+
+    const noMatch = await postJson(port, '/api/beers', { title: '2ND FAVOR HEAVY SPECTRUM 4PK' });
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaHitsResponse([]) }),
+      async () => {
+        const result = await postJson(port, `/api/beers/${noMatch.body.id}/research`, {});
+        assert.equal(result.status, 200);
+        assert.match(result.body.untappdError, /Could not find/);
+      }
+    );
+  }));
+});
+
+test('POST /api/beers/:id/research 404s for an unknown id', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const result = await postJson(port, '/api/beers/999999/research', {});
+    assert.equal(result.status, 404);
+  }));
+});
+
+// POST /api/beers/sync-export - the "Export File Sync" button (replaces
+// the old "Check GitHub for New Beers" - see beerBibleExportSync.js for the
+// full reasoning). Fills in upc on an already-saved entry whose sku
+// matches a row in the configured export; never adds new entries.
+test('POST /api/beers/sync-export fills in upc for a SKU-matched entry, leaves an unmatched one alone, and skips entries with no SKU', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, [
+      '085000010652,Josh Cellars Cabernet Sauvignon,55555,',
+    ]));
+    const matched = await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555' });
+    const unmatched = await postJson(port, '/api/beers', { title: 'Founders All Day IPA', sku: '99999' });
+    const noSku = await postJson(port, '/api/beers', { title: 'Michelob ULTRA' });
+
+    const { status, body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(status, 200);
+    assert.equal(body.checked, 2);
+    assert.equal(body.noSku, 1);
+    assert.equal(body.matched, 1);
+    assert.equal(body.updated, 1);
+    assert.equal(body.noMatch, 1);
+
+    const beers = body.beers;
+    // The export's own leading zero is preserved as-is - cleanUpcDigits
+    // only strips the float ".0" artifact and non-digits, never pads or
+    // un-pads (see its own comment in upcCatalog.js).
+    assert.equal(beers.find((b) => b.id === matched.body.id).upc, '085000010652');
+    assert.equal(beers.find((b) => b.id === unmatched.body.id).upc, '');
+    assert.equal(beers.find((b) => b.id === noSku.body.id).upc, '');
+  }));
+});
+
+test('POST /api/beers/sync-export leaves an already-matching upc alone (reports it as matched, not updated)', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, [
+      '085000010652,Josh Cellars Cabernet Sauvignon,55555,',
+    ]));
+    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555', upc: '085000010652' });
+
+    const { body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(body.matched, 1);
+    assert.equal(body.updated, 0);
+  }));
+});
+
+test('POST /api/beers/sync-export 404s with NO_EXPORT_PATH when nothing is configured yet', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555' });
+    const { status, body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(status, 404);
+    assert.equal(body.code, 'NO_EXPORT_PATH');
   }));
 });
 

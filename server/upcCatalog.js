@@ -250,24 +250,28 @@ function parsePackQtyFromSize(size) {
   return Number.isFinite(qty) && qty > 1 ? qty : null;
 }
 
+// Strips the same "stored as a number, not text" artifacts upcVariants
+// below needs gone before it can build match variants - a spurious
+// trailing ".0"/".00" (a UPC column typed as a float, e.g. WinePOS
+// exporting 88586001895 as "88586001895.0") and anything that isn't a
+// digit. Shared with buildIndex below, which stores this cleaned form as a
+// product's own `upc` field (e.g. for the Beer Bible's Export File Sync to
+// save) - deliberately NOT zero-padded the way upcVariants' own match
+// variants are; padding is only safe for generating extra *lookup* keys
+// (a wrong guess there is a harmless unused index entry), not for a value
+// this app then treats as ground truth and writes down.
+function cleanUpcDigits(raw) {
+  const withoutTrailingZeroDecimal = String(raw || '').replace(/\.0+$/, '');
+  return withoutTrailingZeroDecimal.replace(/\D/g, '');
+}
+
 // A scanner (or the export itself) can represent the same product as a
 // 12-digit UPC-A or its 13-digit EAN-13 form (a leading zero) - both are
 // printed on U.S. retail products interchangeably depending on what read
 // the barcode, so a lookup tries both rather than requiring an exact-length
 // match. Returns a de-duplicated list, digits only.
 function upcVariants(raw) {
-  // Same "stored as a number, not text" root cause as the leading-zero fix
-  // below, a different symptom: a UPC column typed as a float rather than
-  // an integer can print a whole-number UPC with a spurious trailing ".0"
-  // (or ".00") - e.g. WinePOS exporting 88586001895 as "88586001895.0".
-  // Stripped here, before the non-digit strip just below, or that ".0"
-  // would be read back in as extra trailing digits of the code itself
-  // (turning a correct 11-digit stored value into a wrong 12-digit one) -
-  // dropped rather than kept, since a real barcode never has a fractional
-  // part. Deliberately only an all-zero fraction (not e.g. ".5"), so this
-  // can't misfire on some other column matched as UPC by mistake.
-  const withoutTrailingZeroDecimal = String(raw || '').replace(/\.0+$/, '');
-  const digits = withoutTrailingZeroDecimal.replace(/\D/g, '');
+  const digits = cleanUpcDigits(raw);
   if (!digits) return [];
   const variants = new Set([digits]);
   if (digits.length === 13 && digits[0] === '0') variants.add(digits.slice(1));
@@ -375,6 +379,11 @@ function buildIndex(rows) {
       title: cell(row, colFor, 'title'),
       brand: cell(row, colFor, 'brand'),
       sku: cell(row, colFor, 'sku'),
+      // Cleaned (float-artifact/non-digit stripped) but not zero-padded -
+      // see cleanUpcDigits' own comment for why. Backs the Beer Bible's
+      // Export File Sync (server/beerBibleExportSync.js), which saves this
+      // onto a matching entry's own upc column.
+      upc: cleanUpcDigits(rawUpc),
       size,
       vintage: cell(row, colFor, 'vintage'),
       price: normalizeMoney(cell(row, colFor, 'price')),

@@ -971,12 +971,12 @@
     atlasBody: document.getElementById('atlasBody'),
     beerBibleView: document.getElementById('beerBibleView'),
     beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
-    beerBibleGithubSyncRow: document.getElementById('beerBibleGithubSyncRow'),
-    beerBibleGithubSyncStatus: document.getElementById('beerBibleGithubSyncStatus'),
-    beerBibleGithubSyncBtn: document.getElementById('beerBibleGithubSyncBtn'),
+    beerBibleExportBtn: document.getElementById('beerBibleExportBtn'),
+    beerBibleExportSyncRow: document.getElementById('beerBibleExportSyncRow'),
+    beerBibleExportSyncStatus: document.getElementById('beerBibleExportSyncStatus'),
+    beerBibleExportSyncBtn: document.getElementById('beerBibleExportSyncBtn'),
     beerBibleFilterInput: document.getElementById('beerBibleFilterInput'),
     beerBibleStatusChips: document.getElementById('beerBibleStatusChips'),
-    beerBibleSourceChips: document.getElementById('beerBibleSourceChips'),
     beerBibleStats: document.getElementById('beerBibleStats'),
     beerBibleBody: document.getElementById('beerBibleBody'),
     rumRepositoryView: document.getElementById('rumRepositoryView'),
@@ -1312,6 +1312,7 @@
     beerBibleFormLocationInput: document.getElementById('beerBibleFormLocationInput'),
     beerBibleFormStyleInput: document.getElementById('beerBibleFormStyleInput'),
     beerBibleFormSkuInput: document.getElementById('beerBibleFormSkuInput'),
+    beerBibleFormUpcInput: document.getElementById('beerBibleFormUpcInput'),
     beerBibleFormAbvInput: document.getElementById('beerBibleFormAbvInput'),
     beerBibleFormIbuInput: document.getElementById('beerBibleFormIbuInput'),
     beerBibleFormRatingInput: document.getElementById('beerBibleFormRatingInput'),
@@ -4672,10 +4673,16 @@
   // candidate folded behind "+N more" is never fetched unless staff expand
   // it - no point spending a request on a row they may never look at.
   //
-  // Returns a Promise resolving to true once a pick was applied to the
-  // form, or false if staff closed the dialog without picking one - each
-  // caller uses that to decide its own status message/whether it's safe to
-  // auto-add-to-queue.
+  // Returns a Promise resolving to true once a pick was applied, or false
+  // if staff closed the dialog without picking one - each caller uses that
+  // to decide its own status message/whether it's safe to auto-add-to-
+  // queue. `getCurrent`/`applyFn` default to the main Edit Talker form
+  // (readForm/applyUntappdFields) - Scan UPC, SKU Lookup, and Search by
+  // Name all rely on that default and never pass the third argument. The
+  // Beer Bible's own Research button (see runBeerResearch below) is the
+  // one caller that does: it has no form to read/fill, just an
+  // already-saved `beers` row, so it passes its own pair instead of this
+  // dialog needing a second, near-duplicate copy of itself.
   let untappdPickerResolve = null;
 
   // Max candidates shown before "+N more" - the request behind this dialog
@@ -4709,7 +4716,7 @@
     },
   });
 
-  function openUntappdPicker(candidates, queryTitle) {
+  function openUntappdPicker(candidates, queryTitle, { getCurrent = readForm, applyFn = applyUntappdFields } = {}) {
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
       // Defensive reset: if the *previous* dialog was closed (Cancel/Escape/
@@ -4795,7 +4802,7 @@
           const resp = await fetch('/api/untappd-lookup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ current: readForm(), untappdUrl: candidate.url }),
+            body: JSON.stringify({ current: getCurrent(), untappdUrl: candidate.url }),
           });
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
@@ -4809,7 +4816,12 @@
           // overwrite the form after the fact, and closing/resolving would
           // step on whatever opened next. Bail out quietly instead.
           if (untappdPickerResolve !== resolve) return;
-          applyUntappdFields(data);
+          // Awaited so an async applyFn (the Beer Bible's own Research
+          // button passes one that PUTs the save) finishes before this
+          // resolves and the caller re-renders - every other caller's
+          // applyFn (applyUntappdFields) is synchronous, so awaiting it
+          // here is a no-op for them.
+          await applyFn(data);
           untappdPickerResolve = null;
           untappdPickerModal.close();
           resolve(true);
@@ -7634,10 +7646,14 @@
   // stands in for those here: research-status chips (most of a real store's
   // rows start as bare title+SKU stubs from a bulk import - see
   // beerIsResearched below - so "has this one actually been looked up yet"
-  // is the Beer Bible's own version of "needs verification"), source chips
-  // (BEER_SOURCE_LABELS below), a Style filter, and a sort dropdown that
-  // includes Untappd rating alongside the usual name/brewery/ABV/SKU
-  // options. Adding/editing/deleting goes through the
+  // is the Beer Bible's own version of "needs verification"), a Style
+  // filter, and a sort dropdown that includes Untappd rating alongside the
+  // usual name/brewery/ABV/SKU options. (An earlier cut of this also had
+  // source chips - All sources/Typed in by staff/etc, keyed off
+  // BEER_SOURCE_LABELS below - dropped as more filter chrome than a real
+  // store's Beer Bible actually needed; BEER_SOURCE_LABELS itself lives on,
+  // still read by the profile page's own "Source: ..." line and the CSV
+  // export.) Adding/editing/deleting goes through the
   // form modal below (opened via #beerBibleAddBtn, or the profile page's
   // own Edit button); this section itself never writes anything beyond
   // what that form does, only reads beerBibleCache and re-fetches it after
@@ -7720,12 +7736,11 @@
   // is only meaningful while in 'profile'.
   let beerBibleViewMode = 'grid';
   let beerBibleSelectedId = null;
-  // Research-status/source/style filters - reset on a fresh page load but,
-  // same as libraryTierFilter above, deliberately left alone by
-  // renderBeerBibleView so switching away to another rail view and back
-  // doesn't lose whatever a staff member had picked.
+  // Research-status/style filters - reset on a fresh page load but, same as
+  // libraryTierFilter above, deliberately left alone by renderBeerBibleView
+  // so switching away to another rail view and back doesn't lose whatever a
+  // staff member had picked.
   let beerBibleStatusFilter = 'all'; // 'all' | 'researched' | 'needs'
-  let beerBibleSourceFilter = 'all'; // 'all' or a beers.source value
   let beerBibleStyleFilter = 'all'; // 'all' or an exact beers.style value
   let beerBibleGridView = loadBeerBibleGridView();
   let beerBibleSortKey = loadBeerBibleSortKey();
@@ -7781,10 +7796,6 @@
     return true;
   }
 
-  function beerMatchesSource(entry) {
-    return beerBibleSourceFilter === 'all' || entry.source === beerBibleSourceFilter;
-  }
-
   function beerMatchesStyle(entry) {
     return beerBibleStyleFilter === 'all' || (entry.style || '') === beerBibleStyleFilter;
   }
@@ -7792,8 +7803,8 @@
   // Human-readable version of the `source` values upsertBeer/importBeers
   // actually write (see server/db.js and server/beerBibleImport.js) - shown
   // under Tasting Notes so staff can tell an Untappd-sourced description
-  // apart from one they typed in themselves, and reused below as the
-  // source filter chips' own labels.
+  // apart from one they typed in themselves, and in the CSV export's own
+  // Source column (see exportBeerBibleCsv below).
   const BEER_SOURCE_LABELS = {
     Manual: 'Typed in by staff',
     Import: 'Pulled in from a product export',
@@ -7849,33 +7860,6 @@
       });
     });
 
-    // Built from whatever source values are actually on the cache rather
-    // than a fixed list, so a source this file doesn't know about (a future
-    // import path, or scripts/populate-beer-bible-from-export.js's own
-    // 'Untappd' tag reaching here via a rebuilt bundled seed) still gets a
-    // usable chip instead of silently having no way to filter it - same
-    // fallback-to-the-raw-value BEER_SOURCE_LABELS[entry.source] pattern
-    // renderBeerBibleProfile already uses below.
-    const sourceCounts = {};
-    beerBibleCache.forEach((b) => { sourceCounts[b.source] = (sourceCounts[b.source] || 0) + 1; });
-    const sourceChips = [
-      { key: 'all', label: `All sources (${beerBibleCache.length})` },
-      ...Object.keys(sourceCounts).sort().map((src) => ({
-        key: src, label: `${BEER_SOURCE_LABELS[src] || src} (${sourceCounts[src]})`,
-      })),
-    ];
-    els.beerBibleSourceChips.innerHTML = sourceChips.map((c) => `
-      <button type="button" class="toggle-btn ${beerBibleSourceFilter === c.key ? 'is-active' : ''}" data-source="${escapeHtml(c.key)}">${escapeHtml(c.label)}</button>
-    `).join('');
-    els.beerBibleSourceChips.querySelectorAll('button[data-source]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        beerBibleSourceFilter = btn.dataset.source;
-        beerBibleViewMode = 'grid';
-        renderBeerBibleChipsAndStats();
-        renderBeerBibleBody();
-      });
-    });
-
     const breweries = new Set(beerBibleCache.map((b) => b.brewery).filter(Boolean)).size;
     const styles = new Set(beerBibleCache.map((b) => b.style).filter(Boolean)).size;
     els.beerBibleStats.innerHTML = `
@@ -7922,9 +7906,44 @@
     return beerResearchBadgeHtml(entry);
   }
 
+  // Search-glyph/spinner pair for the Research button (grid card, list row,
+  // and the profile page's own bigger copy - see beerResearchButtonHtml and
+  // renderBeerBibleProfile). Plain inline SVGs, same currentColor/stroke
+  // convention as the field-select chevron elsewhere in this file, so they
+  // pick up whichever text colour the button/chip is currently drawn in.
+  const BEER_RESEARCH_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" width="11" height="11"><circle cx="8.3" cy="8.3" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="13" y1="13" x2="17.5" y2="17.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const BEER_RESEARCH_SPIN_ICON = '<svg class="research-spin" viewBox="0 0 20 20" aria-hidden="true" width="11" height="11"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="26 12" stroke-linecap="round"/></svg>';
+
+  // One-click Research chip for an unresearched card/row's footer (see
+  // beerCardHtml/beerRowHtml below) - runs the same live Untappd search
+  // Search by Name/SKU Lookup/Scan UPC already do, off this entry's own
+  // saved title, via POST /api/beers/:id/research (see wireBeerResearchButtons
+  // and runBeerResearch below for the click handler this markup is wired up
+  // to). `[data-beer-research]` is the hook that handler looks for; it's a
+  // real nested <button>, not just a styled span, since the card/row around
+  // it is a role="button" div rather than a real <button> specifically so
+  // this can nest inside it without the invalid (and double-firing)
+  // button-in-a-button markup a plain <button> card used to force.
+  function beerResearchButtonHtml(entry) {
+    return `<button type="button" class="research-chip" data-beer-research="${entry.id}" title="Search Untappd for this beer">${BEER_RESEARCH_ICON}Research</button>`;
+  }
+
+  // Bigger, .btn-shaped copy of the same button for the profile header (see
+  // renderBeerBibleProfile below) - same `[data-beer-research]` hook, so it
+  // runs through the exact same wireBeerResearchButtons/runBeerResearch
+  // pair as the grid's own chip, just styled as a primary action next to
+  // Edit instead of a footer pill.
+  function beerResearchButtonHtmlLarge(entry) {
+    return `<button type="button" class="btn btn--small btn--primary research-btn" data-beer-research="${entry.id}" title="Search Untappd for this beer">${BEER_RESEARCH_ICON}Research on Untappd</button>`;
+  }
+
   // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
   // generic card grid the Bourbon Library and The Pairing Atlas's own wine
-  // cards already share, just without a grain bar in the middle.
+  // cards already share, just without a grain bar in the middle. A plain
+  // role="button" div rather than Bourbon/Rum's own <button> card - see
+  // beerResearchButtonHtml above for why - with the click-to-open-profile
+  // behaviour wired up in renderBeerBibleGrid below instead of coming free
+  // from a real <button>.
   function beerCardHtml(entry, sort) {
     // Escape each piece individually, then join with a raw (already-safe)
     // &middot; entity - escaping the joined string instead would turn that
@@ -7935,30 +7954,37 @@
     const statBits = [];
     if (entry.abv) statBits.push(`${escapeHtml(entry.abv)} ABV`);
     if (entry.ibu) statBits.push(`${escapeHtml(entry.ibu)} IBU`);
+    // An unresearched card always gets the Research chip in the metric slot
+    // regardless of the active sort - none of the other metrics (rating/
+    // ABV/SKU) have anything real to show yet on a beer that's never been
+    // looked up, so the one useful thing to put there is a way to fix that.
+    const metricHtml = beerIsResearched(entry) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
     return `
-      <button type="button" class="bourbon-card" data-id="${entry.id}">
+      <div class="bourbon-card" role="button" tabindex="0" data-id="${entry.id}">
         <div class="bourbon-card__title">${escapeHtml(beerDisplayName(entry))}</div>
         <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
-          ${beerSortMetricHtml(entry, sort)}
+          ${metricHtml}
         </div>
-      </button>
+      </div>
     `;
   }
 
   // List-view row - reuses .bourbon-row/.bourbon-list as-is, same as the
-  // Bourbon Library's own bourbonRowHtml.
+  // Bourbon Library's own bourbonRowHtml. Same role="button" div as
+  // beerCardHtml above, same reason.
   function beerRowHtml(entry, sort) {
+    const metricHtml = beerIsResearched(entry) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
     return `
-      <button type="button" class="bourbon-row" data-id="${entry.id}">
+      <div class="bourbon-row" role="button" tabindex="0" data-id="${entry.id}">
         <div>
           <div class="bourbon-row__title">${escapeHtml(beerDisplayName(entry))}</div>
           <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}</div>
         </div>
-        ${beerSortMetricHtml(entry, sort)}
+        ${metricHtml}
         <span class="bourbon-row__chevron" aria-hidden="true">&rsaquo;</span>
-      </button>
+      </div>
     `;
   }
 
@@ -8001,10 +8027,173 @@
     `).join('');
   }
 
-  function renderBeerBibleGrid() {
-    const rows = beerBibleCache.filter((b) => beerMatchesSearch(b) && beerMatchesStatus(b) && beerMatchesSource(b) && beerMatchesStyle(b));
+  // Shared by renderBeerBibleGrid (what's on screen) and exportBeerBibleCsv
+  // (what a click on Export CSV… downloads) so the two can never drift -
+  // the file always matches whatever the search box + status/source/style
+  // chips + sort dropdown currently have selected. Leaving every filter at
+  // its default exports the whole Beer Bible.
+  function beerBibleFilteredSortedRows() {
+    const rows = beerBibleCache.filter((b) => beerMatchesSearch(b) && beerMatchesStatus(b) && beerMatchesStyle(b));
     const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
     rows.sort(sort.cmp);
+    return rows;
+  }
+
+  // ---- One-click Research (grid card/row + profile page) ----
+  //
+  // Shared by both the small footer chip (beerResearchButtonHtml above) and
+  // the bigger profile-page button (renderBeerBibleProfile below) - same
+  // POST /api/beers/:id/research → openUntappdPicker (a tie) /
+  // openUntappdConfirm (a confident match) → PUT /api/beers/:id (save)
+  // sequence either way, just a different button/card to update along the
+  // way.
+
+  // Shaped like the `current` object /api/untappd-lookup expects (see
+  // openUntappdPicker's own getCurrent option and mergeUntappdBeer in
+  // productImport.js) - whatever this entry already has on file survives a
+  // pick that doesn't happen to redescribe it, same as the server-side
+  // POST /api/beers/:id/research route already does for its own `product`
+  // argument.
+  function beerResearchCurrentFields(entry) {
+    return {
+      beerName: entry.beerName,
+      description: entry.description,
+      brewery: entry.brewery,
+      location: entry.location,
+      style: entry.style,
+      abv: entry.abv,
+      ibu: entry.ibu,
+      untappdRating: entry.untappdRating,
+      untappdRatingCount: entry.untappdRatingCount,
+    };
+  }
+
+  // Saves a research result to the entry's row via the existing PUT
+  // /api/beers/:id (same route Edit already uses) - deliberately never
+  // includes `title` in the body, so a research run can't rename the entry
+  // the way a SKU-matched auto-save already refuses to (see the `research`
+  // route's own comment in server/index.js). Updates beerBibleCache in
+  // place so the grid/profile re-render this call's own caller does next
+  // shows the fresh row without a second GET /api/beers round trip.
+  async function saveBeerResearchFields(entryId, fields) {
+    const resp = await fetch(`/api/beers/${entryId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        beerName: fields.beerName,
+        description: fields.description,
+        brewery: fields.brewery,
+        location: fields.location,
+        style: fields.style,
+        abv: fields.abv,
+        ibu: fields.ibu,
+        untappdRating: fields.untappdRating,
+        untappdRatingCount: fields.untappdRatingCount,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Could not save that research.');
+    const idx = beerBibleCache.findIndex((b) => b.id === entryId);
+    if (idx === -1) beerBibleCache.push(data); else beerBibleCache[idx] = data;
+    return data;
+  }
+
+  // Puts a Research button back to its plain idle label/tooltip - shared by
+  // every "nothing was saved" exit out of runBeerResearch below (staff
+  // rejected a confident match, backed out of a tie without picking, or the
+  // lookup itself failed outright) so none of them can leave the button
+  // stuck showing "Researching…" forever.
+  function resetBeerResearchButton(btn) {
+    btn.disabled = false;
+    btn.title = 'Search Untappd for this beer';
+    btn.innerHTML = `${BEER_RESEARCH_ICON}Research`;
+  }
+
+  // Runs the actual lookup for one entry and resolves it all the way
+  // through to a save (or a deliberate no-op) - `btn` is the specific
+  // Research button that was clicked, whose idle/loading/error text this
+  // owns for the duration of the call. Returns whether anything was
+  // actually saved: wireBeerResearchButtons below only re-renders the
+  // whole grid/profile (sort order, research-status chips/badges) when
+  // this is true - every other outcome already leaves `btn` itself in the
+  // right end state, and re-rendering anyway would just blow that away by
+  // rebuilding this same button from beerBibleCache before it ever
+  // changed (a real bug this comment is here to keep from coming back).
+  async function runBeerResearch(entryId, btn) {
+    const entry = beerBibleCache.find((b) => b.id === entryId);
+    if (!entry) return false;
+    btn.disabled = true;
+    btn.title = 'Searching Untappd…';
+    btn.innerHTML = `${BEER_RESEARCH_SPIN_ICON}Researching&hellip;`;
+    try {
+      const resp = await fetch(`/api/beers/${entryId}/research`, { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not search Untappd for that beer.');
+
+      if (data.untappdCandidates && data.untappdCandidates.length) {
+        // A genuine tie - same disambiguation dialog Scan UPC/SKU Lookup/
+        // Search by Name already use, just pointed at this saved row
+        // instead of the in-progress Edit Talker form (see getCurrent/
+        // applyFn above openUntappdPicker's own definition). Its own
+        // applyFn already saves on a pick, so `picked` here doubles as
+        // "was this actually saved".
+        const picked = await openUntappdPicker(data.untappdCandidates, beerDisplayName(entry) || entry.title, {
+          getCurrent: () => beerResearchCurrentFields(entry),
+          applyFn: (fields) => saveBeerResearchFields(entryId, fields),
+        });
+        if (!picked) resetBeerResearchButton(btn);
+        return picked;
+      }
+
+      if (data.untappdError) {
+        // No confident match and nothing to pick from - leave the entry
+        // alone and let staff try again (or fall back to Edit) rather than
+        // silently reverting to the plain idle chip with no explanation.
+        btn.disabled = false;
+        btn.title = data.untappdError;
+        btn.innerHTML = `${BEER_RESEARCH_ICON}Not found &ndash; Retry`;
+        return false;
+      }
+
+      // A single confident match still gets the same review step every
+      // other beer lookup shows before committing anything (see
+      // confirmBeerUntappdMatch's own comment) - staff can reject a
+      // confident-but-wrong match here same as anywhere else.
+      const confirmed = await openUntappdConfirm(data);
+      if (!confirmed) {
+        resetBeerResearchButton(btn);
+        return false;
+      }
+      await saveBeerResearchFields(entryId, data);
+      return true;
+    } catch (err) {
+      btn.disabled = false;
+      btn.title = err.message || 'Could not search Untappd for that beer.';
+      btn.innerHTML = `${BEER_RESEARCH_ICON}Research`;
+      return false;
+    }
+  }
+
+  // Wires every `[data-beer-research]` button inside `root` (the grid body,
+  // or the profile page) to runBeerResearch, calling `onSaved` only when it
+  // reports something was actually saved - see runBeerResearch's own
+  // comment for why an unsaved outcome deliberately skips the re-render
+  // its caller would otherwise trigger. stopPropagation keeps the click
+  // from also bubbling into the card/row's own "open profile" handler (see
+  // renderBeerBibleGrid below) now that both live in the same div.
+  function wireBeerResearchButtons(root, onSaved) {
+    root.querySelectorAll('[data-beer-research]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const saved = await runBeerResearch(Number(btn.dataset.beerResearch), btn);
+        if (saved) onSaved();
+      });
+    });
+  }
+
+  function renderBeerBibleGrid() {
+    const rows = beerBibleFilteredSortedRows();
+    const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
 
     const styleLabel = beerBibleStyleFilter === 'all' ? 'All styles' : beerBibleStyleFilter;
     const toolbarHtml = `
@@ -8044,12 +8233,34 @@
       els.beerBibleBody.innerHTML = toolbarHtml + resultsHtml;
     }
 
-    els.beerBibleBody.querySelectorAll('.bourbon-card[data-id], .bourbon-row[data-id]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        beerBibleSelectedId = Number(btn.dataset.id);
+    els.beerBibleBody.querySelectorAll('.bourbon-card[data-id], .bourbon-row[data-id]').forEach((card) => {
+      const openProfile = () => {
+        beerBibleSelectedId = Number(card.dataset.id);
         beerBibleViewMode = 'profile';
         renderBeerBibleBody();
+      };
+      card.addEventListener('click', openProfile);
+      // Card/row is a role="button" div now, not a real <button> (see
+      // beerCardHtml/beerRowHtml above) - specifically so the Research chip
+      // below can nest a real <button> inside it, which a <button>-in-a-
+      // <button> can't do without invalid markup and a double-firing click.
+      // That trades away the free keyboard activation a real <button> gets,
+      // so it's replaced here: Enter/Space opens the profile the same as a
+      // click, matching every other card/row in the app that's still a
+      // plain <button>. Only fires when the div itself is focused - a
+      // focused Research chip already handles its own Enter/Space as a real
+      // button, and stopPropagation in wireBeerResearchButtons below keeps
+      // its click from also bubbling up into this handler.
+      card.addEventListener('keydown', (e) => {
+        if (e.target !== card) return;
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        openProfile();
       });
+    });
+    wireBeerResearchButtons(els.beerBibleBody, () => {
+      renderBeerBibleChipsAndStats();
+      renderBeerBibleGrid();
     });
     els.beerBibleBody.querySelectorAll('.preview-toggle button[data-view]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -8088,6 +8299,54 @@
       });
     });
   }
+
+  // Wraps a single CSV field per RFC 4180: only quoted when it actually
+  // needs it (contains a comma, quote, or line break), with any inner
+  // quote doubled - so a plain title like "Slack Tide Flounder Pounder"
+  // stays unquoted and readable, while a description with a comma in it
+  // still round-trips through Excel/Sheets correctly.
+  function csvField(value) {
+    const s = value == null ? '' : String(value);
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  // Export CSV… button (see #beerBibleExportBtn in index.html) - downloads
+  // whatever beerBibleFilteredSortedRows currently has (search box +
+  // status/source/style chips + sort dropdown all applied) as a CSV file,
+  // same "download what's on screen" idea as the WinePOS export preview's
+  // own search box, just producing a file instead of a live table. Leaving
+  // every filter at its default exports the whole Beer Bible. One column
+  // per field the Beer Bible actually stores (see the `beers` table in
+  // server/db.js) plus a Researched Yes/No column mirroring the on-screen
+  // status chips, so the file means the same thing the grid does.
+  function exportBeerBibleCsv() {
+    const rows = beerBibleFilteredSortedRows();
+    if (!rows.length) return;
+    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched'];
+    const lines = [header.map(csvField).join(',')];
+    rows.forEach((b) => {
+      lines.push([
+        b.title, b.beerName, b.brewery, b.location, b.style, b.abv, b.ibu,
+        b.untappdRating, b.untappdRatingCount, b.sku, b.upc, b.description,
+        BEER_SOURCE_LABELS[b.source] || b.source || '',
+        beerIsResearched(b) ? 'Yes' : 'No',
+      ].map(csvField).join(','));
+    });
+    // Leading BOM so Excel (the store PCs' actual use case) reads the file
+    // as UTF-8 instead of guessing a local codepage and mangling anything
+    // non-ASCII in a brewery/style name.
+    const blob = new Blob([`\uFEFF${lines.join('\r\n')}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `beer-bible-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  els.beerBibleExportBtn.addEventListener('click', exportBeerBibleCsv);
 
   // One stat tile for the profile page's "At a Glance" block (ABV, IBU) -
   // the Untappd Rating tile is its own function below since it also needs
@@ -8142,6 +8401,7 @@
       </div>
       <div class="profile-head">
         <div>
+          ${entry.brewery ? `<p class="profile-head__eyebrow">${escapeHtml(entry.brewery)}</p>` : ''}
           <h2>${escapeHtml(beerDisplayName(entry))}</h2>
           <p class="profile-head__by">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.location ? ` &middot; <strong>${escapeHtml(entry.location)}</strong>` : ''}</p>
           <div class="profile-tags">
@@ -8150,7 +8410,10 @@
           </div>
           ${beerResearchedTimestampHtml(entry)}
         </div>
-        <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
+        <div class="profile-head__actions">
+          ${beerIsResearched(entry) ? '' : beerResearchButtonHtmlLarge(entry)}
+          <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
+        </div>
       </div>
       <div class="profile-grid">
         <div>
@@ -8175,6 +8438,8 @@
             ${entry.location ? `<div><dt>Location</dt><dd>${escapeHtml(entry.location)}</dd></div>` : ''}
             ${entry.style ? `<div><dt>Style</dt><dd>${escapeHtml(entry.style)}</dd></div>` : ''}
             ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
+            ${entry.upc ? `<div><dt>UPC</dt><dd>${escapeHtml(entry.upc)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>Price</dt><dd id="beerBiblePriceValue" class="help-text" role="status" aria-live="polite">Checking the WinePOS export&hellip;</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.brewery)} entries</dt>
@@ -8199,6 +8464,57 @@
         renderBeerBibleProfile();
       });
     });
+    wireBeerResearchButtons(els.beerBibleBody, () => {
+      renderBeerBibleChipsAndStats();
+      renderBeerBibleProfile();
+    });
+    if (entry.sku) loadBeerBiblePrice(entry);
+  }
+
+  // Formats /api/export-price's own fields into one line - the regular/
+  // sale price the same way loadBourbonLibraryPrice's own formatMoney call
+  // does, plus (beer-only difference) a pack price alongside it when the
+  // export has one, since beer commonly sells by both the single can/bottle
+  // and the pack (see combineBeerSize/packPrice elsewhere in this file for
+  // the same Unit-vs-Pack distinction Scan UPC already makes for beer).
+  function formatBeerPriceLine(data) {
+    const onSale = data.salePrice && Number(data.salePrice) > 0;
+    const mainPrice = onSale ? `${formatMoney(data.salePrice)} (was ${formatMoney(data.price)})` : formatMoney(data.price);
+    if (!mainPrice) return 'No price on file for this SKU.';
+    if (!data.packPrice) return mainPrice;
+    return `${mainPrice} · ${formatMoney(data.packPrice)}${data.packQty ? ` (${data.packQty}-pack)` : ' (pack)'}`;
+  }
+
+  // Fills in the Price row renderBeerBibleProfile leaves as "Checking the
+  // WinePOS export..." - same live lookup (/api/export-price ->
+  // lookupSkuInExport in upcCatalog.js) against the entry's own sku as the
+  // Bourbon Library profile page's own Price row (loadBourbonLibraryPrice
+  // above), not a price stored on the entry itself, for the same reason:
+  // a beer's shelf price drifts, and this is meant to reflect today's,
+  // not whatever it was when the SKU was typed in (contrast with upc,
+  // which Export File Sync does store - a barcode doesn't go stale the way
+  // a price does). Checks beerBibleSelectedId before applying the result,
+  // same guard against a slow response landing after staff already clicked
+  // into a different beer.
+  async function loadBeerBiblePrice(entry) {
+    let data;
+    try {
+      const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
+      data = await res.json();
+      if (!res.ok) throw data;
+    } catch (err) {
+      if (beerBibleSelectedId !== entry.id) return;
+      const el = document.getElementById('beerBiblePriceValue');
+      if (!el) return;
+      el.textContent = err && err.code === 'SKU_NOT_FOUND'
+        ? 'Not found in the current WinePOS export.'
+        : (err && err.error) || 'Could not check the WinePOS export.';
+      return;
+    }
+    if (beerBibleSelectedId !== entry.id) return;
+    const el = document.getElementById('beerBiblePriceValue');
+    if (!el) return;
+    el.textContent = formatBeerPriceLine(data);
   }
 
   // Dispatcher - grid vs profile, same shape as renderLibraryBody/
@@ -8266,6 +8582,7 @@
     els.beerBibleFormLocationInput.value = '';
     els.beerBibleFormStyleInput.value = '';
     els.beerBibleFormSkuInput.value = '';
+    els.beerBibleFormUpcInput.value = '';
     els.beerBibleFormAbvInput.value = '';
     els.beerBibleFormIbuInput.value = '';
     els.beerBibleFormRatingInput.value = '';
@@ -8292,6 +8609,7 @@
     els.beerBibleFormLocationInput.value = entry.location || '';
     els.beerBibleFormStyleInput.value = entry.style || '';
     els.beerBibleFormSkuInput.value = entry.sku || '';
+    els.beerBibleFormUpcInput.value = entry.upc || '';
     els.beerBibleFormAbvInput.value = entry.abv || '';
     els.beerBibleFormIbuInput.value = entry.ibu || '';
     els.beerBibleFormRatingInput.value = entry.untappdRating || '';
@@ -8377,6 +8695,7 @@
         location: els.beerBibleFormLocationInput.value.trim(),
         style: els.beerBibleFormStyleInput.value.trim(),
         sku: els.beerBibleFormSkuInput.value.trim(),
+        upc: els.beerBibleFormUpcInput.value.trim(),
         abv: els.beerBibleFormAbvInput.value.trim(),
         ibu: els.beerBibleFormIbuInput.value.trim(),
         untappdRating: els.beerBibleFormRatingInput.value.trim(),
@@ -8409,49 +8728,53 @@
     }
   });
 
-  // Turns a POST /api/beers/sync-library response into the one-line status
-  // message under the button. `merged` (see syncNewBeerBibleEntries in
-  // beerBibleSeed.js) means a curated entry matched an existing row by SKU
-  // under a different title and was folded into it instead of adding a
-  // second row for the same product - called out separately from `added` so
-  // "nothing new" doesn't read the same as "found some duplicates and
-  // cleaned them up".
-  function describeBeerBibleSyncResult(data) {
-    const parts = [];
-    if (data.added) parts.push(`added ${data.added} new beer${data.added === 1 ? '' : 's'}`);
-    if (data.merged) parts.push(`merged ${data.merged} duplicate${data.merged === 1 ? '' : 's'} into existing entries`);
-    if (!parts.length) {
-      return `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+  // Turns a POST /api/beers/sync-export response into the one-line status
+  // message under the button (see server/beerBibleExportSync.js for what
+  // each of these counts means). noSku is called out separately from
+  // noMatch so "nothing to sync" (no SKUs on file yet) doesn't read the
+  // same as "checked, but none of those SKUs are in the export".
+  function describeBeerBibleExportSyncResult(data) {
+    if (data.checked === 0) {
+      return data.noSku
+        ? `None of the ${data.noSku} beer${data.noSku === 1 ? '' : 's'} here has a SKU on file yet to check against.`
+        : 'No beers here yet to check against the export.';
     }
-    const sentence = `${parts.join(', and ')} from ${data.source}.`;
-    return sentence[0].toUpperCase() + sentence.slice(1);
+    if (data.updated) {
+      return `Updated the UPC on ${data.updated} beer${data.updated === 1 ? '' : 's'} from the export `
+        + `(checked ${data.checked}, ${data.matched} matched a SKU in the file, ${data.noMatch} didn't).`;
+    }
+    return `Already up to date - checked ${data.checked} beer${data.checked === 1 ? '' : 's'} with a SKU on file, `
+      + `${data.matched} matched a SKU in the export, ${data.noMatch} didn't.`;
   }
 
-  // Backs the Beer Bible page's "Check GitHub for New Beers" button - pulls
-  // in whatever's been added to the curated GitHub list since this PC's
-  // Beer Bible was last synced. Additive-or-merge only server-side (see
-  // syncNewBeerBibleEntries in beerBibleSeed.js), so this never overwrites
-  // an existing entry's own fields, however it got there. Unlike the Bourbon
-  // Library's own #libraryGithubSyncBtn, this isn't gated behind Server PC -
-  // see the #beerBibleGithubSyncRow comment in index.html for why.
-  els.beerBibleGithubSyncBtn.addEventListener('click', async () => {
-    els.beerBibleGithubSyncBtn.disabled = true;
-    els.beerBibleGithubSyncStatus.textContent = 'Checking GitHub...';
+  // Backs the Beer Bible page's "Export File Sync" button - fills in upc on
+  // any already-saved entry whose sku matches a row in the same local
+  // WinePOS export Scan UPC/SKU Lookup already read (see
+  // server/beerBibleExportSync.js). Never adds new entries (see that
+  // module's own comment for why) or touches any other field - Price is a
+  // live per-view lookup instead (see loadBeerBiblePrice above), not
+  // something this button syncs. Not gated behind Server PC, same
+  // reasoning as the old GitHub sync button this replaces - see the
+  // #beerBibleExportSyncRow comment in index.html.
+  els.beerBibleExportSyncBtn.addEventListener('click', async () => {
+    els.beerBibleExportSyncBtn.disabled = true;
+    els.beerBibleExportSyncStatus.textContent = 'Checking the WinePOS export...';
     try {
-      const resp = await fetch('/api/beers/sync-library', { method: 'POST' });
+      const resp = await fetch('/api/beers/sync-export', { method: 'POST' });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      if (!resp.ok) throw new Error(data.error || 'Could not check the WinePOS export right now.');
       beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
       renderBeerBibleChipsAndStats();
-      // Additive-or-merge only (see the comment above) - a beer open on the
-      // profile page is never touched by this, so renderBeerBibleBody keeps
-      // whichever view was already showing rather than forcing back to grid.
+      // Enrich-only, never adds/removes a row (see the comment above) - a
+      // beer open on the profile page is never navigated away from by
+      // this, so renderBeerBibleBody keeps whichever view was already
+      // showing rather than forcing back to grid.
       renderBeerBibleBody();
-      els.beerBibleGithubSyncStatus.textContent = describeBeerBibleSyncResult(data);
+      els.beerBibleExportSyncStatus.textContent = describeBeerBibleExportSyncResult(data);
     } catch (err) {
-      els.beerBibleGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+      els.beerBibleExportSyncStatus.textContent = err.message || 'Could not check the WinePOS export right now.';
     } finally {
-      els.beerBibleGithubSyncBtn.disabled = false;
+      els.beerBibleExportSyncBtn.disabled = false;
     }
   });
 
@@ -8694,8 +9017,9 @@
   // PC's Rum Repository was last synced. Additive only server-side (see
   // syncNewRumRepositoryEntries in rumRepositorySeed.js), so this never
   // overwrites an existing entry, however it got there. Not gated behind
-  // Server PC, same reasoning as #beerBibleGithubSyncRow's own handler
-  // above.
+  // Server PC, same reasoning as the Bourbon Library's own
+  // #libraryGithubSyncBtn - there's no PC-to-PC role to be "the" copy of
+  // yet for the Rum Repository either.
   els.rumRepositoryGithubSyncBtn.addEventListener('click', async () => {
     els.rumRepositoryGithubSyncBtn.disabled = true;
     els.rumRepositoryGithubSyncStatus.textContent = 'Checking GitHub...';

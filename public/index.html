@@ -1080,23 +1080,41 @@
             <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
           </div>
         </div>
-        <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
+        <div class="library-band__actions">
+          <!-- Downloads whatever the grid below currently shows (search box
+               + status/source/style chips + sort all applied) as a CSV
+               file, for backing the library up or opening it in a
+               spreadsheet - see exportBeerBibleCsv in app.js. Leave every
+               filter at its default to export the whole Beer Bible. -->
+          <button type="button" class="btn btn--small" id="beerBibleExportBtn">Export CSV&hellip;</button>
+          <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
+        </div>
       </div>
       <!-- No Server PC / Sync Now status row yet (contrast with
            #libraryView's .library-sync above) - this PC's own data.db is
            the only copy for now, so there's nothing to show sync status
-           for. The GitHub check below still applies on its own: it's not
-           gated behind Server PC the way the Bourbon Library's own
-           #libraryGithubSyncRow is, since there's no PC-to-PC role to be
-           "the" copy of yet - see server/index.js's POST
-           /api/beers/sync-library. -->
-      <div class="library-sync" id="beerBibleGithubSyncRow">
+           for. Export File Sync below still applies on its own, same
+           reasoning: not gated behind Server PC, since there's no PC-to-PC
+           role to be "the" copy of yet - see server/index.js's POST
+           /api/beers/sync-export.
+
+           This replaces the old "Check GitHub for New Beers" button - see
+           server/beerBibleExportSync.js's own top-of-file comment for the
+           full reasoning, but in short: this fills in upc on a beer
+           already saved here (matched by its own sku against the same
+           local WinePOS export Scan UPC/SKU Lookup already read), it never
+           adds new entries the way the GitHub sync did. A brand-new, empty
+           Beer Bible still gets seeded from the curated GitHub list
+           automatically the first time the app launches (see
+           beerBibleSeed.js's maybeAutoSeedBeerBible) - there's just no
+           manual re-sync button for it here anymore. -->
+      <div class="library-sync" id="beerBibleExportSyncRow">
         <div class="library-sync__status">
-          <span>It can check for beers added to the curated list since this Beer Bible was last synced.</span>
+          <span>It can check the configured WinePOS export for UPCs on beers already saved here, matched by SKU.</span>
         </div>
-        <button type="button" class="btn btn--small" id="beerBibleGithubSyncBtn">Check GitHub for New Beers</button>
+        <button type="button" class="btn btn--small" id="beerBibleExportSyncBtn">Export File Sync</button>
       </div>
-      <p class="help-text" id="beerBibleGithubSyncStatus" role="status" aria-live="polite"></p>
+      <p class="help-text" id="beerBibleExportSyncStatus" role="status" aria-live="polite"></p>
       <!-- Beer talkers already save here automatically as they're added to
            the queue (see els.form's submit handler in app.js) - this points
            at the other two ways entries get here: a bulk import from a
@@ -1107,7 +1125,6 @@
         <input type="search" id="beerBibleFilterInput" aria-label="Search The Beer Bible" placeholder="Search by name, brewery, or style&hellip;" />
       </div>
       <div class="library-chips" id="beerBibleStatusChips"></div>
-      <div class="library-chips" id="beerBibleSourceChips"></div>
       <div class="library-stats" id="beerBibleStats"></div>
     </div>
     <div class="library-body" id="beerBibleBody"></div>
@@ -1692,6 +1709,16 @@
               <input type="text" id="beerBibleFormSkuInput" maxlength="40" placeholder="15614" />
             </label>
           </div>
+          <!-- The store's own SKU above and this manufacturer barcode are
+               different numbers, same UPC-vs-SKU distinction Scan UPC makes
+               everywhere else in this app - typed in by hand here, or
+               filled in from the configured WinePOS export by Export File
+               Sync (matched against this entry's own SKU, see
+               server/beerBibleExportSync.js). -->
+          <label class="field">
+            <span>UPC (optional)</span>
+            <input type="text" id="beerBibleFormUpcInput" maxlength="20" placeholder="811358021015" />
+          </label>
           <div class="field-row">
             <label class="field">
               <span>ABV (optional)</span>

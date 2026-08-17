@@ -96,9 +96,14 @@ function applySchema(db) {
     -- server/mashBillSync.js) and nothing on Edit Talker recalls from this
     -- table yet either (see refreshMashBillRecall in app.js for the
     -- Bourbon equivalent this doesn't have). Both are natural follow-ups
-    -- once this is in real use, not ruled out by this schema - see
-    -- server/beerBibleSeed.js for the GitHub-curated-list sync this *does*
-    -- already have, wired up the same way as mash_bills' own.
+    -- once this is in real use, not ruled out by this schema. A brand-new,
+    -- empty Beer Bible still gets seeded from the curated GitHub list (see
+    -- server/beerBibleSeed.js's maybeAutoSeedBeerBible) - only the manual
+    -- re-sync button that used to sit on top of that ("Check GitHub for New
+    -- Beers") is gone, replaced by Export File Sync (see
+    -- server/beerBibleExportSync.js), which fills in upc below on an
+    -- already-existing entry from the same local WinePOS export Scan UPC
+    -- reads, matched by this row's own sku.
     -- beer_name is Untappd's own name for the matched beer (see
     -- mergeUntappdBeer in server/productImport.js), kept separate from
     -- title on purpose: title stays whatever the store's own product
@@ -110,7 +115,11 @@ function applySchema(db) {
     -- matched (a bare import stub, or a fully manual entry, where title
     -- already *is* the beer's own name) - see beerDisplayName in app.js for
     -- how the Beer Bible screen picks whichever of the two to actually show
-    -- staff.
+    -- staff. upc is this beer's own manufacturer barcode, separate from sku
+    -- (the store's own SKU) the same way Scan UPC's own UPC-vs-SKU
+    -- distinction works everywhere else in this app (see upcCatalog.js's
+    -- top-of-file note) - typed in by hand same as any other field, or
+    -- filled in by Export File Sync.
     CREATE TABLE IF NOT EXISTS beers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -124,6 +133,7 @@ function applySchema(db) {
       untappd_rating_count TEXT,
       description TEXT,
       sku TEXT,
+      upc TEXT,
       source TEXT NOT NULL DEFAULT 'Manual',
       updated_at TEXT NOT NULL
     );
@@ -163,13 +173,13 @@ function applySchema(db) {
   applyBeerColumns(db);
 }
 
-// beers shipped without beer_name for several releases - same "ALTER TABLE
-// whatever PRAGMA table_info says is actually missing" migration as
-// applyMashBillColumns above, just for the one column beer_name adds (see
-// its own comment on the CREATE TABLE above for what it's for).
+// beers shipped without beer_name (then later upc) for several releases -
+// same "ALTER TABLE whatever PRAGMA table_info says is actually missing"
+// migration as applyMashBillColumns above.
 function applyBeerColumns(db) {
   const existing = new Set(db.pragma('table_info(beers)').map((col) => col.name));
   if (!existing.has('beer_name')) db.exec('ALTER TABLE beers ADD COLUMN beer_name TEXT');
+  if (!existing.has('upc')) db.exec('ALTER TABLE beers ADD COLUMN upc TEXT');
 }
 
 // mash_bills shipped with just id/title/distillery/grains/source/updated_at
@@ -586,6 +596,7 @@ function rowToBeer(row) {
     untappdRatingCount: row.untappd_rating_count || '',
     description: row.description || '',
     sku: row.sku || '',
+    upc: row.upc || '',
     source: row.source,
     updatedAt: row.updated_at,
   };
@@ -640,10 +651,10 @@ function validateBeerInput({ title }) {
 // mashBillOptionalFieldParams above - every field here beyond title/source
 // is optional, and `existing` is a rowToBeer()-shaped object or null.
 function beerOptionalFieldParams({
-  beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+  beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
 }, existing) {
   const prev = existing || {
-    beerName: '', brewery: '', location: '', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '',
+    beerName: '', brewery: '', location: '', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '',
   };
   return {
     beerName: normalizeOptionalText(beerName !== undefined ? beerName : prev.beerName),
@@ -656,13 +667,14 @@ function beerOptionalFieldParams({
     untappdRatingCount: normalizeOptionalText(untappdRatingCount !== undefined ? untappdRatingCount : prev.untappdRatingCount),
     description: normalizeOptionalText(description !== undefined ? description : prev.description),
     sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
+    upc: normalizeOptionalText(upc !== undefined ? upc : prev.upc),
   };
 }
 
 const BEER_OPTIONAL_COLUMNS_SET = `
   beer_name = @beerName, brewery = @brewery, location = @location, style = @style, abv = @abv, ibu = @ibu,
   untappd_rating = @untappdRating, untappd_rating_count = @untappdRatingCount,
-  description = @description, sku = @sku
+  description = @description, sku = @sku, upc = @upc
 `;
 
 // Create-or-update by SKU first, title (case-insensitive) second - see the
@@ -672,7 +684,7 @@ const BEER_OPTIONAL_COLUMNS_SET = `
 // saving again for a beer already on file updates that same entry instead
 // of erroring or duplicating it.
 function upsertBeer({
-  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
 }) {
   const db = getDb();
   const { cleanTitle } = validateBeerInput({ title });
@@ -708,7 +720,7 @@ function upsertBeer({
     source: source || 'Manual',
     updatedAt: now,
     ...beerOptionalFieldParams({
-      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
     }, existing),
   };
 
@@ -722,10 +734,10 @@ function upsertBeer({
   }
   const info = db.prepare(`
     INSERT INTO beers (
-      title, source, updated_at, beer_name, brewery, location, style, abv, ibu, untappd_rating, untappd_rating_count, description, sku
+      title, source, updated_at, beer_name, brewery, location, style, abv, ibu, untappd_rating, untappd_rating_count, description, sku, upc
     )
     VALUES (
-      @title, @source, @updatedAt, @beerName, @brewery, @location, @style, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku
+      @title, @source, @updatedAt, @beerName, @brewery, @location, @style, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku, @upc
     )
   `).run(params);
   return getBeer(info.lastInsertRowid);
@@ -737,7 +749,7 @@ function upsertBeer({
 // real conflict here, not a merge - same DUPLICATE_TITLE handling as
 // updateMashBillById.
 function updateBeerById(id, {
-  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
 }) {
   const db = getDb();
   const existing = getBeer(id);
@@ -755,7 +767,7 @@ function updateBeerById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...beerOptionalFieldParams({
-        beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+        beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
       }, existing),
     });
   } catch (err) {

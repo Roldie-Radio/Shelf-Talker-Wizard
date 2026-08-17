@@ -151,6 +151,20 @@ test('buildIndex maps rows onto product fields by matched columns', () => {
   assert.equal(product.price, '13.99');
   assert.equal(product.salePrice, '9.99');
   assert.equal(product.category, 'Wine');
+  // The row's own UPC text, carried onto the product itself (not just used
+  // to build byUpc's lookup keys) - backs the Beer Bible's Export File
+  // Sync, see beerBibleExportSync.js.
+  assert.equal(product.upc, '085000010652');
+});
+
+// Same "stored as a float" artifact upcVariants itself already strips (see
+// cleanUpcDigits) - a product's own upc field needs the same cleanup, or
+// Export File Sync would save the stray ".0" straight into a beer's upc
+// column.
+test('buildIndex strips a trailing ".0" float artifact from a product\'s own upc field', () => {
+  const csv = ['UPC,Title,SKU', '88586001895.0,Some Beer,41001'].join('\n');
+  const { bySku } = buildIndex(parseDelimited(csv));
+  assert.equal(bySku.get('41001').upc, '88586001895');
 });
 
 // A "Vendor" column is a real WinePOS export header (see the
