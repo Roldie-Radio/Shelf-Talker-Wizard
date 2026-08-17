@@ -8,7 +8,7 @@ const {
   enrichBeerScanFromStore, enrichBeerFromUntappd,
 } = require('./productImport');
 const {
-  getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, searchByName, previewExport,
+  getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, lookupSkuInExport, searchByName, previewExport,
 } = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
@@ -298,6 +298,28 @@ function createApp({
     }
   });
 
+  // Backs the Bourbon Library profile page's Price row: looks a library
+  // entry's own `sku` (see mash_bills in db.js) up against the same local
+  // WinePOS export file Scan UPC reads above (see lookupSkuInExport in
+  // upcCatalog.js) - no network request, no store-site scrape (unlike
+  // /api/sku-lookup, which searches liquoroutletwinecellars.com by a typed-
+  // in SKU for the current talker's own Price field). A miss is a real
+  // error, not a stale fallback - same NO_EXPORT_PATH/EXPORT_NOT_FOUND/
+  // EXPORT_UNREADABLE codes as /api/upc-lookup, plus SKU_NOT_FOUND for a SKU
+  // the export doesn't have.
+  app.get('/api/export-price', (req, res) => {
+    const { sku } = req.query || {};
+    if (!sku || !String(sku).trim()) {
+      return res.status(400).json({ error: 'A SKU is required.' });
+    }
+    try {
+      res.json(lookupSkuInExport(String(sku).trim()));
+    } catch (err) {
+      const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
+      res.status(status).json({ error: err.message || 'Could not look up that SKU.', code: err.code });
+    }
+  });
+
   // Backs the "Search by Name" tab: staff type part of a product's title and
   // this ranks matches out of the same local WinePOS export file Scan UPC
   // reads above (see searchByName in upcCatalog.js) - no network request,
@@ -442,17 +464,17 @@ function createApp({
     });
   });
 
-  // Bourbon Library fields (parent company, category, tasting notes,
+  // Bourbon Library fields (parent company, category, SKU, tasting notes,
   // Mash Bill Confidence, and References & Sources) beyond the original
   // title/distillery/grains/source - see mashBillOptionalFieldParams in
   // db.js for how an omitted (undefined) one leaves whatever's already
   // saved alone rather than blanking it out.
   function mashBillOptionalFields(body) {
     const {
-      parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+      parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
     } = body || {};
     return {
-      parentCompany, category, nose, palate, finish, tastingSource, confidence, references,
+      parentCompany, category, sku, nose, palate, finish, tastingSource, confidence, references,
     };
   }
 

@@ -96,14 +96,6 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="wine-pairing-rules" id="winePairingRulesMenuItem">
           <span>Wine Pairing Rules&hellip;</span>
         </button>
-        <!-- Product Type: Bourbon only - hidden outright rather than
-             shown-disabled unless the current talker's Product Type is
-             Bourbon, same as Store Pick/Mash Bill/Nose-Palate-Finish on Edit
-             Talker itself (see applyFormMode in app.js, which toggles
-             .hidden on every [data-requires-bourbon] element). -->
-        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="mash-bill-library" data-requires-bourbon hidden>
-          <span>Mash Bill Library&hellip;</span>
-        </button>
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="settings">
           <span>Settings&hellip;</span>
         </button>
@@ -314,8 +306,11 @@
               </span>
             </div>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
+            <!-- Gated behind Settings -> Experimental Features -> Find Tasting
+                 Notes (see applyExperimentalTastingNotes in app.js), same
+                 pattern as Wine Profile/Food Pairing Suggestions below. -->
             <div class="tasting-notes-row" id="tastingNotesRow">
-              <button type="button" class="btn btn--small btn--ghost" id="findTastingNotesBtn">Find Tasting Notes <span class="beta-badge">Beta</span></button>
+              <button type="button" class="btn btn--small btn--ghost" id="findTastingNotesBtn">Find Tasting Notes <span class="beta-badge">Experimental</span></button>
               <span class="help-text" id="tastingNotesStatus" role="status" aria-live="polite"></span>
             </div>
           </div>
@@ -760,17 +755,6 @@
             <span class="search-spinner" id="nameSearchSpinner" aria-hidden="true" hidden>&#8635;</span>
           </div>
           <div class="search-results" id="nameSearchResults" role="listbox" aria-label="Matching products" hidden></div>
-          <!-- Product Type: Bourbon only (see refreshBourbonSearchResults in
-               app.js) - matches the same typed text against the Bourbon
-               Library's own title/sku fields, entirely client-side against
-               mashBillLibraryCache, purely additive next to the export-driven
-               dropdown above rather than replacing any of the three panels
-               below (SKU Lookup/Scan UPC still pull price/size from WinePOS
-               for a Bourbon product exactly as they already do for Wine/
-               Spirits). Deliberately not .search-results/position:absolute
-               like the dropdown above - this sits in normal flow so the two
-               can never visually overlap. -->
-          <div class="bourbon-search-results" id="bourbonSearchResults" hidden></div>
         </div>
         <p class="help-text" id="smartSearchHint" role="status" aria-live="polite">&nbsp;</p>
 
@@ -941,13 +925,13 @@
 
   </main>
 
-  <!-- Bourbon Library - a read-focused screen over the Mash Bill Library's
-       own data (see server/db.js's mash_bills table). Rendered entirely by
-       renderLibraryView/renderBourbonProfile in app.js; editing an entry
-       still goes through the existing #mashBillLibraryOverlay dialog below,
-       reached from a profile page's own "Edit in Library" button - this
-       view is a browsing surface on top of that data, not a second editing
-       UI for it. Hidden by default; the rail toggles it with .layout. -->
+  <!-- Bourbon Library - a browse/profile screen over the shared mash_bills
+       data (see server/db.js) that also owns adding, editing, and deleting
+       entries directly - #mashBillLibraryOverlay below is just that add/
+       edit form's modal now (see the comment above it), reached from the
+       Add Bourbon button here and from a profile page's own Edit button.
+       Rendered entirely by renderLibraryView/renderBourbonProfile in
+       app.js. Hidden by default; the rail toggles it with .layout. -->
   <section class="library-view no-print" id="libraryView" hidden>
     <div class="library-band">
       <div class="library-band__top">
@@ -963,6 +947,7 @@
             <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
           </div>
         </div>
+        <button type="button" class="btn btn--small btn--primary" id="libraryAddBtn">Add Bourbon</button>
       </div>
       <div class="library-sync">
         <div class="library-sync__status">
@@ -971,8 +956,21 @@
         </div>
         <button type="button" class="btn btn--small" id="librarySyncNowBtn">Sync Now</button>
       </div>
+      <!-- Server PC only (see updateLibrarySyncUI in app.js, which hides
+           this row on any other PC) - pulls new entries added to the
+           curated GitHub list since this library was first seeded.
+           Additive only: never touches a title that already exists
+           locally, so it can't overwrite a correction or a from-scratch
+           entry staff typed in themselves. -->
+      <div class="library-sync" id="libraryGithubSyncRow" hidden>
+        <div class="library-sync__status">
+          <span>This PC is the Server PC - it can check for bourbons added to the curated list since this library was last synced.</span>
+        </div>
+        <button type="button" class="btn btn--small" id="libraryGithubSyncBtn">Check GitHub for New Bourbons</button>
+      </div>
+      <p class="help-text" id="libraryGithubSyncStatus" role="status" aria-live="polite"></p>
       <div class="library-search">
-        <input type="search" id="libraryFilterInput" aria-label="Search the Bourbon Library" placeholder="Search by name, distillery, or parent company&hellip;" />
+        <input type="search" id="libraryFilterInput" aria-label="Search the Bourbon Library" placeholder="Search by name, distillery, parent company, or SKU&hellip;" />
       </div>
       <div class="library-chips" id="libraryChips"></div>
       <div class="library-stats" id="libraryStats"></div>
@@ -1037,7 +1035,7 @@
   <div id="tastingNotesOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="tastingNotesModalTitle">
       <div class="modal__header">
-        <h2 id="tastingNotesModalTitle">Find Tasting Notes <span class="beta-badge">Beta</span></h2>
+        <h2 id="tastingNotesModalTitle">Find Tasting Notes <span class="beta-badge">Experimental</span></h2>
         <button type="button" class="btn btn--ghost btn--small" id="tastingNotesModalCloseBtn">&times; Close</button>
       </div>
       <div class="tasting-notes-modal-body">
@@ -1283,7 +1281,7 @@
         <p><strong>Talker Size</strong> (Full/Half/Quarter, Edit Talker only, Shelf Talker Type) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> (Wine / Spirits only &mdash; the store doesn't run Super Sales on beer) to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
 
         <h3>Finding tasting notes automatically</h3>
-        <p>On the Edit Talker form, Wine / Spirits entries have a <strong>Find Tasting Notes</strong> button (marked <strong>Beta</strong> &mdash; it's new, so double-check what it finds) under the Description field. Click it (with a <strong>Product Title</strong> already filled in) to open a dialog that searches using the title and <strong>Vintage</strong>, if set &mdash; no URL to paste. The <strong>Source</strong> dropdown picks which site to search &mdash; currently Wine.com and Vivino: <strong>Any source</strong> (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one. Whatever it finds shows in an editable preview box &mdash; tweak it if you'd like, then click <strong>Use This Description</strong> to drop it into the form (it'll ask before overwriting anything already typed), or <strong>Cancel</strong> to close without changing anything. If a site blocks the request outright, it automatically retries once with different request headers before giving up (same as the Untappd import below); if it's still blocked, or the site has nothing for that product, the dialog shows why and you can try a different source or type the description in by hand.</p>
+        <p>Turn on <strong>Find Tasting Notes</strong> under Settings &rarr; Experimental Features to add a <strong>Find Tasting Notes</strong> button (marked <strong>Experimental</strong> &mdash; it's new, so double-check what it finds) under the Description field for Wine / Spirits and Bourbon entries. Click it (with a <strong>Product Title</strong> already filled in) to open a dialog that searches using the title and <strong>Vintage</strong>, if set &mdash; no URL to paste. The <strong>Source</strong> dropdown picks which site to search &mdash; currently Wine.com and Vivino: <strong>Any source</strong> (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one. Whatever it finds shows in an editable preview box &mdash; tweak it if you'd like, then click <strong>Use This Description</strong> to drop it into the form (it'll ask before overwriting anything already typed), or <strong>Cancel</strong> to close without changing anything. If a site blocks the request outright, it automatically retries once with different request headers before giving up (same as the Untappd import below); if it's still blocked, or the site has nothing for that product, the dialog shows why and you can try a different source or type the description in by hand.</p>
 
         <h3>Importing from a website</h3>
         <p>On the <strong>Website</strong> tab, set <strong>Product Type</strong> above to match what you're importing:</p>
@@ -1365,37 +1363,30 @@
     </div>
   </div>
 
-  <!-- Tools > Mash Bill Library… (Product Type: Bourbon only - see the
-       hidden [data-requires-bourbon] menu item above). A shared,
-       Server-PC-hosted table of researched grain compositions (see
-       server/db.js's mash_bills table and server/mashBillSync.js), so a
-       mash bill looked up once for a product can be recalled instead of
-       re-researched on the next talker for that same bottle. Search/add/
-       edit/delete here; recalling a saved entry onto a talker happens from
-       Edit Talker's own Mash Bill field (see #mashBillRecallBanner above),
-       not from this dialog. -->
+  <!-- The Bourbon Library's add/edit form, in a modal of its own - reached
+       from the Add Bourbon button on the library page (see #libraryView
+       above) for a new entry, or a profile page's own Edit button for an
+       existing one (see renderBourbonProfile in app.js, which calls
+       loadMashBillLibraryEntryIntoForm before opening this). One shared,
+       Server-PC-hosted table backs both (see server/db.js's mash_bills
+       table and server/mashBillSync.js), so a mash bill researched once for
+       a product can be recalled instead of re-researched on the next
+       talker for that same bottle - that recall happens from Edit Talker's
+       own Mash Bill field (see #mashBillRecallBanner above), not from this
+       form. -->
   <div id="mashBillLibraryOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="mashBillLibraryTitle">
       <div class="modal__header">
-        <h2 id="mashBillLibraryTitle">Mash Bill Library</h2>
+        <h2 id="mashBillLibraryTitle">Bourbon Details</h2>
         <button type="button" class="btn btn--ghost btn--small" id="mashBillLibraryCloseBtn">&times; Close</button>
       </div>
       <div class="history-body">
-        <label class="field">
-          <span>Search by title or distillery</span>
-          <input type="search" id="mashBillLibrarySearchInput" placeholder="Four Roses, Buffalo Trace..." />
-        </label>
-        <p class="help-text" id="mashBillLibraryStatus" role="status" aria-live="polite"></p>
-        <div class="history-list" id="mashBillLibraryList"></div>
-
-        <hr class="settings-section-divider" />
-
-        <!-- Doubles as both "Add an entry manually" and "Edit" - clicking
-             Edit on a row (see renderMashBillLibraryList in app.js) fills
-             this same form and switches Add Entry to Save Changes, with
-             Cancel reverting to a blank Add form. Grain builder here is the
-             same three-control pattern as Edit Talker's own Mash Bill
-             field, just against its own local chip list. -->
+        <!-- Doubles as both "Add an entry manually" and "Edit" - opening
+             this for an existing entry (see loadMashBillLibraryEntryIntoForm
+             in app.js) fills this same form and switches Add Entry to Save
+             Changes, adding a Delete button next to Cancel. Grain builder
+             here is the same three-control pattern as Edit Talker's own
+             Mash Bill field, just against its own local chip list. -->
         <div class="settings-section">
           <h3 class="settings-section-title" id="mashBillLibraryFormTitle">Add an entry manually</h3>
           <div class="field-row">
@@ -1498,28 +1489,9 @@
           <div class="reviewer-manager__add">
             <button type="button" class="btn btn--small btn--primary" id="mashBillLibraryFormSaveBtn">Add Entry</button>
             <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormCancelBtn" hidden>Cancel</button>
+            <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormDeleteBtn" hidden>Delete</button>
           </div>
           <p class="help-text" id="mashBillLibraryFormStatus" role="status" aria-live="polite"></p>
-        </div>
-
-        <hr class="settings-section-divider" />
-        <p class="help-text" id="mashBillLibrarySyncStatus" role="status" aria-live="polite"></p>
-        <div class="reviewer-manager__add">
-          <button type="button" class="btn btn--small" id="mashBillLibrarySyncNowBtn">Sync Now</button>
-        </div>
-
-        <!-- Server PC only (see loadMashBillLibrary in app.js, which hides
-             this row on any other PC) - pulls new entries added to the
-             curated GitHub list since this library was first seeded.
-             Additive only: never touches a title that already exists
-             locally, so it can't overwrite a correction or a from-scratch
-             entry staff typed in themselves. -->
-        <div id="mashBillLibraryGithubSyncRow" hidden>
-          <p class="help-text">This PC is the Server PC - it can check for bourbons added to the curated list since this library was last synced.</p>
-          <p class="help-text" id="mashBillLibraryGithubSyncStatus" role="status" aria-live="polite"></p>
-          <div class="reviewer-manager__add">
-            <button type="button" class="btn btn--small" id="mashBillLibraryGithubSyncBtn">Check GitHub for New Bourbons</button>
-          </div>
         </div>
       </div>
       <div class="modal__footer">
@@ -1684,6 +1656,12 @@
             Wine Profile
           </label>
           <p class="help-text">Adds a Wine Profile section to Wine/Spirits Shelf Talkers: five 1&ndash;5 dot meters &mdash; Fruit, Body, Dry, Acidity, Alcohol &mdash; printed under the description, Untappd-style. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (e.g. Cabernet Sauvignon), then adjust any dot by hand before printing. Off by default; turning it off again hides the section and the printed strip without deleting anything already on a talker.</p>
+
+          <label class="server-pc-checkbox">
+            <input type="checkbox" id="experimentalTastingNotesCheckbox" />
+            Find Tasting Notes
+          </label>
+          <p class="help-text">Adds a Find Tasting Notes button under the Description field for Wine/Spirits and Bourbon Shelf Talkers: searches Wine.com, Vivino, or (for Bourbon) Distiller.com using the Product Title and Vintage to fill in the description &mdash; Nose/Palate/Finish too, when the source has them. Off by default; turning it off again hides the button without removing anything already filled in.</p>
         </div>
       </div>
       <div class="modal__footer">

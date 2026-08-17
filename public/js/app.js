@@ -30,6 +30,13 @@
   // varietal values (the `profile` field on WINE_PAIRING_RULES in card.js)
   // are representative, not gospel, so this stays opt-in.
   const EXPERIMENTAL_PROFILE_KEY = 'shelfTalkerExperimentalProfile.v1';
+  // Settings -> Experimental Features -> Find Tasting Notes: gates the Find
+  // Tasting Notes button under Description (see
+  // applyExperimentalTastingNotes below). Off by default, same reasoning as
+  // Pairings/Profile above - it's a new, unreviewed lookup against
+  // Wine.com/Vivino/Distiller.com, so it stays opt-in rather than showing
+  // up for every store the moment it ships.
+  const EXPERIMENTAL_TASTING_NOTES_KEY = 'shelfTalkerExperimentalTastingNotes.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -809,6 +816,15 @@
     // Same as above - stays at its off-by-default value.
   }
 
+  // Settings -> Experimental Features -> Find Tasting Notes - same pattern
+  // as experimentalPairingsEnabled above.
+  let experimentalTastingNotesEnabled = false;
+  try {
+    experimentalTastingNotesEnabled = localStorage.getItem(EXPERIMENTAL_TASTING_NOTES_KEY) === 'true';
+  } catch {
+    // Same as above - stays at its off-by-default value.
+  }
+
   // Full Page is the default so staff land on the print-accurate view of
   // the queue rather than a single blank/sample card - see the
   // setPreviewMode('sheet') call in init below, which also keeps this in
@@ -898,6 +914,10 @@
     librarySyncDot: document.getElementById('librarySyncDot'),
     librarySyncStatus: document.getElementById('librarySyncStatus'),
     librarySyncNowBtn: document.getElementById('librarySyncNowBtn'),
+    libraryAddBtn: document.getElementById('libraryAddBtn'),
+    libraryGithubSyncRow: document.getElementById('libraryGithubSyncRow'),
+    libraryGithubSyncStatus: document.getElementById('libraryGithubSyncStatus'),
+    libraryGithubSyncBtn: document.getElementById('libraryGithubSyncBtn'),
     libraryFilterInput: document.getElementById('libraryFilterInput'),
     libraryChips: document.getElementById('libraryChips'),
     libraryStats: document.getElementById('libraryStats'),
@@ -1064,7 +1084,6 @@
     nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
     nameSearchSaveBtn: document.getElementById('nameSearchSaveBtn'),
     nameSearchStatus: document.getElementById('nameSearchStatus'),
-    bourbonSearchResults: document.getElementById('bourbonSearchResults'),
 
     skuHelpText: document.getElementById('skuHelpText'),
     skuInput: document.getElementById('skuInput'),
@@ -1180,9 +1199,6 @@
     mashBillLibraryOverlay: document.getElementById('mashBillLibraryOverlay'),
     mashBillLibraryCloseBtn: document.getElementById('mashBillLibraryCloseBtn'),
     mashBillLibraryCloseFooterBtn: document.getElementById('mashBillLibraryCloseFooterBtn'),
-    mashBillLibrarySearchInput: document.getElementById('mashBillLibrarySearchInput'),
-    mashBillLibraryStatus: document.getElementById('mashBillLibraryStatus'),
-    mashBillLibraryList: document.getElementById('mashBillLibraryList'),
     mashBillLibraryFormTitle: document.getElementById('mashBillLibraryFormTitle'),
     mashBillLibraryFormTitleInput: document.getElementById('mashBillLibraryFormTitleInput'),
     mashBillLibraryFormDistilleryInput: document.getElementById('mashBillLibraryFormDistilleryInput'),
@@ -1207,12 +1223,8 @@
     mashBillLibraryFormSourceList: document.getElementById('mashBillLibraryFormSourceList'),
     mashBillLibraryFormSaveBtn: document.getElementById('mashBillLibraryFormSaveBtn'),
     mashBillLibraryFormCancelBtn: document.getElementById('mashBillLibraryFormCancelBtn'),
+    mashBillLibraryFormDeleteBtn: document.getElementById('mashBillLibraryFormDeleteBtn'),
     mashBillLibraryFormStatus: document.getElementById('mashBillLibraryFormStatus'),
-    mashBillLibrarySyncStatus: document.getElementById('mashBillLibrarySyncStatus'),
-    mashBillLibrarySyncNowBtn: document.getElementById('mashBillLibrarySyncNowBtn'),
-    mashBillLibraryGithubSyncRow: document.getElementById('mashBillLibraryGithubSyncRow'),
-    mashBillLibraryGithubSyncStatus: document.getElementById('mashBillLibraryGithubSyncStatus'),
-    mashBillLibraryGithubSyncBtn: document.getElementById('mashBillLibraryGithubSyncBtn'),
 
     exportPreviewOverlay: document.getElementById('exportPreviewOverlay'),
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
@@ -1239,6 +1251,7 @@
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
     experimentalPairingsCheckbox: document.getElementById('experimentalPairingsCheckbox'),
     experimentalProfileCheckbox: document.getElementById('experimentalProfileCheckbox'),
+    experimentalTastingNotesCheckbox: document.getElementById('experimentalTastingNotesCheckbox'),
 
     menuBar: document.getElementById('menuBar'),
   };
@@ -1470,6 +1483,29 @@
     }
   });
 
+  // ---------- Experimental Features (Settings -> Find Tasting Notes) ----------
+  //
+  // Same shape as applyExperimentalPairings/applyExperimentalWineProfile
+  // above, minus the window.ShelfTalkerSettings publish - unlike Pairings/
+  // Profile, Find Tasting Notes never prints onto the .card, so card.js has
+  // no need to see this flag. Nothing here is ever deleted: a description
+  // (or Nose/Palate/Finish) already filled in via the button stays on the
+  // talker untouched if the toggle goes back off.
+  function applyExperimentalTastingNotes(enabled) {
+    experimentalTastingNotesEnabled = enabled;
+    els.experimentalTastingNotesCheckbox.checked = enabled;
+    applyFormMode();
+  }
+
+  els.experimentalTastingNotesCheckbox.addEventListener('change', () => {
+    applyExperimentalTastingNotes(els.experimentalTastingNotesCheckbox.checked);
+    try {
+      localStorage.setItem(EXPERIMENTAL_TASTING_NOTES_KEY, String(els.experimentalTastingNotesCheckbox.checked));
+    } catch {
+      // Same as theme/accent above - the choice just won't survive a restart.
+    }
+  });
+
   // ---------- Tabs ----------
 
   function activateTab(tab) {
@@ -1555,124 +1591,7 @@
     return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
   }
 
-  // ---------- Bourbon Library search (Search tab, Product Type: Bourbon) ----------
-  //
-  // Runs on every keystroke into the same smart search box above, entirely
-  // independent of detectSmartSearchMode's name/sku/upc routing right above
-  // it - SKU Lookup/Scan UPC keep auto-activating and pulling price/size
-  // from WinePOS for a Bourbon product exactly as they already do for Wine/
-  // Spirits (nothing here touches that). This is purely additive: a second,
-  // Bourbon-Library-sourced preview shown underneath the search box only
-  // while Product Type is Bourbon, matching the typed text against the
-  // Library's title OR sku - entirely client-side against
-  // mashBillLibraryCache (already fetched on load, see fetchMashBillLibrary),
-  // no request and no debounce needed for a plain filter over a few hundred
-  // rows.
-  const BOURBON_SEARCH_MIN_CHARS = 2;
-  const BOURBON_SEARCH_MAX_RESULTS = 8;
-  let bourbonSearchResultsList = [];
-
-  function searchBourbonLibrary(query) {
-    const q = query.trim().toLowerCase();
-    if (q.length < BOURBON_SEARCH_MIN_CHARS) return [];
-    return mashBillLibraryCache
-      .filter((m) => (m.title || '').toLowerCase().includes(q) || (m.sku || '').toLowerCase().includes(q))
-      .sort((a, b) => {
-        // An exact SKU match floats to the top regardless of title - the
-        // one case a plain alphabetical sort could bury the single result
-        // staff actually typed a full SKU to find under unrelated title
-        // matches.
-        const aExactSku = (a.sku || '').toLowerCase() === q;
-        const bExactSku = (b.sku || '').toLowerCase() === q;
-        if (aExactSku !== bExactSku) return aExactSku ? -1 : 1;
-        return (a.title || '').localeCompare(b.title || '');
-      })
-      .slice(0, BOURBON_SEARCH_MAX_RESULTS);
-  }
-
-  function renderBourbonSearchResults(query) {
-    if (!bourbonSearchResultsList.length) {
-      els.bourbonSearchResults.innerHTML = `<div class="search-results__empty">No Bourbon Library matches for &ldquo;${escapeHtml(query)}&rdquo;. Try a different spelling, or add it from Tools &rarr; Mash Bill Library&hellip;</div>`;
-      els.bourbonSearchResults.hidden = false;
-      return;
-    }
-    els.bourbonSearchResults.innerHTML = bourbonSearchResultsList.map((m, i) => {
-      const hasMash = Array.isArray(m.grains) && m.grains.length > 0 && !isPlaceholderMashBill(m);
-      const hasTasting = !!(m.nose || m.palate || m.finish);
-      const metaParts = [];
-      if (m.sku) metaParts.push(`SKU ${escapeHtml(m.sku)}`);
-      if (m.distillery) metaParts.push(escapeHtml(m.distillery));
-      const status = hasMash || hasTasting
-        ? confidenceBadgeHtml(m.confidence.tier)
-        : '<span class="search-result__meta">Not yet researched</span>';
-      return `
-        <div class="search-result" data-index="${i}" role="option">
-          <div class="search-result__main">
-            <div class="search-result__title">${escapeHtml(m.title)}</div>
-            <div class="search-result__meta">${metaParts.join(' &middot; ')}</div>
-          </div>
-          ${status}
-        </div>
-      `;
-    }).join('');
-    els.bourbonSearchResults.hidden = false;
-  }
-
-  // Reads rawValue (same argument runSmartSearch already has, rather than a
-  // fresh els.smartSearchInput.value read) so this can never momentarily
-  // disagree with whatever runSmartSearch itself is acting on.
-  function refreshBourbonSearchResults(rawValue) {
-    if (currentCategory !== 'bourbon') {
-      bourbonSearchResultsList = [];
-      els.bourbonSearchResults.hidden = true;
-      return;
-    }
-    const query = rawValue.trim();
-    if (query.length < BOURBON_SEARCH_MIN_CHARS) {
-      bourbonSearchResultsList = [];
-      els.bourbonSearchResults.hidden = true;
-      return;
-    }
-    bourbonSearchResultsList = searchBourbonLibrary(query);
-    renderBourbonSearchResults(query);
-  }
-
-  // Same fields Edit Talker's own recall banner "Use All" fills (see
-  // applyMashBillRecallAll above it in the Mash Bill section) plus Product
-  // Title, which the banner never needs to touch since it only ever shows
-  // up once a title is already typed - picking a search result is what
-  // supplies the title here instead. Overwrites outright rather than the
-  // banner's per-field confirm-before-overwrite: picking a result is a
-  // deliberate, one-shot choice, same "just apply it" semantics Search by
-  // Name/SKU Lookup/Scan UPC's own result picks already use above.
-  function applyBourbonSearchMatch(match) {
-    els.title.value = match.title;
-    els.smartSearchInput.value = match.title;
-    const hasMash = Array.isArray(match.grains) && match.grains.length > 0 && !isPlaceholderMashBill(match);
-    if (hasMash) {
-      currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
-      currentMashBillConfidence = match.confidence.tier;
-      renderMashBillList();
-    }
-    ['nose', 'palate', 'finish'].forEach((f) => { if (match[f]) flavorFieldEl(f).value = match[f]; });
-    // Suppresses Edit Talker's own recall banner from immediately popping
-    // back up to re-offer the exact same data this just applied.
-    mashBillRecallDismissedFor = match.title;
-    refreshMashBillRecall();
-    els.bourbonSearchResults.hidden = true;
-    els.smartSearchHint.textContent = 'Filled in from the Bourbon Library. Price, size, and description aren\'t in the Library - add those by hand, or look up the SKU above for whatever WinePOS has.';
-    refreshPreview();
-  }
-
-  els.bourbonSearchResults.addEventListener('click', (e) => {
-    const row = e.target.closest('.search-result');
-    if (!row) return;
-    const match = bourbonSearchResultsList[Number(row.dataset.index)];
-    if (match) applyBourbonSearchMatch(match);
-  });
-
   function runSmartSearch(rawValue) {
-    refreshBourbonSearchResults(rawValue);
     const mode = detectSmartSearchMode(rawValue);
     if (mode === 'internalUpc') {
       const itemNumber = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
@@ -1813,8 +1732,10 @@
     els.descriptionField.hidden = isSmallSign;
     // Wine.com wouldn't have anything for a beer, and Beer already has its
     // own tasting-note source (the Untappd import tab) - only show the
-    // button for Wine/Spirits.
-    els.tastingNotesRow.hidden = isBeer;
+    // button for Wine/Spirits/Bourbon, and only once Settings ->
+    // Experimental Features -> Find Tasting Notes is turned on (see
+    // applyExperimentalTastingNotes).
+    els.tastingNotesRow.hidden = isBeer || !experimentalTastingNotesEnabled;
     els.vintageField.hidden = isBeer || isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     // Shelf Talkers only, unlike Ratings above (which Large Display Signs
@@ -1834,12 +1755,6 @@
     els.storePickField.hidden = isSign || !isBourbon;
     els.mashBillField.hidden = isSign || !isBourbon;
     els.flavorFields.hidden = isSign || !isBourbon;
-    // Tools > Mash Bill Library… (see index.html's [data-requires-bourbon]
-    // menu item) - same rule as the fields above: relevant only while a
-    // Bourbon talker is the one being edited, so it disappears the moment
-    // Product Type switches away rather than staying visible for a wine or
-    // beer talker it has nothing to do with.
-    document.querySelectorAll('[data-requires-bourbon]').forEach((el) => { el.hidden = !isBourbon; });
     // Mash Bill field just changed visibility (or the Product Title may
     // have too, on the fillForm() call path) - re-check whether the recall
     // banner should be showing (see refreshMashBillRecall below).
@@ -1986,12 +1901,6 @@
     // on category now too (see renderTastingNotesSourceOptions) - re-check
     // it every time category changes, not just when the dialog opens.
     renderTastingNotesSourceOptions();
-    // Same idea for the Search tab's Bourbon Library preview - re-check
-    // whatever's already typed in the smart search box (if anything)
-    // against the new category, rather than leaving a stale Wine/Spirits
-    // Search-by-Name state on screen after switching to Bourbon, or a
-    // stale Library preview on screen after switching away from it.
-    refreshBourbonSearchResults(els.smartSearchInput.value);
   }
 
   els.typeSelects.forEach((select) => {
@@ -2288,10 +2197,10 @@
   // just grain+percent instead of reviewer+score - no "manage grains"
   // equivalent to Manage Reviewers, since the *grain vocabulary* itself
   // (Corn/Rye/Wheat/... - #fMashBillGrain's own <option>s in index.html) is
-  // a small fixed set, not something a store customizes. The Mash Bill
-  // Library further down (Tools -> Mash Bill Library...) is a different
-  // kind of "manage" - saved title -> grains compositions, not this
-  // dropdown's own options.
+  // a small fixed set, not something a store customizes. The Bourbon
+  // Library further down (see els.libraryAddBtn) is a different kind of
+  // "manage" - saved title -> grains compositions, not this dropdown's own
+  // options.
   function renderMashBillList() {
     if (currentMashBill.length === 0) {
       els.mashBillList.innerHTML = '';
@@ -2341,8 +2250,9 @@
   // bill researched once for a product can be suggested again on the next
   // talker made for that same bottle, instead of re-typed from scratch.
   // Managing the library itself (add/edit/delete without an open talker)
-  // is the separate Tools -> Mash Bill Library... dialog further down; this
-  // section is just the two touch points that live on this field:
+  // happens on the Bourbon Library page (see els.libraryAddBtn further
+  // down); this section is just the two touch points that live on this
+  // field:
   //  - a recall banner that appears when the current Product Title exactly
   //    matches a saved entry, and
   //  - a "Save to Library" action that stores whatever's in the chip list
@@ -2391,10 +2301,10 @@
     } catch {
       // Keep whatever was already cached rather than clearing it - same
       // graceful-degradation spirit as the rest of this app's sync
-      // fallbacks. The Manage dialog surfaces a real failure of its own on
-      // open (see loadMashBillLibrary further down); this quiet failure
-      // just means recall works off a possibly-stale cache instead of
-      // blocking on one bad request.
+      // fallbacks. This quiet failure just means recall (and the Bourbon
+      // Library page, which shows a stale sync dot in this case - see
+      // updateLibrarySyncUI further down) works off a possibly-stale cache
+      // instead of blocking on one bad request.
       return null;
     }
   }
@@ -2470,7 +2380,7 @@
     if (!hasMash && !hasTasting) {
       els.mashBillRecallBanner.innerHTML = `
         <div class="mashbill-recall__title">📚 "${escapeHtml(match.title)}" is in the Bourbon Library, but nothing's been researched yet.</div>
-        <div class="mashbill-recall__meta">Add what you know from Tools &rarr; Mash Bill Library&hellip;</div>
+        <div class="mashbill-recall__meta">Add what you know from the Bourbon Library in the sidebar.</div>
       `;
       els.mashBillRecallBanner.hidden = false;
       return;
@@ -6177,23 +6087,22 @@
     runHistorySearch();
   });
 
-  // ---------- Mash Bill Library dialog (Tools -> Mash Bill Library...) ----------
+  // ---------- Bourbon Library add/edit form ----------
   //
-  // Manages the shared library directly (add/edit/delete without an open
-  // talker) - recalling a saved entry onto a talker happens from Edit
-  // Talker's own Mash Bill field instead (see refreshMashBillRecall above).
-  // Reuses .history-list/.history-item for the search results, same as
-  // History's own list right above, and .settings-section/
-  // .reviewer-manager__add for its own add/edit form.
+  // Manages the shared library directly (add/edit/delete) - opened from the
+  // Bourbon Library page's own Add Bourbon button or a profile page's Edit
+  // button (see the "Bourbon Library (rail view)" section below). Recalling
+  // a saved entry onto a talker happens from Edit Talker's own Mash Bill
+  // field instead (see refreshMashBillRecall above), not from here. Reuses
+  // .settings-section/.reviewer-manager__add for the form itself, same as
+  // other add-a-thing forms in this app.
 
-  let mashBillLibraryQuery = '';
   // null while adding a new entry; the entry's id while editing an
   // existing one (see loadMashBillLibraryEntryIntoForm) - one form serves
   // both, switching label/button text based on which mode this is in.
   let mashBillLibraryEditingId = null;
   let mashBillLibraryFormGrains = [];
   let mashBillLibraryFormReferences = [];
-  let mashBillLibrarySyncPollTimer = null;
 
   function renderMashBillLibraryFormGrainList() {
     els.mashBillLibraryFormGrainList.innerHTML = mashBillLibraryFormGrains.map((g, i) => `
@@ -6249,6 +6158,7 @@
     els.mashBillLibraryFormTitle.textContent = 'Add an entry manually';
     els.mashBillLibraryFormSaveBtn.textContent = 'Add Entry';
     els.mashBillLibraryFormCancelBtn.hidden = true;
+    els.mashBillLibraryFormDeleteBtn.hidden = true;
     els.mashBillLibraryFormStatus.textContent = '';
   }
 
@@ -6274,46 +6184,9 @@
     els.mashBillLibraryFormTitle.textContent = `Edit "${entry.title}"`;
     els.mashBillLibraryFormSaveBtn.textContent = 'Save Changes';
     els.mashBillLibraryFormCancelBtn.hidden = false;
+    els.mashBillLibraryFormDeleteBtn.hidden = false;
     els.mashBillLibraryFormStatus.textContent = '';
     els.mashBillLibraryFormTitleInput.scrollIntoView({ block: 'nearest' });
-  }
-
-  function renderMashBillLibraryList() {
-    const q = mashBillLibraryQuery.toLowerCase();
-    const rows = mashBillLibraryCache.filter((m) => !q
-      || (m.title || '').toLowerCase().includes(q)
-      || (m.distillery || '').toLowerCase().includes(q));
-
-    if (!rows.length) {
-      els.mashBillLibraryList.innerHTML = mashBillLibraryQuery
-        ? '<p class="empty-hint">No entries match that search.</p>'
-        : '<p class="empty-hint">Nothing saved yet - add one below, or check "Save this mash bill to the Mash Bill Library" on Edit Talker\'s Mash Bill field.</p>';
-      return;
-    }
-
-    els.mashBillLibraryList.innerHTML = '';
-    rows.forEach((row) => {
-      const item = document.createElement('div');
-      item.className = 'history-item';
-      const metaParts = [];
-      if (row.distillery) metaParts.push(escapeHtml(row.distillery));
-      metaParts.push(escapeHtml(describeMashBillGrains(row.grains)));
-      metaParts.push(`${escapeHtml(row.source || 'Manual')} &middot; Updated ${escapeHtml(formatHistoryTimestamp(row.updatedAt))}`);
-
-      item.innerHTML = `
-        <div class="history-item__body">
-          <div class="history-item__title">${escapeHtml(row.title)}</div>
-          <div class="history-item__meta">${metaParts.join(' &middot; ')}</div>
-        </div>
-        <div class="history-item__actions">
-          <button type="button" class="btn btn--small" data-action="edit">Edit</button>
-          <button type="button" class="btn btn--small btn--ghost" data-action="delete" title="Remove from the Library">Delete</button>
-        </div>
-      `;
-      item.querySelector('[data-action="edit"]').addEventListener('click', () => loadMashBillLibraryEntryIntoForm(row));
-      item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteMashBillLibraryEntry(row.id));
-      els.mashBillLibraryList.appendChild(item);
-    });
   }
 
   // Describes the puller's own sync status (see mashBillSync.js's
@@ -6332,73 +6205,46 @@
     return parts.join(' ');
   }
 
-  async function loadMashBillLibrary() {
-    els.mashBillLibraryStatus.textContent = 'Loading...';
-    const data = await fetchMashBillLibrary();
-    if (!data) {
-      els.mashBillLibraryStatus.textContent = 'Could not load the Mash Bill Library.';
-      els.mashBillLibraryList.innerHTML = '';
-      els.mashBillLibrarySyncStatus.textContent = '';
-      return;
-    }
-    renderMashBillLibraryList();
-    const count = mashBillLibraryCache.length;
-    els.mashBillLibraryStatus.textContent = count
-      ? `${count} saved mash bill${count === 1 ? '' : 's'}${mashBillLibraryQuery ? ' match' : ''}.`
-      : '';
-    els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
-    els.mashBillLibraryGithubSyncRow.hidden = !(data.sync && data.sync.isServer);
-  }
-
-  // Keeps the sync status line (and the list itself, in case another
-  // register just added/edited something) live while the dialog stays
-  // open, since a sync can happen in the background on its own ~30s timer
-  // at any point while staff are looking at this dialog - same "poll while
-  // open" pattern Export File Settings uses for its own sync status line.
-  async function refreshMashBillLibrarySyncStatus() {
-    const data = await fetchMashBillLibrary();
-    if (!data) return;
-    els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
-    renderMashBillLibraryList();
-  }
-
+  // Deletes an entry from the Bourbon Library, then closes this form and
+  // refreshes the library page underneath it (see the "Bourbon Library
+  // (rail view)" section below) - the entry being deleted is always the one
+  // currently open in this form (see els.mashBillLibraryFormDeleteBtn's own
+  // click handler), so there's nothing left to keep editing once it
+  // succeeds. If the deleted entry was the one currently open on the
+  // profile page, that page falls back to the grid rather than showing a
+  // profile for an entry that no longer exists.
   async function deleteMashBillLibraryEntry(id) {
     try {
       const resp = await fetch(`/api/mashbills/${id}`, { method: 'DELETE' });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
-      if (mashBillLibraryEditingId === id) resetMashBillLibraryForm();
-      await loadMashBillLibrary();
+      mashBillLibraryModal.close();
+      await fetchMashBillLibrary();
+      if (librarySelectedId === id) {
+        librarySelectedId = null;
+        libraryViewMode = 'grid';
+      }
+      renderLibraryChipsAndStats();
+      renderLibraryBody();
     } catch (err) {
-      els.mashBillLibraryStatus.textContent = withServerPcHint(err.message) || 'Could not delete that entry.';
+      els.mashBillLibraryFormStatus.textContent = withServerPcHint(err.message) || 'Could not delete that entry.';
     }
   }
+
+  els.mashBillLibraryFormDeleteBtn.addEventListener('click', () => {
+    if (mashBillLibraryEditingId === null) return;
+    const title = els.mashBillLibraryFormTitleInput.value.trim();
+    if (!confirm(`Delete "${title}" from the Bourbon Library? This can't be undone.`)) return;
+    deleteMashBillLibraryEntry(mashBillLibraryEditingId);
+  });
 
   const mashBillLibraryModal = createModal({
     overlay: els.mashBillLibraryOverlay,
     closeBtns: [els.mashBillLibraryCloseBtn, els.mashBillLibraryCloseFooterBtn],
-    onOpen: () => {
-      mashBillLibraryQuery = '';
-      els.mashBillLibrarySearchInput.value = '';
-      resetMashBillLibraryForm();
-      loadMashBillLibrary();
-      mashBillLibrarySyncPollTimer = setInterval(refreshMashBillLibrarySyncStatus, 5000);
-    },
-    onClose: () => {
-      clearInterval(mashBillLibrarySyncPollTimer);
-      mashBillLibrarySyncPollTimer = null;
-    },
+    onOpen: resetMashBillLibraryForm,
   });
 
-  // Also reachable via Tools > Mash Bill Library… in the menu bar (see
-  // runMenuAction's 'mash-bill-library' case) - Bourbon Shelf Talkers only,
-  // same as the field it manages (see the hidden [data-requires-bourbon]
-  // menu item in index.html).
-
-  els.mashBillLibrarySearchInput.addEventListener('input', () => {
-    mashBillLibraryQuery = els.mashBillLibrarySearchInput.value.trim();
-    renderMashBillLibraryList();
-  });
+  els.libraryAddBtn.addEventListener('click', () => mashBillLibraryModal.open());
 
   function addMashBillLibraryFormGrain() {
     const grain = els.mashBillLibraryFormGrain.value;
@@ -6494,8 +6340,16 @@
         });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
-      resetMashBillLibraryForm();
-      await loadMashBillLibrary();
+      mashBillLibraryModal.close();
+      await fetchMashBillLibrary();
+      // Jumps straight to the saved entry's profile page rather than back
+      // to the grid - useful feedback either way (confirms an edit stuck,
+      // shows off a new entry right after adding it) and works for both
+      // since data.id is the same row whether this was a POST or a PUT.
+      librarySelectedId = data.id;
+      libraryViewMode = 'profile';
+      renderLibraryChipsAndStats();
+      renderLibraryBody();
     } catch (err) {
       els.mashBillLibraryFormStatus.textContent = withServerPcHint(err.message) || 'Could not save that entry.';
     } finally {
@@ -6503,60 +6357,14 @@
     }
   });
 
-  // Forces an immediate pull from the Server PC instead of waiting up to
-  // ~30s for the puller's own interval (see mashBillSync.js's syncOnce) -
-  // same pattern as Export File Settings' own Sync Now button.
-  els.mashBillLibrarySyncNowBtn.addEventListener('click', async () => {
-    els.mashBillLibrarySyncNowBtn.disabled = true;
-    els.mashBillLibrarySyncStatus.textContent = 'Syncing...';
-    try {
-      const resp = await fetch('/api/mashbills/sync-now', { method: 'POST' });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Could not sync right now.');
-      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
-      renderMashBillLibraryList();
-      els.mashBillLibrarySyncStatus.textContent = describeMashBillSyncStatus(data.sync);
-    } catch (err) {
-      els.mashBillLibrarySyncStatus.textContent = err.message || 'Could not sync right now.';
-    } finally {
-      els.mashBillLibrarySyncNowBtn.disabled = false;
-    }
-  });
-
-  // Server PC only (see loadMashBillLibrary, which hides the whole row
-  // otherwise) - pulls in whatever's been added to the curated GitHub list
-  // since this library was first seeded. Additive only server-side (see
-  // syncNewBourbonLibraryEntries in bourbonLibrarySeed.js), so this never
-  // overwrites an existing entry, however it got there.
-  els.mashBillLibraryGithubSyncBtn.addEventListener('click', async () => {
-    els.mashBillLibraryGithubSyncBtn.disabled = true;
-    els.mashBillLibraryGithubSyncStatus.textContent = 'Checking GitHub...';
-    try {
-      const resp = await fetch('/api/mashbills/sync-library', { method: 'POST' });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
-      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
-      renderMashBillLibraryList();
-      els.mashBillLibraryStatus.textContent = mashBillLibraryCache.length
-        ? `${mashBillLibraryCache.length} saved mash bill${mashBillLibraryCache.length === 1 ? '' : 's'}.`
-        : '';
-      els.mashBillLibraryGithubSyncStatus.textContent = data.added
-        ? `Added ${data.added} new bourbon${data.added === 1 ? '' : 's'} from ${data.source}.`
-        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
-    } catch (err) {
-      els.mashBillLibraryGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
-    } finally {
-      els.mashBillLibraryGithubSyncBtn.disabled = false;
-    }
-  });
-
   // ---------- Bourbon Library (rail view) ----------
   //
-  // A read-focused browse/profile screen over the same mash_bills data the
-  // dialog above manages - search, a confidence-tier filter, a card grid,
-  // and a profile page per entry. Editing still goes through the dialog
-  // above (see the profile page's own "Edit in Library" button); this
-  // section never writes anything, only reads mashBillLibraryCache.
+  // A browse/profile screen over the shared mash_bills data - search, a
+  // confidence-tier filter, a card grid, and a profile page per entry.
+  // Adding/editing/deleting goes through the form modal above (opened via
+  // #libraryAddBtn below, or the profile page's own Edit button); this
+  // section itself never writes anything, only reads mashBillLibraryCache
+  // and re-fetches it after the form modal changes something.
 
   const CONFIDENCE_TIER_META = {
     confirmed: {
@@ -6834,7 +6642,8 @@
     if (!q) return true;
     return (entry.title || '').toLowerCase().includes(q)
       || (entry.distillery || '').toLowerCase().includes(q)
-      || (entry.parentCompany || '').toLowerCase().includes(q);
+      || (entry.parentCompany || '').toLowerCase().includes(q)
+      || (entry.sku || '').toLowerCase().includes(q);
   }
 
   function renderLibraryChipsAndStats() {
@@ -7086,7 +6895,7 @@
           <p class="profile-head__by">${escapeHtml(entry.distillery || 'Distillery unknown')}${entry.parentCompany ? ` &middot; <strong>${escapeHtml(entry.parentCompany)}</strong>` : ''}</p>
           ${entry.category ? `<div class="profile-tags"><span class="tag">${escapeHtml(entry.category)}</span></div>` : ''}
         </div>
-        <button type="button" class="btn btn--small" id="libraryEditBtn">Edit in Library</button>
+        <button type="button" class="btn btn--small" id="libraryEditBtn">Edit</button>
       </div>
       <div class="profile-grid">
         <div>
@@ -7116,6 +6925,7 @@
             ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
             ${entry.category ? `<div><dt>Style</dt><dd>${escapeHtml(entry.category)}</dd></div>` : ''}
             ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>Price</dt><dd id="libraryPriceValue" class="help-text" role="status" aria-live="polite">Checking the WinePOS export&hellip;</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.distillery)} entries</dt>
@@ -7172,6 +6982,41 @@
         el.addEventListener('mouseleave', () => setHotGrain(el.dataset.grain, false));
       });
     }
+    if (entry.sku) loadBourbonLibraryPrice(entry);
+  }
+
+  // Fills in the Price row renderBourbonProfile leaves as "Checking the
+  // WinePOS export..." - a live lookup (see /api/export-price ->
+  // lookupSkuInExport in upcCatalog.js) against the entry's own `sku`
+  // rather than a price stored on the library entry itself, since a bottle's
+  // shelf price drifts and this is meant to reflect what's on the shelf
+  // today, not what it cost when the SKU was typed in. Checks
+  // librarySelectedId (rather than just patching the DOM blind) before
+  // applying the result, so a slow request that resolves after staff have
+  // already clicked into a different bourbon can't overwrite that entry's
+  // own Price row with this one's answer.
+  async function loadBourbonLibraryPrice(entry) {
+    let data;
+    try {
+      const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
+      data = await res.json();
+      if (!res.ok) throw data;
+    } catch (err) {
+      if (librarySelectedId !== entry.id) return;
+      const el = document.getElementById('libraryPriceValue');
+      if (!el) return;
+      el.textContent = err && err.code === 'SKU_NOT_FOUND'
+        ? 'Not found in the current WinePOS export.'
+        : (err && err.error) || 'Could not check the WinePOS export.';
+      return;
+    }
+    if (librarySelectedId !== entry.id) return;
+    const el = document.getElementById('libraryPriceValue');
+    if (!el) return;
+    const onSale = data.salePrice && Number(data.salePrice) > 0;
+    el.textContent = onSale
+      ? `${formatMoney(data.salePrice)} (was ${formatMoney(data.price)})`
+      : formatMoney(data.price) || 'No price on file for this SKU.';
   }
 
   // ---------- Parent Company browse ----------
@@ -7385,23 +7230,22 @@
     if (wrap && !e.target.closest('#librarySortSelect')) wrap.classList.remove('is-open');
   });
 
-  // Reflects mashBillSync.js's own status (same data describeMashBillSyncStatus
-  // already renders for the Mash Bill Library dialog) directly on the Library
-  // screen's header band, so staff don't have to open that dialog just to see
-  // whether this PC's copy is current. The Server PC itself has nothing to
-  // pull, so it gets the dot but no Sync Now button.
+  // Reflects mashBillSync.js's own status directly on the Library screen's
+  // header band. The Server PC itself has nothing to pull, so it gets the
+  // dot but no Sync Now button - it gets the GitHub sync row instead (see
+  // #libraryGithubSyncBtn below), since that's the one sync direction only
+  // the Server PC can do anything about.
   function updateLibrarySyncUI(sync) {
     els.librarySyncStatus.textContent = describeMashBillSyncStatus(sync);
     const isServer = !!(sync && sync.isServer);
     const isCurrent = !isServer && sync && sync.lastSyncedAt && !sync.lastError;
     els.librarySyncDot.classList.toggle('is-stale', !isServer && !isCurrent);
     els.librarySyncNowBtn.hidden = isServer;
+    els.libraryGithubSyncRow.hidden = !isServer;
   }
 
   // Forces an immediate pull instead of waiting up to ~30s for the puller's
-  // own interval - same pattern as the Mash Bill Library dialog's own Sync
-  // Now button, just reusing mashBillLibraryCache directly since this screen
-  // reads from it too.
+  // own interval.
   els.librarySyncNowBtn.addEventListener('click', async () => {
     els.librarySyncNowBtn.disabled = true;
     els.librarySyncDot.classList.add('is-syncing');
@@ -7419,6 +7263,31 @@
     } finally {
       els.librarySyncDot.classList.remove('is-syncing');
       els.librarySyncNowBtn.disabled = false;
+    }
+  });
+
+  // Server PC only (see updateLibrarySyncUI above, which hides this whole
+  // row otherwise) - pulls in whatever's been added to the curated GitHub
+  // list since this library was first seeded. Additive only server-side
+  // (see syncNewBourbonLibraryEntries in bourbonLibrarySeed.js), so this
+  // never overwrites an existing entry, however it got there.
+  els.libraryGithubSyncBtn.addEventListener('click', async () => {
+    els.libraryGithubSyncBtn.disabled = true;
+    els.libraryGithubSyncStatus.textContent = 'Checking GitHub...';
+    try {
+      const resp = await fetch('/api/mashbills/sync-library', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      mashBillLibraryCache = Array.isArray(data.mashBills) ? data.mashBills : [];
+      renderLibraryChipsAndStats();
+      renderLibraryBody();
+      els.libraryGithubSyncStatus.textContent = data.added
+        ? `Added ${data.added} new bourbon${data.added === 1 ? '' : 's'} from ${data.source}.`
+        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+    } catch (err) {
+      els.libraryGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+    } finally {
+      els.libraryGithubSyncBtn.disabled = false;
     }
   });
 
@@ -8096,10 +7965,10 @@
       renderLibraryView();
       // Keeps the sync status line (dot + timestamp) live while staff stay
       // on this screen, since a sync can happen in the background on its
-      // own ~30s timer at any point - same "poll while open" pattern the
-      // Mash Bill Library dialog uses for its own sync status line. Doesn't
-      // re-render the grid itself, so browsing/a selected profile isn't
-      // disrupted mid-poll.
+      // own ~30s timer at any point - same "poll while open" pattern Export
+      // File Settings uses for its own sync status line. Doesn't re-render
+      // the grid itself, so browsing/a selected profile isn't disrupted
+      // mid-poll.
       librarySyncPollTimer = setInterval(async () => {
         const data = await fetchMashBillLibrary();
         if (data) updateLibrarySyncUI(data.sync);
@@ -8155,9 +8024,6 @@
         break;
       case 'beer-talker-info':
         guidePreviewModal.open();
-        break;
-      case 'mash-bill-library':
-        mashBillLibraryModal.open();
         break;
       case 'wine-pairing-rules':
         winePairingRulesModal.open();
@@ -8592,6 +8458,7 @@
   fetchMashBillLibrary().then(refreshMashBillRecall);
   applyExperimentalPairings(experimentalPairingsEnabled);
   applyExperimentalWineProfile(experimentalProfileEnabled);
+  applyExperimentalTastingNotes(experimentalTastingNotesEnabled);
   // Unlike pairingsList/ratingsList (legitimately empty until something's
   // added), the Wine Profile picker always shows all 5 rows - needs one
   // explicit render on load, since resetForm()/fillForm() (the only other
