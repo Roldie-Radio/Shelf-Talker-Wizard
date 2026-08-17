@@ -1257,6 +1257,8 @@
     settingsOverlay: document.getElementById('settingsOverlay'),
     settingsCloseBtn: document.getElementById('settingsCloseBtn'),
     settingsCloseFooterBtn: document.getElementById('settingsCloseFooterBtn'),
+    settingsNavButtons: [...document.querySelectorAll('#settingsOverlay .settings-sidebar__item')],
+    settingsPanels: [...document.querySelectorAll('#settingsOverlay .settings-panel')],
     settingsAccentButtons: [...document.querySelectorAll('#settingsOverlay [data-accent]')],
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
     experimentalPairingsCheckbox: document.getElementById('experimentalPairingsCheckbox'),
@@ -7947,14 +7949,36 @@
   // 'settings' cases) in both Electron and a plain browser tab -
   // each panel's own content comes from the same-origin API either way.
 
+  // Settings' left-hand sidebar (see .settings-sidebar/.settings-panel in
+  // index.html) - swaps which .settings-panel is visible rather than
+  // stacking every settings group into one long scroll, so a new group
+  // later is a new nav button + panel, not more scrolling. Panel/button
+  // pairing is by data-settings-panel/data-settings-panel-content, not
+  // array position, so the two lists don't have to stay in lockstep order.
+  function activateSettingsPanel(name) {
+    els.settingsNavButtons.forEach((btn) => {
+      const isActive = btn.dataset.settingsPanel === name;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-current', String(isActive));
+    });
+    els.settingsPanels.forEach((panel) => {
+      panel.hidden = panel.dataset.settingsPanelContent !== name;
+    });
+  }
+  els.settingsNavButtons.forEach((btn) => {
+    btn.addEventListener('click', () => activateSettingsPanel(btn.dataset.settingsPanel));
+  });
+
   // onOpen re-syncs the toggle buttons rather than relying on applyAccent's
   // own initial call (below) to have kept them current - harmless either
   // way, but this is the one place that has to be right every time the
-  // dialog opens.
+  // dialog opens. Also resets the sidebar back to General each time, so the
+  // dialog never reopens on whatever panel it was left on last.
   const settingsModal = createModal({
     overlay: els.settingsOverlay,
     closeBtns: [els.settingsCloseBtn, els.settingsCloseFooterBtn],
     onOpen: () => {
+      activateSettingsPanel('general');
       applyAccent(currentAccent());
       applyMenuSize(currentMenuSize());
       els.experimentalPairingsCheckbox.checked = experimentalPairingsEnabled;
