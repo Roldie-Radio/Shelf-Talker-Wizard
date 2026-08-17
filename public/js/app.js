@@ -56,6 +56,9 @@
       items: [
         'Fixed: The Beer Bible could end up with two entries for the same beer - one saved under a raw export/POS title, another under whatever wording an Untappd search happened to match - even though both carried the same store SKU. Every save (auto-save from a talker, Add Beer, Beer Bible Import) now matches an existing entry by SKU first, title second, so a repeat save for a SKU already on file updates that same entry instead of adding a duplicate. A SKU match never renames the entry\'s existing title.',
         'New: A researched Beer Bible entry now shows when it was researched - hover the "Researched" badge anywhere it appears (grid cards, list rows, the profile header) for the exact date/time, or open the beer\'s profile page to see it spelled out under the badge.',
+        'Fixed: Scan UPC now offers the same Unit / Pack price choice for beer that Search by Name already had, defaulting to Pack - a scan whose export row has a pack price used to silently always price the talker at the per-unit price instead, with no way to pick the pack price or even see that a choice existed.',
+        'Fixed: the shared Search field (Search by Name / SKU Lookup / Scan UPC) no longer leaves stale text behind after a SKU Lookup or Scan UPC add - scanning a regular manufacturer UPC right after an internal UPC label no longer looks like it starts with a stray "A".',
+        'Fixed: the Beer Bible\'s Style/Sort dropdown (and any other field-select with a lot of options) no longer overflows past the bottom of the window - it scrolls within itself instead of splitting the page around the open menu.',
       ],
     },
     {
