@@ -52,6 +52,16 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.7',
+      items: [
+        'Changed: Tools → Mash Bill Library… is gone - the Bourbon Library sidebar screen now owns adding, editing, and deleting entries directly (an Add Bourbon button, and Edit/Delete on a profile page), instead of a separate management dialog duplicating its own search and list. Sync Now and Check GitHub for New Bourbons (Server PC only) moved onto the Bourbon Library page too.',
+        'New: a Price row on the Bourbon Library profile page, filled in live from whatever the currently configured WinePOS export has on file for that entry\'s SKU - not a stored price, so it reflects today\'s shelf price rather than whatever it was when the SKU was typed in.',
+        'New: both Bourbon Library search bars now match on SKU too, not just title/distillery/parent company.',
+        'Changed: Find Tasting Notes moved behind a new Settings → Experimental Features toggle, off by default, same as Wine Food Pairings/Wine Profile - it\'s a new, unreviewed lookup, so it stays opt-in rather than showing up for every store the moment it ships.',
+        'Changed: reverts 4.3.6\'s Search tab Bourbon Library preview - the second results panel under the smart search box for Bourbon Product Type is gone; Search by Name/SKU Lookup/Scan UPC are unaffected.',
+      ],
+    },
+    {
       version: '4.3.6',
       items: [
         'Changed: Bourbon is now a Product Type of its own (alongside Wine / Spirits and Beer), not a Settings → Experimental Features toggle - picking it on any tab shows Store Pick, Mash Bill, and Nose/Palate/Finish automatically, with a Distiller.com source in Find Tasting Notes and Tools → Mash Bill Library… following the same switch. Nothing already on a talker is affected; the old toggle is gone from Settings.',
