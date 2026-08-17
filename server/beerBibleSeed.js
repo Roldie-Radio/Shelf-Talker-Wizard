@@ -90,6 +90,26 @@ async function autoSeedBeerBible(db) {
   return { seeded, source };
 }
 
+function normalizeKey(value) {
+  return (value || '').toString().trim().toLowerCase();
+}
+
+// Same "only the fields that actually have something in them" filter as
+// beerAutoSaveFields in app.js - a curated entry's blank fields (very common
+// for a stub that's only ever had a title/SKU to go on, see
+// scripts/beer-bible-seed-data.json) must never be sent through to
+// updateBeerById below, or its "undefined leaves it alone" rule wouldn't
+// help: an explicit '' is still a provided value as far as
+// beerOptionalFieldParams (server/db.js) is concerned, and would blank out
+// whatever the existing entry already had researched.
+function nonEmptyFields(entry) {
+  const fields = {};
+  ['brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description'].forEach((key) => {
+    if (entry && entry[key]) fields[key] = entry[key];
+  });
+  return fields;
+}
+
 // Manual counterpart to autoSeedBeerBible above, for a library that's
 // already populated - the Beer Bible page's "Check GitHub for New Beers"
 // button (server/index.js's POST /api/beers/sync-library) calls this.
@@ -97,26 +117,54 @@ async function autoSeedBeerBible(db) {
 // that seeded a while ago never sees entries added to the curated list
 // since - this is how they catch up without a new installer.
 //
-// Deliberately additive only: an entry whose title already exists locally
-// (case-insensitive, same matching upsertBeer's own unique index uses) is
-// left alone rather than overwritten, so this can never silently clobber a
-// correction or a from-scratch entry staff typed in themselves. Re-running
-// it is always safe - already-added titles are just skipped again next time.
+// Deliberately additive-or-merge, never overwrite: an entry whose title
+// already exists locally (case-insensitive, same matching upsertBeer's own
+// unique index uses) is left alone rather than touched at all - it's
+// already represented, whatever shape it's in.
+//
+// A same-SKU entry under a *different* title is the real-world case this
+// exists for: a raw POS export title like "CENTRAL WATERS BOURBON BARREL
+// TIRAMISU STOUT 4PK CAN" (this file's own curated source, keyed off the
+// store's SKU) and the Untappd-enriched title a Shelf Talker/SKU Lookup
+// already saved under this PC's own auto-save (see autoSaveBeerToBible in
+// app.js) - "Central Waters Bourbon Barrel Tiramisu Stout Can" - are the
+// same product, but an exact-title check alone can't tell that, and used to
+// add a second row for it. Matching SKUs as well means that gets merged
+// into the existing row instead (filling in only whatever field it doesn't
+// already have - never renaming its title or overwriting a field it's
+// already got) rather than creating a duplicate.
 async function syncNewBeerBibleEntries(db) {
-  const existingTitles = new Set(db.listBeers().map((b) => b.title.trim().toLowerCase()));
+  const existingBeers = db.listBeers();
+  const existingTitles = new Set(existingBeers.map((b) => normalizeKey(b.title)));
+  const existingBySku = new Map();
+  for (const beer of existingBeers) {
+    const skuKey = normalizeKey(beer.sku);
+    if (skuKey) existingBySku.set(skuKey, beer);
+  }
+
   const { entries, source } = await loadSeedEntries();
   let added = 0;
+  let merged = 0;
   let skipped = 0;
   for (const entry of entries) {
-    const title = (entry && entry.title || '').trim().toLowerCase();
+    const title = normalizeKey(entry && entry.title);
     if (!title || existingTitles.has(title)) {
       skipped += 1;
       continue;
     }
+
+    const skuMatch = existingBySku.get(normalizeKey(entry && entry.sku));
     try {
-      db.upsertBeer(entry);
-      existingTitles.add(title);
-      added += 1;
+      if (skuMatch) {
+        db.updateBeerById(skuMatch.id, nonEmptyFields(entry));
+        merged += 1;
+      } else {
+        const saved = db.upsertBeer(entry);
+        existingTitles.add(title);
+        const skuKey = normalizeKey(saved.sku);
+        if (skuKey) existingBySku.set(skuKey, saved);
+        added += 1;
+      }
     } catch (err) {
       // One malformed entry shouldn't sink the rest of the batch - same
       // spirit as autoSeedBeerBible above.
@@ -124,7 +172,9 @@ async function syncNewBeerBibleEntries(db) {
       skipped += 1;
     }
   }
-  return { added, skipped, source };
+  return {
+    added, merged, skipped, source,
+  };
 }
 
 // Fire-and-forget entry point for start() in index.js: never throws, never
