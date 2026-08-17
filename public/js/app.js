@@ -52,6 +52,16 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.0',
+      items: [
+        'New: an Export CSV… button on the Beer Bible page downloads the library (or whatever the search box/status/style chips/sort currently have narrowed it to) as a CSV - Title, Beer Name, Brewery, Location, Style, ABV, IBU, Untappd Rating, Rating Count, SKU, UPC, Tasting Notes, Source, and Researched.',
+        'New: a one-click Research button on any beer that hasn\'t been looked up yet - a small chip on its grid card/row, or a bigger Research on Untappd next to Edit on its profile page - runs the same live Untappd search Search by Name/SKU Lookup/Scan UPC already do. A tie still opens the same Pick the Right Beer dialog those already use, and a confident match still shows Confirm Untappd Match before saving anything.',
+        'New: the Beer Bible profile page now shows the brewery\'s own name above the beer name, and a live Price (plus Pack Price, if the export has one) row looked up from the currently configured WinePOS export by that entry\'s SKU - not stored, so it reflects today\'s shelf price.',
+        'New: a upc field on the Beer Bible, editable by hand or filled in by the new Export File Sync button, which replaces Check GitHub for New Beers on the page - it checks the configured WinePOS export for a UPC on any beer already saved here, matched by SKU. Unlike the GitHub sync it replaces, this never adds new entries (a brand-new, empty Beer Bible still seeds itself from the curated GitHub list automatically on first launch).',
+        'Changed: the Beer Bible\'s source filter chips (All sources / Typed in by staff / etc.) are gone - more filter chrome than the page needed.',
+      ],
+    },
+    {
       version: '4.3.14',
       items: [
         'Fixed: some barcode scanners prepend a spurious "A" to every code they read - a real manufacturer UPC like 616673070044 was coming through as A616673070044, which the shared Search field mistook for a product-name search (and came back "no matches") instead of looking it up. That code shape (an "A" immediately followed by a 12- or 13-digit UPC-A/EAN-13) is now recognized as a UPC scan, unwrapped, and routed straight to Scan UPC - a product name that genuinely starts with "A" (Avery, Anchor Steam, ...) still searches by name exactly as before.',
