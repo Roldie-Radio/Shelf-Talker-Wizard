@@ -30,6 +30,13 @@
   // varietal values (the `profile` field on WINE_PAIRING_RULES in card.js)
   // are representative, not gospel, so this stays opt-in.
   const EXPERIMENTAL_PROFILE_KEY = 'shelfTalkerExperimentalProfile.v1';
+  // Settings -> Experimental Features -> Find Tasting Notes: gates the Find
+  // Tasting Notes button under Description (see
+  // applyExperimentalTastingNotes below). Off by default, same reasoning as
+  // Pairings/Profile above - it's a new, unreviewed lookup against
+  // Wine.com/Vivino/Distiller.com, so it stays opt-in rather than showing
+  // up for every store the moment it ships.
+  const EXPERIMENTAL_TASTING_NOTES_KEY = 'shelfTalkerExperimentalTastingNotes.v1';
   const DEFAULT_REVIEWERS = ['Wine Enthusiast', 'Wine Spectator', 'Wine Advocate', 'James Suckling', 'Jim Murray'];
 
   // The newest version this PC has shown a "What's New" popup for (see
@@ -809,6 +816,15 @@
     // Same as above - stays at its off-by-default value.
   }
 
+  // Settings -> Experimental Features -> Find Tasting Notes - same pattern
+  // as experimentalPairingsEnabled above.
+  let experimentalTastingNotesEnabled = false;
+  try {
+    experimentalTastingNotesEnabled = localStorage.getItem(EXPERIMENTAL_TASTING_NOTES_KEY) === 'true';
+  } catch {
+    // Same as above - stays at its off-by-default value.
+  }
+
   // Full Page is the default so staff land on the print-accurate view of
   // the queue rather than a single blank/sample card - see the
   // setPreviewMode('sheet') call in init below, which also keeps this in
@@ -1239,6 +1255,7 @@
     settingsMenuSizeButtons: [...document.querySelectorAll('#settingsOverlay [data-menu-size]')],
     experimentalPairingsCheckbox: document.getElementById('experimentalPairingsCheckbox'),
     experimentalProfileCheckbox: document.getElementById('experimentalProfileCheckbox'),
+    experimentalTastingNotesCheckbox: document.getElementById('experimentalTastingNotesCheckbox'),
 
     menuBar: document.getElementById('menuBar'),
   };
@@ -1465,6 +1482,29 @@
     applyExperimentalWineProfile(els.experimentalProfileCheckbox.checked);
     try {
       localStorage.setItem(EXPERIMENTAL_PROFILE_KEY, String(els.experimentalProfileCheckbox.checked));
+    } catch {
+      // Same as theme/accent above - the choice just won't survive a restart.
+    }
+  });
+
+  // ---------- Experimental Features (Settings -> Find Tasting Notes) ----------
+  //
+  // Same shape as applyExperimentalPairings/applyExperimentalWineProfile
+  // above, minus the window.ShelfTalkerSettings publish - unlike Pairings/
+  // Profile, Find Tasting Notes never prints onto the .card, so card.js has
+  // no need to see this flag. Nothing here is ever deleted: a description
+  // (or Nose/Palate/Finish) already filled in via the button stays on the
+  // talker untouched if the toggle goes back off.
+  function applyExperimentalTastingNotes(enabled) {
+    experimentalTastingNotesEnabled = enabled;
+    els.experimentalTastingNotesCheckbox.checked = enabled;
+    applyFormMode();
+  }
+
+  els.experimentalTastingNotesCheckbox.addEventListener('change', () => {
+    applyExperimentalTastingNotes(els.experimentalTastingNotesCheckbox.checked);
+    try {
+      localStorage.setItem(EXPERIMENTAL_TASTING_NOTES_KEY, String(els.experimentalTastingNotesCheckbox.checked));
     } catch {
       // Same as theme/accent above - the choice just won't survive a restart.
     }
@@ -1813,8 +1853,10 @@
     els.descriptionField.hidden = isSmallSign;
     // Wine.com wouldn't have anything for a beer, and Beer already has its
     // own tasting-note source (the Untappd import tab) - only show the
-    // button for Wine/Spirits.
-    els.tastingNotesRow.hidden = isBeer;
+    // button for Wine/Spirits/Bourbon, and only once Settings ->
+    // Experimental Features -> Find Tasting Notes is turned on (see
+    // applyExperimentalTastingNotes).
+    els.tastingNotesRow.hidden = isBeer || !experimentalTastingNotesEnabled;
     els.vintageField.hidden = isBeer || isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     // Shelf Talkers only, unlike Ratings above (which Large Display Signs
@@ -8592,6 +8634,7 @@
   fetchMashBillLibrary().then(refreshMashBillRecall);
   applyExperimentalPairings(experimentalPairingsEnabled);
   applyExperimentalWineProfile(experimentalProfileEnabled);
+  applyExperimentalTastingNotes(experimentalTastingNotesEnabled);
   // Unlike pairingsList/ratingsList (legitimately empty until something's
   // added), the Wine Profile picker always shows all 5 rows - needs one
   // explicit render on load, since resetForm()/fillForm() (the only other

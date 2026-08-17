@@ -314,8 +314,11 @@
               </span>
             </div>
             <textarea id="fDescription" rows="4" maxlength="600" placeholder="A short, punchy blurb about the product..."></textarea>
+            <!-- Gated behind Settings -> Experimental Features -> Find Tasting
+                 Notes (see applyExperimentalTastingNotes in app.js), same
+                 pattern as Wine Profile/Food Pairing Suggestions below. -->
             <div class="tasting-notes-row" id="tastingNotesRow">
-              <button type="button" class="btn btn--small btn--ghost" id="findTastingNotesBtn">Find Tasting Notes <span class="beta-badge">Beta</span></button>
+              <button type="button" class="btn btn--small btn--ghost" id="findTastingNotesBtn">Find Tasting Notes <span class="beta-badge">Experimental</span></button>
               <span class="help-text" id="tastingNotesStatus" role="status" aria-live="polite"></span>
             </div>
           </div>
@@ -1037,7 +1040,7 @@
   <div id="tastingNotesOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="tastingNotesModalTitle">
       <div class="modal__header">
-        <h2 id="tastingNotesModalTitle">Find Tasting Notes <span class="beta-badge">Beta</span></h2>
+        <h2 id="tastingNotesModalTitle">Find Tasting Notes <span class="beta-badge">Experimental</span></h2>
         <button type="button" class="btn btn--ghost btn--small" id="tastingNotesModalCloseBtn">&times; Close</button>
       </div>
       <div class="tasting-notes-modal-body">
@@ -1283,7 +1286,7 @@
         <p><strong>Talker Size</strong> (Full/Half/Quarter, Edit Talker only, Shelf Talker Type) changes how many print per sheet &mdash; a Quarter Size talker is a quarter the paper of a Full Size one. <strong>Talker Style</strong> adds a badge or callout: <strong>Closeout</strong> for a clearance badge, <strong>Super Sale</strong> (Wine / Spirits only &mdash; the store doesn't run Super Sales on beer) to replace the price with a stylized callout, or <strong>Also Available Chilled</strong> for a small blue note.</p>
 
         <h3>Finding tasting notes automatically</h3>
-        <p>On the Edit Talker form, Wine / Spirits entries have a <strong>Find Tasting Notes</strong> button (marked <strong>Beta</strong> &mdash; it's new, so double-check what it finds) under the Description field. Click it (with a <strong>Product Title</strong> already filled in) to open a dialog that searches using the title and <strong>Vintage</strong>, if set &mdash; no URL to paste. The <strong>Source</strong> dropdown picks which site to search &mdash; currently Wine.com and Vivino: <strong>Any source</strong> (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one. Whatever it finds shows in an editable preview box &mdash; tweak it if you'd like, then click <strong>Use This Description</strong> to drop it into the form (it'll ask before overwriting anything already typed), or <strong>Cancel</strong> to close without changing anything. If a site blocks the request outright, it automatically retries once with different request headers before giving up (same as the Untappd import below); if it's still blocked, or the site has nothing for that product, the dialog shows why and you can try a different source or type the description in by hand.</p>
+        <p>Turn on <strong>Find Tasting Notes</strong> under Settings &rarr; Experimental Features to add a <strong>Find Tasting Notes</strong> button (marked <strong>Experimental</strong> &mdash; it's new, so double-check what it finds) under the Description field for Wine / Spirits and Bourbon entries. Click it (with a <strong>Product Title</strong> already filled in) to open a dialog that searches using the title and <strong>Vintage</strong>, if set &mdash; no URL to paste. The <strong>Source</strong> dropdown picks which site to search &mdash; currently Wine.com and Vivino: <strong>Any source</strong> (the default) tries each in order and stops at the first that finds something; picking a specific site searches only that one. Whatever it finds shows in an editable preview box &mdash; tweak it if you'd like, then click <strong>Use This Description</strong> to drop it into the form (it'll ask before overwriting anything already typed), or <strong>Cancel</strong> to close without changing anything. If a site blocks the request outright, it automatically retries once with different request headers before giving up (same as the Untappd import below); if it's still blocked, or the site has nothing for that product, the dialog shows why and you can try a different source or type the description in by hand.</p>
 
         <h3>Importing from a website</h3>
         <p>On the <strong>Website</strong> tab, set <strong>Product Type</strong> above to match what you're importing:</p>
@@ -1684,6 +1687,12 @@
             Wine Profile
           </label>
           <p class="help-text">Adds a Wine Profile section to Wine/Spirits Shelf Talkers: five 1&ndash;5 dot meters &mdash; Fruit, Body, Dry, Acidity, Alcohol &mdash; printed under the description, Untappd-style. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (e.g. Cabernet Sauvignon), then adjust any dot by hand before printing. Off by default; turning it off again hides the section and the printed strip without deleting anything already on a talker.</p>
+
+          <label class="server-pc-checkbox">
+            <input type="checkbox" id="experimentalTastingNotesCheckbox" />
+            Find Tasting Notes
+          </label>
+          <p class="help-text">Adds a Find Tasting Notes button under the Description field for Wine/Spirits and Bourbon Shelf Talkers: searches Wine.com, Vivino, or (for Bourbon) Distiller.com using the Product Title and Vintage to fill in the description &mdash; Nose/Palate/Finish too, when the source has them. Off by default; turning it off again hides the button without removing anything already filled in.</p>
         </div>
       </div>
       <div class="modal__footer">
