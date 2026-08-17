@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.2',
+      items: [
+        'Fixed: Import CSV… on the Beer Bible could silently fail on a real store\'s export - a few thousand rows with Tasting Notes easily clears 100kb, and the server was rejecting anything over that with no visible error. A researched beer exported from one PC and imported on another would come back "Needs research" because the import never actually ran. The size limit is now 25mb, comfortably covering even a large multi-thousand-row export.',
+      ],
+    },
+    {
       version: '4.4.1',
       items: [
         'New: an Import CSV… button next to Export CSV on the Beer Bible page - the round-trip counterpart to it. Pick a CSV shaped like that export (or just a subset of its columns) and every row gets upserted the same SKU-first/title-second way Add Beer/Edit already merges a save, a blank cell never overwriting an already-fuller field. Unlike Advanced → Import Beer Bible from Export File…, this never touches Untappd - a synchronous local merge, meant for restoring a backup or carrying entries over to another PC.',
