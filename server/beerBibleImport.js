@@ -143,6 +143,7 @@ async function runImport(products, db) {
         } else {
           db.upsertBeer({
             title: result.title,
+            beerName: result.beerName || '',
             brewery: result.brewery || '',
             location: result.location || '',
             style: result.style || '',

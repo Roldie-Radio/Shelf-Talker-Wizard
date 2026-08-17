@@ -322,6 +322,32 @@ test('a beer SKU lookup that misses on Untappd falls back to a matching Beer Bib
   }));
 });
 
+// A Beer Bible entry carrying its own beerName (a past live Untappd match,
+// saved via autoSaveBeerToBible - see app.js) hands that back as beerName,
+// not its own (store-matching) title - the same distinction card.js/
+// beerDisplayName in app.js draws on the Beer Bible screen itself.
+test('a beer SKU lookup falling back to a Beer Bible entry surfaces that entry\'s own beerName, not its title', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/beers', {
+      title: 'michelob ultra', beerName: 'Michelob ULTRA Light Lager', brewery: 'Anheuser-Busch',
+    });
+
+    await withMockFetch(
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('09144') });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaHitsResponse([]) });
+        return mockResponse({ body: storeProductHtml });
+      },
+      async () => {
+        const result = await postJson(port, '/api/sku-lookup', { sku: '09144', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.untappdSource, 'Beer Bible');
+        assert.equal(result.body.beerName, 'Michelob ULTRA Light Lager');
+      }
+    );
+  }));
+});
+
 // A Beer Bible entry that's just a bare title stub (no brewery/style/ABV/
 // rating/description on file - see isEnriched in beerBibleImport.js) has
 // nothing more to offer than a real Untappd miss already leaves in place,

@@ -99,9 +99,22 @@ function applySchema(db) {
     -- once this is in real use, not ruled out by this schema - see
     -- server/beerBibleSeed.js for the GitHub-curated-list sync this *does*
     -- already have, wired up the same way as mash_bills' own.
+    -- beer_name is Untappd's own name for the matched beer (see
+    -- mergeUntappdBeer in server/productImport.js), kept separate from
+    -- title on purpose: title stays whatever the store's own product
+    -- export/scan/SKU lookup called it - the exact text getBeerByTitle
+    -- matches a repeat lookup against, and what idx_beers_title_unique
+    -- below dedupes on - so it can't just be overwritten with Untappd's own
+    -- wording without breaking that matching for every future lookup of
+    -- the same product. beer_name is blank for a beer Untappd never
+    -- matched (a bare import stub, or a fully manual entry, where title
+    -- already *is* the beer's own name) - see beerDisplayName in app.js for
+    -- how the Beer Bible screen picks whichever of the two to actually show
+    -- staff.
     CREATE TABLE IF NOT EXISTS beers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
+      beer_name TEXT,
       brewery TEXT,
       location TEXT,
       style TEXT,
@@ -147,6 +160,16 @@ function applySchema(db) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_rums_title_unique ON rums (title COLLATE NOCASE);
   `);
   applyMashBillColumns(db);
+  applyBeerColumns(db);
+}
+
+// beers shipped without beer_name for several releases - same "ALTER TABLE
+// whatever PRAGMA table_info says is actually missing" migration as
+// applyMashBillColumns above, just for the one column beer_name adds (see
+// its own comment on the CREATE TABLE above for what it's for).
+function applyBeerColumns(db) {
+  const existing = new Set(db.pragma('table_info(beers)').map((col) => col.name));
+  if (!existing.has('beer_name')) db.exec('ALTER TABLE beers ADD COLUMN beer_name TEXT');
 }
 
 // mash_bills shipped with just id/title/distillery/grains/source/updated_at
@@ -553,6 +576,7 @@ function rowToBeer(row) {
   return {
     id: row.id,
     title: row.title,
+    beerName: row.beer_name || '',
     brewery: row.brewery || '',
     location: row.location || '',
     style: row.style || '',
@@ -616,12 +640,13 @@ function validateBeerInput({ title }) {
 // mashBillOptionalFieldParams above - every field here beyond title/source
 // is optional, and `existing` is a rowToBeer()-shaped object or null.
 function beerOptionalFieldParams({
-  brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+  beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
 }, existing) {
   const prev = existing || {
-    brewery: '', location: '', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '',
+    beerName: '', brewery: '', location: '', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '',
   };
   return {
+    beerName: normalizeOptionalText(beerName !== undefined ? beerName : prev.beerName),
     brewery: normalizeOptionalText(brewery !== undefined ? brewery : prev.brewery),
     location: normalizeOptionalText(location !== undefined ? location : prev.location),
     style: normalizeOptionalText(style !== undefined ? style : prev.style),
@@ -635,7 +660,7 @@ function beerOptionalFieldParams({
 }
 
 const BEER_OPTIONAL_COLUMNS_SET = `
-  brewery = @brewery, location = @location, style = @style, abv = @abv, ibu = @ibu,
+  beer_name = @beerName, brewery = @brewery, location = @location, style = @style, abv = @abv, ibu = @ibu,
   untappd_rating = @untappdRating, untappd_rating_count = @untappdRatingCount,
   description = @description, sku = @sku
 `;
@@ -647,7 +672,7 @@ const BEER_OPTIONAL_COLUMNS_SET = `
 // saving again for a beer already on file updates that same entry instead
 // of erroring or duplicating it.
 function upsertBeer({
-  title, source, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
 }) {
   const db = getDb();
   const { cleanTitle } = validateBeerInput({ title });
@@ -683,7 +708,7 @@ function upsertBeer({
     source: source || 'Manual',
     updatedAt: now,
     ...beerOptionalFieldParams({
-      brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
     }, existing),
   };
 
@@ -697,10 +722,10 @@ function upsertBeer({
   }
   const info = db.prepare(`
     INSERT INTO beers (
-      title, source, updated_at, brewery, location, style, abv, ibu, untappd_rating, untappd_rating_count, description, sku
+      title, source, updated_at, beer_name, brewery, location, style, abv, ibu, untappd_rating, untappd_rating_count, description, sku
     )
     VALUES (
-      @title, @source, @updatedAt, @brewery, @location, @style, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku
+      @title, @source, @updatedAt, @beerName, @brewery, @location, @style, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku
     )
   `).run(params);
   return getBeer(info.lastInsertRowid);
@@ -712,7 +737,7 @@ function upsertBeer({
 // real conflict here, not a merge - same DUPLICATE_TITLE handling as
 // updateMashBillById.
 function updateBeerById(id, {
-  title, source, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
 }) {
   const db = getDb();
   const existing = getBeer(id);
@@ -730,7 +755,7 @@ function updateBeerById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...beerOptionalFieldParams({
-        brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+        beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
       }, existing),
     });
   } catch (err) {
