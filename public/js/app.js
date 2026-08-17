@@ -945,6 +945,8 @@
     beerBibleGithubSyncStatus: document.getElementById('beerBibleGithubSyncStatus'),
     beerBibleGithubSyncBtn: document.getElementById('beerBibleGithubSyncBtn'),
     beerBibleFilterInput: document.getElementById('beerBibleFilterInput'),
+    beerBibleStatusChips: document.getElementById('beerBibleStatusChips'),
+    beerBibleSourceChips: document.getElementById('beerBibleSourceChips'),
     beerBibleStats: document.getElementById('beerBibleStats'),
     beerBibleBody: document.getElementById('beerBibleBody'),
 
@@ -7448,12 +7450,19 @@
   // ---------- The Beer Bible (rail view) ----------
   //
   // A browse/profile screen over the shared `beers` data (see server/db.js)
-  // - search, a card grid, and a per-beer profile page - mirroring the
-  // Bourbon Library above but without its confidence tiers or
-  // parent-company browse (nothing analogous exists for Beer: its numbers
-  // come from a store's own Untappd export or a manual entry, not
-  // conflicting industry sources, so there's nothing to arbitrate the way
-  // Mash Bill Confidence does). Adding/editing/deleting goes through the
+  // - search, filter chips, a sort+view toolbar, a card/list grid, and a
+  // per-beer profile page - mirroring the Bourbon Library above closely,
+  // just swapped for what's actually meaningful on a beer row. No
+  // confidence tiers or parent-company browse (nothing analogous exists for
+  // Beer: its numbers come from a store's own Untappd export or a manual
+  // entry, not conflicting industry sources arbitrated by a tier). What
+  // stands in for those here: research-status chips (most of a real store's
+  // rows start as bare title+SKU stubs from a bulk import - see
+  // beerIsResearched below - so "has this one actually been looked up yet"
+  // is the Beer Bible's own version of "needs verification"), source chips
+  // (BEER_SOURCE_LABELS below), a Style filter, and a sort dropdown that
+  // includes Untappd rating alongside the usual name/brewery/ABV/SKU
+  // options. Adding/editing/deleting goes through the
   // form modal below (opened via #beerBibleAddBtn, or the profile page's
   // own Edit button); this section itself never writes anything beyond
   // what that form does, only reads beerBibleCache and re-fetches it after
@@ -7466,6 +7475,64 @@
   // refreshMashBillRecall above). Both are natural next steps once this is
   // in real use.
 
+  // Numeric helpers for the Rating/ABV/SKU sort comparators below. Each
+  // returns -1 for "nothing on file", which sorts a blank field to the
+  // bottom of every direction (its rating tab included) rather than
+  // treating it as a tie with a real 0.
+  function beerRatingNum(entry) {
+    const n = Number(entry.untappdRating);
+    return entry.untappdRating != null && String(entry.untappdRating).trim() !== '' && Number.isFinite(n) && n > 0 ? n : -1;
+  }
+  function beerRatingCountNum(entry) {
+    const n = Number(entry.untappdRatingCount);
+    return entry.untappdRatingCount != null && String(entry.untappdRatingCount).trim() !== '' && Number.isFinite(n) ? n : -1;
+  }
+  function beerAbvNum(entry) {
+    // parseFloat happily reads the leading number out of a stored value
+    // like "6.2%" and stops there, same as how ABV is typed into the form.
+    const n = parseFloat(entry.abv);
+    return Number.isFinite(n) ? n : -1;
+  }
+
+  // Sort options for the grid, grouped for the dropdown - same shape as
+  // LIBRARY_SORTS above, just over beer fields instead of grain/confidence
+  // ones. `metric` (when set) picks which adaptive chip beerSortMetricHtml
+  // shows on every card/row; the two Alphabetical sorts have no metric, so
+  // they fall back to the research-status badge (beerResearchBadgeHtml)
+  // instead - this screen's closest equivalent to the Bourbon Library's
+  // confidence badge default.
+  const BEER_SORTS = [
+    { group: 'Alphabetical', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => a.title.localeCompare(b.title) },
+    { group: 'Alphabetical', key: 'name-desc', label: 'Name (Z–A)', cmp: (a, b) => b.title.localeCompare(a.title) },
+    { group: 'Alphabetical', key: 'brewery-asc', label: 'Brewery (A–Z)', cmp: (a, b) => (a.brewery || '').localeCompare(b.brewery || '') || a.title.localeCompare(b.title) },
+    { group: 'Rating', key: 'rating-best', label: 'Highest Rated first', metric: 'rating', cmp: (a, b) => beerRatingNum(b) - beerRatingNum(a) || a.title.localeCompare(b.title) },
+    { group: 'Rating', key: 'rating-most', label: 'Most Rated first', metric: 'ratingCount', cmp: (a, b) => beerRatingCountNum(b) - beerRatingCountNum(a) || a.title.localeCompare(b.title) },
+    { group: 'ABV', key: 'abv-high', label: 'Highest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(b) - beerAbvNum(a) || a.title.localeCompare(b.title) },
+    { group: 'ABV', key: 'abv-low', label: 'Lowest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(a) - beerAbvNum(b) || a.title.localeCompare(b.title) },
+    { group: 'SKU', key: 'sku-asc', label: 'SKU (Low–High)', metric: 'sku', cmp: (a, b) => (Number(a.sku) || Infinity) - (Number(b.sku) || Infinity) || a.title.localeCompare(b.title) },
+  ];
+  const BEER_SORTS_BY_KEY = Object.fromEntries(BEER_SORTS.map((s) => [s.key, s]));
+
+  // Card/List and the chosen sort persist per PC (localStorage), same as
+  // the Bourbon Library's own LIBRARY_GRID_VIEW_KEY/LIBRARY_SORT_KEY above.
+  const BEER_BIBLE_GRID_VIEW_KEY = 'shelfTalkerBeerBibleGridView.v1';
+  const BEER_BIBLE_SORT_KEY = 'shelfTalkerBeerBibleSortKey.v1';
+  function loadBeerBibleGridView() {
+    try {
+      return localStorage.getItem(BEER_BIBLE_GRID_VIEW_KEY) === 'list' ? 'list' : 'card';
+    } catch {
+      return 'card';
+    }
+  }
+  function loadBeerBibleSortKey() {
+    try {
+      const saved = localStorage.getItem(BEER_BIBLE_SORT_KEY);
+      return BEER_SORTS_BY_KEY[saved] ? saved : 'name-asc';
+    } catch {
+      return 'name-asc';
+    }
+  }
+
   let beerBibleCache = [];
   let beerBibleFilterQuery = '';
   // 'grid' (search + card grid) or 'profile' (one beer's own page) - same
@@ -7473,6 +7540,15 @@
   // is only meaningful while in 'profile'.
   let beerBibleViewMode = 'grid';
   let beerBibleSelectedId = null;
+  // Research-status/source/style filters - reset on a fresh page load but,
+  // same as libraryTierFilter above, deliberately left alone by
+  // renderBeerBibleView so switching away to another rail view and back
+  // doesn't lose whatever a staff member had picked.
+  let beerBibleStatusFilter = 'all'; // 'all' | 'researched' | 'needs'
+  let beerBibleSourceFilter = 'all'; // 'all' or a beers.source value
+  let beerBibleStyleFilter = 'all'; // 'all' or an exact beers.style value
+  let beerBibleGridView = loadBeerBibleGridView();
+  let beerBibleSortKey = loadBeerBibleSortKey();
 
   async function fetchBeerBible() {
     try {
@@ -7494,13 +7570,103 @@
       || (entry.sku || '').toLowerCase().includes(q);
   }
 
-  function renderBeerBibleStats() {
+  // "Researched" means this row has been through Untappd (or typed in by
+  // hand) and actually carries something beyond a bare title+SKU stub - the
+  // same test server/beerBibleImport.js's isEnriched uses to decide whether
+  // a bulk-import SKU already counts as handled, mirrored here so the chip
+  // filter means exactly the same thing that dedupe check does.
+  function beerIsResearched(entry) {
+    return !!(entry.brewery || entry.style || entry.abv || entry.ibu || entry.untappdRating || entry.description);
+  }
+
+  function beerMatchesStatus(entry) {
+    if (beerBibleStatusFilter === 'researched') return beerIsResearched(entry);
+    if (beerBibleStatusFilter === 'needs') return !beerIsResearched(entry);
+    return true;
+  }
+
+  function beerMatchesSource(entry) {
+    return beerBibleSourceFilter === 'all' || entry.source === beerBibleSourceFilter;
+  }
+
+  function beerMatchesStyle(entry) {
+    return beerBibleStyleFilter === 'all' || (entry.style || '') === beerBibleStyleFilter;
+  }
+
+  // Human-readable version of the `source` values upsertBeer/importBeers
+  // actually write (see server/db.js and server/beerBibleImport.js) - shown
+  // under Tasting Notes so staff can tell an Untappd-sourced description
+  // apart from one they typed in themselves, and reused below as the
+  // source filter chips' own labels.
+  const BEER_SOURCE_LABELS = {
+    Manual: 'Typed in by staff',
+    Import: 'Pulled in from a product export',
+    Export: 'From the curated Beer Bible list on GitHub',
+  };
+
+  // Two-state stand-in for the Bourbon Library's confidenceBadgeHtml -
+  // "Researched" vs "Needs research" rather than a four-tier confidence
+  // scale, since Beer only has the one distinction (see beerIsResearched
+  // above). Reuses .conf-badge as-is (see styles.css).
+  function beerResearchBadgeHtml(entry) {
+    return beerIsResearched(entry)
+      ? '<span class="conf-badge" style="color:var(--ui-good);background:var(--ui-good-tint);">Researched</span>'
+      : '<span class="conf-badge" style="color:var(--ui-muted);background:var(--ui-code-bg);">Needs research</span>';
+  }
+
+  function renderBeerBibleChipsAndStats() {
+    const researched = beerBibleCache.filter(beerIsResearched).length;
+    const statusChips = [
+      { key: 'all', label: `All beers (${beerBibleCache.length})` },
+      { key: 'researched', label: `Researched (${researched})` },
+      { key: 'needs', label: `Needs research (${beerBibleCache.length - researched})` },
+    ];
+    els.beerBibleStatusChips.innerHTML = statusChips.map((c) => `
+      <button type="button" class="toggle-btn ${beerBibleStatusFilter === c.key ? 'is-active' : ''}" data-status="${c.key}">${escapeHtml(c.label)}</button>
+    `).join('');
+    els.beerBibleStatusChips.querySelectorAll('button[data-status]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleStatusFilter = btn.dataset.status;
+        beerBibleViewMode = 'grid';
+        renderBeerBibleChipsAndStats();
+        renderBeerBibleBody();
+      });
+    });
+
+    // Built from whatever source values are actually on the cache rather
+    // than a fixed list, so a source this file doesn't know about (a future
+    // import path, or scripts/populate-beer-bible-from-export.js's own
+    // 'Untappd' tag reaching here via a rebuilt bundled seed) still gets a
+    // usable chip instead of silently having no way to filter it - same
+    // fallback-to-the-raw-value BEER_SOURCE_LABELS[entry.source] pattern
+    // renderBeerBibleProfile already uses below.
+    const sourceCounts = {};
+    beerBibleCache.forEach((b) => { sourceCounts[b.source] = (sourceCounts[b.source] || 0) + 1; });
+    const sourceChips = [
+      { key: 'all', label: `All sources (${beerBibleCache.length})` },
+      ...Object.keys(sourceCounts).sort().map((src) => ({
+        key: src, label: `${BEER_SOURCE_LABELS[src] || src} (${sourceCounts[src]})`,
+      })),
+    ];
+    els.beerBibleSourceChips.innerHTML = sourceChips.map((c) => `
+      <button type="button" class="toggle-btn ${beerBibleSourceFilter === c.key ? 'is-active' : ''}" data-source="${escapeHtml(c.key)}">${escapeHtml(c.label)}</button>
+    `).join('');
+    els.beerBibleSourceChips.querySelectorAll('button[data-source]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleSourceFilter = btn.dataset.source;
+        beerBibleViewMode = 'grid';
+        renderBeerBibleChipsAndStats();
+        renderBeerBibleBody();
+      });
+    });
+
     const breweries = new Set(beerBibleCache.map((b) => b.brewery).filter(Boolean)).size;
     const styles = new Set(beerBibleCache.map((b) => b.style).filter(Boolean)).size;
     els.beerBibleStats.innerHTML = `
       <div class="library-stat"><b>${beerBibleCache.length}</b><span>Beers</span></div>
       <div class="library-stat"><b>${breweries}</b><span>Breweries</span></div>
       <div class="library-stat"><b>${styles}</b><span>Styles</span></div>
+      <div class="library-stat"><b>${beerBibleCache.length - researched}</b><span>Need research</span></div>
     `;
   }
 
@@ -7525,10 +7691,25 @@
     return `<span class="rating-dots" title="${title}">${dots}</span>`;
   }
 
+  // The metric chip shown on every card/row - whichever field the active
+  // sort is actually ordering by, not just the resulting order. Falls back
+  // to the research-status badge for the two Alphabetical sorts, same
+  // fallback shape as the Bourbon Library's librarySortMetricHtml.
+  function beerSortMetricHtml(entry, sort) {
+    if (sort.metric === 'rating') return ratingDotsHtml(entry.untappdRating);
+    if (sort.metric === 'ratingCount') {
+      const n = beerRatingCountNum(entry);
+      return `<span class="sort-metric">${n >= 0 ? `${n.toLocaleString('en-US')} rating${n === 1 ? '' : 's'}` : 'No ratings'}</span>`;
+    }
+    if (sort.metric === 'abv') return `<span class="sort-metric">${entry.abv ? `${escapeHtml(entry.abv)} ABV` : 'No ABV'}</span>`;
+    if (sort.metric === 'sku') return `<span class="sort-metric">${entry.sku ? `SKU ${escapeHtml(entry.sku)}` : 'No SKU'}</span>`;
+    return beerResearchBadgeHtml(entry);
+  }
+
   // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
   // generic card grid the Bourbon Library and The Pairing Atlas's own wine
   // cards already share, just without a grain bar in the middle.
-  function beerCardHtml(entry) {
+  function beerCardHtml(entry, sort) {
     // Escape each piece individually, then join with a raw (already-safe)
     // &middot; entity - escaping the joined string instead would turn that
     // entity's own & into &amp;, printing the literal text "&middot;"
@@ -7544,26 +7725,150 @@
         <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
-          ${entry.untappdRating ? ratingDotsHtml(entry.untappdRating) : ''}
+          ${beerSortMetricHtml(entry, sort)}
         </div>
       </button>
     `;
   }
 
+  // List-view row - reuses .bourbon-row/.bourbon-list as-is, same as the
+  // Bourbon Library's own bourbonRowHtml.
+  function beerRowHtml(entry, sort) {
+    return `
+      <button type="button" class="bourbon-row" data-id="${entry.id}">
+        <div>
+          <div class="bourbon-row__title">${escapeHtml(entry.title)}</div>
+          <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}</div>
+        </div>
+        ${beerSortMetricHtml(entry, sort)}
+        <span class="bourbon-row__chevron" aria-hidden="true">&rsaquo;</span>
+      </button>
+    `;
+  }
+
+  // Distinct, non-blank style values on file, alphabetized - the options
+  // list for the Style filter dropdown below. Deliberately not restricted
+  // by whatever else is currently filtered/searched, so switching styles
+  // doesn't also narrow the list of styles you can switch *to*.
+  function beerBibleStyleOptions() {
+    return Array.from(new Set(beerBibleCache.map((b) => (b.style || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }
+
+  function beerStyleDropdownHtml() {
+    const allOption = `
+      <button type="button" class="field-select__option" role="option" data-style="" aria-selected="${beerBibleStyleFilter === 'all'}">
+        <span class="field-select__option-check" aria-hidden="true">&#10003;</span>
+        <span class="field-select__option-label">All styles</span>
+      </button>`;
+    const styleOptions = beerBibleStyleOptions().map((s) => `
+      <button type="button" class="field-select__option" role="option" data-style="${escapeHtml(s)}" aria-selected="${beerBibleStyleFilter === s}">
+        <span class="field-select__option-check" aria-hidden="true">&#10003;</span>
+        <span class="field-select__option-label">${escapeHtml(s)}</span>
+      </button>`).join('');
+    return allOption + styleOptions;
+  }
+
+  function beerSortDropdownHtml() {
+    const groups = [];
+    BEER_SORTS.forEach((s) => {
+      if (!groups.length || groups[groups.length - 1].group !== s.group) groups.push({ group: s.group, items: [] });
+      groups[groups.length - 1].items.push(s);
+    });
+    return groups.map((g) => `
+      <div class="field-select__group-label">${escapeHtml(g.group)}</div>
+      ${g.items.map((s) => `
+        <button type="button" class="field-select__option" role="option" data-sort="${s.key}" aria-selected="${s.key === beerBibleSortKey}">
+          <span class="field-select__option-check" aria-hidden="true">&#10003;</span>
+          <span class="field-select__option-label">${escapeHtml(s.label)}</span>
+        </button>
+      `).join('')}
+    `).join('');
+  }
+
   function renderBeerBibleGrid() {
-    const rows = beerBibleCache.filter(beerMatchesSearch).slice().sort((a, b) => a.title.localeCompare(b.title));
+    const rows = beerBibleCache.filter((b) => beerMatchesSearch(b) && beerMatchesStatus(b) && beerMatchesSource(b) && beerMatchesStyle(b));
+    const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
+    rows.sort(sort.cmp);
+
+    const styleLabel = beerBibleStyleFilter === 'all' ? 'All styles' : beerBibleStyleFilter;
+    const toolbarHtml = `
+      <div class="results-toolbar">
+        <span class="results-toolbar__count">${rows.length} beer${rows.length === 1 ? '' : 's'}</span>
+        <div class="results-toolbar__controls">
+          <div class="preview-toggle" role="group" aria-label="Grid layout">
+            <button type="button" class="toggle-btn ${beerBibleGridView === 'card' ? 'is-active' : ''}" data-view="card">Card</button>
+            <button type="button" class="toggle-btn ${beerBibleGridView === 'list' ? 'is-active' : ''}" data-view="list">List</button>
+          </div>
+          <div class="field-select" id="beerBibleStyleSelect">
+            <button type="button" class="field-select__trigger" id="beerBibleStyleTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="field-select__value">${escapeHtml(styleLabel)}</span>
+              <svg class="field-select__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="field-select__dropdown" role="listbox">${beerStyleDropdownHtml()}</div>
+          </div>
+          <div class="field-select" id="beerBibleSortSelect">
+            <button type="button" class="field-select__trigger" id="beerBibleSortTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="field-select__value">${escapeHtml(sort.label)}</span>
+              <svg class="field-select__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="field-select__dropdown" role="listbox">${beerSortDropdownHtml()}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
     if (!rows.length) {
       els.beerBibleBody.innerHTML = beerBibleCache.length
-        ? '<p class="empty-hint">No beers match this search.</p>'
+        ? `${toolbarHtml}<p class="empty-hint">No beers match this search/filter.</p>`
         : '<p class="empty-hint">No beers yet - click Add Beer to research your first one.</p>';
-      return;
+    } else {
+      const resultsHtml = beerBibleGridView === 'list'
+        ? `<div class="bourbon-list">${rows.map((e) => beerRowHtml(e, sort)).join('')}</div>`
+        : `<div class="bourbon-grid">${rows.map((e) => beerCardHtml(e, sort)).join('')}</div>`;
+      els.beerBibleBody.innerHTML = toolbarHtml + resultsHtml;
     }
-    els.beerBibleBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => beerCardHtml(entry)).join('')}</div>`;
-    els.beerBibleBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+
+    els.beerBibleBody.querySelectorAll('.bourbon-card[data-id], .bourbon-row[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         beerBibleSelectedId = Number(btn.dataset.id);
         beerBibleViewMode = 'profile';
         renderBeerBibleBody();
+      });
+    });
+    els.beerBibleBody.querySelectorAll('.preview-toggle button[data-view]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleGridView = btn.dataset.view;
+        try { localStorage.setItem(BEER_BIBLE_GRID_VIEW_KEY, beerBibleGridView); } catch { /* choice just won't survive a restart */ }
+        renderBeerBibleGrid();
+      });
+    });
+    const styleTrigger = document.getElementById('beerBibleStyleTrigger');
+    if (styleTrigger) {
+      styleTrigger.addEventListener('click', () => {
+        const wrap = document.getElementById('beerBibleStyleSelect');
+        const isOpen = wrap.classList.toggle('is-open');
+        styleTrigger.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+    els.beerBibleBody.querySelectorAll('.field-select__option[data-style]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleStyleFilter = btn.dataset.style || 'all';
+        renderBeerBibleGrid();
+      });
+    });
+    const sortTrigger = document.getElementById('beerBibleSortTrigger');
+    if (sortTrigger) {
+      sortTrigger.addEventListener('click', () => {
+        const wrap = document.getElementById('beerBibleSortSelect');
+        const isOpen = wrap.classList.toggle('is-open');
+        sortTrigger.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+    els.beerBibleBody.querySelectorAll('.field-select__option[data-sort]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleSortKey = btn.dataset.sort;
+        try { localStorage.setItem(BEER_BIBLE_SORT_KEY, beerBibleSortKey); } catch { /* choice just won't survive a restart */ }
+        renderBeerBibleGrid();
       });
     });
   }
@@ -7597,16 +7902,6 @@
     `;
   }
 
-  // Human-readable version of the `source` values upsertBeer/importBeers
-  // actually write (see server/db.js and server/beerBibleImport.js) - shown
-  // under Tasting Notes so staff can tell an Untappd-sourced description
-  // apart from one they typed in themselves.
-  const BEER_SOURCE_LABELS = {
-    Manual: 'Typed in by staff',
-    Import: 'Pulled in from a product export',
-    Export: 'From the curated Beer Bible list on GitHub',
-  };
-
   // The Beer Bible's profile page (renderBeerBibleGrid's card click, or the
   // sibling list below) - a read-focused layout over one `beers` row, the
   // same "view, not a new editing surface" relationship
@@ -7633,7 +7928,10 @@
         <div>
           <h2>${escapeHtml(entry.title)}</h2>
           <p class="profile-head__by">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.location ? ` &middot; <strong>${escapeHtml(entry.location)}</strong>` : ''}</p>
-          ${entry.style ? `<div class="profile-tags"><span class="tag">${escapeHtml(entry.style)}</span></div>` : ''}
+          <div class="profile-tags">
+            ${entry.style ? `<span class="tag">${escapeHtml(entry.style)}</span>` : ''}
+            ${beerResearchBadgeHtml(entry)}
+          </div>
         </div>
         <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
       </div>
@@ -7705,6 +8003,18 @@
     renderBeerBibleGrid();
   });
 
+  // Registered once (not inside renderBeerBibleGrid, which rebuilds both
+  // dropdowns on every render) - same pattern as #librarySortSelect's own
+  // outside-click-to-close listener above, re-looking up each element by id
+  // on every click so it always finds whichever copy the most recent render
+  // created.
+  document.addEventListener('click', (e) => {
+    const styleWrap = document.getElementById('beerBibleStyleSelect');
+    if (styleWrap && !e.target.closest('#beerBibleStyleSelect')) styleWrap.classList.remove('is-open');
+    const sortWrap = document.getElementById('beerBibleSortSelect');
+    if (sortWrap && !e.target.closest('#beerBibleSortSelect')) sortWrap.classList.remove('is-open');
+  });
+
   // Called every time the rail switches to Beer Bible (see setActiveView
   // below) - re-fetches so the screen reflects the table's actual current
   // state rather than whatever this client happened to have cached from
@@ -7715,7 +8025,7 @@
       beerBibleFilterQuery = '';
       beerBibleViewMode = 'grid';
       beerBibleSelectedId = null;
-      renderBeerBibleStats();
+      renderBeerBibleChipsAndStats();
       renderBeerBibleBody();
     });
   }
@@ -7788,7 +8098,7 @@
       beerBibleViewMode = 'grid';
       beerBibleSelectedId = null;
       await fetchBeerBible();
-      renderBeerBibleStats();
+      renderBeerBibleChipsAndStats();
       renderBeerBibleBody();
     } catch (err) {
       els.beerBibleFormStatus.textContent = err.message || 'Could not delete that entry.';
@@ -7849,7 +8159,7 @@
       if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
       beerBibleModal.close();
       await fetchBeerBible();
-      renderBeerBibleStats();
+      renderBeerBibleChipsAndStats();
       // beerBibleSelectedId/beerBibleViewMode are untouched by opening this
       // form, so a save made from an existing beer's profile page (Edit
       // button) lands back on that same profile with the fresh data -
@@ -7896,7 +8206,7 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
       beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
-      renderBeerBibleStats();
+      renderBeerBibleChipsAndStats();
       // Additive-or-merge only (see the comment above) - a beer open on the
       // profile page is never touched by this, so renderBeerBibleBody keeps
       // whichever view was already showing rather than forcing back to grid.
