@@ -1,6 +1,6 @@
 {
   "name": "shelf-talker-wizard",
-  "version": "4.3.8",
+  "version": "4.3.9",
   "description": "Shelf talker generator for Liquor Outlet Wine Cellars - manual entry or import from the website, standardized print-ready sizes.",
   "author": "Liquor Outlet Wine Cellars",
   "main": "electron/main.js",
