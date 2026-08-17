@@ -23,6 +23,7 @@ const { createMashBillServeServer, createMashBillPuller } = require('./mashBillS
 const { maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries } = require('./bourbonLibrarySeed');
 const { maybeAutoSeedBeerBible } = require('./beerBibleSeed');
 const { syncBeerBibleFromExport } = require('./beerBibleExportSync');
+const { importBeerBibleCsv } = require('./beerBibleCsvImport');
 const {
   getStatus: getBeerBibleImportStatus, startImport: startBeerBibleImport, cancelImport: cancelBeerBibleImport,
   isEnriched: isBeerBibleEntryEnriched,
@@ -751,6 +752,29 @@ function createApp({
     } catch (err) {
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not sync from the export file.', code: err.code });
+    }
+  });
+
+  // Backs the Beer Bible page's "Import CSV…" button (see
+  // server/beerBibleCsvImport.js for the full reasoning) - the round-trip
+  // counterpart to Export CSV, not the same thing as the Advanced menu's
+  // "Import Beer Bible from Export File..." below (that one runs a live
+  // Untappd search per row; this one expects every field already filled
+  // in and just upserts, synchronously, no network calls). The client
+  // reads the file itself (a plain <input type="file">, works the same in
+  // the browser and in Electron's webview) and posts the raw text here -
+  // no server-side file path needed, unlike import/start below.
+  app.post('/api/beers/import-csv', (req, res) => {
+    const { csv } = req.body || {};
+    if (!csv || typeof csv !== 'string' || !csv.trim()) {
+      return res.status(400).json({ error: 'No CSV content to import.' });
+    }
+    try {
+      const result = importBeerBibleCsv(db, csv);
+      res.json({ ...result, beers: listBeers() });
+    } catch (err) {
+      const status = { NO_ROWS: 400, NO_TITLE_COLUMN: 400 }[err.code] || 500;
+      res.status(status).json({ error: err.message, code: err.code });
     }
   });
 

@@ -1082,14 +1082,29 @@
         </div>
         <div class="library-band__actions">
           <!-- Downloads whatever the grid below currently shows (search box
-               + status/source/style chips + sort all applied) as a CSV
-               file, for backing the library up or opening it in a
-               spreadsheet - see exportBeerBibleCsv in app.js. Leave every
-               filter at its default to export the whole Beer Bible. -->
+               + status/style chips + sort all applied) as a CSV file, for
+               backing the library up or opening it in a spreadsheet - see
+               exportBeerBibleCsv in app.js. Leave every filter at its
+               default to export the whole Beer Bible. -->
           <button type="button" class="btn btn--small" id="beerBibleExportBtn">Export CSV&hellip;</button>
+          <!-- The round-trip counterpart to Export CSV above - reads a CSV
+               shaped like that one's own output (or a subset of its
+               columns) back in, upserting each row the same way Add
+               Beer/Edit would (SKU first, title second; a blank cell never
+               overwrites an already-fuller field) - see
+               server/beerBibleCsvImport.js. Not the same thing as Advanced
+               → Import Beer Bible from Export File… below: that one runs a
+               live Untappd search per row, this one expects every field
+               already filled in and just merges it in, synchronously, no
+               network calls. A plain hidden file input (#beerBibleImportCsvInput)
+               triggered by this button - works the same in the browser and
+               in Electron's webview, no native file dialog needed. -->
+          <button type="button" class="btn btn--small" id="beerBibleImportCsvBtn">Import CSV&hellip;</button>
+          <input type="file" id="beerBibleImportCsvInput" accept=".csv,text/csv" hidden />
           <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
         </div>
       </div>
+      <p class="help-text" id="beerBibleImportCsvStatus" role="status" aria-live="polite"></p>
       <!-- No Server PC / Sync Now status row yet (contrast with
            #libraryView's .library-sync above) - this PC's own data.db is
            the only copy for now, so there's nothing to show sync status

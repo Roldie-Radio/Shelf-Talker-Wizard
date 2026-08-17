@@ -982,6 +982,9 @@
     beerBibleView: document.getElementById('beerBibleView'),
     beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
     beerBibleExportBtn: document.getElementById('beerBibleExportBtn'),
+    beerBibleImportCsvBtn: document.getElementById('beerBibleImportCsvBtn'),
+    beerBibleImportCsvInput: document.getElementById('beerBibleImportCsvInput'),
+    beerBibleImportCsvStatus: document.getElementById('beerBibleImportCsvStatus'),
     beerBibleExportSyncRow: document.getElementById('beerBibleExportSyncRow'),
     beerBibleExportSyncStatus: document.getElementById('beerBibleExportSyncStatus'),
     beerBibleExportSyncBtn: document.getElementById('beerBibleExportSyncBtn'),
@@ -8322,7 +8325,7 @@
 
   // Export CSV… button (see #beerBibleExportBtn in index.html) - downloads
   // whatever beerBibleFilteredSortedRows currently has (search box +
-  // status/source/style chips + sort dropdown all applied) as a CSV file,
+  // status/style chips + sort dropdown all applied) as a CSV file,
   // same "download what's on screen" idea as the WinePOS export preview's
   // own search box, just producing a file instead of a live table. Leaving
   // every filter at its default exports the whole Beer Bible. One column
@@ -8357,6 +8360,52 @@
   }
 
   els.beerBibleExportBtn.addEventListener('click', exportBeerBibleCsv);
+
+  // Import CSV… button (see #beerBibleImportCsvBtn in index.html) - the
+  // round-trip counterpart to Export CSV above. Clicking the visible button
+  // just forwards to the hidden native file input; the real work happens in
+  // that input's own 'change' handler below, once staff have actually
+  // picked a file.
+  els.beerBibleImportCsvBtn.addEventListener('click', () => els.beerBibleImportCsvInput.click());
+
+  // Reads the picked file client-side (works identically in a browser tab
+  // and Electron's webview, no native path/Browse… button needed the way
+  // Advanced → Import Beer Bible from Export File…'s dialog has one) and
+  // posts the raw text to POST /api/beers/import-csv (see
+  // server/beerBibleCsvImport.js for the parsing/merge itself - this is
+  // just the file-picking and result-reporting side of it). `value = ''`
+  // at the end so picking the same file again (e.g. after fixing something
+  // in it) still fires a fresh 'change' event.
+  els.beerBibleImportCsvInput.addEventListener('change', async () => {
+    const file = els.beerBibleImportCsvInput.files && els.beerBibleImportCsvInput.files[0];
+    if (!file) return;
+    els.beerBibleImportCsvBtn.disabled = true;
+    els.beerBibleImportCsvStatus.textContent = `Importing ${file.name}…`;
+    try {
+      const csv = await file.text();
+      const resp = await fetch('/api/beers/import-csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not import that file.');
+      beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
+      renderBeerBibleChipsAndStats();
+      // Merge-only, same reasoning as Export File Sync's own status
+      // handler above - never navigates a beer open on the profile page
+      // away from it.
+      renderBeerBibleBody();
+      els.beerBibleImportCsvStatus.textContent = data.skipped
+        ? `Imported ${data.imported} beer${data.imported === 1 ? '' : 's'} from ${file.name} (skipped ${data.skipped} row${data.skipped === 1 ? '' : 's'} with no title).`
+        : `Imported ${data.imported} beer${data.imported === 1 ? '' : 's'} from ${file.name}.`;
+    } catch (err) {
+      els.beerBibleImportCsvStatus.textContent = err.message || 'Could not import that file.';
+    } finally {
+      els.beerBibleImportCsvBtn.disabled = false;
+      els.beerBibleImportCsvInput.value = '';
+    }
+  });
 
   // One stat tile for the profile page's "At a Glance" block (ABV, IBU) -
   // the Untappd Rating tile is its own function below since it also needs
