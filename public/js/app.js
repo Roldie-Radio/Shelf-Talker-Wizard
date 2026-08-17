@@ -55,6 +55,7 @@
       version: '4.3.14',
       items: [
         'Fixed: some barcode scanners prepend a spurious "A" to every code they read - a real manufacturer UPC like 616673070044 was coming through as A616673070044, which the shared Search field mistook for a product-name search (and came back "no matches") instead of looking it up. That code shape (an "A" immediately followed by a 12- or 13-digit UPC-A/EAN-13) is now recognized as a UPC scan, unwrapped, and routed straight to Scan UPC - a product name that genuinely starts with "A" (Avery, Anchor Steam, ...) still searches by name exactly as before.',
+        'Fixed: the Beer Bible was showing a beer\'s raw store Product Title (e.g. "LANCASTER MILK STOUT CAN") instead of Untappd\'s own name for it - cards, list rows, the profile page, and search/sort now show and match on the Untappd name whenever a beer has one, falling back to the store title only for a bare import stub or a fully manual entry.',
       ],
     },
     {
