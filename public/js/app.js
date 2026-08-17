@@ -3608,6 +3608,50 @@
     return null;
   }
 
+  // ---------- Beer Bible auto-save ----------
+  //
+  // Closes the loop the Bourbon Library's own manual "Save this mash bill/
+  // Nose-Palate-Finish to the library" checkboxes leave for Beer: no
+  // checkbox to remember, no button to click - every Beer talker added to
+  // the queue (or an existing one re-saved) is upserted into the Beer
+  // Bible automatically, keyed by title, the instant staff finish filling
+  // it in. Hooked into the form's own submit handler below (the single
+  // path every "Add to Queue" entry point - Manual Entry, SKU Lookup, Scan
+  // UPC, Search by Name, Import - already funnels through via
+  // requestSubmit(), see those handlers' own comments), so nothing else
+  // needs to call this directly.
+  //
+  // Fire-and-forget and best-effort, same "never blocks the actual task"
+  // spirit as Print History's own silent write on Print Now
+  // (recordPrintedTalkers in server/db.js) - a failure here (network
+  // hiccup, server not reachable) is logged to the console only, never
+  // surfaced to staff or allowed to interrupt Add to Queue/Save Changes.
+  // Deliberately as silent on success as Print History is, too - see this
+  // section's own note in README.md.
+  //
+  // Only fields the talker actually has are sent (see beerAutoSaveFields
+  // below) - upsertBeer's own "omitted (undefined) leaves whatever's
+  // already there alone" rule (server/db.js) means a talker with, say,
+  // just a title and ABV filled in can't accidentally blank out a
+  // brewery/style/rating a fuller entry already has on file.
+  function beerAutoSaveFields(talker) {
+    const fields = {};
+    ['brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description', 'sku'].forEach((key) => {
+      if (talker[key]) fields[key] = talker[key];
+    });
+    return fields;
+  }
+
+  function autoSaveBeerToBible(talker) {
+    fetch('/api/beers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: talker.title, source: 'Shelf Talker', ...beerAutoSaveFields(talker) }),
+    }).catch((err) => {
+      console.warn('Beer Bible auto-save failed:', err.message);
+    });
+  }
+
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const talker = readForm();
@@ -3628,6 +3672,7 @@
     saveQueue();
     renderQueue();
     resetForm();
+    if (talker.category === 'beer' && talker.title) autoSaveBeerToBible(talker);
   });
 
   // SKU Lookup's own "Add to Queue" - saves whatever the lookup (or its
