@@ -7714,13 +7714,31 @@
     }
   });
 
+  // Turns a POST /api/beers/sync-library response into the one-line status
+  // message under the button. `merged` (see syncNewBeerBibleEntries in
+  // beerBibleSeed.js) means a curated entry matched an existing row by SKU
+  // under a different title and was folded into it instead of adding a
+  // second row for the same product - called out separately from `added` so
+  // "nothing new" doesn't read the same as "found some duplicates and
+  // cleaned them up".
+  function describeBeerBibleSyncResult(data) {
+    const parts = [];
+    if (data.added) parts.push(`added ${data.added} new beer${data.added === 1 ? '' : 's'}`);
+    if (data.merged) parts.push(`merged ${data.merged} duplicate${data.merged === 1 ? '' : 's'} into existing entries`);
+    if (!parts.length) {
+      return `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+    }
+    const sentence = `${parts.join(', and ')} from ${data.source}.`;
+    return sentence[0].toUpperCase() + sentence.slice(1);
+  }
+
   // Backs the Beer Bible page's "Check GitHub for New Beers" button - pulls
   // in whatever's been added to the curated GitHub list since this PC's
-  // Beer Bible was last synced. Additive only server-side (see
+  // Beer Bible was last synced. Additive-or-merge only server-side (see
   // syncNewBeerBibleEntries in beerBibleSeed.js), so this never overwrites
-  // an existing entry, however it got there. Unlike the Bourbon Library's
-  // own #libraryGithubSyncBtn, this isn't gated behind Server PC - see the
-  // #beerBibleGithubSyncRow comment in index.html for why.
+  // an existing entry's own fields, however it got there. Unlike the Bourbon
+  // Library's own #libraryGithubSyncBtn, this isn't gated behind Server PC -
+  // see the #beerBibleGithubSyncRow comment in index.html for why.
   els.beerBibleGithubSyncBtn.addEventListener('click', async () => {
     els.beerBibleGithubSyncBtn.disabled = true;
     els.beerBibleGithubSyncStatus.textContent = 'Checking GitHub...';
@@ -7731,9 +7749,7 @@
       beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
       renderBeerBibleStats();
       renderBeerBibleGrid();
-      els.beerBibleGithubSyncStatus.textContent = data.added
-        ? `Added ${data.added} new beer${data.added === 1 ? '' : 's'} from ${data.source}.`
-        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+      els.beerBibleGithubSyncStatus.textContent = describeBeerBibleSyncResult(data);
     } catch (err) {
       els.beerBibleGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
     } finally {
