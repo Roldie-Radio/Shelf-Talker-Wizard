@@ -135,6 +135,21 @@ test('importBeerBibleCsv with no Variety Pack column at all leaves the flag alon
   assert.equal(db.getBeerByTitle('Founders All Day IPA').varietyPack, true);
 }));
 
+test('importBeerBibleCsv reads a Size column back as plain text, same as every other optional field', () => withTempDb(() => {
+  const header = `${EXPORT_HEADER},Size`;
+  const csv = [
+    header,
+    'DOGFISH HEAD 60 MIN IPA 6PK CAN,60 Minute IPA,Dogfish Head Craft Brewery,"Milton, DE",IPA - American,6%,60,4.2,3000,111,,,,Yes,6-Pack',
+    'DOGFISH HEAD 60 MIN IPA 12PK CAN,60 Minute IPA,Dogfish Head Craft Brewery,"Milton, DE",IPA - American,6%,60,4.2,3000,112,,,,Yes,12-Pack',
+  ].join('\r\n');
+
+  const result = importBeerBibleCsv(db, csv);
+  assert.equal(result.imported, 2);
+
+  assert.equal(db.getBeerByTitle('DOGFISH HEAD 60 MIN IPA 6PK CAN').size, '6-Pack');
+  assert.equal(db.getBeerByTitle('DOGFISH HEAD 60 MIN IPA 12PK CAN').size, '12-Pack');
+}));
+
 test('importBeerBibleCsv throws NO_TITLE_COLUMN when the file has no recognizable Title column', () => withTempDb(() => {
   const csv = ['Brewery,Style', 'Founders Brewing Co.,IPA'].join('\n');
   assert.throws(() => importBeerBibleCsv(db, csv), { code: 'NO_TITLE_COLUMN' });

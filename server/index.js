@@ -670,10 +670,10 @@ function createApp({
   // saved alone rather than blanking it out.
   function beerOptionalFields(body) {
     const {
-      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+      beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
     } = body || {};
     return {
-      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+      beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
     };
   }
 

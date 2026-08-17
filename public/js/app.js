@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.4',
+      items: [
+        'New: the Beer Bible now consolidates every package size of the same beer (a 6-pack and a 12-pack, say) onto one profile page instead of a duplicate card for each - any two entries that share a Brewery and an Untappd Beer Name are shown together automatically, with a new Size field (e.g. "6-Pack") labeling each one\'s own row in a new Package Sizes list on the profile, each with its own live price, SKU, UPC, Edit, and Delete. A "+ Add Package Size" button adds another size to an already-researched beer without re-typing its brewery/style/ABV/IBU/rating/description - editing any one package size\'s shared fields keeps every sibling size in sync. Size also rides along with a Beer talker\'s own auto-save to the Beer Bible, and round-trips through Export CSV/Import CSV.',
+      ],
+    },
+    {
       version: '4.4.3',
       items: [
         'New: a Variety Pack checkbox on the Beer Bible form - mark a mixed/variety pack (several different beers under one SKU) and it skips the Research button, a new Variety Pack filter chip replaces its "Needs research" nag, and Import Beer Bible from Export File won\'t waste a lookup on it - a variety pack has no page of its own on Untappd to find. Round-trips through Export CSV/Import CSV as a Variety Pack column.',
@@ -1339,10 +1345,12 @@
     beerBibleCloseFooterBtn: document.getElementById('beerBibleCloseFooterBtn'),
     beerBibleFormTitle: document.getElementById('beerBibleFormTitle'),
     beerBibleFormTitleInput: document.getElementById('beerBibleFormTitleInput'),
+    beerBibleFormTitleLabel: document.getElementById('beerBibleFormTitleLabel'),
     beerBibleFormVarietyPackInput: document.getElementById('beerBibleFormVarietyPackInput'),
     beerBibleFormBreweryInput: document.getElementById('beerBibleFormBreweryInput'),
     beerBibleFormLocationInput: document.getElementById('beerBibleFormLocationInput'),
     beerBibleFormStyleInput: document.getElementById('beerBibleFormStyleInput'),
+    beerBibleFormSizeInput: document.getElementById('beerBibleFormSizeInput'),
     beerBibleFormSkuInput: document.getElementById('beerBibleFormSkuInput'),
     beerBibleFormUpcInput: document.getElementById('beerBibleFormUpcInput'),
     beerBibleFormAbvInput: document.getElementById('beerBibleFormAbvInput'),
@@ -3766,9 +3774,15 @@
   // already there alone" rule (server/db.js) means a talker with, say,
   // just a title and ABV filled in can't accidentally blank out a
   // brewery/style/rating a fuller entry already has on file.
+  // 'size' rides along here too - a printed Beer talker's own Size field
+  // (see els.size/fSize) is exactly the same "6-Pack"/"12-Pack" style
+  // package descriptor the Beer Bible's own Size field is for (see the
+  // beers table's own comment in server/db.js), so a talker printed for a
+  // second package size of an already-saved beer labels that entry's
+  // profile row without staff ever having to type it twice.
   function beerAutoSaveFields(talker) {
     const fields = {};
-    ['beerName', 'brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description', 'sku'].forEach((key) => {
+    ['beerName', 'brewery', 'location', 'style', 'size', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description', 'sku'].forEach((key) => {
       if (talker[key]) fields[key] = talker[key];
     });
     return fields;
@@ -7813,6 +7827,82 @@
     return (entry && entry.beerName) || (entry && entry.title) || '';
   }
 
+  // ---- Package-size grouping ----
+  //
+  // The same beer sold in more than one package size (a 6-pack and a
+  // 12-pack, say) is stored as one Beer Bible row per SKU (see the beers
+  // table comment in server/db.js) - each has its own title/sku/upc/size,
+  // researched independently. Left alone, that means two duplicate cards
+  // for what's obviously "the same beer" to a staff member looking at the
+  // grid. Grouping collapses that at DISPLAY time only (nothing about the
+  // underlying rows changes): entries that share a non-blank Brewery *and*
+  // Untappd Beer Name - i.e. two rows that already matched the same beer on
+  // Untappd - are shown together as one card/profile with every package
+  // size listed. An entry missing either (a bare stub, an unresearched
+  // manual entry) has no reliable signal to group on and stays its own
+  // group of one - nothing here ever guesses a match from title text alone.
+  function beerGroupKey(entry) {
+    const beerName = (entry.beerName || '').trim().toLowerCase();
+    const brewery = (entry.brewery || '').trim().toLowerCase();
+    if (!beerName || !brewery) return null;
+    return `${brewery}::${beerName}`;
+  }
+
+  // The entry whose fields represent the group as a whole (brewery/style/
+  // ABV/IBU/rating/description, all things staff expect to be the same
+  // across every package size of one beer) - the most recently updated
+  // entry in the group. Since editing any one variant's shared fields
+  // cascades to every sibling (see the Save Changes handler below), which
+  // variant ends up "primary" doesn't change what gets shown - it just
+  // picks a single, deterministic id to key the group's own card/profile
+  // off of.
+  function beerGroupPrimary(entries) {
+    return entries.slice().sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))[0];
+  }
+
+  // Collapses a flat list of beers table rows into one entry per distinct
+  // beer. Each returned group spreads its primary entry's own fields at the
+  // top level (id/title/brewery/style/abv/... - see beerGroupPrimary) so
+  // every existing card/row/profile/sort function that reads entry.brewery,
+  // entry.abv, etc. keeps working unchanged whether or not the beer it's
+  // showing actually has more than one package size behind it, plus two
+  // group-specific fields on top: `variants` (every entry in the group,
+  // primary included, sorted by title - see beerPackageSizesHtml below) and
+  // `groupCount` (variants.length, for the "N sizes" hint on cards/rows).
+  function buildBeerBibleGroups(entries) {
+    const order = [];
+    const byKey = new Map();
+    entries.forEach((entry) => {
+      const key = beerGroupKey(entry);
+      if (!key) {
+        order.push([entry]);
+        return;
+      }
+      if (byKey.has(key)) {
+        byKey.get(key).push(entry);
+      } else {
+        const bucket = [entry];
+        byKey.set(key, bucket);
+        order.push(bucket);
+      }
+    });
+    return order.map((variants) => {
+      const primary = beerGroupPrimary(variants);
+      const sortedVariants = variants.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      return { ...primary, variants: sortedVariants, groupCount: sortedVariants.length };
+    });
+  }
+
+  // Finds whichever group a given beers-table row id currently belongs to -
+  // not just by matching a group's own primary id, but by checking every
+  // variant, since a profile can be opened (or a sibling/package-size row
+  // acted on) via any of its underlying rows' ids, and which one is
+  // "primary" can change from one render to the next (see beerGroupPrimary
+  // above).
+  function findBeerBibleGroupById(id) {
+    return buildBeerBibleGroups(beerBibleCache).find((g) => g.variants.some((v) => v.id === id));
+  }
+
   // "Researched" means this row has been through Untappd (or typed in by
   // hand) and actually carries something beyond a bare title+SKU stub - the
   // same test server/beerBibleImport.js's isEnriched uses to decide whether
@@ -7887,11 +7977,15 @@
   }
 
   function renderBeerBibleChipsAndStats() {
-    const researched = beerBibleCache.filter(beerIsResearched).length;
-    const varietyPacks = beerBibleCache.filter((b) => b.varietyPack).length;
-    const needsResearch = beerBibleCache.filter((b) => !beerIsResearched(b) && !b.varietyPack).length;
+    // Every count here is over distinct beers (see buildBeerBibleGroups),
+    // not raw beers-table rows - a 6-pack and a 12-pack of the same beer
+    // count once, the same as the grid itself now shows them as one card.
+    const groups = buildBeerBibleGroups(beerBibleCache);
+    const researched = groups.filter(beerIsResearched).length;
+    const varietyPacks = groups.filter((b) => b.varietyPack).length;
+    const needsResearch = groups.filter((b) => !beerIsResearched(b) && !b.varietyPack).length;
     const statusChips = [
-      { key: 'all', label: `All beers (${beerBibleCache.length})` },
+      { key: 'all', label: `All beers (${groups.length})` },
       { key: 'researched', label: `Researched (${researched})` },
       { key: 'needs', label: `Needs research (${needsResearch})` },
       { key: 'varietyPack', label: `Variety Packs (${varietyPacks})` },
@@ -7908,10 +8002,10 @@
       });
     });
 
-    const breweries = new Set(beerBibleCache.map((b) => b.brewery).filter(Boolean)).size;
-    const styles = new Set(beerBibleCache.map((b) => b.style).filter(Boolean)).size;
+    const breweries = new Set(groups.map((b) => b.brewery).filter(Boolean)).size;
+    const styles = new Set(groups.map((b) => b.style).filter(Boolean)).size;
     els.beerBibleStats.innerHTML = `
-      <div class="library-stat"><b>${beerBibleCache.length}</b><span>Beers</span></div>
+      <div class="library-stat"><b>${groups.length}</b><span>Beers</span></div>
       <div class="library-stat"><b>${breweries}</b><span>Breweries</span></div>
       <div class="library-stat"><b>${styles}</b><span>Styles</span></div>
       <div class="library-stat"><b>${needsResearch}</b><span>Need research</span></div>
@@ -7992,6 +8086,10 @@
   // beerResearchButtonHtml above for why - with the click-to-open-profile
   // behaviour wired up in renderBeerBibleGrid below instead of coming free
   // from a real <button>.
+  // `entry` is actually a group here (see buildBeerBibleGroups) - every
+  // field read below is the group's primary entry's own, same as before
+  // grouping existed, plus groupCount for the "N sizes" hint when this
+  // beer has more than one package size on file.
   function beerCardHtml(entry, sort) {
     // Escape each piece individually, then join with a raw (already-safe)
     // &middot; entity - escaping the joined string instead would turn that
@@ -8002,6 +8100,7 @@
     const statBits = [];
     if (entry.abv) statBits.push(`${escapeHtml(entry.abv)} ABV`);
     if (entry.ibu) statBits.push(`${escapeHtml(entry.ibu)} IBU`);
+    if (entry.groupCount > 1) statBits.push(`${entry.groupCount} sizes`);
     // An unresearched card always gets the Research chip in the metric slot
     // regardless of the active sort - none of the other metrics (rating/
     // ABV/SKU) have anything real to show yet on a beer that's never been
@@ -8027,11 +8126,12 @@
   // beerCardHtml above, same reason.
   function beerRowHtml(entry, sort) {
     const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
+    const sizesHint = entry.groupCount > 1 ? ` &middot; ${entry.groupCount} sizes` : '';
     return `
       <div class="bourbon-row" role="button" tabindex="0" data-id="${entry.id}">
         <div>
           <div class="bourbon-row__title">${escapeHtml(beerDisplayName(entry))}</div>
-          <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}</div>
+          <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}${sizesHint}</div>
         </div>
         ${metricHtml}
         <span class="bourbon-row__chevron" aria-hidden="true">&rsaquo;</span>
@@ -8078,16 +8178,31 @@
     `).join('');
   }
 
-  // Shared by renderBeerBibleGrid (what's on screen) and exportBeerBibleCsv
-  // (what a click on Export CSV… downloads) so the two can never drift -
-  // the file always matches whatever the search box + status/source/style
-  // chips + sort dropdown currently have selected. Leaving every filter at
-  // its default exports the whole Beer Bible.
+  // The flat, ungrouped list - one row per beers-table entry (one per SKU),
+  // search/status/style/sort all applied. Used by exportBeerBibleCsv, which
+  // is meant as a full backup/round-trip of the underlying table (every
+  // SKU's own row, not one row per distinct beer), and by
+  // beerBibleFilteredSortedGroups below, which is what renderBeerBibleGrid
+  // actually shows. Leaving every filter at its default returns the whole
+  // Beer Bible.
   function beerBibleFilteredSortedRows() {
     const rows = beerBibleCache.filter((b) => beerMatchesSearch(b) && beerMatchesStatus(b) && beerMatchesStyle(b));
     const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
     rows.sort(sort.cmp);
     return rows;
+  }
+
+  // What the grid itself renders - the same filtered/sorted rows above,
+  // collapsed into one card per distinct beer (see buildBeerBibleGroups).
+  // Grouping runs AFTER filtering, not before: a search that only matches
+  // one package size's own SKU/title shows just that group with just the
+  // matching variant(s) in it, rather than either hiding the whole beer or
+  // pulling in a sibling that didn't actually match. Since every variant of
+  // a group shares the same beerDisplayName (same beerName), the sort
+  // above already puts a group's variants adjacent to each other, so
+  // grouping afterward doesn't reorder anything sort.cmp itself decided.
+  function beerBibleFilteredSortedGroups() {
+    return buildBeerBibleGroups(beerBibleFilteredSortedRows());
   }
 
   // ---- One-click Research (grid card/row + profile page) ----
@@ -8243,7 +8358,7 @@
   }
 
   function renderBeerBibleGrid() {
-    const rows = beerBibleFilteredSortedRows();
+    const rows = beerBibleFilteredSortedGroups();
     const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
 
     const styleLabel = beerBibleStyleFilter === 'all' ? 'All styles' : beerBibleStyleFilter;
@@ -8373,11 +8488,11 @@
   function exportBeerBibleCsv() {
     const rows = beerBibleFilteredSortedRows();
     if (!rows.length) return;
-    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched', 'Variety Pack'];
+    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'Size', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched', 'Variety Pack'];
     const lines = [header.map(csvField).join(',')];
     rows.forEach((b) => {
       lines.push([
-        b.title, b.beerName, b.brewery, b.location, b.style, b.abv, b.ibu,
+        b.title, b.beerName, b.brewery, b.location, b.style, b.size, b.abv, b.ibu,
         b.untappdRating, b.untappdRatingCount, b.sku, b.upc, b.description,
         BEER_SOURCE_LABELS[b.source] || b.source || '',
         beerIsResearched(b) ? 'Yes' : 'No',
@@ -8482,14 +8597,44 @@
   // every field here still lives in the `beers` table and is still edited
   // through the same add/edit form (loadBeerBibleEntryIntoForm), reached
   // here via the Edit button instead of a card click.
+  // One row of the Package Sizes block below - `variant` is a single
+  // beers-table entry (never a group). Its label is the Size field when set,
+  // falling back to this row's own raw product title otherwise (see the
+  // Size field's own comment in index.html) - so an entry saved before this
+  // feature existed, or one nobody's bothered to label yet, still shows
+  // *something* meaningful rather than a blank row.
+  function beerPackageSizeRowHtml(variant) {
+    const label = variant.size || variant.title;
+    const metaBits = [variant.sku ? `SKU ${escapeHtml(variant.sku)}` : 'No SKU on file'];
+    if (variant.upc) metaBits.push(`UPC ${escapeHtml(variant.upc)}`);
+    const priceHtml = variant.sku
+      ? `<div class="package-row__price help-text" id="beerBiblePriceValue-${variant.id}" role="status" aria-live="polite">Checking the WinePOS export&hellip;</div>`
+      : '<div class="package-row__price help-text">No SKU on file for a price lookup.</div>';
+    return `
+      <div class="package-row">
+        <div class="package-row__main">
+          <div class="package-row__label">${escapeHtml(label)}</div>
+          <div class="package-row__meta">${metaBits.join(' &middot; ')}</div>
+          ${priceHtml}
+        </div>
+        <div class="package-row__actions">
+          <button type="button" class="btn btn--ghost btn--small" data-package-edit="${variant.id}">Edit</button>
+          <button type="button" class="btn btn--ghost btn--small" data-package-delete="${variant.id}">Delete</button>
+        </div>
+      </div>
+    `;
+  }
+
   function renderBeerBibleProfile() {
-    const entry = beerBibleCache.find((b) => b.id === beerBibleSelectedId);
-    if (!entry) {
+    const group = findBeerBibleGroupById(beerBibleSelectedId);
+    if (!group) {
       beerBibleViewMode = 'grid';
       renderBeerBibleBody();
       return;
     }
-    const siblings = beerBibleCache.filter((b) => b.id !== entry.id && entry.brewery && b.brewery === entry.brewery);
+    const entry = group; // group spreads its primary entry's own fields - see buildBeerBibleGroups
+    const allGroups = buildBeerBibleGroups(beerBibleCache);
+    const siblings = allGroups.filter((g) => g.id !== group.id && entry.brewery && g.brewery === entry.brewery);
 
     els.beerBibleBody.innerHTML = `
       <div class="library-crumb">
@@ -8535,9 +8680,6 @@
             <div><dt>Brewery</dt><dd>${escapeHtml(entry.brewery || 'Unknown')}</dd></div>
             ${entry.location ? `<div><dt>Location</dt><dd>${escapeHtml(entry.location)}</dd></div>` : ''}
             ${entry.style ? `<div><dt>Style</dt><dd>${escapeHtml(entry.style)}</dd></div>` : ''}
-            ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
-            ${entry.upc ? `<div><dt>UPC</dt><dd>${escapeHtml(entry.upc)}</dd></div>` : ''}
-            ${entry.sku ? `<div><dt>Price</dt><dd id="beerBiblePriceValue" class="help-text" role="status" aria-live="polite">Checking the WinePOS export&hellip;</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.brewery)} entries</dt>
@@ -8546,11 +8688,25 @@
             </div>` : ''}
         </div>
       </div>
+      <!-- SKU/UPC/Price used to be plain rows in the info-card above -
+           now that one beer profile can represent more than one package
+           size (see buildBeerBibleGroups), those are per-package-size
+           facts, not per-beer ones, so they live here instead: one row per
+           underlying beers-table entry, full-width below .profile-grid
+           (same placement the Bourbon Library's own References & Sources
+           block uses), each with its own live price and Edit/Delete. -->
+      <div class="block">
+        <div class="refs__head">
+          <h3>Package Sizes</h3>
+          <button type="button" class="btn btn--small" id="beerBibleAddPackageSizeBtn">+ Add Package Size</button>
+        </div>
+        <div class="package-row-list">
+          ${group.variants.map(beerPackageSizeRowHtml).join('')}
+        </div>
+      </div>
     `;
-    document.getElementById('beerBibleEditBtn').addEventListener('click', () => {
-      beerBibleModal.open();
-      loadBeerBibleEntryIntoForm(entry);
-    });
+    document.getElementById('beerBibleEditBtn').addEventListener('click', () => openBeerBibleEditForm(entry));
+    document.getElementById('beerBibleAddPackageSizeBtn').addEventListener('click', () => openAddPackageSizeForm(group));
     document.getElementById('beerBibleCrumbBack').addEventListener('click', () => {
       beerBibleSelectedId = null;
       beerBibleViewMode = 'grid';
@@ -8562,11 +8718,25 @@
         renderBeerBibleProfile();
       });
     });
+    els.beerBibleBody.querySelectorAll('[data-package-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const variant = group.variants.find((v) => v.id === Number(btn.dataset.packageEdit));
+        if (variant) openBeerBibleEditForm(variant);
+      });
+    });
+    els.beerBibleBody.querySelectorAll('[data-package-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const variant = group.variants.find((v) => v.id === Number(btn.dataset.packageDelete));
+        if (!variant) return;
+        if (!confirm(`Delete the "${variant.size || variant.title}" package size from the Beer Bible? This can't be undone.`)) return;
+        deleteBeerBibleEntry(variant.id);
+      });
+    });
     wireBeerResearchButtons(els.beerBibleBody, () => {
       renderBeerBibleChipsAndStats();
       renderBeerBibleProfile();
     });
-    if (entry.sku) loadBeerBiblePrice(entry);
+    group.variants.forEach((variant) => { if (variant.sku) loadBeerBiblePrice(variant); });
   }
 
   // Formats /api/export-price's own fields into one line - the regular/
@@ -8583,34 +8753,41 @@
     return `${mainPrice} · ${formatMoney(data.packPrice)}${data.packQty ? ` (${data.packQty}-pack)` : ' (pack)'}`;
   }
 
-  // Fills in the Price row renderBeerBibleProfile leaves as "Checking the
-  // WinePOS export..." - same live lookup (/api/export-price ->
-  // lookupSkuInExport in upcCatalog.js) against the entry's own sku as the
-  // Bourbon Library profile page's own Price row (loadBourbonLibraryPrice
-  // above), not a price stored on the entry itself, for the same reason:
-  // a beer's shelf price drifts, and this is meant to reflect today's,
-  // not whatever it was when the SKU was typed in (contrast with upc,
-  // which Export File Sync does store - a barcode doesn't go stale the way
-  // a price does). Checks beerBibleSelectedId before applying the result,
-  // same guard against a slow response landing after staff already clicked
-  // into a different beer.
+  // Fills in one package-size row's Price line (renderBeerBibleProfile
+  // leaves it as "Checking the WinePOS export...") - same live lookup
+  // (/api/export-price -> lookupSkuInExport in upcCatalog.js) against
+  // `entry`'s own sku as the Bourbon Library profile page's own Price row
+  // (loadBourbonLibraryPrice above), not a price stored on the entry
+  // itself, for the same reason: a beer's shelf price drifts, and this is
+  // meant to reflect today's, not whatever it was when the SKU was typed
+  // in (contrast with upc, which Export File Sync does store - a barcode
+  // doesn't go stale the way a price does).
+  //
+  // Guards on the target element still existing rather than on
+  // beerBibleSelectedId (as this used to, back when a profile page could
+  // only ever have the one SKU/one price element) - `entry` here is often
+  // a sibling package size, not the group's own primary/selected id, so
+  // that comparison would always fail for one. Checking the element
+  // instead covers exactly the same case (staff navigated away before this
+  // resolved, so the whole profile's markup - this element included - was
+  // already replaced) without needing to know which of a group's several
+  // ids is "the" selected one.
   async function loadBeerBiblePrice(entry) {
+    const elId = `beerBiblePriceValue-${entry.id}`;
     let data;
     try {
       const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
       data = await res.json();
       if (!res.ok) throw data;
     } catch (err) {
-      if (beerBibleSelectedId !== entry.id) return;
-      const el = document.getElementById('beerBiblePriceValue');
+      const el = document.getElementById(elId);
       if (!el) return;
       el.textContent = err && err.code === 'SKU_NOT_FOUND'
         ? 'Not found in the current WinePOS export.'
         : (err && err.error) || 'Could not check the WinePOS export.';
       return;
     }
-    if (beerBibleSelectedId !== entry.id) return;
-    const el = document.getElementById('beerBiblePriceValue');
+    const el = document.getElementById(elId);
     if (!el) return;
     el.textContent = formatBeerPriceLine(data);
   }
@@ -8672,14 +8849,32 @@
   // one (see loadBeerBibleEntryIntoForm) - one form serves both, switching
   // label/button text based on which mode this is in.
   let beerBibleEditingId = null;
+  // Every OTHER package-size row in the same beer as beerBibleEditingId
+  // (see buildBeerBibleGroups) - set alongside it by loadBeerBibleEntryIntoForm,
+  // so the Save Changes handler below can cascade the shared/researched
+  // fields (brewery/style/ABV/IBU/rating/description/beerName) to every
+  // sibling too, not just the row actually open in this form. Title/SKU/
+  // UPC/Size stay row-specific and are never touched on a sibling.
+  let beerBibleEditingSiblingIds = [];
+  // Set only when this form was opened via a beer's own "+ Add Package
+  // Size" button (see openAddPackageSizeForm below) - the shared/researched
+  // fields to submit alongside whatever new title/sku/upc/size staff type,
+  // so the new row groups with its siblings immediately instead of sitting
+  // as its own unresearched entry until someone runs Research on it too.
+  let beerBibleAddingPackageSizeFor = null;
 
   function resetBeerBibleForm() {
     beerBibleEditingId = null;
+    beerBibleEditingSiblingIds = [];
+    beerBibleAddingPackageSizeFor = null;
+    els.beerBibleFormTitleLabel.textContent = 'Beer Name';
     els.beerBibleFormTitleInput.value = '';
+    els.beerBibleFormTitleInput.placeholder = 'Slack Tide Flounder Pounder';
     els.beerBibleFormVarietyPackInput.checked = false;
     els.beerBibleFormBreweryInput.value = '';
     els.beerBibleFormLocationInput.value = '';
     els.beerBibleFormStyleInput.value = '';
+    els.beerBibleFormSizeInput.value = '';
     els.beerBibleFormSkuInput.value = '';
     els.beerBibleFormUpcInput.value = '';
     els.beerBibleFormAbvInput.value = '';
@@ -8694,8 +8889,12 @@
     els.beerBibleFormStatus.textContent = '';
   }
 
-  function loadBeerBibleEntryIntoForm(entry) {
+  // `siblingIds` is every other package-size row in the same beer as
+  // `entry` (see openBeerBibleEditForm below) - empty for a beer with only
+  // the one entry, same as before grouping existed.
+  function loadBeerBibleEntryIntoForm(entry, siblingIds = []) {
     beerBibleEditingId = entry.id;
+    beerBibleEditingSiblingIds = siblingIds;
     // Prefilled with whatever's actually shown for this entry (Untappd's
     // own name when it has one, see beerDisplayName), not the raw
     // entry.title underneath - so what staff see to edit here matches what
@@ -8708,6 +8907,7 @@
     els.beerBibleFormBreweryInput.value = entry.brewery || '';
     els.beerBibleFormLocationInput.value = entry.location || '';
     els.beerBibleFormStyleInput.value = entry.style || '';
+    els.beerBibleFormSizeInput.value = entry.size || '';
     els.beerBibleFormSkuInput.value = entry.sku || '';
     els.beerBibleFormUpcInput.value = entry.upc || '';
     els.beerBibleFormAbvInput.value = entry.abv || '';
@@ -8723,24 +8923,93 @@
     els.beerBibleFormTitleInput.scrollIntoView({ block: 'nearest' });
   }
 
-  // Deletes an entry from the Beer Bible, then closes this form and
-  // refreshes the grid underneath it. The entry being deleted is always the
-  // one currently open in this form (see els.beerBibleFormDeleteBtn's own
-  // click handler below), so there's nothing left to keep editing once it
-  // succeeds.
+  // Opens the Edit form for one specific package-size row, cascading its
+  // shared fields to every sibling on save regardless of which row (the
+  // group's primary, via the profile's main Edit button, or any other
+  // package size, via its own Edit button in the Package Sizes list) was
+  // actually opened - see loadBeerBibleEntryIntoForm/beerBibleEditingSiblingIds
+  // above.
+  function openBeerBibleEditForm(variant) {
+    const group = findBeerBibleGroupById(variant.id);
+    const siblingIds = group ? group.variants.filter((v) => v.id !== variant.id).map((v) => v.id) : [];
+    beerBibleModal.open();
+    loadBeerBibleEntryIntoForm(variant, siblingIds);
+  }
+
+  // Opens a blank Add Entry form pre-filled with `group`'s own shared/
+  // researched fields (brewery/location/style/ABV/IBU/rating/description),
+  // for adding one more package size of an already-researched beer - staff
+  // only need to type this SKU's own title (Title is unique per row - see
+  // idx_beers_title_unique in server/db.js - so it can never just default
+  // to the beer's existing title/name) plus its Size/SKU/UPC. Relabels the
+  // Beer Name field to Product Title for the duration, since what belongs
+  // there in this flow is a second SKU's own raw product title, not the
+  // beer's name (already known at this point, and carried along via
+  // beerBibleAddingPackageSizeFor so the Save handler below can send it as
+  // this new row's beerName too - without that, the new row would have no
+  // beerName of its own and wouldn't actually group with its siblings).
+  function openAddPackageSizeForm(group) {
+    beerBibleModal.open(); // runs resetBeerBibleForm via onOpen first
+    beerBibleAddingPackageSizeFor = {
+      beerName: group.beerName || beerDisplayName(group),
+      brewery: group.brewery,
+      location: group.location,
+      style: group.style,
+      abv: group.abv,
+      ibu: group.ibu,
+      untappdRating: group.untappdRating,
+      untappdRatingCount: group.untappdRatingCount,
+      description: group.description,
+    };
+    els.beerBibleFormTitleLabel.textContent = 'Product Title';
+    els.beerBibleFormTitleInput.placeholder = 'e.g. "…12-Pack Cans" - must differ from this beer\'s other titles';
+    els.beerBibleFormBreweryInput.value = group.brewery || '';
+    els.beerBibleFormLocationInput.value = group.location || '';
+    els.beerBibleFormStyleInput.value = group.style || '';
+    els.beerBibleFormAbvInput.value = group.abv || '';
+    els.beerBibleFormIbuInput.value = group.ibu || '';
+    els.beerBibleFormRatingInput.value = group.untappdRating || '';
+    els.beerBibleFormRatingCountInput.value = group.untappdRatingCount || '';
+    els.beerBibleFormDescriptionInput.value = group.description || '';
+    els.beerBibleFormTitle.textContent = `Add a package size for "${beerDisplayName(group)}"`;
+    els.beerBibleFormSaveBtn.textContent = 'Add Package Size';
+    els.beerBibleFormTitleInput.focus();
+  }
+
+  // Deletes one entry (one beers-table row/SKU) from the Beer Bible, then
+  // refreshes whatever's underneath it. Two callers: the modal's own Delete
+  // button (els.beerBibleFormDeleteBtn's click handler below - always
+  // whatever's currently open in that form) and a package-size row's own
+  // Delete button on the profile page (see renderBeerBibleProfile), which
+  // deletes just that one package size without ever opening the modal at
+  // all - beerBibleModal.close() is a harmless no-op when it wasn't open.
+  //
+  // A deleted entry that had sibling package sizes (see
+  // buildBeerBibleGroups) leaves the profile open on whichever sibling
+  // survives, instead of always bouncing back to the grid the way deleting
+  // a beer's only entry still does - captured before the DELETE request
+  // fires, since afterward the deleted row (and whatever beerName/brewery
+  // it grouped on) is gone and can't be looked up anymore.
   async function deleteBeerBibleEntry(id) {
+    const group = findBeerBibleGroupById(id);
+    const survivingSiblingId = group ? (group.variants.find((v) => v.id !== id) || {}).id : undefined;
     try {
       const resp = await fetch(`/api/beers/${id}`, { method: 'DELETE' });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
       beerBibleModal.close();
-      // The deleted entry can't have a profile page anymore - always back
-      // to the grid, rather than leaving it to renderBeerBibleProfile's own
-      // "entry not found" fallback.
-      beerBibleViewMode = 'grid';
-      beerBibleSelectedId = null;
       await fetchBeerBible();
       renderBeerBibleChipsAndStats();
+      if (survivingSiblingId !== undefined) {
+        beerBibleSelectedId = survivingSiblingId;
+        beerBibleViewMode = 'profile';
+      } else {
+        // No package size left for this beer - nothing left to show a
+        // profile page for, so back to the grid, same as before this beer
+        // could ever have more than one entry.
+        beerBibleViewMode = 'grid';
+        beerBibleSelectedId = null;
+      }
       renderBeerBibleBody();
     } catch (err) {
       els.beerBibleFormStatus.textContent = err.message || 'Could not delete that entry.';
@@ -8771,7 +9040,7 @@
   els.beerBibleFormSaveBtn.addEventListener('click', async () => {
     const title = els.beerBibleFormTitleInput.value.trim();
     if (!title) {
-      els.beerBibleFormStatus.textContent = 'A beer name is required.';
+      els.beerBibleFormStatus.textContent = beerBibleAddingPackageSizeFor ? 'A product title is required.' : 'A beer name is required.';
       return;
     }
     els.beerBibleFormSaveBtn.disabled = true;
@@ -8786,14 +9055,19 @@
       // updateBeerById's own "undefined leaves it alone" rule do that -
       // see beerOptionalFieldParams. A brand new entry has no such
       // underlying title to protect - title *is* the typed name there,
-      // same as before this field also carried beerName.
+      // same as before this field also carried beerName - UNLESS this is
+      // an "Add Package Size" flow (see openAddPackageSizeForm above), in
+      // which case the new row also needs the group's own beerName so it
+      // groups with its siblings immediately, not just whenever someone
+      // eventually researches it.
       const payload = beerBibleEditingId
         ? { beerName: title }
-        : { title };
+        : { title, ...(beerBibleAddingPackageSizeFor ? { beerName: beerBibleAddingPackageSizeFor.beerName } : {}) };
       Object.assign(payload, {
         brewery: els.beerBibleFormBreweryInput.value.trim(),
         location: els.beerBibleFormLocationInput.value.trim(),
         style: els.beerBibleFormStyleInput.value.trim(),
+        size: els.beerBibleFormSizeInput.value.trim(),
         sku: els.beerBibleFormSkuInput.value.trim(),
         upc: els.beerBibleFormUpcInput.value.trim(),
         abv: els.beerBibleFormAbvInput.value.trim(),
@@ -8813,14 +9087,47 @@
         });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
+
+      // Cascade the shared/researched fields to every OTHER package size in
+      // this beer (see beerBibleEditingSiblingIds above), so they never
+      // drift out of sync with what was just saved - deliberately the same
+      // field set beerBibleAddingPackageSizeFor prefills a brand-new
+      // sibling with, title/sku/upc/size left out since those are
+      // row-specific. This also keeps beerName/brewery matching across the
+      // whole group, which matters beyond just "staying in sync" - a rename
+      // that only landed on the row actually being edited would silently
+      // un-group it from its own siblings (see beerGroupKey). Best-effort,
+      // same "never blocks the actual task" spirit as autoSaveBeerToBible -
+      // a sibling failing to update here doesn't undo or block the primary
+      // save that already succeeded.
+      if (beerBibleEditingId && beerBibleEditingSiblingIds.length) {
+        const sharedFields = {
+          beerName: payload.beerName,
+          brewery: payload.brewery,
+          location: payload.location,
+          style: payload.style,
+          abv: payload.abv,
+          ibu: payload.ibu,
+          untappdRating: payload.untappdRating,
+          untappdRatingCount: payload.untappdRatingCount,
+          description: payload.description,
+        };
+        await Promise.all(beerBibleEditingSiblingIds.map((id) => fetch(`/api/beers/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sharedFields),
+        }).catch((err) => {
+          console.warn('Beer Bible sibling sync failed:', err.message);
+        })));
+      }
+
       beerBibleModal.close();
       await fetchBeerBible();
       renderBeerBibleChipsAndStats();
       // beerBibleSelectedId/beerBibleViewMode are untouched by opening this
       // form, so a save made from an existing beer's profile page (Edit
-      // button) lands back on that same profile with the fresh data -
-      // Add Entry only ever opens from the grid, so that path still lands
-      // back on the grid same as before.
+      // button, or a package-size row's own Edit/+ Add Package Size)
+      // lands back on that same profile with the fresh data - Add Entry
+      // only ever opens from the grid, so that path still lands back on
+      // the grid same as before.
       renderBeerBibleBody();
     } catch (err) {
       els.beerBibleFormStatus.textContent = err.message || 'Could not save that entry.';

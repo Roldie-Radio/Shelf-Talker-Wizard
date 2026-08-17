@@ -1700,8 +1700,15 @@
              Changes, adding a Delete button next to Cancel. -->
         <div class="settings-section">
           <h3 class="settings-section-title" id="beerBibleFormTitle">Add an entry manually</h3>
+          <!-- Label text swaps to "Product Title" (see beerBibleFormTitleLabel
+               in app.js) when this form was opened via a beer's own "+ Add
+               Package Size" button - what belongs here is then a second
+               SKU's own raw product title (title is unique per row - see
+               idx_beers_title_unique in server/db.js - so it can't just be
+               left as a copy of the beer's existing title/name), not the
+               beer's name itself, which is already known at that point. -->
           <label class="field">
-            <span>Beer Name</span>
+            <span id="beerBibleFormTitleLabel">Beer Name</span>
             <input type="text" id="beerBibleFormTitleInput" maxlength="120" placeholder="Slack Tide Flounder Pounder" />
           </label>
           <!-- A variety/mixed pack (several different beers under one SKU)
@@ -1729,21 +1736,35 @@
               <span>Style (optional)</span>
               <input type="text" id="beerBibleFormStyleInput" maxlength="80" placeholder="American IPA" />
             </label>
+            <!-- The same beer sold in more than one package size (a 6-pack
+                 and a 12-pack, say) is still one row here per SKU - this
+                 just labels which package size THIS row/SKU is. Entries
+                 that share a Brewery + Untappd Beer Name are shown together
+                 as one profile page with every package size listed (see
+                 beerGroupKey/buildBeerBibleGroups in app.js); Size is what
+                 labels each one there instead of falling back to this row's
+                 own raw Beer Name/Title text. -->
+            <label class="field">
+              <span>Size (optional)</span>
+              <input type="text" id="beerBibleFormSizeInput" maxlength="40" placeholder="6-Pack" />
+            </label>
+          </div>
+          <div class="field-row">
             <label class="field">
               <span>SKU (optional)</span>
               <input type="text" id="beerBibleFormSkuInput" maxlength="40" placeholder="15614" />
             </label>
+            <!-- The store's own SKU above and this manufacturer barcode are
+                 different numbers, same UPC-vs-SKU distinction Scan UPC
+                 makes everywhere else in this app - typed in by hand here,
+                 or filled in from the configured WinePOS export by Export
+                 File Sync (matched against this entry's own SKU, see
+                 server/beerBibleExportSync.js). -->
+            <label class="field">
+              <span>UPC (optional)</span>
+              <input type="text" id="beerBibleFormUpcInput" maxlength="20" placeholder="811358021015" />
+            </label>
           </div>
-          <!-- The store's own SKU above and this manufacturer barcode are
-               different numbers, same UPC-vs-SKU distinction Scan UPC makes
-               everywhere else in this app - typed in by hand here, or
-               filled in from the configured WinePOS export by Export File
-               Sync (matched against this entry's own SKU, see
-               server/beerBibleExportSync.js). -->
-          <label class="field">
-            <span>UPC (optional)</span>
-            <input type="text" id="beerBibleFormUpcInput" maxlength="20" placeholder="811358021015" />
-          </label>
           <div class="field-row">
             <label class="field">
               <span>ABV (optional)</span>

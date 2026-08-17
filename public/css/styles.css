@@ -805,6 +805,28 @@ h1, h2, h3 { margin: 0; }
 }
 .sibling-btn:hover { border-color: var(--ui-accent-ink); }
 
+/* Package Sizes block (beerPackageSizeRowHtml/renderBeerBibleProfile in
+   app.js) - one row per package size (beers-table entry/SKU) a beer
+   profile represents, full-width below .profile-grid, same placement/
+   .refs__head reuse as References & Sources above. Each row's own Edit/
+   Delete stay ghost buttons the same size as the block's own +Add Package
+   Size trigger (see .refs__head), not the bigger profile-head__actions
+   buttons - this is a list of several rows, not one page-level action. */
+.package-row-list { display: flex; flex-direction: column; }
+.package-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--ui-border);
+}
+.package-row:first-child { border-top: none; padding-top: 0.3rem; }
+.package-row__label { font-weight: 600; font-size: 0.87rem; }
+.package-row__meta { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.15rem; }
+.package-row__price { font-size: 0.78rem; color: var(--ui-ink-soft); margin-top: 0.15rem; }
+.package-row__actions { display: flex; gap: 0.4rem; flex: 0 0 auto; }
+
 /* Unified "References & Sources" block (referencesSectionHtml in app.js) -
    every citation on the entry in one place, spanning the full profile
    width below .profile-grid rather than living inside just one card. */

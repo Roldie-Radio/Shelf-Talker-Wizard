@@ -126,6 +126,16 @@ function applySchema(db) {
     -- form's own Variety Pack checkbox in app.js); nothing infers it from
     -- title text. Stored as 0/1 (SQLite has no native boolean) - rowToBeer
     -- below turns it back into a real boolean.
+    -- size is a free-text package descriptor ("6-Pack", "12-Pack", "Single")
+    -- for the ONE row/SKU/UPC this entry actually is - the same beer sold in
+    -- more than one pack size is still one row per SKU here (title/sku/upc
+    -- stay row-specific; a store's raw export title and SKU are already
+    -- specific to one package size, and Export File Sync/Scan UPC/SKU
+    -- Lookup only ever know about the one SKU a given lookup was for). What
+    -- ties multiple package-size rows of the *same* beer together into one
+    -- profile page is a client-side display concept, not a schema one - see
+    -- beerGroupKey/buildBeerBibleGroups in app.js, which group entries
+    -- sharing the same brewery + beer_name (below).
     CREATE TABLE IF NOT EXISTS beers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -133,6 +143,7 @@ function applySchema(db) {
       brewery TEXT,
       location TEXT,
       style TEXT,
+      size TEXT,
       abv TEXT,
       ibu TEXT,
       untappd_rating TEXT,
@@ -188,6 +199,7 @@ function applyBeerColumns(db) {
   if (!existing.has('beer_name')) db.exec('ALTER TABLE beers ADD COLUMN beer_name TEXT');
   if (!existing.has('upc')) db.exec('ALTER TABLE beers ADD COLUMN upc TEXT');
   if (!existing.has('variety_pack')) db.exec('ALTER TABLE beers ADD COLUMN variety_pack INTEGER NOT NULL DEFAULT 0');
+  if (!existing.has('size')) db.exec('ALTER TABLE beers ADD COLUMN size TEXT');
 }
 
 // mash_bills shipped with just id/title/distillery/grains/source/updated_at
@@ -598,6 +610,7 @@ function rowToBeer(row) {
     brewery: row.brewery || '',
     location: row.location || '',
     style: row.style || '',
+    size: row.size || '',
     abv: row.abv || '',
     ibu: row.ibu || '',
     untappdRating: row.untappd_rating || '',
@@ -660,16 +673,17 @@ function validateBeerInput({ title }) {
 // mashBillOptionalFieldParams above - every field here beyond title/source
 // is optional, and `existing` is a rowToBeer()-shaped object or null.
 function beerOptionalFieldParams({
-  beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+  beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
 }, existing) {
   const prev = existing || {
-    beerName: '', brewery: '', location: '', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '', varietyPack: false,
+    beerName: '', brewery: '', location: '', style: '', size: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '', varietyPack: false,
   };
   return {
     beerName: normalizeOptionalText(beerName !== undefined ? beerName : prev.beerName),
     brewery: normalizeOptionalText(brewery !== undefined ? brewery : prev.brewery),
     location: normalizeOptionalText(location !== undefined ? location : prev.location),
     style: normalizeOptionalText(style !== undefined ? style : prev.style),
+    size: normalizeOptionalText(size !== undefined ? size : prev.size),
     abv: normalizeOptionalText(abv !== undefined ? abv : prev.abv),
     ibu: normalizeOptionalText(ibu !== undefined ? ibu : prev.ibu),
     untappdRating: normalizeOptionalText(untappdRating !== undefined ? untappdRating : prev.untappdRating),
@@ -686,7 +700,7 @@ function beerOptionalFieldParams({
 }
 
 const BEER_OPTIONAL_COLUMNS_SET = `
-  beer_name = @beerName, brewery = @brewery, location = @location, style = @style, abv = @abv, ibu = @ibu,
+  beer_name = @beerName, brewery = @brewery, location = @location, style = @style, size = @size, abv = @abv, ibu = @ibu,
   untappd_rating = @untappdRating, untappd_rating_count = @untappdRatingCount,
   description = @description, sku = @sku, upc = @upc, variety_pack = @varietyPack
 `;
@@ -698,7 +712,7 @@ const BEER_OPTIONAL_COLUMNS_SET = `
 // saving again for a beer already on file updates that same entry instead
 // of erroring or duplicating it.
 function upsertBeer({
-  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+  title, source, beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
 }) {
   const db = getDb();
   const { cleanTitle } = validateBeerInput({ title });
@@ -734,7 +748,7 @@ function upsertBeer({
     source: source || 'Manual',
     updatedAt: now,
     ...beerOptionalFieldParams({
-      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+      beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
     }, existing),
   };
 
@@ -748,10 +762,10 @@ function upsertBeer({
   }
   const info = db.prepare(`
     INSERT INTO beers (
-      title, source, updated_at, beer_name, brewery, location, style, abv, ibu, untappd_rating, untappd_rating_count, description, sku, upc, variety_pack
+      title, source, updated_at, beer_name, brewery, location, style, size, abv, ibu, untappd_rating, untappd_rating_count, description, sku, upc, variety_pack
     )
     VALUES (
-      @title, @source, @updatedAt, @beerName, @brewery, @location, @style, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku, @upc, @varietyPack
+      @title, @source, @updatedAt, @beerName, @brewery, @location, @style, @size, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku, @upc, @varietyPack
     )
   `).run(params);
   return getBeer(info.lastInsertRowid);
@@ -763,7 +777,7 @@ function upsertBeer({
 // real conflict here, not a merge - same DUPLICATE_TITLE handling as
 // updateMashBillById.
 function updateBeerById(id, {
-  title, source, beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+  title, source, beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
 }) {
   const db = getDb();
   const existing = getBeer(id);
@@ -781,7 +795,7 @@ function updateBeerById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...beerOptionalFieldParams({
-        beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+        beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
       }, existing),
     });
   } catch (err) {

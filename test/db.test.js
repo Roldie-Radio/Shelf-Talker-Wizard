@@ -593,6 +593,17 @@ test('upsertBeer persists varietyPack, and an omitted varietyPack on a repeat sa
   });
 });
 
+test('upsertBeer persists size as plain text, and an omitted size on a repeat save leaves it alone (same convention as every other optional text field)', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({ title: 'DOGFISH HEAD 60 MIN IPA 6PK CAN', size: '6-Pack', sku: '111' });
+    assert.equal(first.size, '6-Pack');
+
+    const second = db.upsertBeer({ title: 'DOGFISH HEAD 60 MIN IPA 6PK CAN', style: 'American IPA', sku: '111' });
+    assert.equal(second.id, first.id);
+    assert.equal(second.size, '6-Pack');
+  });
+});
+
 test('upsertBeer rejects a missing title', () => {
   withTempDb(() => {
     assert.throws(() => db.upsertBeer({ title: '' }), { code: 'TITLE_REQUIRED' });
@@ -610,6 +621,7 @@ test('a new beer entry defaults every optional field to an empty string, not nul
       brewery: '',
       location: '',
       style: '',
+      size: '',
       abv: '',
       ibu: '',
       untappdRating: '',
