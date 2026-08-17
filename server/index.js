@@ -13,7 +13,7 @@ const {
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
   listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
-  listBeers, upsertBeer, updateBeerById, deleteBeer, getBeerByTitle,
+  listBeers, getBeer, upsertBeer, updateBeerById, deleteBeer, getBeerByTitle,
   listRums, upsertRum, updateRumById, deleteRum,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
@@ -690,6 +690,46 @@ function createApp({
     const deleted = deleteBeer(Number(req.params.id));
     if (!deleted) return res.status(404).json({ error: 'No beer entry with that id.' });
     res.json({ success: true });
+  });
+
+  // Backs the Beer Bible's one-click "Research" button (grid card + profile
+  // page, see app.js) - the same live Untappd search Search by Name/SKU
+  // Lookup/Scan UPC already run, just started from an already-saved Beer
+  // Bible row instead of a fresh product lookup. Runs the search off this
+  // entry's own title (the store-sourced Product Title, never overwritten -
+  // see rowToBeer's own comment in db.js) and passes the rest of the row's
+  // current fields through as `product` too, so enrichBeerFromUntappd's own
+  // mergeUntappdBeer fallback keeps whatever's already saved (a hand-typed
+  // description, say) wherever Untappd's own page doesn't have one.
+  //
+  // Read-only: this never writes to the entry itself, same as every other
+  // beer lookup route - a confident single match still needs staff to
+  // accept it (Confirm Untappd Match), and a tie still needs a pick
+  // (openUntappdPicker), before either one is actually saved via the
+  // existing PUT /api/beers/:id. `title` is deliberately left out of the
+  // response the client ends up saving (see saveBeerResearchFields in
+  // app.js) so a research run can never rename the entry the way a SKU-
+  // matched auto-save already refuses to.
+  app.post('/api/beers/:id/research', async (req, res) => {
+    const beer = getBeer(Number(req.params.id));
+    if (!beer) return res.status(404).json({ error: 'No beer entry with that id.' });
+    try {
+      const data = await enrichBeerFromUntappd({
+        title: beer.title,
+        beerName: beer.beerName,
+        brewery: beer.brewery,
+        location: beer.location,
+        style: beer.style,
+        abv: beer.abv,
+        ibu: beer.ibu,
+        untappdRating: beer.untappdRating,
+        untappdRatingCount: beer.untappdRatingCount,
+        description: beer.description,
+      });
+      res.json(data);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not search Untappd for that beer.' });
+    }
   });
 
   // Backs the Beer Bible page's "Check GitHub for New Beers" button - the

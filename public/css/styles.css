@@ -518,6 +518,18 @@ h1, h2, h3 { margin: 0; }
 .bourbon-list { display: flex; flex-direction: column; gap: 0.45rem; }
 .bourbon-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--ui-border); background: var(--ui-panel); border-radius: 8px; padding: 0.6rem 0.8rem; }
 .bourbon-row:hover { background: var(--ui-hover); border-color: var(--ui-accent-ink); }
+/* The Beer Bible's own card/row (see beerCardHtml/beerRowHtml in app.js) is
+   a role="button" div rather than Bourbon/Rum's real <button> - specifically
+   so the Research chip (.research-chip below) can nest a real <button>
+   inside it, which a <button>-in-a-<button> can't do without invalid markup
+   and a double-firing click. A div with tabindex gets no free focus ring
+   the way a <button> does, so it needs one drawn explicitly; scoped to
+   [role="button"] so Bourbon/Rum's still-real <button> cards are untouched. */
+.bourbon-card[role="button"]:focus-visible,
+.bourbon-row[role="button"]:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
 .bourbon-row__title { font-size: 0.88rem; font-weight: 700; }
 .bourbon-row__sub { font-size: 0.75rem; color: var(--ui-muted); margin-top: 0.1rem; }
 .bourbon-row__chevron { flex: 0 0 auto; color: var(--ui-muted); font-size: 0.9rem; }
@@ -579,6 +591,35 @@ h1, h2, h3 { margin: 0; }
 .bourbon-card__title { font-size: 0.98rem; font-weight: 700; }
 .bourbon-card__sub { font-size: 0.78rem; color: var(--ui-muted); }
 .bourbon-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.1rem; }
+
+/* One-click Research button (see beerResearchButtonHtml/runBeerResearch in
+   app.js) - the Beer Bible grid card/row's footer slot for any entry that
+   hasn't been looked up yet, standing in for the plain "Needs research"
+   .conf-badge span the same slot shows once it has (see beerCardHtml/
+   beerRowHtml's own metricHtml). Same pill footprint as .conf-badge/
+   .sort-metric so it drops into that slot without changing the row's
+   height, but a real button: accent-outlined idle, fills solid on hover,
+   same interaction language .btn--primary uses everywhere else. */
+.research-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem; font: inherit; font-size: 0.72rem; font-weight: 700;
+  padding: 0.2rem 0.55rem 0.2rem 0.45rem; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--ui-accent-ink); background: transparent; color: var(--ui-accent-ink);
+}
+.research-chip:hover:not(:disabled) { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.research-chip:disabled { cursor: default; opacity: 0.85; }
+.research-chip:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* Bigger, .btn-shaped copy for the profile header's primary action slot
+   (see beerResearchButtonHtmlLarge/renderBeerBibleProfile in app.js) - same
+   idle/loading/error text runBeerResearch swaps in, just .btn--primary
+   sized instead of a footer pill. */
+.research-btn:disabled { cursor: default; opacity: 0.85; }
+
+.research-spin { animation: research-spin 0.8s linear infinite; }
+@keyframes research-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .research-spin { animation: none; }
+}
 
 /* Mash Bill grain proportion bar (see grainBarHtml/LIBRARY_GRAIN_COLORS) -
    the grid card's only visualization, and the profile page's "Compare to
@@ -716,6 +757,12 @@ h1, h2, h3 { margin: 0; }
 .profile-head__eyebrow { margin: 0 0 0.15rem; color: var(--ui-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .profile-head__by { margin: 0.2rem 0 0; color: var(--ui-muted); font-size: 0.9rem; }
 .profile-head__by strong { color: var(--ui-ink); }
+/* Wraps Edit plus (on an unresearched Beer Bible entry) the Research on
+   Untappd button next to it - see renderBeerBibleProfile in app.js - so
+   .profile-head's own space-between still has just two flex children
+   (this and the title/eyebrow block) whether one button is showing or
+   two. */
+.profile-head__actions { display: flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
 .profile-tags { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
 .tag {
   display: inline-block;

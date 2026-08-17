@@ -1369,6 +1369,76 @@ test('DELETE /api/beers/:id deletes and 404s for an unknown id', async () => {
   }));
 });
 
+// POST /api/beers/:id/research - the Beer Bible's one-click Research button
+// (grid card + profile page). Read-only: it runs the same live Untappd
+// search Search by Name/SKU Lookup/Scan UPC already do, off the entry's own
+// title, and hands the result straight back without saving anything -
+// saving only happens once staff accept a confident match or pick one off a
+// tie, via the existing PUT /api/beers/:id (see app.js).
+test('POST /api/beers/:id/research runs a live Untappd search off the entry\'s own title and returns the match, unsaved', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const created = await postJson(port, '/api/beers', { title: 'LANCASTER MILK STOUT CAN' });
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'lancaster-milk-stout', bid: 9001, beer_name: 'Milk Stout', brewery_name: 'Lancaster Brewing Company' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Milk Stout by Lancaster Brewing Company | Untappd" />',
+      body: '<p class="brewery"><a href="#">Lancaster Brewing Company</a></p><p class="style">Milk / Sweet Stout</p>'
+        + '<div class="details"><p class="abv">5.50% ABV</p></div>',
+    });
+    await withMockFetch(
+      async (url) => (url.includes('algolia.net') ? mockResponse({ body: algoliaBody }) : mockResponse({ body: untappdBeerHtml })),
+      async () => {
+        const result = await postJson(port, `/api/beers/${created.body.id}/research`, {});
+        assert.equal(result.status, 200);
+        assert.equal(result.body.brewery, 'Lancaster Brewing Company');
+        assert.equal(result.body.style, 'Milk / Sweet Stout');
+        assert.equal(result.body.abv, '5.5%');
+        assert.equal(result.body.untappdError, undefined);
+      }
+    );
+    // Read-only - the entry itself is untouched until a follow-up PUT.
+    const stillUnresearched = await getJson(port, '/api/beers');
+    assert.equal(stillUnresearched.body.beers[0].brewery, '');
+  }));
+});
+
+test('POST /api/beers/:id/research surfaces untappdCandidates for a tie, and untappdError for no match, without failing the request', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const tied = await postJson(port, '/api/beers', { title: 'Daylily' });
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'autodidact-beer-daylily', bid: 1, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
+      { beer_slug: 'fox-farm-brewery-daylily', bid: 2, beer_name: 'Daylily', brewery_name: 'Fox Farm Brewery' },
+    ]);
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaBody }),
+      async () => {
+        const result = await postJson(port, `/api/beers/${tied.body.id}/research`, {});
+        assert.equal(result.status, 200);
+        assert.equal(result.body.untappdCandidates.length, 2);
+        assert.deepEqual(result.body.untappdCandidates.map((c) => c.brewery), ['Autodidact Beer', 'Fox Farm Brewery']);
+      }
+    );
+
+    const noMatch = await postJson(port, '/api/beers', { title: '2ND FAVOR HEAVY SPECTRUM 4PK' });
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaHitsResponse([]) }),
+      async () => {
+        const result = await postJson(port, `/api/beers/${noMatch.body.id}/research`, {});
+        assert.equal(result.status, 200);
+        assert.match(result.body.untappdError, /Could not find/);
+      }
+    );
+  }));
+});
+
+test('POST /api/beers/:id/research 404s for an unknown id', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const result = await postJson(port, '/api/beers/999999/research', {});
+    assert.equal(result.status, 404);
+  }));
+});
+
 test('POST /api/beers/sync-library adds only new titles, leaving an existing entry untouched - not gated behind Server PC', async () => {
   await withTempDb(() => withServer(async (port) => {
     // Deliberately not marked isServer - unlike /api/mashbills/sync-library,
