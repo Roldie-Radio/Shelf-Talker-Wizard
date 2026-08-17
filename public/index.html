@@ -552,6 +552,14 @@
                  see isQuarter there). Auto-filled from the SKU Lookup
                  method's own Store SKU box (see applySkuLookupProduct), but editable/
                  fillable by hand too for a beer talker built from scratch. -->
+            <!-- Untappd's own name for the matched beer (see mergeUntappdBeer
+                 in server/productImport.js) - never shown/edited directly on
+                 this form (Product Title above stays the store-sourced text
+                 that prints on the talker), just carried along on the talker
+                 object so autoSaveBeerToBible can hand it to the Beer Bible,
+                 which shows it in place of the store's own Product Title
+                 (see beerDisplayName). -->
+            <input type="hidden" id="fBeerName" value="" />
             <label class="field">
               <span>Store SKU (optional)</span>
               <input type="text" id="fSku" inputmode="numeric" maxlength="20" placeholder="09144" />

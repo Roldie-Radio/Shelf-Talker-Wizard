@@ -153,6 +153,7 @@ async function run() {
           matched += 1;
           upsertEntry(seed, {
             title: result.title,
+            beerName: result.beerName || '',
             brewery: result.brewery || '',
             location: result.location || '',
             style: result.style || '',

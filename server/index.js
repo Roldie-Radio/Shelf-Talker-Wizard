@@ -180,7 +180,17 @@ function createApp({
     const beerBibleEntry = getBeerByTitle(result.title);
     if (!beerBibleEntry || !isBeerBibleEntryEnriched(beerBibleEntry)) return result;
     const { untappdError, ...rest } = result;
-    return { ...rest, ...mergeUntappdBeer(rest, beerBibleEntry), untappdSource: 'Beer Bible' };
+    // mergeUntappdBeer's `beer` argument is normally a live Untappd search
+    // result, whose own `.title` is the beer's real name (see its own
+    // `beerName: beer.title || ...` line). beerBibleEntry is shaped
+    // differently - its `.title` is the store-matching text (see the beers
+    // table comment in server/db.js), not a name to show staff - so it's
+    // swapped for beerBibleEntry.beerName (Untappd's own name, if this
+    // entry was ever actually matched) before merging, the same "what to
+    // actually call this beer" beerBibleEntry.title would otherwise wrongly
+    // stand in for.
+    const asUntappdBeer = { ...beerBibleEntry, title: beerBibleEntry.beerName || beerBibleEntry.title };
+    return { ...rest, ...mergeUntappdBeer(rest, asUntappdBeer), untappdSource: 'Beer Bible' };
   }
 
   // Backs the "SKU Lookup" tab (which replaced Bulk CSV Import): staff type
@@ -644,10 +654,10 @@ function createApp({
   // saved alone rather than blanking it out.
   function beerOptionalFields(body) {
     const {
-      brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
     } = body || {};
     return {
-      brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
     };
   }
 

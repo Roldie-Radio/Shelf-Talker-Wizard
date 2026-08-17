@@ -543,6 +543,24 @@ test('upsertBeer creates a new entry with the given fields', () => {
   });
 });
 
+test('upsertBeer persists beerName separately from title, and an omitted beerName on a repeat save leaves it alone', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({
+      title: 'TIRED HANDS HOPHANDS CAN', beerName: 'Tired Hands Brewing HopHands', brewery: 'Tired Hands Brewing Company', sku: '55001',
+    });
+    assert.equal(first.title, 'TIRED HANDS HOPHANDS CAN');
+    assert.equal(first.beerName, 'Tired Hands Brewing HopHands');
+
+    // A repeat save (e.g. a re-scan under the same SKU) with no beerName in
+    // the request leaves the one already on file untouched - same
+    // "undefined leaves it alone" rule every other optional field follows.
+    const second = db.upsertBeer({ title: 'TIRED HANDS HOPHANDS CAN', style: 'Pale Ale - American', sku: '55001' });
+    assert.equal(second.id, first.id);
+    assert.equal(second.beerName, 'Tired Hands Brewing HopHands');
+    assert.equal(second.style, 'Pale Ale - American');
+  });
+});
+
 test('upsertBeer updates the existing entry in place on a repeat save (case-insensitive title)', () => {
   withTempDb(() => {
     const first = db.upsertBeer({ title: 'Michelob ULTRA', brewery: 'Anheuser-Busch' });
@@ -569,6 +587,7 @@ test('a new beer entry defaults every optional field to an empty string, not nul
     assert.deepEqual(entry, {
       id: entry.id,
       title: 'Mystery Lager',
+      beerName: '',
       brewery: '',
       location: '',
       style: '',
@@ -692,6 +711,17 @@ test('updateBeerById changes fields and returns the updated entry, preserving an
     // brewery/style weren't passed to this update, so they're unchanged.
     assert.equal(updated.brewery, 'Grupo Modelo');
     assert.equal(updated.style, 'Pale Lager');
+  });
+});
+
+test('updateBeerById can update beerName without touching title (the Beer Bible edit form\'s own save shape - see els.beerBibleFormSaveBtn in app.js)', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'TIRED HANDS HOPHANDS CAN', brewery: 'Tired Hands Brewing Company' });
+    const updated = db.updateBeerById(entry.id, { beerName: 'Tired Hands Brewing HopHands' });
+    assert.equal(updated.beerName, 'Tired Hands Brewing HopHands');
+    // title is the SKU/title-matching text (see getBeerByTitle) - an edit
+    // that only sends beerName must never touch it.
+    assert.equal(updated.title, 'TIRED HANDS HOPHANDS CAN');
   });
 });
 

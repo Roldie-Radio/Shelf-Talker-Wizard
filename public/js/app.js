@@ -1079,6 +1079,7 @@
     awards: document.getElementById('fAwards'),
     awardsColor: document.getElementById('fAwardsColor'),
     beerFields: document.getElementById('beerFields'),
+    beerName: document.getElementById('fBeerName'),
     sku: document.getElementById('fSku'),
     brewery: document.getElementById('fBrewery'),
     location: document.getElementById('fLocation'),
@@ -2102,6 +2103,7 @@
       pairings: currentPairings.slice(),
       wineProfile: { ...currentProfile },
       sku: els.sku.value.trim(),
+      beerName: els.beerName.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
       style: els.style.value.trim(),
@@ -2199,6 +2201,7 @@
     renderProfilePicker();
     els.profileSuggestStatus.textContent = 'Type a Product Title, then click Suggest Profile.';
     els.sku.value = talker.sku || '';
+    els.beerName.value = talker.beerName || '';
     els.brewery.value = talker.brewery || '';
     els.location.value = talker.location || '';
     els.style.value = talker.style || '';
@@ -3731,7 +3734,7 @@
   // brewery/style/rating a fuller entry already has on file.
   function beerAutoSaveFields(talker) {
     const fields = {};
-    ['brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description', 'sku'].forEach((key) => {
+    ['beerName', 'brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description', 'sku'].forEach((key) => {
       if (talker[key]) fields[key] = talker[key];
     });
     return fields;
@@ -3896,6 +3899,7 @@
     if (isBeer) {
       Object.assign(fields, {
         sku: data.sku || els.scanUpcInput.value.trim(),
+        beerName: data.beerName,
         brewery: data.brewery,
         location: data.location,
         style: data.style,
@@ -4589,6 +4593,7 @@
         // to keep it (see #fSku/beerFields in index.html). Beer only, per
         // request - a wine/spirits lookup leaves the shared field alone.
         sku: els.skuInput.value.trim(),
+        beerName: data.beerName,
         brewery: data.brewery,
         location: data.location,
         style: data.style,
@@ -4904,6 +4909,7 @@
   function stripUntappdFields(data) {
     return {
       ...data,
+      beerName: '',
       brewery: data.brand || '',
       location: '',
       style: '',
@@ -5391,6 +5397,7 @@
     if (isBeer) {
       Object.assign(fields, {
         sku: product.sku,
+        beerName: product.beerName,
         // Once /api/name-search-select's Untappd step (see
         // selectNameSearchProduct below) comes back, product.brewery is
         // Untappd's own brewery name - falls back to the export's own Brand
@@ -7668,15 +7675,20 @@
   // they fall back to the research-status badge (beerResearchBadgeHtml)
   // instead - this screen's closest equivalent to the Bourbon Library's
   // confidence badge default.
+  // Every tiebreaker/Alphabetical comparison below sorts on beerDisplayName
+  // (Untappd's own name when this entry has one, else title) rather than
+  // the raw title field - so "Name (A-Z)" actually alphabetizes by what the
+  // card/row/profile shows, not by whatever casing/wording the store's own
+  // product export happened to use.
   const BEER_SORTS = [
-    { group: 'Alphabetical', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => a.title.localeCompare(b.title) },
-    { group: 'Alphabetical', key: 'name-desc', label: 'Name (Z–A)', cmp: (a, b) => b.title.localeCompare(a.title) },
-    { group: 'Alphabetical', key: 'brewery-asc', label: 'Brewery (A–Z)', cmp: (a, b) => (a.brewery || '').localeCompare(b.brewery || '') || a.title.localeCompare(b.title) },
-    { group: 'Rating', key: 'rating-best', label: 'Highest Rated first', metric: 'rating', cmp: (a, b) => beerRatingNum(b) - beerRatingNum(a) || a.title.localeCompare(b.title) },
-    { group: 'Rating', key: 'rating-most', label: 'Most Rated first', metric: 'ratingCount', cmp: (a, b) => beerRatingCountNum(b) - beerRatingCountNum(a) || a.title.localeCompare(b.title) },
-    { group: 'ABV', key: 'abv-high', label: 'Highest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(b) - beerAbvNum(a) || a.title.localeCompare(b.title) },
-    { group: 'ABV', key: 'abv-low', label: 'Lowest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(a) - beerAbvNum(b) || a.title.localeCompare(b.title) },
-    { group: 'SKU', key: 'sku-asc', label: 'SKU (Low–High)', metric: 'sku', cmp: (a, b) => (Number(a.sku) || Infinity) - (Number(b.sku) || Infinity) || a.title.localeCompare(b.title) },
+    { group: 'Alphabetical', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'Alphabetical', key: 'name-desc', label: 'Name (Z–A)', cmp: (a, b) => beerDisplayName(b).localeCompare(beerDisplayName(a)) },
+    { group: 'Alphabetical', key: 'brewery-asc', label: 'Brewery (A–Z)', cmp: (a, b) => (a.brewery || '').localeCompare(b.brewery || '') || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'Rating', key: 'rating-best', label: 'Highest Rated first', metric: 'rating', cmp: (a, b) => beerRatingNum(b) - beerRatingNum(a) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'Rating', key: 'rating-most', label: 'Most Rated first', metric: 'ratingCount', cmp: (a, b) => beerRatingCountNum(b) - beerRatingCountNum(a) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'ABV', key: 'abv-high', label: 'Highest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(b) - beerAbvNum(a) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'ABV', key: 'abv-low', label: 'Lowest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(a) - beerAbvNum(b) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'SKU', key: 'sku-asc', label: 'SKU (Low–High)', metric: 'sku', cmp: (a, b) => (Number(a.sku) || Infinity) - (Number(b.sku) || Infinity) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
   ];
   const BEER_SORTS_BY_KEY = Object.fromEntries(BEER_SORTS.map((s) => [s.key, s]));
 
@@ -7732,9 +7744,25 @@
     const q = beerBibleFilterQuery.trim().toLowerCase();
     if (!q) return true;
     return (entry.title || '').toLowerCase().includes(q)
+      || (entry.beerName || '').toLowerCase().includes(q)
       || (entry.brewery || '').toLowerCase().includes(q)
       || (entry.style || '').toLowerCase().includes(q)
       || (entry.sku || '').toLowerCase().includes(q);
+  }
+
+  // The name actually shown for a beer, everywhere the Beer Bible displays
+  // one (grid cards, list rows, the profile header/breadcrumb, sibling
+  // list) - Untappd's own name for the beer (entry.beerName, see
+  // mergeUntappdBeer in server/productImport.js) when this entry has one,
+  // falling back to entry.title otherwise (a bare import stub Untappd never
+  // matched, or a fully manual entry, where title already *is* the beer's
+  // own name). entry.title itself is left showing nowhere near this
+  // preferentially - it stays the store's own product-title text under the
+  // hood (SKU/title matching, the Beer Bible fallback lookup in
+  // server/index.js's applyBeerBibleFallback all key off it), just no
+  // longer what staff/shoppers actually read as the beer's name.
+  function beerDisplayName(entry) {
+    return (entry && entry.beerName) || (entry && entry.title) || '';
   }
 
   // "Researched" means this row has been through Untappd (or typed in by
@@ -7908,7 +7936,7 @@
     if (entry.ibu) statBits.push(`${escapeHtml(entry.ibu)} IBU`);
     return `
       <button type="button" class="bourbon-card" data-id="${entry.id}">
-        <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
+        <div class="bourbon-card__title">${escapeHtml(beerDisplayName(entry))}</div>
         <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
@@ -7924,7 +7952,7 @@
     return `
       <button type="button" class="bourbon-row" data-id="${entry.id}">
         <div>
-          <div class="bourbon-row__title">${escapeHtml(entry.title)}</div>
+          <div class="bourbon-row__title">${escapeHtml(beerDisplayName(entry))}</div>
           <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}</div>
         </div>
         ${beerSortMetricHtml(entry, sort)}
@@ -8109,11 +8137,11 @@
       <div class="library-crumb">
         <button type="button" id="beerBibleCrumbBack"><span aria-hidden="true">&larr;</span> The Beer Bible</button>
         <span class="library-crumb__sep">/</span>
-        <span class="library-crumb__current">${escapeHtml(entry.title)}</span>
+        <span class="library-crumb__current">${escapeHtml(beerDisplayName(entry))}</span>
       </div>
       <div class="profile-head">
         <div>
-          <h2>${escapeHtml(entry.title)}</h2>
+          <h2>${escapeHtml(beerDisplayName(entry))}</h2>
           <p class="profile-head__by">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.location ? ` &middot; <strong>${escapeHtml(entry.location)}</strong>` : ''}</p>
           <div class="profile-tags">
             ${entry.style ? `<span class="tag">${escapeHtml(entry.style)}</span>` : ''}
@@ -8150,7 +8178,7 @@
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.brewery)} entries</dt>
             <div class="sibling-list">
-              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(s.title)}</span>${s.untappdRating ? ratingDotsHtml(s.untappdRating) : ''}</button>`).join('')}
+              ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${escapeHtml(beerDisplayName(s))}</span>${s.untappdRating ? ratingDotsHtml(s.untappdRating) : ''}</button>`).join('')}
             </div>` : ''}
         </div>
       </div>
@@ -8251,7 +8279,14 @@
 
   function loadBeerBibleEntryIntoForm(entry) {
     beerBibleEditingId = entry.id;
-    els.beerBibleFormTitleInput.value = entry.title;
+    // Prefilled with whatever's actually shown for this entry (Untappd's
+    // own name when it has one, see beerDisplayName), not the raw
+    // entry.title underneath - so what staff see to edit here matches what
+    // the card/profile they just came from was showing. Saving from this
+    // form writes an edit back as beerName, not title, when editing an
+    // existing entry (see the Save Changes handler below) - title stays
+    // the store-matching text underneath either way.
+    els.beerBibleFormTitleInput.value = beerDisplayName(entry);
     els.beerBibleFormBreweryInput.value = entry.brewery || '';
     els.beerBibleFormLocationInput.value = entry.location || '';
     els.beerBibleFormStyleInput.value = entry.style || '';
@@ -8261,7 +8296,7 @@
     els.beerBibleFormRatingInput.value = entry.untappdRating || '';
     els.beerBibleFormRatingCountInput.value = entry.untappdRatingCount || '';
     els.beerBibleFormDescriptionInput.value = entry.description || '';
-    els.beerBibleFormTitle.textContent = `Edit "${entry.title}"`;
+    els.beerBibleFormTitle.textContent = `Edit "${beerDisplayName(entry)}"`;
     els.beerBibleFormSaveBtn.textContent = 'Save Changes';
     els.beerBibleFormCancelBtn.hidden = false;
     els.beerBibleFormDeleteBtn.hidden = false;
@@ -8323,8 +8358,20 @@
     els.beerBibleFormSaveBtn.disabled = true;
     els.beerBibleFormStatus.textContent = 'Saving...';
     try {
-      const payload = {
-        title,
+      // This form's one name field is prefilled with beerDisplayName (see
+      // loadBeerBibleEntryIntoForm), so an *edit* of an already-researched
+      // entry writes the typed text back as beerName, not title - title
+      // stays the store-matching text underneath (see the beers table
+      // comment in server/db.js for why that can't just be overwritten).
+      // Omitting `title` here (rather than sending it back unchanged) lets
+      // updateBeerById's own "undefined leaves it alone" rule do that -
+      // see beerOptionalFieldParams. A brand new entry has no such
+      // underlying title to protect - title *is* the typed name there,
+      // same as before this field also carried beerName.
+      const payload = beerBibleEditingId
+        ? { beerName: title }
+        : { title };
+      Object.assign(payload, {
         brewery: els.beerBibleFormBreweryInput.value.trim(),
         location: els.beerBibleFormLocationInput.value.trim(),
         style: els.beerBibleFormStyleInput.value.trim(),
@@ -8335,7 +8382,7 @@
         untappdRatingCount: els.beerBibleFormRatingCountInput.value.trim(),
         description: els.beerBibleFormDescriptionInput.value.trim(),
         source: 'Manual',
-      };
+      });
       const resp = beerBibleEditingId
         ? await fetch(`/api/beers/${beerBibleEditingId}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),

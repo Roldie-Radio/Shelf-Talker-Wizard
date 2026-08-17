@@ -104,7 +104,7 @@ function normalizeKey(value) {
 // whatever the existing entry already had researched.
 function nonEmptyFields(entry) {
   const fields = {};
-  ['brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description'].forEach((key) => {
+  ['beerName', 'brewery', 'location', 'style', 'abv', 'ibu', 'untappdRating', 'untappdRatingCount', 'description'].forEach((key) => {
     if (entry && entry[key]) fields[key] = entry[key];
   });
   return fields;
