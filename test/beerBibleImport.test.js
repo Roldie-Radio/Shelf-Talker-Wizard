@@ -209,19 +209,40 @@ test('startImport processes every row, saving a confident match and skipping a n
   ),
 ));
 
-test('startImport skips a row whose SKU is already saved, without making any request for it', () => withTempFile(
+test('startImport skips a row whose SKU already belongs to an enriched entry, without making any request for it', () => withTempFile(
   'Product Name,SKU\nAlready Saved Beer,999\n',
   '.csv',
   (filePath) => withMockFetch(
     async () => { throw new Error('should not have made any request - this row should be skipped entirely'); },
     async () => {
-      const db = fakeDb([{ title: 'Already Saved Beer', sku: '999' }]);
+      const db = fakeDb([{ title: 'Already Saved Beer', sku: '999', brewery: 'Some Brewery' }]);
       startImport({ filePath, db });
       await waitUntilDone();
       const finished = getStatus();
       assert.equal(finished.skipped, 1);
       assert.equal(finished.matched, 0);
       assert.equal(db.saved.length, 0);
+    },
+  ),
+));
+
+// A bare title+SKU stub (e.g. from a bulk pre-seed pass with no Untappd
+// access at seed time) must NOT count as "already saved" - see isEnriched's
+// own comment in beerBibleImport.js. Otherwise a stub could never actually
+// get enriched: every later real import run would see its SKU already on
+// file and skip it forever.
+test('startImport does not skip a row whose SKU only belongs to a bare, unenriched stub', () => withTempFile(
+  'Product Name,SKU\nStub Beer,999\n',
+  '.csv',
+  (filePath) => withMockFetch(
+    async () => mockResponse({ status: 200, body: algoliaHitsResponse([]) }),
+    async () => {
+      const db = fakeDb([{ title: 'Stub Beer', sku: '999', brewery: '', style: '', abv: '' }]);
+      startImport({ filePath, db });
+      await waitUntilDone();
+      const finished = getStatus();
+      assert.equal(finished.skipped, 0);
+      assert.equal(finished.noMatch, 1, 'the row was actually looked up, not skipped');
     },
   ),
 ));

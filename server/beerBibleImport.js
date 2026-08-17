@@ -105,8 +105,19 @@ function pushIssue(title, sku, kind, detail) {
   if (status.recentIssues.length > MAX_RECENT_ISSUES) status.recentIssues.shift();
 }
 
+// Only a SKU belonging to an already-*enriched* entry counts as "already
+// handled" - one with a real brewery/style/ABV on file, not just a bare
+// title+SKU stub (e.g. from a bulk pre-seed pass that only had the export
+// itself to go on, no Untappd access yet - see scripts/beer-bible-seed-data.json's
+// own history). Otherwise a stub's SKU would look "already saved" forever
+// and a later real enrichment run would silently skip it - never actually
+// getting enriched.
+function isEnriched(beer) {
+  return !!(beer.brewery || beer.style || beer.abv || beer.ibu || beer.untappdRating || beer.description);
+}
+
 async function runImport(products, db) {
-  const existingSkus = new Set(db.listBeers().map((b) => b.sku).filter(Boolean));
+  const existingSkus = new Set(db.listBeers().filter(isEnriched).map((b) => b.sku).filter(Boolean));
 
   for (let i = 0; i < products.length; i += 1) {
     if (cancelRequested) {
@@ -212,7 +223,7 @@ function cancelImport() {
 }
 
 module.exports = {
-  getStatus, startImport, cancelImport,
+  getStatus, startImport, cancelImport, isEnriched,
   // Exported for tests only.
   extractProducts, readRows,
 };

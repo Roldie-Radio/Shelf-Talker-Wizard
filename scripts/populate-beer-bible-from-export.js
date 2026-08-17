@@ -49,7 +49,7 @@ const { enrichBeerFromUntappd } = require('../server/productImport');
 // in-app version of this same import, for a store PC with the packaged app
 // but no system-wide Node of its own (see that file's header comment) -
 // rather than kept as two copies that could quietly drift apart.
-const { readRows, extractProducts } = require('../server/beerBibleImport');
+const { readRows, extractProducts, isEnriched } = require('../server/beerBibleImport');
 
 const SEED_PATH = path.join(__dirname, 'beer-bible-seed-data.json');
 const LOG_PATH = path.join(__dirname, 'beer-bible-import.log.jsonl');
@@ -111,7 +111,10 @@ async function run() {
   console.log(`Read ${allProducts.length} rows with a title from ${opts.filePath}.`);
 
   const seed = loadSeed();
-  const existingSkus = new Set(seed.map((e) => e.sku).filter(Boolean));
+  // Only a SKU belonging to an already-enriched entry counts as "already
+  // saved" - see isEnriched's own comment in beerBibleImport.js for why a
+  // bare title+SKU stub (no Untappd data yet) must never look done forever.
+  const existingSkus = new Set(seed.filter(isEnriched).map((e) => e.sku).filter(Boolean));
 
   const slice = allProducts.slice(opts.start, opts.start + opts.limit);
   let matched = 0;
