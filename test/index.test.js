@@ -1492,6 +1492,37 @@ test('POST /api/beers/sync-export 404s with NO_EXPORT_PATH when nothing is confi
   }));
 });
 
+// POST /api/beers/import-csv - the "Import CSV…" button, the round-trip
+// counterpart to Export CSV. Column-matching/merge-semantics are already
+// covered in depth in test/beerBibleCsvImport.test.js against
+// importBeerBibleCsv directly - these just confirm the HTTP layer wraps it
+// correctly.
+test('POST /api/beers/import-csv imports rows and reports a summary', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const csv = [
+      'Title,Brewery,SKU,UPC',
+      'Slack Tide Flounder Pounder,Slack Tide Brewing Company,55555,085000010652',
+    ].join('\n');
+    const { status, body } = await postJson(port, '/api/beers/import-csv', { csv });
+    assert.equal(status, 200);
+    assert.equal(body.imported, 1);
+    assert.equal(body.skipped, 0);
+    assert.equal(body.beers.length, 1);
+    assert.equal(body.beers[0].upc, '085000010652');
+  }));
+});
+
+test('POST /api/beers/import-csv requires csv content and a recognizable Title column', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const empty = await postJson(port, '/api/beers/import-csv', {});
+    assert.equal(empty.status, 400);
+
+    const noTitle = await postJson(port, '/api/beers/import-csv', { csv: 'Brewery,Style\nFounders,IPA' });
+    assert.equal(noTitle.status, 400);
+    assert.equal(noTitle.body.code, 'NO_TITLE_COLUMN');
+  }));
+});
+
 // /api/rums - the Rum Repository (rail "Rum Repository" view), a
 // bare-scaffold first cut of the same idea as /api/beers above, for Rum
 // instead of Beer. Same reach as /api/beers: no isServer/mashBillPuller
