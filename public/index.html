@@ -118,6 +118,10 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="server-pc">
           <span>Server PC&hellip;</span>
         </button>
+        <div class="menubar__sep" role="separator"></div>
+        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="beer-bible-import">
+          <span>Import Beer Bible from Export File&hellip;</span>
+        </button>
       </div>
     </div>
     <div class="menubar__item" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false" data-menu="help">
@@ -1071,6 +1075,12 @@
         <button type="button" class="btn btn--small" id="beerBibleGithubSyncBtn">Check GitHub for New Beers</button>
       </div>
       <p class="help-text" id="beerBibleGithubSyncStatus" role="status" aria-live="polite"></p>
+      <!-- Beer talkers already save here automatically as they're added to
+           the queue (see els.form's submit handler in app.js) - this points
+           at the other two ways entries get here: a bulk import from a
+           product export (Advanced menu), or typing one in by hand (Add
+           Beer above). -->
+      <p class="help-text">Beer talkers you add to the queue are saved here automatically. Have a product export to bulk-import instead? <strong>Advanced &rarr; Import Beer Bible from Export File&hellip;</strong></p>
       <div class="library-search">
         <input type="search" id="beerBibleFilterInput" aria-label="Search The Beer Bible" placeholder="Search by name, brewery, or style&hellip;" />
       </div>
@@ -1684,6 +1694,61 @@
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="exportSettingsCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced > Import Beer Bible from Export File… - the in-app version
+       of scripts/populate-beer-bible-from-export.js, for a store PC that
+       has the packaged app but no system-wide Node of its own to run that
+       script with (see server/beerBibleImport.js's header comment for the
+       full story). Runs each row of a product export through the same
+       Untappd search Search by Name/SKU Lookup/Scan UPC already use,
+       writing straight into this PC's own Beer Bible (the beers table) -
+       so unlike that script, nothing here needs committing/pushing to show
+       up; it's on the Beer Bible screen the moment it's saved.
+
+       Two views toggled by app.js's renderBeerBibleImportStatus, both
+       always in the DOM: #beerBibleImportSetup (path + Browse... + Start,
+       shown when nothing is running) and #beerBibleImportProgress (counts +
+       a progress bar + Cancel, shown once a job is running or has finished
+       in this session) - reachable from a fresh open too, not just right
+       after clicking Start, since the job runs to completion server-side
+       regardless of whether this dialog is open to watch it (see
+       getBeerBibleImportStatus's own polling in app.js). -->
+  <div id="beerBibleImportOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="beerBibleImportTitle">
+      <div class="modal__header">
+        <h2 id="beerBibleImportTitle">Import Beer Bible from Export File</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="beerBibleImportCloseBtn">&times; Close</button>
+      </div>
+      <div class="server-pc-body">
+        <p class="help-text">Point this at a beer product export (CSV/TSV, or an Excel .xlsx/.xlsm workbook - the same kind of file WinePOS exports) and every row's title is looked up on Untappd, same as Search by Name already does, and saved straight into this PC's own Beer Bible. A row Untappd can't confidently match is skipped, never guessed at. This can take a while for a large file (roughly half a second per row) - it keeps running even if this dialog is closed, and skips a row whose SKU is already saved, so it's safe to close and reopen, or cancel and resume later.</p>
+
+        <div id="beerBibleImportSetup">
+          <label class="field">
+            <span>Export File Path</span>
+            <input type="text" id="beerBibleImportPathInput" placeholder="C:\WinePOS\Exports\beer.xlsx" />
+          </label>
+          <div class="reviewer-manager__add">
+            <button type="button" class="btn btn--small" id="beerBibleImportBrowseBtn" hidden>Browse&hellip;</button>
+            <button type="button" class="btn btn--small btn--primary" id="beerBibleImportStartBtn">Start Import</button>
+          </div>
+          <p class="help-text" id="beerBibleImportSetupStatus" role="status" aria-live="polite"></p>
+        </div>
+
+        <div id="beerBibleImportProgress" hidden>
+          <progress id="beerBibleImportProgressBar" max="100" value="0"></progress>
+          <p class="help-text" id="beerBibleImportProgressLine" role="status" aria-live="polite"></p>
+          <p class="help-text" id="beerBibleImportCurrentTitle"></p>
+          <div class="reviewer-manager__add">
+            <button type="button" class="btn btn--small" id="beerBibleImportCancelBtn">Cancel</button>
+            <button type="button" class="btn btn--small" id="beerBibleImportStartOverBtn" hidden>Import Another File</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="beerBibleImportCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

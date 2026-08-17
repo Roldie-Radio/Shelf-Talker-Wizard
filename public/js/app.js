@@ -1151,6 +1151,21 @@
     exportSettingsSyncNowBtn: document.getElementById('exportSettingsSyncNowBtn'),
     exportSettingsSyncStatus: document.getElementById('exportSettingsSyncStatus'),
 
+    beerBibleImportOverlay: document.getElementById('beerBibleImportOverlay'),
+    beerBibleImportCloseBtn: document.getElementById('beerBibleImportCloseBtn'),
+    beerBibleImportCloseFooterBtn: document.getElementById('beerBibleImportCloseFooterBtn'),
+    beerBibleImportSetup: document.getElementById('beerBibleImportSetup'),
+    beerBibleImportPathInput: document.getElementById('beerBibleImportPathInput'),
+    beerBibleImportBrowseBtn: document.getElementById('beerBibleImportBrowseBtn'),
+    beerBibleImportStartBtn: document.getElementById('beerBibleImportStartBtn'),
+    beerBibleImportSetupStatus: document.getElementById('beerBibleImportSetupStatus'),
+    beerBibleImportProgress: document.getElementById('beerBibleImportProgress'),
+    beerBibleImportProgressBar: document.getElementById('beerBibleImportProgressBar'),
+    beerBibleImportProgressLine: document.getElementById('beerBibleImportProgressLine'),
+    beerBibleImportCurrentTitle: document.getElementById('beerBibleImportCurrentTitle'),
+    beerBibleImportCancelBtn: document.getElementById('beerBibleImportCancelBtn'),
+    beerBibleImportStartOverBtn: document.getElementById('beerBibleImportStartOverBtn'),
+
     previewStage: document.getElementById('previewStage'),
     previewToggleBtns: document.querySelectorAll('.preview-toggle .toggle-btn'),
     queueGrid: document.getElementById('queueGrid'),
@@ -8130,6 +8145,141 @@
     });
   }
 
+  // ---------- Import Beer Bible from Export File… (Advanced menu) ----------
+  //
+  // In-app counterpart to scripts/populate-beer-bible-from-export.js, run
+  // via server/beerBibleImport.js's job (see that module's own header for
+  // why this exists as a separate thing from that script). This section
+  // only ever talks to /api/beers/import/*; the actual Untappd matching and
+  // file parsing all happen server-side.
+
+  let beerBibleImportPollTimer = null;
+
+  // Renders whichever of #beerBibleImportSetup/#beerBibleImportProgress
+  // matches the job's current state - called on open and after every poll,
+  // so reopening the dialog mid-import (or after it finished while closed)
+  // shows the right thing immediately rather than the stale "not started"
+  // view for a beat.
+  function renderBeerBibleImportStatus(status) {
+    const started = status.running || status.processed > 0 || status.total > 0;
+    els.beerBibleImportSetup.hidden = started;
+    els.beerBibleImportProgress.hidden = !started;
+    if (!started) return;
+
+    els.beerBibleImportProgressBar.max = status.total || 1;
+    els.beerBibleImportProgressBar.value = status.processed;
+    els.beerBibleImportProgressLine.textContent = `${status.processed}/${status.total} - `
+      + `matched ${status.matched}, no Untappd match ${status.noMatch}, ambiguous ${status.ambiguous}, `
+      + `error ${status.errored}, already saved ${status.skipped}`;
+    els.beerBibleImportCurrentTitle.textContent = status.running ? `Checking "${status.currentTitle}"...` : '';
+    els.beerBibleImportCancelBtn.hidden = !status.running;
+    els.beerBibleImportStartOverBtn.hidden = status.running;
+
+    if (!status.running) {
+      const finishedLine = status.cancelled ? 'Cancelled.' : status.fatalError ? `Stopped: ${status.fatalError}` : 'Done.';
+      els.beerBibleImportProgressLine.textContent = `${finishedLine} ${els.beerBibleImportProgressLine.textContent}`;
+    }
+  }
+
+  async function pollBeerBibleImportStatus() {
+    try {
+      const resp = await fetch('/api/beers/import/status');
+      const status = await resp.json();
+      renderBeerBibleImportStatus(status);
+      // Once the job stops, one more render already happened above with
+      // running:false - no need to keep polling until Start is clicked
+      // again.
+      if (!status.running) {
+        clearInterval(beerBibleImportPollTimer);
+        beerBibleImportPollTimer = null;
+      }
+    } catch {
+      // A transient fetch failure just waits for the next poll tick -
+      // nothing to surface staff can act on mid-poll.
+    }
+  }
+
+  function startBeerBibleImportPolling() {
+    if (beerBibleImportPollTimer) return;
+    pollBeerBibleImportStatus();
+    beerBibleImportPollTimer = setInterval(pollBeerBibleImportStatus, 1000);
+  }
+
+  const beerBibleImportModal = createModal({
+    overlay: els.beerBibleImportOverlay,
+    closeBtns: [els.beerBibleImportCloseBtn, els.beerBibleImportCloseFooterBtn],
+    onOpen: async () => {
+      els.beerBibleImportPathInput.value = '';
+      els.beerBibleImportSetupStatus.textContent = '';
+      // Always check current status on open, even if nothing here started
+      // it - a job kicked off before this dialog was last closed is still
+      // running server-side (see this section's own header comment).
+      const resp = await fetch('/api/beers/import/status');
+      const status = await resp.json();
+      renderBeerBibleImportStatus(status);
+      if (status.running) startBeerBibleImportPolling();
+    },
+    onClose: () => {
+      clearInterval(beerBibleImportPollTimer);
+      beerBibleImportPollTimer = null;
+    },
+  });
+
+  els.beerBibleImportStartBtn.addEventListener('click', async () => {
+    const filePath = els.beerBibleImportPathInput.value.trim();
+    if (!filePath) {
+      els.beerBibleImportSetupStatus.textContent = 'Enter or browse to a file path first.';
+      return;
+    }
+    els.beerBibleImportStartBtn.disabled = true;
+    els.beerBibleImportSetupStatus.textContent = 'Starting...';
+    try {
+      const resp = await fetch('/api/beers/import/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath }),
+      });
+      const status = await resp.json();
+      if (!resp.ok) throw new Error(status.error || 'Could not start the import.');
+      renderBeerBibleImportStatus(status);
+      startBeerBibleImportPolling();
+    } catch (err) {
+      els.beerBibleImportSetupStatus.textContent = err.message || 'Could not start the import.';
+    } finally {
+      els.beerBibleImportStartBtn.disabled = false;
+    }
+  });
+
+  els.beerBibleImportCancelBtn.addEventListener('click', async () => {
+    els.beerBibleImportCancelBtn.disabled = true;
+    try {
+      const resp = await fetch('/api/beers/import/cancel', { method: 'POST' });
+      renderBeerBibleImportStatus(await resp.json());
+    } finally {
+      els.beerBibleImportCancelBtn.disabled = false;
+    }
+  });
+
+  // Goes back to the path/Start view for a second file - the job itself
+  // already stopped (this button is only shown once !status.running, see
+  // renderBeerBibleImportStatus), so this is just resetting the dialog's
+  // own view, not touching anything server-side.
+  els.beerBibleImportStartOverBtn.addEventListener('click', () => {
+    els.beerBibleImportPathInput.value = '';
+    els.beerBibleImportSetupStatus.textContent = '';
+    els.beerBibleImportSetup.hidden = false;
+    els.beerBibleImportProgress.hidden = true;
+  });
+
+  if (window.shelfTalker && window.shelfTalker.pickBeerBibleImportFile) {
+    els.beerBibleImportBrowseBtn.hidden = false;
+    els.beerBibleImportBrowseBtn.addEventListener('click', async () => {
+      const filePath = await window.shelfTalker.pickBeerBibleImportFile();
+      if (!filePath) return;
+      els.beerBibleImportPathInput.value = filePath;
+    });
+  }
+
   // Also reachable via Advanced > Export File Settings… in the menu bar
   // (see runMenuAction's 'export-settings' case).
 
@@ -8469,6 +8619,9 @@
         break;
       case 'server-pc':
         serverPcModal.open();
+        break;
+      case 'beer-bible-import':
+        beerBibleImportModal.open();
         break;
       default:
         break;
