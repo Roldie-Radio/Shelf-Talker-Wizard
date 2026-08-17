@@ -1255,11 +1255,13 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 }
 .selected-card__clear:hover { color: var(--ui-danger); }
 
-/* Unit-vs-pack price choice on a beer's selected-product card (Search by
-   Name only - see productHasPackPrice/priceChoiceHtml in app.js). Sits
-   inside .selected-card's own title/meta column, above the price shown in
-   .selected-card__price-row, which always reflects whichever option below
-   is currently active. */
+/* Unit-vs-pack price choice for a beer whose scanned/looked-up row also has
+   a pack price (see productHasPackPrice/priceChoiceHtml in app.js). On
+   Search by Name it sits inside .selected-card's own title/meta column,
+   above the price shown in .selected-card__price-row, which always
+   reflects whichever option below is currently active; Scan UPC renders
+   the same markup standalone in #scanUpcPriceChoiceWrap, since that tab's
+   own form fields aren't visible to show a full selected-card summary. */
 .price-choice {
   margin-top: 0.55rem;
   padding-top: 0.55rem;

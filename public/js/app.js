@@ -1153,6 +1153,7 @@
     scanUpcLookupBtn: document.getElementById('scanUpcLookupBtn'),
     scanUpcStatus: document.getElementById('scanUpcStatus'),
     scanUpcSaveBtn: document.getElementById('scanUpcSaveBtn'),
+    scanUpcPriceChoiceWrap: document.getElementById('scanUpcPriceChoiceWrap'),
     scanUpcUntappdSection: document.getElementById('scanUpcUntappdSection'),
     scanUpcUntappdSearchInput: document.getElementById('scanUpcUntappdSearchInput'),
     scanUpcUntappdSearchBtn: document.getElementById('scanUpcUntappdSearchBtn'),
@@ -3789,7 +3790,40 @@
   // carries current store pricing and Untappd's brewery/location/style/
   // ABV/IBU/rating by the time it gets here, the same shape
   // applySkuLookupProduct's own beer branch fills in from.
-  function applyUpcScanProduct(data, isBeer) {
+
+  // Mirrors nameSearchPriceMode - which of the scanned row's prices (see
+  // productHasPackPrice/priceChoiceHtml) is currently picked for a beer
+  // scan's price. Reset to the right default on every fresh scan (see
+  // scanUpcLookupBtn's click handler below), same "beer defaults to Pack"
+  // reasoning as selectNameSearchProduct's own reset.
+  let scanUpcPriceMode = 'unit';
+
+  // Same Unit/Pack control as renderNameSearchSelected's own (see
+  // priceChoiceHtml) - only rendered when the scanned row's export data
+  // actually has a pack price to offer. Scan UPC's own form fields aren't
+  // shown on this tab (see applySkuLookupProduct's note on the shared
+  // reasoning), so this card is the only place staff see, and can
+  // override, which price is about to reach the queue.
+  function renderScanUpcPriceChoice(data, isBeer) {
+    if (!isBeer || !productHasPackPrice(data)) {
+      els.scanUpcPriceChoiceWrap.innerHTML = '';
+      return;
+    }
+    els.scanUpcPriceChoiceWrap.innerHTML = priceChoiceHtml(data, scanUpcPriceMode);
+    els.scanUpcPriceChoiceWrap.querySelectorAll('.price-choice__opt').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        scanUpcPriceMode = btn.dataset.mode;
+        applyUpcScanProduct(data, isBeer, scanUpcPriceMode);
+      });
+    });
+  }
+
+  // `priceMode` ('unit' or 'pack') mirrors applyNameSearchProduct's own
+  // parameter - which of the scanned row's prices (see productHasPackPrice)
+  // lands on the talker for beer; see renderScanUpcPriceChoice above for
+  // where a non-default pick comes from.
+  function applyUpcScanProduct(data, isBeer, priceMode = 'unit') {
+    const usePack = isBeer && priceMode === 'pack' && productHasPackPrice(data);
     const fields = {
       // See applyNameSearchProduct's comment on the same line - falling back
       // to currentCategory (not a flat 'wine') keeps Bourbon from reverting
@@ -3798,8 +3832,12 @@
       title: data.title,
       description: data.description,
       size: data.size,
-      price: data.price,
-      salePrice: data.salePrice,
+      price: usePack ? data.packPrice : data.price,
+      // See applyNameSearchProduct's own note on the same line - the export
+      // has no separate pack sale price, so a unit sale price carried over
+      // as-is under a pack price would read as a misleading "was $X" on a
+      // talker that's actually pricing the pack.
+      salePrice: usePack ? '' : data.salePrice,
       theme: els.theme.value,
     };
     if (isBeer) {
@@ -3824,6 +3862,7 @@
     // is for. refreshPreview() re-renders whichever mode is actually active
     // instead of forcing single like a bare renderPreview() call would.
     refreshPreview();
+    renderScanUpcPriceChoice(data, isBeer);
 
     // Untappd's own search only ever fails for beer (see untappdError's
     // origin in enrichBeerFromUntappd) - offer the manual "paste the beer's
@@ -3882,6 +3921,7 @@
     els.scanUpcInput.value = '';
     els.scanUpcStatus.textContent = message || 'Added to queue! Scan the next one.';
     els.scanUpcUntappdSection.hidden = true;
+    els.scanUpcPriceChoiceWrap.innerHTML = '';
     els.scanUpcInput.focus();
     return true;
   }
@@ -3895,6 +3935,9 @@
     }
     els.scanUpcLookupBtn.disabled = true;
     els.scanUpcStatus.textContent = isBeer ? 'Looking up UPC...' : 'Looking up UPC and checking the store site for a description...';
+    // Clear out the previous scan's price-choice card (if any) rather than
+    // leaving it showing a stale product while this one is in flight.
+    els.scanUpcPriceChoiceWrap.innerHTML = '';
 
     try {
       const resp = await fetch('/api/upc-lookup', {
@@ -3909,6 +3952,14 @@
         throw err;
       }
 
+      // Beer defaults to Pack Price whenever the scanned row's export data
+      // has one to offer (see productHasPackPrice/priceChoiceHtml) - same
+      // "shelved and shopped by the pack/case" reasoning as
+      // selectNameSearchProduct's own reset. Anything else (no pack price,
+      // or not beer) defaults to Unit, same as before this control existed.
+      scanUpcPriceMode = isBeer && productHasPackPrice(data) ? 'pack' : 'unit';
+      const hasPackChoice = isBeer && productHasPackPrice(data);
+
       // Untappd itself couldn't safely pick one of two or more real,
       // separately-listed beers (see openUntappdPicker's own comment) -
       // ask instead of guessing. Once staff actually make a pick (Recommended
@@ -3916,14 +3967,20 @@
       // confirmBeerUntappdMatch's "Use This Match" would give, so it rejoins
       // the hands-free auto-queue flow below rather than stopping to wait for
       // a manual "Add to Queue" click - the whole point of this tab is
-      // scanning one item after another. Backing out of the dialog without
-      // picking anything is the only case left unresolved, so that one still
-      // stops for a manual review/click.
+      // scanning one item after another - unless the scan also has a pack
+      // price to confirm (see hasPackChoice above), in which case it stops
+      // the same way a confident Untappd match already does, so a Unit/Pack
+      // pick staff never saw doesn't get queued out from under them.
+      // Backing out of the dialog without picking anything is the other
+      // case left unresolved, so that one still stops for a manual
+      // review/click too.
       if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
-        applyUpcScanProduct(data, isBeer);
+        applyUpcScanProduct(data, isBeer, scanUpcPriceMode);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
-        if (picked) {
+        if (picked && !hasPackChoice) {
           addScannedUpcToQueue('Added to queue! Scan the next one.');
+        } else if (picked) {
+          els.scanUpcStatus.textContent = 'Found it! Confirm Unit or Pack above, then click "Add to Queue".';
         } else {
           // None of the offered candidates were right (or staff just backed
           // out) - reveal the same manual "paste an Untappd URL" fallback a
@@ -3941,13 +3998,15 @@
       // confirmBeerUntappdMatch's own comment for why this isn't optional
       // just because Untappd itself wasn't torn between two candidates.
       if (isBeer && !data.untappdError) {
-        const confirmed = await confirmBeerUntappdMatch(data, (d) => applyUpcScanProduct(d, isBeer));
+        const confirmed = await confirmBeerUntappdMatch(data, (d) => applyUpcScanProduct(d, isBeer, scanUpcPriceMode));
         // untappdError is falsy in this branch already - only a
         // store/description error could still show up here.
         const otherProblems = scanUpcProblems(data);
         const suffix = otherProblems ? ` ${otherProblems}` : '';
         if (confirmed) {
-          els.scanUpcStatus.textContent = `Found it!${suffix} Review the fields, then click "Add to Queue".`;
+          els.scanUpcStatus.textContent = hasPackChoice
+            ? `Found it!${suffix} Confirm Unit or Pack above, then click "Add to Queue".`
+            : `Found it!${suffix} Review the fields, then click "Add to Queue".`;
         } else {
           els.scanUpcUntappdSection.hidden = false;
           els.scanUpcStatus.textContent = `Found it. Not the right beer - brewery/style/ABV/rating left blank.${suffix} `
@@ -3956,7 +4015,7 @@
         return;
       }
 
-      applyUpcScanProduct(data, isBeer);
+      applyUpcScanProduct(data, isBeer, scanUpcPriceMode);
       const problems = scanUpcProblems(data);
       if (problems) {
         // A best-effort enrichment step (store lookup, Untappd, store
@@ -3965,6 +4024,12 @@
         // incomplete. The fields stay filled in with whatever did resolve;
         // Add to Queue below still works once they've been reviewed.
         els.scanUpcStatus.textContent = `Found it. ${problems} Review the fields, then click "Add to Queue".`;
+      } else if (hasPackChoice) {
+        // Everything else resolved, but this is a beer whose export row
+        // also has a pack price - stop for the same Unit/Pack sign-off as
+        // the branches above, rather than auto-queueing at whichever price
+        // happened to default.
+        els.scanUpcStatus.textContent = 'Found it! Confirm Unit or Pack above, then click "Add to Queue".';
       } else {
         // Every field the lookup needed is filled, with nothing left
         // unresolved - add it straight to the queue instead of waiting for
@@ -5292,20 +5357,25 @@
   // The Unit/Pack price-choice control shown on a beer's selected-product
   // card below - only rendered when the product actually has a pack price
   // to offer (see productHasPackPrice). Defaults to Pack (see
-  // selectNameSearchProduct) since beer at this store is mostly shelved and
-  // shopped by the pack/case, not the single can/bottle; one click switches
-  // it to Unit for a talker that's meant for singles.
-  function priceChoiceHtml(p) {
+  // selectNameSearchProduct/scanUpcLookupBtn's handler) since beer at this
+  // store is mostly shelved and shopped by the pack/case, not the single
+  // can/bottle; one click switches it to Unit for a talker that's meant for
+  // singles. `mode` is the caller's own current pick ('unit'/'pack') rather
+  // than always reading nameSearchPriceMode directly - Scan UPC reuses this
+  // same markup with its own scanUpcPriceMode state (see
+  // renderScanUpcPriceChoice below) since both tabs read packPrice/packQty
+  // off the same underlying WinePOS export row.
+  function priceChoiceHtml(p, mode) {
     const packQtyLabel = p.packQty ? ` (${escapeHtml(String(p.packQty))})` : '';
     return `
       <div class="price-choice">
         <div class="price-choice__prompt">Which price goes on the talker?</div>
         <div class="price-choice__group" role="radiogroup" aria-label="Unit or pack price">
-          <button type="button" class="price-choice__opt${nameSearchPriceMode === 'unit' ? ' is-active' : ''}" data-mode="unit" role="radio" aria-checked="${nameSearchPriceMode === 'unit'}">
+          <button type="button" class="price-choice__opt${mode === 'unit' ? ' is-active' : ''}" data-mode="unit" role="radio" aria-checked="${mode === 'unit'}">
             <span class="price-choice__opt-label"><span class="price-choice__opt-check"></span>Unit</span>
             <span class="price-choice__opt-price">${escapeHtml(formatMoney(p.price))}</span>
           </button>
-          <button type="button" class="price-choice__opt${nameSearchPriceMode === 'pack' ? ' is-active' : ''}" data-mode="pack" role="radio" aria-checked="${nameSearchPriceMode === 'pack'}">
+          <button type="button" class="price-choice__opt${mode === 'pack' ? ' is-active' : ''}" data-mode="pack" role="radio" aria-checked="${mode === 'pack'}">
             <span class="price-choice__opt-label"><span class="price-choice__opt-check"></span>Pack${packQtyLabel}</span>
             <span class="price-choice__opt-price">${escapeHtml(formatMoney(p.packPrice))}</span>
           </button>
@@ -5339,7 +5409,7 @@
         <div style="flex:1; min-width:0;">
           <div class="selected-card__title">${escapeHtml(p.title || 'Untitled')}</div>
           <div class="selected-card__meta">${metaParts.join(' &middot; ')}</div>
-          ${showPriceChoice ? priceChoiceHtml(p) : ''}
+          ${showPriceChoice ? priceChoiceHtml(p, nameSearchPriceMode) : ''}
         </div>
         <div class="selected-card__price-row">
           <div class="selected-card__price">${escapeHtml(formatMoney(activePrice))}</div>
