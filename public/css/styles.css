@@ -1108,7 +1108,14 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 /* Same floating-panel treatment as .menubar__dropdown - see the note
    there on why .menubar (and, here, .panel/.field-row) can't set
    overflow, since that's what lets this escape its field and float over
-   whatever's below it. */
+   whatever's below it. Capped with its own max-height/scroll (rather than
+   left to grow as tall as its option list) so a field with a lot of
+   options - The Beer Bible's Style filter lists every distinct style on
+   file, which can run to dozens once a real store's beers are researched -
+   scrolls within the panel instead of overflowing the viewport. An
+   unbounded panel there got cut off at the window edge with no way to
+   reach its own lower options short of scrolling the whole page underneath
+   it, which just looked like the screen had been split in half. */
 .field-select__dropdown {
   display: none;
   position: absolute;
@@ -1123,6 +1130,9 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   padding: 0.35rem;
   z-index: 25;
   font-size: 0.93em;
+  max-height: min(60vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .field-select.is-open .field-select__dropdown { display: block; }
 
