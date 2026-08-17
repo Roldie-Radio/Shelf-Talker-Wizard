@@ -46,7 +46,21 @@ function createApp({
 } = {}) {
   const app = express();
 
-  app.use(express.json());
+  // Express's own default JSON body limit is 100kb - fine for every other
+  // route here (small option objects), but POST /api/beers/import-csv
+  // sends a whole Beer Bible CSV as one JSON string field, and a real
+  // store's export (thousands of rows, some with a Tasting Notes
+  // description) clears 100kb easily - confirmed against a real 2,539-row
+  // export at 241kb before a single hand-typed description is added. That
+  // request was silently rejected with a 413 before ever reaching
+  // importBeerBibleCsv, which read to staff as "Import CSV… said it
+  // worked, but the beer I researched came back Needs research" - the
+  // import never ran at all, so whatever stub was already there (from
+  // auto-seed) was left untouched. 25mb comfortably covers even a large
+  // multi-thousand-row export with descriptions; this is a single local
+  // process on a store's own LAN, not a public-facing service, so raising
+  // it for every route rather than just this one isn't a real exposure.
+  app.use(express.json({ limit: '25mb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   // Backs the "What's New" popup (app.js): the renderer compares this

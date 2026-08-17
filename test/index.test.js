@@ -1523,6 +1523,34 @@ test('POST /api/beers/import-csv requires csv content and a recognizable Title c
   }));
 });
 
+// Regression test: a real Beer Bible export (thousands of rows, some with
+// a Tasting Notes description) clears Express's own default 100kb JSON
+// body limit easily - confirmed against a real 2,539-row export at 241kb
+// with not one single researched entry yet. That used to fail the whole
+// request with a 413 before it ever reached importBeerBibleCsv, silently -
+// staff would see an error, but a re-exported/re-imported researched beer
+// (the actual real-world use of this button - see beerBibleCsvImport.js's
+// own comment) read as "the import said it worked but my researched beer
+// came back Needs research" once the error itself went unnoticed. Pads a
+// small CSV out well past 100kb with a long Tasting Notes value (real
+// content, not padding-as-junk - see server/index.js's own express.json
+// limit comment) rather than needing thousands of literal rows here.
+test('POST /api/beers/import-csv accepts a CSV well over Express\'s default 100kb JSON body limit', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const longNote = 'A hazy, tropical IPA with notes of mango and passionfruit. '.repeat(2500); // ~150kb alone
+    const csv = ['Title,Brewery,Tasting Notes', `Slack Tide Flounder Pounder,Slack Tide Brewing Company,"${longNote}"`].join('\n');
+    assert.ok(Buffer.byteLength(JSON.stringify({ csv })) > 100 * 1024, 'test setup should actually exceed the old 100kb limit');
+
+    const { status, body } = await postJson(port, '/api/beers/import-csv', { csv });
+    assert.equal(status, 200);
+    assert.equal(body.imported, 1);
+    // Trailing whitespace is trimmed on the way in (same as every other
+    // field) - trim the expected value the same way rather than asserting
+    // a byte-for-byte match this repeated string was never meant to have.
+    assert.equal(body.beers[0].description, longNote.trim());
+  }));
+});
+
 // /api/rums - the Rum Repository (rail "Rum Repository" view), a
 // bare-scaffold first cut of the same idea as /api/beers above, for Rum
 // instead of Beer. Same reach as /api/beers: no isServer/mashBillPuller
