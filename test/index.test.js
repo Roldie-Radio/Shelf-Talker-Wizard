@@ -503,6 +503,44 @@ test('a Beer UPC scan pulls current pricing from the store site and the remainin
   }));
 });
 
+// A Beer UPC scan's beer path overwrites price/title/size wholesale with the
+// store site's own fresher scrape (see enrichBeerScanFromStore's own
+// comment) - but that scrape has no pack-price column at all, so packPrice/
+// packQty need to be carried over from the export row explicitly or they'd
+// vanish on every successful scan, silently leaving Scan UPC unable to ever
+// default a beer's price to the pack the way Search by Name already does
+// off the very same export file (see productHasPackPrice/priceChoiceHtml in
+// app.js).
+test('a Beer UPC scan keeps the export row\'s own pack price/qty alongside the store\'s fresher unit price', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    const filePath = path.join(dir, 'export.csv');
+    fs.writeFileSync(
+      filePath,
+      ['UPC,Title,SKU,Notes,Pack Price,Pack Qty', '019214600037,Corona Extra 12pk Cans,55555,internal note: reorder soon,32.99,12'].join('\n'),
+      'utf-8'
+    );
+    setUpcSettings(filePath);
+    const storeProductHtml = page({
+      body: '<h1 itemprop="name">Corona Extra 12pk Cans</h1>'
+        + '<div class="pricingDetails"><span class="priceFull">$14.99</span></div>',
+    });
+    await withMockFetch(
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: storeSearchHtml('55555') });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaHitsResponse([]) }); // Untappd: no match, best-effort
+        return mockResponse({ body: storeProductHtml });
+      },
+      async () => {
+        const result = await postJson(port, '/api/upc-lookup', { upc: '019214600037', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.price, '14.99');
+        assert.equal(result.body.packPrice, '32.99');
+        assert.equal(result.body.packQty, 12);
+      }
+    );
+  }));
+});
+
 test('switching a looked-up UPC from Beer to Wine/Spirits re-runs its own store description lookup', async () => {
   await withTempDb((dir) => withServer(async (port) => {
     setUpcSettings(writeUpcExport(dir, ['085000010652,Josh Cellars Cabernet Sauvignon,55555,internal note: reorder soon']));
