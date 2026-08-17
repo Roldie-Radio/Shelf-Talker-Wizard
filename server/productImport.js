@@ -1836,18 +1836,20 @@ function composeProducerTitle({ title, brand, size }) {
 }
 
 // Folds the store page's separate Size ("16oz") and Pack Size ("4-Pack")
-// spec rows into one Size/Unit value ("16oz 4-Pack") - beer-only (see
+// spec rows into one Size/Unit value ("4-Pack 16oz") - beer-only (see
 // enrichBeerFromUntappd below), matching how staff already write a
-// multi-pack's size by hand elsewhere in the app. Applied after
-// composeProducerTitle already ran on the un-combined `size` above, not
-// before - stripSize there only needs to match what's actually still
-// sitting in the scraped title (just the container size, confirmed from a
-// real product page), not a phrase that includes the pack count too.
+// multi-pack's size by hand elsewhere in the app. Pack size leads because
+// that's the number staff scan for first when confirming a multi-pack on
+// the shelf. Applied after composeProducerTitle already ran on the
+// un-combined `size` above, not before - stripSize there only needs to
+// match what's actually still sitting in the scraped title (just the
+// container size, confirmed from a real product page), not a phrase that
+// includes the pack count too.
 function combineBeerSize(size, packSize) {
   const base = (size || '').trim();
   const pack = (packSize || '').trim();
   if (!pack) return base;
-  return base ? `${base} ${pack}` : pack;
+  return base ? `${pack} ${base}` : pack;
 }
 
 // Layers Untappd's own description/brewery/style/ABV/IBU/rating on top of
