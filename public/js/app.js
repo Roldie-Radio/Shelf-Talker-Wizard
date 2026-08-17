@@ -6324,7 +6324,8 @@
     const q = mashBillLibraryQuery.toLowerCase();
     const rows = mashBillLibraryCache.filter((m) => !q
       || (m.title || '').toLowerCase().includes(q)
-      || (m.distillery || '').toLowerCase().includes(q));
+      || (m.distillery || '').toLowerCase().includes(q)
+      || (m.sku || '').toLowerCase().includes(q));
 
     if (!rows.length) {
       els.mashBillLibraryList.innerHTML = mashBillLibraryQuery
@@ -6876,7 +6877,8 @@
     if (!q) return true;
     return (entry.title || '').toLowerCase().includes(q)
       || (entry.distillery || '').toLowerCase().includes(q)
-      || (entry.parentCompany || '').toLowerCase().includes(q);
+      || (entry.parentCompany || '').toLowerCase().includes(q)
+      || (entry.sku || '').toLowerCase().includes(q);
   }
 
   function renderLibraryChipsAndStats() {
