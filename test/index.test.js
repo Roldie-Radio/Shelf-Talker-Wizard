@@ -1269,3 +1269,102 @@ test('POST /api/beers/sync-library adds only new titles, leaving an existing ent
     );
   }));
 });
+
+// /api/rums - the Rum Repository (rail "Rum Repository" view), a
+// bare-scaffold first cut of the same idea as /api/beers above, for Rum
+// instead of Beer. Same reach as /api/beers: no isServer/mashBillPuller
+// branching to cover here - every route always reads/writes this PC's own
+// data.db directly (see the rums table comment in db.js), so plain
+// withServer (no injected fakes) is enough for every test below.
+
+test('GET /api/rums returns an empty list on a fresh database', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/rums');
+    assert.equal(status, 200);
+    assert.deepEqual(body.rums, []);
+  }));
+});
+
+test('POST /api/rums creates an entry and requires a title', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const missingTitle = await postJson(port, '/api/rums', { distillery: 'Maison Ferrand' });
+    assert.equal(missingTitle.status, 400);
+
+    const created = await postJson(port, '/api/rums', {
+      title: 'Plantation Original Dark', distillery: 'Maison Ferrand', style: 'Dark Rum', abv: '40%',
+      ageStatement: 'Aged 8-14 years', description: 'Rich notes of dried fruit and molasses.', sku: '15614',
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.title, 'Plantation Original Dark');
+    assert.equal(created.body.distillery, 'Maison Ferrand');
+    assert.equal(created.body.style, 'Dark Rum');
+    assert.equal(created.body.abv, '40%');
+    assert.equal(created.body.ageStatement, 'Aged 8-14 years');
+    assert.equal(created.body.description, 'Rich notes of dried fruit and molasses.');
+    assert.equal(created.body.sku, '15614');
+
+    const { body } = await getJson(port, '/api/rums');
+    assert.equal(body.rums.length, 1);
+    assert.equal(body.rums[0].title, 'Plantation Original Dark');
+  }));
+});
+
+test('PUT /api/rums/:id updates fields (preserving an omitted one), 404s for an unknown id, 409s on a title collision', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const a = await postJson(port, '/api/rums', { title: 'Mount Gay XO', distillery: 'Mount Gay' });
+    const b = await postJson(port, '/api/rums', { title: 'Appleton Estate 12' });
+
+    const updated = await requestJson(port, 'PUT', `/api/rums/${a.body.id}`, { abv: '43%' });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.abv, '43%');
+    // distillery wasn't passed to this update, so it's unchanged.
+    assert.equal(updated.body.distillery, 'Mount Gay');
+
+    const missing = await requestJson(port, 'PUT', '/api/rums/999999', { title: 'Nope' });
+    assert.equal(missing.status, 404);
+
+    const collision = await requestJson(port, 'PUT', `/api/rums/${b.body.id}`, { title: 'mount gay xo' });
+    assert.equal(collision.status, 409);
+  }));
+});
+
+test('DELETE /api/rums/:id deletes and 404s for an unknown id', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const created = await postJson(port, '/api/rums', { title: 'Wray & Nephew White Overproof' });
+    const deleted = await requestJson(port, 'DELETE', `/api/rums/${created.body.id}`);
+    assert.equal(deleted.status, 200);
+    assert.deepEqual((await getJson(port, '/api/rums')).body.rums, []);
+
+    const missing = await requestJson(port, 'DELETE', `/api/rums/${created.body.id}`);
+    assert.equal(missing.status, 404);
+  }));
+});
+
+test('POST /api/rums/sync-library adds only new titles, leaving an existing entry untouched - not gated behind Server PC', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    // Deliberately not marked isServer - unlike /api/mashbills/sync-library,
+    // this route works on any PC (see the rums table comment in db.js).
+    await postJson(port, '/api/rums', { title: 'Mount Gay XO', distillery: 'Local Edit' });
+
+    await withMockFetch(
+      async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          { title: 'Mount Gay XO', distillery: 'GitHub Version' },
+          { title: 'Appleton Estate 12', distillery: 'Appleton Estate' },
+        ],
+      }),
+      async () => {
+        const { status, body } = await postJson(port, '/api/rums/sync-library', {});
+        assert.equal(status, 200);
+        assert.equal(body.added, 1);
+        assert.equal(body.skipped, 1);
+        assert.equal(body.source, 'GitHub');
+        assert.equal(body.rums.length, 2);
+        const mountGay = body.rums.find((r) => r.title === 'Mount Gay XO');
+        assert.equal(mountGay.distillery, 'Local Edit');
+      },
+    );
+  }));
+});

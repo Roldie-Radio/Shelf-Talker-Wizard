@@ -1,6 +1,6 @@
 {
   "name": "shelf-talker-wizard",
-  "version": "4.3.10",
+  "version": "4.3.11",
   "description": "Shelf talker generator for Liquor Outlet Wine Cellars - manual entry or import from the website, standardized print-ready sizes.",
   "author": "Liquor Outlet Wine Cellars",
   "main": "electron/main.js",
@@ -10,6 +10,7 @@
     "test": "node --test",
     "db:seed-bourbon-library": "node scripts/seed-bourbon-library.js",
     "db:seed-beer-bible": "node scripts/seed-beer-bible.js",
+    "db:seed-rum-repository": "node scripts/seed-rum-repository.js",
     "electron": "electron .",
     "dist:win": "electron-builder --win --x64 --publish never",
     "release:patch": "npm version patch && git push --follow-tags",
@@ -46,6 +47,7 @@
       "public/**/*",
       "scripts/bourbon-library-seed-data.json",
       "scripts/beer-bible-seed-data.json",
+      "scripts/rum-repository-seed-data.json",
       "package.json"
     ],
     "directories": {

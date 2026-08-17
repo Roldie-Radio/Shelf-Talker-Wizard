@@ -115,6 +115,36 @@ function applySchema(db) {
       updated_at TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_beers_title_unique ON beers (title COLLATE NOCASE);
+
+    -- The Rum Repository (rail "Rum Repository" view): one researched rum
+    -- per title, same idea as the beers table just above - a
+    -- distillery/region/style/ABV/age-statement/tasting-notes lookup done
+    -- once doesn't need re-doing on the next talker made for that same rum.
+    -- One row per title (case-insensitive - the unique index below), same
+    -- matching convention as beers and mash_bills.
+    --
+    -- Bare-scaffold, same reach as the beers table: no cross-register sync
+    -- (this PC's own data.db is always the only copy), no Edit Talker
+    -- recall, and no bulk import-from-export-file - beers' import feature
+    -- leans on a per-row Untappd lookup that has no rum equivalent, so this
+    -- only has the GitHub curated-list sync and auto-seed (see
+    -- server/rumRepositorySeed.js) plus manual add/edit/delete. Both
+    -- deliberately left as natural follow-ups, not ruled out by this
+    -- schema, same as beers' own header comment says.
+    CREATE TABLE IF NOT EXISTS rums (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      distillery TEXT,
+      region TEXT,
+      style TEXT,
+      abv TEXT,
+      age_statement TEXT,
+      description TEXT,
+      sku TEXT,
+      source TEXT NOT NULL DEFAULT 'Manual',
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_rums_title_unique ON rums (title COLLATE NOCASE);
   `);
   applyMashBillColumns(db);
 }
@@ -271,6 +301,7 @@ function getStats() {
     printedTalkers: db.prepare('SELECT COUNT(*) AS n FROM printed_talkers').get().n,
     mashBills: db.prepare('SELECT COUNT(*) AS n FROM mash_bills').get().n,
     beers: db.prepare('SELECT COUNT(*) AS n FROM beers').get().n,
+    rums: db.prepare('SELECT COUNT(*) AS n FROM rums').get().n,
   };
 }
 
@@ -661,6 +692,154 @@ function deleteBeer(id) {
   return db.prepare('DELETE FROM beers WHERE id = ?').run(id).changes > 0;
 }
 
+// ================================================================
+// The Rum Repository - see the rums table comment in applySchema above for
+// the shape/matching rules and how this deliberately differs from the
+// Bourbon Library's own mash_bills table (no cross-register sync, no Edit
+// Talker recall integration, no bulk import) - same reach as the Beer
+// Bible's beers table just above, just Distillery/Region/Style/ABV/Age
+// Statement instead of Brewery/Location/Style/ABV/IBU/Rating.
+// ================================================================
+
+function rowToRum(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    distillery: row.distillery || '',
+    region: row.region || '',
+    style: row.style || '',
+    abv: row.abv || '',
+    ageStatement: row.age_statement || '',
+    description: row.description || '',
+    sku: row.sku || '',
+    source: row.source,
+    updatedAt: row.updated_at,
+  };
+}
+
+function listRums() {
+  const db = getDb();
+  return db.prepare('SELECT * FROM rums ORDER BY title COLLATE NOCASE ASC').all().map(rowToRum);
+}
+
+function getRum(id) {
+  const db = getDb();
+  return rowToRum(db.prepare('SELECT * FROM rums WHERE id = ?').get(id));
+}
+
+function validateRumInput({ title }) {
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) throw Object.assign(new Error('A rum name is required.'), { code: 'TITLE_REQUIRED' });
+  return { cleanTitle };
+}
+
+// Same "undefined leaves whatever's already there alone" convention as
+// beerOptionalFieldParams above - every field here beyond title/source is
+// optional, and `existing` is a rowToRum()-shaped object or null.
+function rumOptionalFieldParams({
+  distillery, region, style, abv, ageStatement, description, sku,
+}, existing) {
+  const prev = existing || {
+    distillery: '', region: '', style: '', abv: '', ageStatement: '', description: '', sku: '',
+  };
+  return {
+    distillery: normalizeOptionalText(distillery !== undefined ? distillery : prev.distillery),
+    region: normalizeOptionalText(region !== undefined ? region : prev.region),
+    style: normalizeOptionalText(style !== undefined ? style : prev.style),
+    abv: normalizeOptionalText(abv !== undefined ? abv : prev.abv),
+    ageStatement: normalizeOptionalText(ageStatement !== undefined ? ageStatement : prev.ageStatement),
+    description: normalizeOptionalText(description !== undefined ? description : prev.description),
+    sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
+  };
+}
+
+const RUM_OPTIONAL_COLUMNS_SET = `
+  distillery = @distillery, region = @region, style = @style, abv = @abv,
+  age_statement = @ageStatement, description = @description, sku = @sku
+`;
+
+// Create-or-update by title (case-insensitive), same reasoning as
+// upsertBeer above: the Rum Repository form's Add/Save button always calls
+// this, so saving again after a typo fix updates the same entry instead of
+// erroring or duplicating it.
+function upsertRum({
+  title, source, distillery, region, style, abv, ageStatement, description, sku,
+}) {
+  const db = getDb();
+  const { cleanTitle } = validateRumInput({ title });
+  const now = nowIso();
+  const existingRow = db.prepare('SELECT id FROM rums WHERE title = ? COLLATE NOCASE').get(cleanTitle);
+  const existing = existingRow ? getRum(existingRow.id) : null;
+  const params = {
+    title: cleanTitle,
+    source: source || 'Manual',
+    updatedAt: now,
+    ...rumOptionalFieldParams({
+      distillery, region, style, abv, ageStatement, description, sku,
+    }, existing),
+  };
+
+  if (existing) {
+    db.prepare(`
+      UPDATE rums SET title = @title, source = @source, updated_at = @updatedAt,
+      ${RUM_OPTIONAL_COLUMNS_SET}
+      WHERE id = @id
+    `).run({ ...params, id: existing.id });
+    return getRum(existing.id);
+  }
+  const info = db.prepare(`
+    INSERT INTO rums (
+      title, source, updated_at, distillery, region, style, abv, age_statement, description, sku
+    )
+    VALUES (
+      @title, @source, @updatedAt, @distillery, @region, @style, @abv, @ageStatement, @description, @sku
+    )
+  `).run(params);
+  return getRum(info.lastInsertRowid);
+}
+
+// Explicit update-by-id - only the Rum Repository form's "Edit" flow uses
+// this (it already knows the id, and may be changing the title itself).
+// Unlike upsertRum above, renaming onto a title another entry already owns
+// is a real conflict here, not a merge - same DUPLICATE_TITLE handling as
+// updateBeerById.
+function updateRumById(id, {
+  title, source, distillery, region, style, abv, ageStatement, description, sku,
+}) {
+  const db = getDb();
+  const existing = getRum(id);
+  if (!existing) return null;
+  const { cleanTitle } = validateRumInput({ title: title !== undefined ? title : existing.title });
+
+  try {
+    db.prepare(`
+      UPDATE rums SET title = @title, source = @source, updated_at = @updatedAt,
+      ${RUM_OPTIONAL_COLUMNS_SET}
+      WHERE id = @id
+    `).run({
+      id,
+      title: cleanTitle,
+      source: source || existing.source,
+      updatedAt: nowIso(),
+      ...rumOptionalFieldParams({
+        distillery, region, style, abv, ageStatement, description, sku,
+      }, existing),
+    });
+  } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      throw Object.assign(new Error(`Another entry already uses the name "${cleanTitle}" - edit that one instead, or delete it first.`), { code: 'DUPLICATE_TITLE' });
+    }
+    throw err;
+  }
+  return getRum(id);
+}
+
+function deleteRum(id) {
+  const db = getDb();
+  return db.prepare('DELETE FROM rums WHERE id = ?').run(id).changes > 0;
+}
+
 module.exports = {
   getDb,
   closeDb,
@@ -679,6 +858,11 @@ module.exports = {
   upsertBeer,
   updateBeerById,
   deleteBeer,
+  listRums,
+  getRum,
+  upsertRum,
+  updateRumById,
+  deleteRum,
   // Exported for tests only.
   dbFilePath,
 };

@@ -165,14 +165,18 @@ test('deleteHistoryEntry removes the row and returns true, false if already gone
 
 test('getStats reports zero counts on a fresh database', () => {
   withTempDb(() => {
-    assert.deepEqual(db.getStats(), { printedTalkers: 0, mashBills: 0, beers: 0 });
+    assert.deepEqual(db.getStats(), {
+      printedTalkers: 0, mashBills: 0, beers: 0, rums: 0,
+    });
   });
 });
 
 test('getStats counts printed talkers', () => {
   withTempDb(() => {
     db.recordPrintedTalkers([sampleTalker({ id: 'a' }), sampleTalker({ id: 'b' })]);
-    assert.deepEqual(db.getStats(), { printedTalkers: 2, mashBills: 0, beers: 0 });
+    assert.deepEqual(db.getStats(), {
+      printedTalkers: 2, mashBills: 0, beers: 0, rums: 0,
+    });
   });
 });
 
@@ -642,6 +646,143 @@ test('getStats includes the beer count, independent of mashBills', () => {
     assert.equal(db.getStats().beers, 0);
     db.upsertBeer({ title: 'Larceny Not Actually Bourbon' }); // deliberately beer-table only
     db.upsertMashBill({ title: 'Larceny', grains: sampleGrains() });
+    assert.equal(db.getStats().beers, 1);
+    assert.equal(db.getStats().mashBills, 1);
+  });
+});
+
+// ---------- The Rum Repository ----------
+
+test('upsertRum creates a new entry with the given fields', () => {
+  withTempDb(() => {
+    const entry = db.upsertRum({
+      title: 'Plantation Original Dark',
+      distillery: 'Maison Ferrand',
+      region: 'Caribbean',
+      style: 'Dark Rum',
+      abv: '40%',
+      ageStatement: 'Aged 8-14 years',
+      description: 'Rich notes of dried fruit, molasses, and baking spice.',
+      sku: '15614',
+      source: 'Manual',
+    });
+    assert.equal(entry.title, 'Plantation Original Dark');
+    assert.equal(entry.distillery, 'Maison Ferrand');
+    assert.equal(entry.region, 'Caribbean');
+    assert.equal(entry.style, 'Dark Rum');
+    assert.equal(entry.abv, '40%');
+    assert.equal(entry.ageStatement, 'Aged 8-14 years');
+    assert.equal(entry.description, 'Rich notes of dried fruit, molasses, and baking spice.');
+    assert.equal(entry.sku, '15614');
+    assert.equal(entry.source, 'Manual');
+    assert.ok(entry.updatedAt);
+    assert.ok(entry.id);
+  });
+});
+
+test('upsertRum updates the existing entry in place on a repeat save (case-insensitive title)', () => {
+  withTempDb(() => {
+    const first = db.upsertRum({ title: 'Mount Gay XO', distillery: 'Mount Gay' });
+    const second = db.upsertRum({ title: 'mount gay xo', style: 'Aged Rum' });
+    assert.equal(second.id, first.id);
+    // Omitted (undefined) fields on the second save leave what's already
+    // there alone - same convention as upsertBeer.
+    assert.equal(second.distillery, 'Mount Gay');
+    assert.equal(second.style, 'Aged Rum');
+    assert.equal(db.listRums().length, 1);
+  });
+});
+
+test('upsertRum rejects a missing title', () => {
+  withTempDb(() => {
+    assert.throws(() => db.upsertRum({ title: '' }), { code: 'TITLE_REQUIRED' });
+    assert.throws(() => db.upsertRum({}), { code: 'TITLE_REQUIRED' });
+  });
+});
+
+test('a new rum entry defaults every optional field to an empty string, not null/undefined', () => {
+  withTempDb(() => {
+    const entry = db.upsertRum({ title: 'Mystery Rum' });
+    assert.deepEqual(entry, {
+      id: entry.id,
+      title: 'Mystery Rum',
+      distillery: '',
+      region: '',
+      style: '',
+      abv: '',
+      ageStatement: '',
+      description: '',
+      sku: '',
+      source: 'Manual',
+      updatedAt: entry.updatedAt,
+    });
+  });
+});
+
+test('listRums orders alphabetically by title, case-insensitively', () => {
+  withTempDb(() => {
+    db.upsertRum({ title: 'zacapa 23' });
+    db.upsertRum({ title: 'Appleton Estate 12' });
+    db.upsertRum({ title: 'Mount Gay XO' });
+    assert.deepEqual(db.listRums().map((r) => r.title), ['Appleton Estate 12', 'Mount Gay XO', 'zacapa 23']);
+  });
+});
+
+test('getRum returns a single entry or null', () => {
+  withTempDb(() => {
+    const entry = db.upsertRum({ title: 'Diplomatico Reserva Exclusiva' });
+    assert.deepEqual(db.getRum(entry.id), entry);
+    assert.equal(db.getRum(999999), null);
+  });
+});
+
+test('updateRumById changes fields and returns the updated entry, preserving an omitted (undefined) field', () => {
+  withTempDb(() => {
+    const entry = db.upsertRum({ title: 'Bacardi Superior', distillery: 'Bacardi', style: 'White Rum' });
+    const updated = db.updateRumById(entry.id, { abv: '40%', ageStatement: 'Unaged' });
+    assert.equal(updated.abv, '40%');
+    assert.equal(updated.ageStatement, 'Unaged');
+    // distillery/style weren't passed to this update, so they're unchanged.
+    assert.equal(updated.distillery, 'Bacardi');
+    assert.equal(updated.style, 'White Rum');
+  });
+});
+
+test('updateRumById returns null for a missing id', () => {
+  withTempDb(() => {
+    assert.equal(db.updateRumById(999999, { title: 'Nope' }), null);
+  });
+});
+
+test('updateRumById refuses to rename onto another entry\'s title', () => {
+  withTempDb(() => {
+    db.upsertRum({ title: 'Captain Morgan Original Spiced' });
+    const other = db.upsertRum({ title: 'Kraken Black Spiced' });
+    assert.throws(
+      () => db.updateRumById(other.id, { title: 'captain morgan original spiced' }),
+      { code: 'DUPLICATE_TITLE' },
+    );
+    // Unchanged - the failed rename didn't partially apply.
+    assert.equal(db.getRum(other.id).title, 'Kraken Black Spiced');
+  });
+});
+
+test('deleteRum removes the row and returns true, false if already gone', () => {
+  withTempDb(() => {
+    const entry = db.upsertRum({ title: 'Wray & Nephew White Overproof' });
+    assert.equal(db.deleteRum(entry.id), true);
+    assert.equal(db.getRum(entry.id), null);
+    assert.equal(db.deleteRum(entry.id), false);
+  });
+});
+
+test('getStats includes the rum count, independent of beers and mashBills', () => {
+  withTempDb(() => {
+    assert.equal(db.getStats().rums, 0);
+    db.upsertRum({ title: 'Cruzan Aged Light Rum' }); // deliberately rum-table only
+    db.upsertBeer({ title: 'Not A Rum' });
+    db.upsertMashBill({ title: 'Also Not A Rum', grains: sampleGrains() });
+    assert.equal(db.getStats().rums, 1);
     assert.equal(db.getStats().beers, 1);
     assert.equal(db.getStats().mashBills, 1);
   });
