@@ -3762,6 +3762,21 @@
     els.skuInput.value = '';
     els.skuStatus.textContent = message || 'Added to queue! Enter another SKU to look up the next one.';
     els.skuUntappdSection.hidden = true;
+    // A SKU lookup often reaches here through the shared smart search
+    // field (a typed SKU, or an internal "A"+7-digit UPC label unwrapped by
+    // detectSmartSearchMode - see runSmartSearch), not just this tab's own
+    // skuInput above - unlike addNameSearchToQueue/addScannedUpcToQueue's
+    // own resets, this one used to leave that field both unfocused *and*
+    // still holding whatever was typed/scanned into it. Left alone, the
+    // very next scan (into the still-focused smart search field) would land
+    // after that stale text instead of replacing it - most visibly, a
+    // leftover internal UPC like "A0042420" making a perfectly normal
+    // manufacturer UPC scanned right after look like it now started with a
+    // stray "A". Clearing and refocusing it here, same as
+    // addNameSearchToQueue already does, leaves it ready for the next scan
+    // either way.
+    els.smartSearchInput.value = '';
+    els.smartSearchInput.focus();
     return true;
   }
 
@@ -3882,6 +3897,12 @@
     els.scanUpcInput.value = '';
     els.scanUpcStatus.textContent = message || 'Added to queue! Scan the next one.';
     els.scanUpcUntappdSection.hidden = true;
+    // Same stale-leftover risk addSkuLookupToQueue's own reset guards
+    // against - a scan reaching here can just as easily have come in
+    // through the shared smart search field (see runSmartSearch) as through
+    // this tab's own scanUpcInput above, so that field needs clearing too or
+    // a later scan into it would land after whatever it still shows.
+    els.smartSearchInput.value = '';
     els.scanUpcInput.focus();
     return true;
   }
