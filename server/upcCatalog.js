@@ -324,8 +324,16 @@ function dedupeProducts(products) {
   return deduped;
 }
 
+// Same "number stored as a float" quirk upcVariants strips off a UPC
+// (see its own comment) can hit a SKU column too - a store SKU is
+// otherwise plain digits, so this is deliberately narrow (only an
+// all-zero fraction) rather than a general numeric-string normalizer.
+function normalizeSkuKey(raw) {
+  return String(raw || '').replace(/\.0+$/, '').trim().toLowerCase();
+}
+
 function buildIndex(rows) {
-  if (!rows.length) return { byUpc: new Map(), headers: [], products: [] };
+  if (!rows.length) return { byUpc: new Map(), bySku: new Map(), headers: [], products: [] };
   const headerRow = rows[0];
   const colFor = matchColumns(headerRow);
   if (colFor.upc === undefined) {
@@ -336,6 +344,12 @@ function buildIndex(rows) {
   }
 
   const byUpc = new Map();
+  // Keyed by normalizeSkuKey(sku), one entry per distinct SKU in file order -
+  // backs lookupSkuInExport (the Bourbon Library profile page's Price row),
+  // a separate index from byUpc since a product's store SKU and its
+  // manufacturer UPC are different numbers matched by different flows (see
+  // this file's own top-of-file note on that distinction).
+  const bySku = new Map();
   // One entry per data row with a UPC, in file order - deduplicated before
   // this function hands it back (see dedupeProducts below), so what actually
   // gets returned is one entry per *distinct* item. The Search by Name tab
@@ -376,11 +390,16 @@ function buildIndex(rows) {
     for (const variant of upcVariants(rawUpc)) {
       byUpc.set(variant, product);
     }
+    if (product.sku) {
+      const skuKey = normalizeSkuKey(product.sku);
+      if (skuKey) bySku.set(skuKey, product);
+    }
   }
-  // byUpc above still has an entry per row (every UPC variant needs to keep
-  // scanning correctly) - only the returned product list is deduplicated,
-  // see dedupeProducts.
-  return { byUpc, headers: headerRow, products: dedupeProducts(products) };
+  // byUpc/bySku above still have an entry per row (every UPC variant needs to
+  // keep scanning correctly, and a duplicate SKU row just overwrites with the
+  // same data) - only the returned product list is deduplicated, see
+  // dedupeProducts.
+  return { byUpc, bySku, headers: headerRow, products: dedupeProducts(products) };
 }
 
 // ================================================================
@@ -389,7 +408,7 @@ function buildIndex(rows) {
 // has actually changed since the last lookup, not on every single scan.
 // ================================================================
 
-let cache = { filePath: null, mtimeMs: null, byUpc: null, headers: null, products: null };
+let cache = { filePath: null, mtimeMs: null, byUpc: null, bySku: null, headers: null, products: null };
 
 function loadCatalog(filePath) {
   const stat = fs.statSync(filePath); // throws ENOENT if missing
@@ -397,13 +416,13 @@ function loadCatalog(filePath) {
     return cache;
   }
   const text = fs.readFileSync(filePath, 'utf-8');
-  const { byUpc, headers, products } = buildIndex(parseDelimited(text));
-  cache = { filePath, mtimeMs: stat.mtimeMs, byUpc, headers, products };
+  const { byUpc, bySku, headers, products } = buildIndex(parseDelimited(text));
+  cache = { filePath, mtimeMs: stat.mtimeMs, byUpc, bySku, headers, products };
   return cache;
 }
 
 function invalidateCache() {
-  cache = { filePath: null, mtimeMs: null, byUpc: null, headers: null, products: null };
+  cache = { filePath: null, mtimeMs: null, byUpc: null, bySku: null, headers: null, products: null };
 }
 
 // ================================================================
@@ -513,6 +532,22 @@ function lookupUpc(scannedUpc) {
   }
   const err = new Error(`UPC ${scannedUpc} was not found in the export file. Enter this item manually.`);
   err.code = 'UPC_NOT_FOUND';
+  throw err;
+}
+
+// Looks up a store SKU against the configured export file - backs the
+// Bourbon Library profile page's Price row (a library entry's own `sku`
+// field, see mash_bills in db.js, checked against whatever the export
+// currently has on file for it). Same local-file, no-network shape as
+// lookupUpc above, and the same NO_EXPORT_PATH/EXPORT_NOT_FOUND/
+// EXPORT_UNREADABLE error codes, plus SKU_NOT_FOUND for a SKU the export
+// doesn't have.
+function lookupSkuInExport(sku) {
+  const { bySku } = requireCatalog();
+  const key = normalizeSkuKey(sku);
+  if (key && bySku.has(key)) return bySku.get(key);
+  const err = new Error(`SKU ${sku} was not found in the export file.`);
+  err.code = 'SKU_NOT_FOUND';
   throw err;
 }
 
@@ -694,12 +729,14 @@ module.exports = {
   syncedExportFilePath,
   readExportFileRaw,
   lookupUpc,
+  lookupSkuInExport,
   searchByName,
   previewExport,
   // Exported for tests only.
   parseDelimited,
   matchColumns,
   upcVariants,
+  normalizeSkuKey,
   buildIndex,
   scoreNameMatch,
   parsePackQtyFromSize,

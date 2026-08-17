@@ -504,6 +504,45 @@ test('a Beer UPC scan surfaces storeSourceError when the store has no match for 
 });
 
 // ================================================================
+// /api/export-price - backs the Bourbon Library profile page's Price row
+// (a library entry's own `sku`, checked against the local WinePOS export
+// file). The underlying lookup logic (SKU matching, error codes) is
+// already covered in depth in test/upcCatalog.test.js against
+// lookupSkuInExport directly - these just confirm the HTTP layer wraps it
+// correctly.
+// ================================================================
+
+test('GET /api/export-price returns the export file\'s price for a matching SKU', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    const filePath = path.join(dir, 'export.csv');
+    fs.writeFileSync(filePath, ['UPC,Title,SKU,Regular Price', '085000010652,Buffalo Trace,12345,24.99'].join('\n'), 'utf-8');
+    setUpcSettings(filePath);
+    const result = await getJson(port, '/api/export-price?sku=12345');
+    assert.equal(result.status, 200);
+    assert.equal(result.body.price, '24.99');
+    assert.equal(result.body.title, 'Buffalo Trace');
+  }));
+});
+
+test('GET /api/export-price 404s with SKU_NOT_FOUND for a SKU absent from the file', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    const filePath = path.join(dir, 'export.csv');
+    fs.writeFileSync(filePath, ['UPC,Title,SKU,Regular Price', '085000010652,Buffalo Trace,12345,24.99'].join('\n'), 'utf-8');
+    setUpcSettings(filePath);
+    const result = await getJson(port, '/api/export-price?sku=00000');
+    assert.equal(result.status, 404);
+    assert.equal(result.body.code, 'SKU_NOT_FOUND');
+  }));
+});
+
+test('GET /api/export-price requires a sku query param', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const result = await getJson(port, '/api/export-price');
+    assert.equal(result.status, 400);
+  }));
+});
+
+// ================================================================
 // /api/name-search - see the comment above the route in server/index.js.
 // The ranking/error-code behavior itself is covered in
 // test/upcCatalog.test.js against searchByName directly; these confirm the
@@ -857,10 +896,15 @@ test('POST /api/mashbills upserts directly once isServer, requires a title', asy
 });
 
 // Route-level check that the Bourbon Library fields (parentCompany,
-// category, nose/palate/finish, tastingSource, confidence) actually reach
-// db.js rather than being silently dropped by this route's own
+// category, sku, nose/palate/finish, tastingSource, confidence) actually
+// reach db.js rather than being silently dropped by this route's own
 // destructuring - db.test.js already covers upsertMashBill/rowToMashBill
-// in depth, this just confirms the wiring in between.
+// in depth, this just confirms the wiring in between. `sku` in particular
+// used to be dropped here (mashBillOptionalFields never destructured it,
+// even though db.js's own mashBillOptionalFieldParams always accepted it),
+// so a SKU typed into the Manage Mash Bill Library dialog silently never
+// reached the database - only db.js's own tests and the seed script (which
+// calls upsertMashBill directly, bypassing this route) ever exercised it.
 test('POST /api/mashbills persists Bourbon Library fields (parent company, tasting notes, confidence), PUT updates them', async () => {
   await withTempDb(() => withServer(async (port) => {
     await postJson(port, '/api/server-status', { isServer: true });
@@ -871,6 +915,7 @@ test('POST /api/mashbills persists Bourbon Library fields (parent company, tasti
       grains: [{ grain: 'Corn', pct: 90 }],
       parentCompany: 'Sazerac Company',
       category: 'Kentucky Straight Bourbon',
+      sku: '12345',
       nose: 'Vanilla, brown sugar, mint',
       palate: 'Brown sugar and spice',
       finish: 'Long and smooth',
@@ -883,6 +928,7 @@ test('POST /api/mashbills persists Bourbon Library fields (parent company, tasti
     assert.equal(created.status, 201);
     assert.equal(created.body.parentCompany, 'Sazerac Company');
     assert.equal(created.body.category, 'Kentucky Straight Bourbon');
+    assert.equal(created.body.sku, '12345');
     assert.equal(created.body.nose, 'Vanilla, brown sugar, mint');
     assert.deepEqual(created.body.confidence, {
       tier: 'confirmed', note: 'Publicly confirmed.', verifiedAt: '2026-01-15',
@@ -898,6 +944,7 @@ test('POST /api/mashbills persists Bourbon Library fields (parent company, tasti
     });
     // Fields left off the PUT payload stay untouched.
     assert.equal(updated.body.parentCompany, 'Sazerac Company');
+    assert.equal(updated.body.sku, '12345');
     assert.equal(updated.body.nose, 'Vanilla, brown sugar, mint');
     assert.deepEqual(updated.body.references, [{ label: 'Distillery site', url: 'https://example.com', tags: ['Mash Bill'] }]);
   }));
@@ -920,7 +967,7 @@ test('POST /api/mashbills forwards to the injected mashBillPuller when not isSer
       path: '/mashbills',
       body: {
         title: 'Larceny', distillery: undefined, grains: [{ grain: 'Corn', pct: 68 }], source: undefined,
-        parentCompany: undefined, category: undefined, nose: undefined, palate: undefined, finish: undefined,
+        parentCompany: undefined, category: undefined, sku: undefined, nose: undefined, palate: undefined, finish: undefined,
         tastingSource: undefined, confidence: undefined, references: undefined,
       },
     });

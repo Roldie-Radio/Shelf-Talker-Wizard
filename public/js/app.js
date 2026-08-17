@@ -7158,6 +7158,7 @@
             ${entry.parentCompany ? `<div><dt>Parent company</dt><dd>${escapeHtml(entry.parentCompany)}</dd></div>` : ''}
             ${entry.category ? `<div><dt>Style</dt><dd>${escapeHtml(entry.category)}</dd></div>` : ''}
             ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>Price</dt><dd id="libraryPriceValue" class="help-text" role="status" aria-live="polite">Checking the WinePOS export&hellip;</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.distillery)} entries</dt>
@@ -7214,6 +7215,41 @@
         el.addEventListener('mouseleave', () => setHotGrain(el.dataset.grain, false));
       });
     }
+    if (entry.sku) loadBourbonLibraryPrice(entry);
+  }
+
+  // Fills in the Price row renderBourbonProfile leaves as "Checking the
+  // WinePOS export..." - a live lookup (see /api/export-price ->
+  // lookupSkuInExport in upcCatalog.js) against the entry's own `sku`
+  // rather than a price stored on the library entry itself, since a bottle's
+  // shelf price drifts and this is meant to reflect what's on the shelf
+  // today, not what it cost when the SKU was typed in. Checks
+  // librarySelectedId (rather than just patching the DOM blind) before
+  // applying the result, so a slow request that resolves after staff have
+  // already clicked into a different bourbon can't overwrite that entry's
+  // own Price row with this one's answer.
+  async function loadBourbonLibraryPrice(entry) {
+    let data;
+    try {
+      const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
+      data = await res.json();
+      if (!res.ok) throw data;
+    } catch (err) {
+      if (librarySelectedId !== entry.id) return;
+      const el = document.getElementById('libraryPriceValue');
+      if (!el) return;
+      el.textContent = err && err.code === 'SKU_NOT_FOUND'
+        ? 'Not found in the current WinePOS export.'
+        : (err && err.error) || 'Could not check the WinePOS export.';
+      return;
+    }
+    if (librarySelectedId !== entry.id) return;
+    const el = document.getElementById('libraryPriceValue');
+    if (!el) return;
+    const onSale = data.salePrice && Number(data.salePrice) > 0;
+    el.textContent = onSale
+      ? `${formatMoney(data.salePrice)} (was ${formatMoney(data.price)})`
+      : formatMoney(data.price) || 'No price on file for this SKU.';
   }
 
   // ---------- Parent Company browse ----------

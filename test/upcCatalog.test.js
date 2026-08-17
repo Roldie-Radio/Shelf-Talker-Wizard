@@ -7,7 +7,7 @@ const path = require('node:path');
 const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
   getUpcSettings, setUpcSettings, setAutoSync, syncedExportFilePath, readExportFileRaw,
-  lookupUpc, searchByName, scoreNameMatch, previewExport, parsePackQtyFromSize, dedupeProducts,
+  lookupUpc, lookupSkuInExport, searchByName, scoreNameMatch, previewExport, parsePackQtyFromSize, dedupeProducts,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -499,6 +499,49 @@ test('lookupUpc picks up changes to the export file after it is re-saved', () =>
     fs.utimesSync(filePath, bumped, bumped);
 
     assert.equal(lookupUpc('085000010652').price, '11.99');
+  });
+});
+
+// ---------- lookupSkuInExport ----------
+
+test('lookupSkuInExport finds a real export row by its SKU (Item #)', () => {
+  withTempConfigDir(() => {
+    setUpcSettings(REAL_EXPORT_PATH);
+    const product = lookupSkuInExport('9415');
+    assert.equal(product.title, '14 HANDS CABERNET');
+    assert.equal(product.price, '17.99');
+  });
+});
+
+test('lookupSkuInExport finds a product whose export row has a spurious trailing ".0" (SKU column stored as a float)', () => {
+  const csv = [
+    'UPC,Title,Regular Price,SKU',
+    '085000010652,"Josh Cellars, Cabernet Sauvignon",13.99,9415.0',
+  ].join('\n');
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'items.csv', csv));
+    const product = lookupSkuInExport('9415');
+    assert.equal(product.title, 'Josh Cellars, Cabernet Sauvignon');
+  });
+});
+
+test('lookupSkuInExport throws NO_EXPORT_PATH when nothing has been configured yet', () => {
+  withTempConfigDir(() => {
+    assert.throws(() => lookupSkuInExport('9415'), (err) => err.code === 'NO_EXPORT_PATH');
+  });
+});
+
+test('lookupSkuInExport throws EXPORT_NOT_FOUND when the configured file is missing', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(path.join(dir, 'nope.csv'));
+    assert.throws(() => lookupSkuInExport('9415'), (err) => err.code === 'EXPORT_NOT_FOUND');
+  });
+});
+
+test('lookupSkuInExport throws SKU_NOT_FOUND for a SKU absent from the file', () => {
+  withTempConfigDir(() => {
+    setUpcSettings(REAL_EXPORT_PATH);
+    assert.throws(() => lookupSkuInExport('00000'), (err) => err.code === 'SKU_NOT_FOUND');
   });
 });
 
