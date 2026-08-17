@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.1',
+      items: [
+        'New: an Import CSV… button next to Export CSV on the Beer Bible page - the round-trip counterpart to it. Pick a CSV shaped like that export (or just a subset of its columns) and every row gets upserted the same SKU-first/title-second way Add Beer/Edit already merges a save, a blank cell never overwriting an already-fuller field. Unlike Advanced → Import Beer Bible from Export File…, this never touches Untappd - a synchronous local merge, meant for restoring a backup or carrying entries over to another PC.',
+      ],
+    },
+    {
       version: '4.4.0',
       items: [
         'New: an Export CSV… button on the Beer Bible page downloads the library (or whatever the search box/status/style chips/sort currently have narrowed it to) as a CSV - Title, Beer Name, Brewery, Location, Style, ABV, IBU, Untappd Rating, Rating Count, SKU, UPC, Tasting Notes, Source, and Researched.',
