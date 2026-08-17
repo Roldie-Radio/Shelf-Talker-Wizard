@@ -1439,6 +1439,22 @@ test('POST /api/beers/:id/research 404s for an unknown id', async () => {
   }));
 });
 
+// A variety pack (several different beers under one SKU) has no Untappd
+// page of its own - see the beers table's variety_pack comment in db.js.
+// The Beer Bible UI already hides the Research button for one of these;
+// this is the server-side guard for a request that reaches the route some
+// other way. No fetch mock is wired up here at all - if the guard didn't
+// fire, enrichBeerFromUntappd would throw on the unmocked network call
+// instead of the request ever reaching this 400.
+test('POST /api/beers/:id/research 400s for an entry marked Variety Pack, without making an Untappd request', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const created = await postJson(port, '/api/beers', { title: '2ND FAVOR HEAVY SPECTRUM 4PK', varietyPack: true });
+    const result = await postJson(port, `/api/beers/${created.body.id}/research`, {});
+    assert.equal(result.status, 400);
+    assert.match(result.body.error, /variety pack/i);
+  }));
+});
+
 // POST /api/beers/sync-export - the "Export File Sync" button (replaces
 // the old "Check GitHub for New Beers" - see beerBibleExportSync.js for the
 // full reasoning). Fills in upc on an already-saved entry whose sku

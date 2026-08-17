@@ -1704,6 +1704,16 @@
             <span>Beer Name</span>
             <input type="text" id="beerBibleFormTitleInput" maxlength="120" placeholder="Slack Tide Flounder Pounder" />
           </label>
+          <!-- A variety/mixed pack (several different beers under one SKU)
+               has no page of its own on Untappd to find - checking this
+               hides the Research button for this entry and skips it during
+               Import Beer Bible from Export File, instead of leaving it
+               stuck "Needs research" forever (see the beers table's own
+               variety_pack comment in server/db.js). -->
+          <label class="server-pc-checkbox">
+            <input type="checkbox" id="beerBibleFormVarietyPackInput" />
+            This is a variety pack (won&rsquo;t show up on Untappd)
+          </label>
           <div class="field-row">
             <label class="field">
               <span>Brewery (optional)</span>

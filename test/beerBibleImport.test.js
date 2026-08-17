@@ -247,6 +247,27 @@ test('startImport does not skip a row whose SKU only belongs to a bare, unenrich
   ),
 ));
 
+// A SKU already marked Variety Pack counts as handled too, even with no
+// brewery/style/abv/etc. on file - there's no Untappd page for a pack of
+// several different beers to find, so this run shouldn't waste a request
+// (or add a guaranteed-miss noMatch) on it.
+test('startImport skips a row whose SKU already belongs to an entry marked Variety Pack, without making any request for it', () => withTempFile(
+  'Product Name,SKU\n2ND FAVOR HEAVY SPECTRUM 4PK,41788\n',
+  '.csv',
+  (filePath) => withMockFetch(
+    async () => { throw new Error('should not have made any request - this row should be skipped entirely'); },
+    async () => {
+      const db = fakeDb([{ title: '2ND FAVOR HEAVY SPECTRUM 4PK', sku: '41788', varietyPack: true }]);
+      startImport({ filePath, db });
+      await waitUntilDone();
+      const finished = getStatus();
+      assert.equal(finished.skipped, 1);
+      assert.equal(finished.matched, 0);
+      assert.equal(db.saved.length, 0);
+    },
+  ),
+));
+
 test('startImport refuses to start a second job while one is already running', () => withTempFile(
   'Product Name,SKU\nSlow Beer,1\nSlow Beer Two,2\n',
   '.csv',

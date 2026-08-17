@@ -111,6 +111,30 @@ test('importBeerBibleCsv works with a subset of columns (e.g. UPC deleted before
   assert.equal(entry.upc, '');
 }));
 
+test('importBeerBibleCsv reads the Variety Pack column back as a real boolean, unlike every other (plain-text) column', () => withTempDb(() => {
+  const header = `${EXPORT_HEADER},Variety Pack`;
+  const csv = [
+    header,
+    '2ND FAVOR HEAVY SPECTRUM 4PK,,,,,,,,,41788,,,,No,Yes',
+    'Founders All Day IPA,,,,,,,,,,,,,,No',
+  ].join('\r\n');
+
+  const result = importBeerBibleCsv(db, csv);
+  assert.equal(result.imported, 2);
+
+  assert.equal(db.getBeerByTitle('2ND FAVOR HEAVY SPECTRUM 4PK').varietyPack, true);
+  assert.equal(db.getBeerByTitle('Founders All Day IPA').varietyPack, false);
+}));
+
+test('importBeerBibleCsv with no Variety Pack column at all leaves the flag alone on a repeat import, same as every other omitted column', () => withTempDb(() => {
+  db.upsertBeer({ title: 'Founders All Day IPA', varietyPack: true, sku: '12345' });
+
+  const csv = [EXPORT_HEADER, 'Founders All Day IPA,,,,,,,,,12345,,,,'].join('\n');
+  const result = importBeerBibleCsv(db, csv);
+  assert.equal(result.imported, 1);
+  assert.equal(db.getBeerByTitle('Founders All Day IPA').varietyPack, true);
+}));
+
 test('importBeerBibleCsv throws NO_TITLE_COLUMN when the file has no recognizable Title column', () => withTempDb(() => {
   const csv = ['Brewery,Style', 'Founders Brewing Co.,IPA'].join('\n');
   assert.throws(() => importBeerBibleCsv(db, csv), { code: 'NO_TITLE_COLUMN' });

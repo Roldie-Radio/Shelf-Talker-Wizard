@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.3',
+      items: [
+        'New: a Variety Pack checkbox on the Beer Bible form - mark a mixed/variety pack (several different beers under one SKU) and it skips the Research button, a new Variety Pack filter chip replaces its "Needs research" nag, and Import Beer Bible from Export File won\'t waste a lookup on it - a variety pack has no page of its own on Untappd to find. Round-trips through Export CSV/Import CSV as a Variety Pack column.',
+      ],
+    },
+    {
       version: '4.4.2',
       items: [
         'Fixed: Import CSV… on the Beer Bible could silently fail on a real store\'s export - a few thousand rows with Tasting Notes easily clears 100kb, and the server was rejecting anything over that with no visible error. A researched beer exported from one PC and imported on another would come back "Needs research" because the import never actually ran. The size limit is now 25mb, comfortably covering even a large multi-thousand-row export.',
@@ -1333,6 +1339,7 @@
     beerBibleCloseFooterBtn: document.getElementById('beerBibleCloseFooterBtn'),
     beerBibleFormTitle: document.getElementById('beerBibleFormTitle'),
     beerBibleFormTitleInput: document.getElementById('beerBibleFormTitleInput'),
+    beerBibleFormVarietyPackInput: document.getElementById('beerBibleFormVarietyPackInput'),
     beerBibleFormBreweryInput: document.getElementById('beerBibleFormBreweryInput'),
     beerBibleFormLocationInput: document.getElementById('beerBibleFormLocationInput'),
     beerBibleFormStyleInput: document.getElementById('beerBibleFormStyleInput'),
@@ -7817,7 +7824,12 @@
 
   function beerMatchesStatus(entry) {
     if (beerBibleStatusFilter === 'researched') return beerIsResearched(entry);
-    if (beerBibleStatusFilter === 'needs') return !beerIsResearched(entry);
+    // A variety pack is never "needs research" - there's nothing on
+    // Untappd for it to look up, so it shouldn't sit in this bucket forever
+    // with no way to clear it (see beerResearchBadgeHtml above). It's its
+    // own chip instead (see the 'varietyPack' case below).
+    if (beerBibleStatusFilter === 'needs') return !beerIsResearched(entry) && !entry.varietyPack;
+    if (beerBibleStatusFilter === 'varietyPack') return !!entry.varietyPack;
     return true;
   }
 
@@ -7848,6 +7860,14 @@
   // beerResearchedTimestampHtml below for the profile page's own visible
   // (non-hover) copy of the same date.
   function beerResearchBadgeHtml(entry) {
+    // A variety pack has no Untappd page of its own to research (see the
+    // beers table's variety_pack comment in server/db.js) - shown in place
+    // of the plain Researched/Needs research badge, in the exact same slot,
+    // so a variety pack card never sits there reading "Needs research"
+    // forever with no Research button to actually act on it.
+    if (entry.varietyPack) {
+      return '<span class="conf-badge" style="color:var(--ui-accent-ink);background:var(--ui-code-bg);">Variety Pack</span>';
+    }
     if (!beerIsResearched(entry)) {
       return '<span class="conf-badge" style="color:var(--ui-muted);background:var(--ui-code-bg);">Needs research</span>';
     }
@@ -7868,10 +7888,13 @@
 
   function renderBeerBibleChipsAndStats() {
     const researched = beerBibleCache.filter(beerIsResearched).length;
+    const varietyPacks = beerBibleCache.filter((b) => b.varietyPack).length;
+    const needsResearch = beerBibleCache.filter((b) => !beerIsResearched(b) && !b.varietyPack).length;
     const statusChips = [
       { key: 'all', label: `All beers (${beerBibleCache.length})` },
       { key: 'researched', label: `Researched (${researched})` },
-      { key: 'needs', label: `Needs research (${beerBibleCache.length - researched})` },
+      { key: 'needs', label: `Needs research (${needsResearch})` },
+      { key: 'varietyPack', label: `Variety Packs (${varietyPacks})` },
     ];
     els.beerBibleStatusChips.innerHTML = statusChips.map((c) => `
       <button type="button" class="toggle-btn ${beerBibleStatusFilter === c.key ? 'is-active' : ''}" data-status="${c.key}">${escapeHtml(c.label)}</button>
@@ -7891,7 +7914,7 @@
       <div class="library-stat"><b>${beerBibleCache.length}</b><span>Beers</span></div>
       <div class="library-stat"><b>${breweries}</b><span>Breweries</span></div>
       <div class="library-stat"><b>${styles}</b><span>Styles</span></div>
-      <div class="library-stat"><b>${beerBibleCache.length - researched}</b><span>Need research</span></div>
+      <div class="library-stat"><b>${needsResearch}</b><span>Need research</span></div>
     `;
   }
 
@@ -7983,7 +8006,10 @@
     // regardless of the active sort - none of the other metrics (rating/
     // ABV/SKU) have anything real to show yet on a beer that's never been
     // looked up, so the one useful thing to put there is a way to fix that.
-    const metricHtml = beerIsResearched(entry) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
+    // A variety pack skips the chip entirely, same as an already-researched
+    // entry - there's nothing on Untappd for it to look up (see
+    // beerResearchBadgeHtml above).
+    const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
     return `
       <div class="bourbon-card" role="button" tabindex="0" data-id="${entry.id}">
         <div class="bourbon-card__title">${escapeHtml(beerDisplayName(entry))}</div>
@@ -8000,7 +8026,7 @@
   // Bourbon Library's own bourbonRowHtml. Same role="button" div as
   // beerCardHtml above, same reason.
   function beerRowHtml(entry, sort) {
-    const metricHtml = beerIsResearched(entry) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
+    const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
     return `
       <div class="bourbon-row" role="button" tabindex="0" data-id="${entry.id}">
         <div>
@@ -8347,7 +8373,7 @@
   function exportBeerBibleCsv() {
     const rows = beerBibleFilteredSortedRows();
     if (!rows.length) return;
-    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched'];
+    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched', 'Variety Pack'];
     const lines = [header.map(csvField).join(',')];
     rows.forEach((b) => {
       lines.push([
@@ -8355,6 +8381,7 @@
         b.untappdRating, b.untappdRatingCount, b.sku, b.upc, b.description,
         BEER_SOURCE_LABELS[b.source] || b.source || '',
         beerIsResearched(b) ? 'Yes' : 'No',
+        b.varietyPack ? 'Yes' : 'No',
       ].map(csvField).join(','));
     });
     // Leading BOM so Excel (the store PCs' actual use case) reads the file
@@ -8482,7 +8509,7 @@
           ${beerResearchedTimestampHtml(entry)}
         </div>
         <div class="profile-head__actions">
-          ${beerIsResearched(entry) ? '' : beerResearchButtonHtmlLarge(entry)}
+          ${(entry.varietyPack || beerIsResearched(entry)) ? '' : beerResearchButtonHtmlLarge(entry)}
           <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
         </div>
       </div>
@@ -8649,6 +8676,7 @@
   function resetBeerBibleForm() {
     beerBibleEditingId = null;
     els.beerBibleFormTitleInput.value = '';
+    els.beerBibleFormVarietyPackInput.checked = false;
     els.beerBibleFormBreweryInput.value = '';
     els.beerBibleFormLocationInput.value = '';
     els.beerBibleFormStyleInput.value = '';
@@ -8676,6 +8704,7 @@
     // existing entry (see the Save Changes handler below) - title stays
     // the store-matching text underneath either way.
     els.beerBibleFormTitleInput.value = beerDisplayName(entry);
+    els.beerBibleFormVarietyPackInput.checked = !!entry.varietyPack;
     els.beerBibleFormBreweryInput.value = entry.brewery || '';
     els.beerBibleFormLocationInput.value = entry.location || '';
     els.beerBibleFormStyleInput.value = entry.style || '';
@@ -8772,6 +8801,7 @@
         untappdRating: els.beerBibleFormRatingInput.value.trim(),
         untappdRatingCount: els.beerBibleFormRatingCountInput.value.trim(),
         description: els.beerBibleFormDescriptionInput.value.trim(),
+        varietyPack: els.beerBibleFormVarietyPackInput.checked,
         source: 'Manual',
       });
       const resp = beerBibleEditingId

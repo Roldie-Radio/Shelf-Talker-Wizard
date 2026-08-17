@@ -670,10 +670,10 @@ function createApp({
   // saved alone rather than blanking it out.
   function beerOptionalFields(body) {
     const {
-      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
+      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
     } = body || {};
     return {
-      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc,
+      beerName, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
     };
   }
 
@@ -729,6 +729,14 @@ function createApp({
   app.post('/api/beers/:id/research', async (req, res) => {
     const beer = getBeer(Number(req.params.id));
     if (!beer) return res.status(404).json({ error: 'No beer entry with that id.' });
+    // A variety pack is several different beers under one SKU - Untappd has
+    // no page for the pack itself, so a search here can never find a real
+    // match (see the beers table's variety_pack comment in db.js). The Beer
+    // Bible UI already hides the Research button for one of these; this is
+    // the same guard for a request that reaches this route some other way.
+    if (beer.varietyPack) {
+      return res.status(400).json({ error: "Variety packs don't have their own Untappd page to search for." });
+    }
     try {
       const data = await enrichBeerFromUntappd({
         title: beer.title,
