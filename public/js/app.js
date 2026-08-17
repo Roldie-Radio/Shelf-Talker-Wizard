@@ -55,6 +55,7 @@
       version: '4.3.13',
       items: [
         'Fixed: The Beer Bible could end up with two entries for the same beer - one saved under a raw export/POS title, another under whatever wording an Untappd search happened to match - even though both carried the same store SKU. Every save (auto-save from a talker, Add Beer, Beer Bible Import) now matches an existing entry by SKU first, title second, so a repeat save for a SKU already on file updates that same entry instead of adding a duplicate. A SKU match never renames the entry\'s existing title.',
+        'New: A researched Beer Bible entry now shows when it was researched - hover the "Researched" badge anywhere it appears (grid cards, list rows, the profile header) for the exact date/time, or open the beer\'s profile page to see it spelled out under the badge.',
       ],
     },
     {
@@ -7672,11 +7673,31 @@
   // Two-state stand-in for the Bourbon Library's confidenceBadgeHtml -
   // "Researched" vs "Needs research" rather than a four-tier confidence
   // scale, since Beer only has the one distinction (see beerIsResearched
-  // above). Reuses .conf-badge as-is (see styles.css).
+  // above). Reuses .conf-badge as-is (see styles.css). A researched entry's
+  // badge carries its updatedAt as a hover tooltip - entry.updatedAt is
+  // touched on every save (see upsertBeer/updateBeerById in server/db.js),
+  // so for a row that's actually researched this reads as "when the
+  // research landed" wherever the badge shows up (grid cards, list rows,
+  // the profile header) without needing separate markup in each place. See
+  // beerResearchedTimestampHtml below for the profile page's own visible
+  // (non-hover) copy of the same date.
   function beerResearchBadgeHtml(entry) {
-    return beerIsResearched(entry)
-      ? '<span class="conf-badge" style="color:var(--ui-good);background:var(--ui-good-tint);">Researched</span>'
-      : '<span class="conf-badge" style="color:var(--ui-muted);background:var(--ui-code-bg);">Needs research</span>';
+    if (!beerIsResearched(entry)) {
+      return '<span class="conf-badge" style="color:var(--ui-muted);background:var(--ui-code-bg);">Needs research</span>';
+    }
+    const researchedAt = entry.updatedAt ? formatHistoryTimestamp(entry.updatedAt) : '';
+    const titleAttr = researchedAt ? ` title="Researched ${escapeHtml(researchedAt)}"` : '';
+    return `<span class="conf-badge"${titleAttr} style="color:var(--ui-good);background:var(--ui-good-tint);">Researched</span>`;
+  }
+
+  // Profile page's visible counterpart to the badge tooltip above - same
+  // "Last verified" idea as the Bourbon Library's own
+  // .conf-block__verified line (see renderLibraryProfile), reused as-is
+  // here rather than a new class just for Beer.
+  function beerResearchedTimestampHtml(entry) {
+    if (!beerIsResearched(entry) || !entry.updatedAt) return '';
+    const researchedAt = formatHistoryTimestamp(entry.updatedAt);
+    return researchedAt ? `<div class="conf-block__verified">Researched ${escapeHtml(researchedAt)}</div>` : '';
   }
 
   function renderBeerBibleChipsAndStats() {
@@ -7997,6 +8018,7 @@
             ${entry.style ? `<span class="tag">${escapeHtml(entry.style)}</span>` : ''}
             ${beerResearchBadgeHtml(entry)}
           </div>
+          ${beerResearchedTimestampHtml(entry)}
         </div>
         <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
       </div>
