@@ -6,19 +6,26 @@
 // wrong answer" rule: a row Untappd can't confidently match is logged and
 // skipped, never filled in with a guess.
 //
-// This is a network-heavy, one-off admin tool (not run automatically, not
-// bundled into the installer - see package.json's build.files, which lists
-// only the seed *data* JSON, not this script) meant to be run by hand on a
-// PC with normal internet access, since untappd.com/Algolia may not be
-// reachable from every environment (confirmed blocked outright in the
-// sandboxed session that wrote this script - see the PR/commit this shipped
-// in for the full story). Safe to interrupt and re-run: every successful
-// match is written to the seed file immediately (not batched to the end),
-// and --skip-existing (the default) skips a row whose SKU is already in the
-// seed file so a resumed run doesn't re-search titles it already has.
+// This is a network-heavy, one-off admin tool meant to be run by hand on a
+// PC with normal internet access and a system-wide Node install (a
+// developer's checkout, not a store PC running just the packaged app),
+// since untappd.com/Algolia may not be reachable from every environment
+// (confirmed blocked outright in the sandboxed session that wrote this
+// script - see the PR/commit this shipped in for the full story). Writes
+// straight into the repo's own scripts/beer-bible-seed-data.json - meant to
+// be committed and picked up by every store PC via GitHub sync, not this
+// PC's own local data.db. A store PC that already has the packaged app can
+// run the same import (against its own local library instead) from
+// Advanced -> Import Beer Bible from Export File... - see
+// server/beerBibleImport.js, which shares this script's matching/column-
+// parsing logic but writes to a different place for a different audience.
+// Safe to interrupt and re-run: every successful match is written to the
+// seed file immediately (not batched to the end), and --skip-existing (the
+// default) skips a row whose SKU is already in the seed file so a resumed
+// run doesn't re-search titles it already has.
 //
 // Usage:
-//   npm install                     # pulls in the xlsx devDependency below
+//   npm install                     # pulls in the xlsx dependency below
 //   node scripts/populate-beer-bible-from-export.js <path-to-export> [options]
 //
 // Options:
@@ -36,8 +43,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const { parseDelimited, matchColumns } = require('../server/upcCatalog');
 const { enrichBeerFromUntappd } = require('../server/productImport');
+// readRows/extractProducts (file parsing + FIELD_ALIASES-driven column
+// matching) are shared with server/beerBibleImport.js - the Advanced menu's
+// in-app version of this same import, for a store PC with the packaged app
+// but no system-wide Node of its own (see that file's header comment) -
+// rather than kept as two copies that could quietly drift apart.
+const { readRows, extractProducts } = require('../server/beerBibleImport');
 
 const SEED_PATH = path.join(__dirname, 'beer-bible-seed-data.json');
 const LOG_PATH = path.join(__dirname, 'beer-bible-import.log.jsonl');
@@ -61,41 +73,6 @@ function parseArgs(argv) {
   }
   opts.filePath = positional[0];
   return opts;
-}
-
-// Reads an .xlsx/.xlsm workbook's first sheet into the same
-// [headerRow, ...dataRows] shape parseDelimited returns for CSV/TSV, so
-// both formats can share one column-matching/extraction path below.
-function readWorkbookRows(filePath) {
-  // eslint-disable-next-line global-require -- optional devDependency, only
-  // needed for the .xlsx branch; a CSV/TSV-only run never requires this.
-  const XLSX = require('xlsx');
-  const workbook = XLSX.readFile(filePath);
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
-}
-
-function readRows(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.xlsx' || ext === '.xlsm') return readWorkbookRows(filePath);
-  return parseDelimited(fs.readFileSync(filePath, 'utf-8'));
-}
-
-// Extracts {title, size, sku} per data row using the app's own column
-// aliases (see matchColumns/FIELD_ALIASES in upcCatalog.js) - title/sku/
-// size are the only fields this needs; brand/price/etc. aliases are matched
-// too but simply unused here.
-function extractProducts(rows) {
-  if (rows.length < 2) return [];
-  const colFor = matchColumns(rows[0]);
-  return rows.slice(1)
-    .map((row) => ({
-      title: (colFor.title !== undefined ? row[colFor.title] : '') || '',
-      size: (colFor.size !== undefined ? row[colFor.size] : '') || '',
-      sku: (colFor.sku !== undefined ? row[colFor.sku] : '') || '',
-    }))
-    .map((p) => ({ title: String(p.title).trim(), size: String(p.size).trim(), sku: String(p.sku).trim() }))
-    .filter((p) => p.title);
 }
 
 function loadSeed() {

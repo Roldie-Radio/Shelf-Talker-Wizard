@@ -261,6 +261,24 @@ ipcMain.handle('upc-export:pick-file', async () => {
   return result.filePaths[0];
 });
 
+// Same "Browse..." pattern as upc-export:pick-file above, for the Advanced
+// menu's "Import Beer Bible from Export File..." dialog (see
+// beerBibleImport.js/app.js) - also accepts .xlsx/.xlsm, since a WinePOS
+// export is often a plain Excel workbook rather than CSV/TSV.
+ipcMain.handle('beer-bible-import:pick-file', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Beer Product Export File',
+    filters: [
+      { name: 'Product Export', extensions: ['csv', 'tsv', 'txt', 'xlsx', 'xlsm'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  return result.filePaths[0];
+});
+
 // Electron's default print (triggered by the renderer calling window.print())
 // doesn't reliably honor our @page CSS (landscape Letter) or print background
 // colors, which was causing print failures / blank-looking output. Printing

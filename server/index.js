@@ -21,6 +21,7 @@ const { createExportServeServer, createExportPuller } = require('./exportSync');
 const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
 const { maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries } = require('./bourbonLibrarySeed');
 const { maybeAutoSeedBeerBible, syncNewBeerBibleEntries } = require('./beerBibleSeed');
+const { getStatus: getBeerBibleImportStatus, startImport: startBeerBibleImport, cancelImport: cancelBeerBibleImport } = require('./beerBibleImport');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
 
@@ -654,6 +655,35 @@ function createApp({
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
     }
+  });
+
+  // Backs the Advanced menu's "Import Beer Bible from Export File..."
+  // dialog - the in-app equivalent of scripts/populate-beer-bible-from-
+  // export.js, for a store PC that has the packaged app but no system-wide
+  // Node install of its own to run that script with (see
+  // beerBibleImport.js's own header for the full story). Runs directly
+  // against this PC's own data.db, same as every other /api/beers route -
+  // no Server PC gating, same reasoning as /api/beers/sync-library above.
+  app.post('/api/beers/import/start', (req, res) => {
+    const { filePath } = req.body || {};
+    try {
+      res.status(202).json(startBeerBibleImport({ filePath, db }));
+    } catch (err) {
+      const status = { FILE_REQUIRED: 400, FILE_UNREADABLE: 400, NO_ROWS: 400, ALREADY_RUNNING: 409 }[err.code] || 500;
+      res.status(status).json({ error: err.message, code: err.code });
+    }
+  });
+
+  // Polled by the dialog (see renderBeerBibleImportStatus in app.js) while
+  // it's open - the job itself runs to completion server-side regardless
+  // of whether anything is watching, so reopening the dialog mid-import
+  // just picks the live progress back up.
+  app.get('/api/beers/import/status', (req, res) => {
+    res.json(getBeerBibleImportStatus());
+  });
+
+  app.post('/api/beers/import/cancel', (req, res) => {
+    res.json(cancelBeerBibleImport());
   });
 
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's

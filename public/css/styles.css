@@ -2503,6 +2503,26 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .server-pc-facts dd { margin: 0; font-weight: 600; text-align: right; }
 .server-pc-checkbox { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
 
+/* Import Beer Bible from Export File… (Advanced menu, #beerBibleImportOverlay) -
+   its own progress bar, restyled from the browser default (which ignores
+   theme colors entirely) to match the accent used everywhere else. The
+   -webkit-progress-bar/-value and -moz-progress-bar rules are each other's
+   fallback, not overrides - a browser only honors whichever pseudo-element
+   pair it actually implements. */
+#beerBibleImportProgressBar {
+  width: 100%;
+  height: 10px;
+  border: none;
+  border-radius: 5px;
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--ui-code-bg);
+}
+#beerBibleImportProgressBar::-webkit-progress-bar { background: var(--ui-code-bg); border-radius: 5px; }
+#beerBibleImportProgressBar::-webkit-progress-value { background: var(--ui-accent); border-radius: 5px; }
+#beerBibleImportProgressBar::-moz-progress-bar { background: var(--ui-accent); border-radius: 5px; }
+
 /* Also Available Chilled (#fChilled/#chilledField in index.html) - an
    on/off switch rather than a checkbox, this app's first use of one.
    Built on a real (visually hidden) checkbox input, not a div with a click

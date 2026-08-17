@@ -38,4 +38,8 @@ contextBridge.exposeInMainWorld('shelfTalker', {
   // plain browser dev copy has no native file dialog and just falls back to
   // typing/pasting the path instead.
   pickUpcExportFile: () => ipcRenderer.invoke('upc-export:pick-file'),
+
+  // Advanced > Import Beer Bible from Export File...'s own "Browse..."
+  // button - same reasoning as pickUpcExportFile above.
+  pickBeerBibleImportFile: () => ipcRenderer.invoke('beer-bible-import:pick-file'),
 });
