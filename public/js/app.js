@@ -3660,7 +3660,10 @@
   // applySkuLookupProduct's own beer branch fills in from.
   function applyUpcScanProduct(data, isBeer) {
     const fields = {
-      category: isBeer ? 'beer' : 'wine',
+      // See applyNameSearchProduct's comment on the same line - falling back
+      // to currentCategory (not a flat 'wine') keeps Bourbon from reverting
+      // to Wine/Spirits on every scan.
+      category: isBeer ? 'beer' : currentCategory,
       title: data.title,
       description: data.description,
       size: data.size,
@@ -4154,6 +4157,10 @@
     } else {
       fillForm({
         ...currentType,
+        // Same reasoning as applyNameSearchProduct's category line - without
+        // this, fillForm's normalizeCategory(undefined) defaults to 'wine'
+        // and Bourbon reverts to Wine/Spirits on every import.
+        category: currentCategory,
         title: data.title,
         description: data.description,
         size: data.size,
@@ -4308,7 +4315,10 @@
   // price" split here the way applyImportedProduct has.
   function applySkuLookupProduct(data, isBeer) {
     const fields = {
-      category: isBeer ? 'beer' : 'wine',
+      // See applyNameSearchProduct's comment on the same line - falling back
+      // to currentCategory (not a flat 'wine') keeps Bourbon from reverting
+      // to Wine/Spirits on every lookup.
+      category: isBeer ? 'beer' : currentCategory,
       title: data.title,
       description: data.description,
       size: data.size,
@@ -5098,7 +5108,11 @@
   function applyNameSearchProduct(product, isBeer, priceMode = 'unit') {
     const usePack = priceMode === 'pack' && productHasPackPrice(product);
     const fields = {
-      category: isBeer ? 'beer' : 'wine',
+      // Not just `isBeer ? 'beer' : 'wine'` - that collapsed Bourbon back to
+      // Wine/Spirits on every pick, since isBeer only distinguishes beer
+      // from "not beer". Falling back to currentCategory instead preserves
+      // whichever non-beer Product Type was selected before the search.
+      category: isBeer ? 'beer' : currentCategory,
       title: product.title,
       description: product.description,
       size: product.size,
