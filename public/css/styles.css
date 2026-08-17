@@ -1194,23 +1194,6 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .search-results__empty, .search-results__error { padding: 0.7rem 0.75rem; font-size: 0.85rem; color: var(--ui-muted); }
 .search-results__error { color: var(--ui-danger); }
 
-/* Bourbon Library preview (Search tab, Product Type: Bourbon only - see
-   refreshBourbonSearchResults in app.js). Reuses .search-result/
-   .search-result__title/.search-result__meta/.search-results__empty as-is
-   for row content - only the outer container differs from .search-results
-   above, and only in that it's not position:absolute: this isn't a
-   combobox suggestion list layered over the page, it's its own block in
-   normal flow, so it and the export-driven dropdown above it can never
-   visually collide even when both happen to be open at once. */
-.bourbon-search-results {
-  margin-top: 0.5rem;
-  background: var(--ui-panel);
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
 /* Summary of the currently-picked result, shown above Add to Queue -
    mirrors what the SKU/UPC lookup tabs leave sitting in the shared form
    fields, but this tab's own fields aren't visible on screen (see

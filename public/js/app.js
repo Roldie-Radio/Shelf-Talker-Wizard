@@ -1080,7 +1080,6 @@
     nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
     nameSearchSaveBtn: document.getElementById('nameSearchSaveBtn'),
     nameSearchStatus: document.getElementById('nameSearchStatus'),
-    bourbonSearchResults: document.getElementById('bourbonSearchResults'),
 
     skuHelpText: document.getElementById('skuHelpText'),
     skuInput: document.getElementById('skuInput'),
@@ -1595,124 +1594,7 @@
     return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
   }
 
-  // ---------- Bourbon Library search (Search tab, Product Type: Bourbon) ----------
-  //
-  // Runs on every keystroke into the same smart search box above, entirely
-  // independent of detectSmartSearchMode's name/sku/upc routing right above
-  // it - SKU Lookup/Scan UPC keep auto-activating and pulling price/size
-  // from WinePOS for a Bourbon product exactly as they already do for Wine/
-  // Spirits (nothing here touches that). This is purely additive: a second,
-  // Bourbon-Library-sourced preview shown underneath the search box only
-  // while Product Type is Bourbon, matching the typed text against the
-  // Library's title OR sku - entirely client-side against
-  // mashBillLibraryCache (already fetched on load, see fetchMashBillLibrary),
-  // no request and no debounce needed for a plain filter over a few hundred
-  // rows.
-  const BOURBON_SEARCH_MIN_CHARS = 2;
-  const BOURBON_SEARCH_MAX_RESULTS = 8;
-  let bourbonSearchResultsList = [];
-
-  function searchBourbonLibrary(query) {
-    const q = query.trim().toLowerCase();
-    if (q.length < BOURBON_SEARCH_MIN_CHARS) return [];
-    return mashBillLibraryCache
-      .filter((m) => (m.title || '').toLowerCase().includes(q) || (m.sku || '').toLowerCase().includes(q))
-      .sort((a, b) => {
-        // An exact SKU match floats to the top regardless of title - the
-        // one case a plain alphabetical sort could bury the single result
-        // staff actually typed a full SKU to find under unrelated title
-        // matches.
-        const aExactSku = (a.sku || '').toLowerCase() === q;
-        const bExactSku = (b.sku || '').toLowerCase() === q;
-        if (aExactSku !== bExactSku) return aExactSku ? -1 : 1;
-        return (a.title || '').localeCompare(b.title || '');
-      })
-      .slice(0, BOURBON_SEARCH_MAX_RESULTS);
-  }
-
-  function renderBourbonSearchResults(query) {
-    if (!bourbonSearchResultsList.length) {
-      els.bourbonSearchResults.innerHTML = `<div class="search-results__empty">No Bourbon Library matches for &ldquo;${escapeHtml(query)}&rdquo;. Try a different spelling, or add it from Tools &rarr; Mash Bill Library&hellip;</div>`;
-      els.bourbonSearchResults.hidden = false;
-      return;
-    }
-    els.bourbonSearchResults.innerHTML = bourbonSearchResultsList.map((m, i) => {
-      const hasMash = Array.isArray(m.grains) && m.grains.length > 0 && !isPlaceholderMashBill(m);
-      const hasTasting = !!(m.nose || m.palate || m.finish);
-      const metaParts = [];
-      if (m.sku) metaParts.push(`SKU ${escapeHtml(m.sku)}`);
-      if (m.distillery) metaParts.push(escapeHtml(m.distillery));
-      const status = hasMash || hasTasting
-        ? confidenceBadgeHtml(m.confidence.tier)
-        : '<span class="search-result__meta">Not yet researched</span>';
-      return `
-        <div class="search-result" data-index="${i}" role="option">
-          <div class="search-result__main">
-            <div class="search-result__title">${escapeHtml(m.title)}</div>
-            <div class="search-result__meta">${metaParts.join(' &middot; ')}</div>
-          </div>
-          ${status}
-        </div>
-      `;
-    }).join('');
-    els.bourbonSearchResults.hidden = false;
-  }
-
-  // Reads rawValue (same argument runSmartSearch already has, rather than a
-  // fresh els.smartSearchInput.value read) so this can never momentarily
-  // disagree with whatever runSmartSearch itself is acting on.
-  function refreshBourbonSearchResults(rawValue) {
-    if (currentCategory !== 'bourbon') {
-      bourbonSearchResultsList = [];
-      els.bourbonSearchResults.hidden = true;
-      return;
-    }
-    const query = rawValue.trim();
-    if (query.length < BOURBON_SEARCH_MIN_CHARS) {
-      bourbonSearchResultsList = [];
-      els.bourbonSearchResults.hidden = true;
-      return;
-    }
-    bourbonSearchResultsList = searchBourbonLibrary(query);
-    renderBourbonSearchResults(query);
-  }
-
-  // Same fields Edit Talker's own recall banner "Use All" fills (see
-  // applyMashBillRecallAll above it in the Mash Bill section) plus Product
-  // Title, which the banner never needs to touch since it only ever shows
-  // up once a title is already typed - picking a search result is what
-  // supplies the title here instead. Overwrites outright rather than the
-  // banner's per-field confirm-before-overwrite: picking a result is a
-  // deliberate, one-shot choice, same "just apply it" semantics Search by
-  // Name/SKU Lookup/Scan UPC's own result picks already use above.
-  function applyBourbonSearchMatch(match) {
-    els.title.value = match.title;
-    els.smartSearchInput.value = match.title;
-    const hasMash = Array.isArray(match.grains) && match.grains.length > 0 && !isPlaceholderMashBill(match);
-    if (hasMash) {
-      currentMashBill = match.grains.map((g) => ({ grain: g.grain, pct: String(g.pct) }));
-      currentMashBillConfidence = match.confidence.tier;
-      renderMashBillList();
-    }
-    ['nose', 'palate', 'finish'].forEach((f) => { if (match[f]) flavorFieldEl(f).value = match[f]; });
-    // Suppresses Edit Talker's own recall banner from immediately popping
-    // back up to re-offer the exact same data this just applied.
-    mashBillRecallDismissedFor = match.title;
-    refreshMashBillRecall();
-    els.bourbonSearchResults.hidden = true;
-    els.smartSearchHint.textContent = 'Filled in from the Bourbon Library. Price, size, and description aren\'t in the Library - add those by hand, or look up the SKU above for whatever WinePOS has.';
-    refreshPreview();
-  }
-
-  els.bourbonSearchResults.addEventListener('click', (e) => {
-    const row = e.target.closest('.search-result');
-    if (!row) return;
-    const match = bourbonSearchResultsList[Number(row.dataset.index)];
-    if (match) applyBourbonSearchMatch(match);
-  });
-
   function runSmartSearch(rawValue) {
-    refreshBourbonSearchResults(rawValue);
     const mode = detectSmartSearchMode(rawValue);
     if (mode === 'internalUpc') {
       const itemNumber = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
@@ -2028,12 +1910,6 @@
     // on category now too (see renderTastingNotesSourceOptions) - re-check
     // it every time category changes, not just when the dialog opens.
     renderTastingNotesSourceOptions();
-    // Same idea for the Search tab's Bourbon Library preview - re-check
-    // whatever's already typed in the smart search box (if anything)
-    // against the new category, rather than leaving a stale Wine/Spirits
-    // Search-by-Name state on screen after switching to Bourbon, or a
-    // stale Library preview on screen after switching away from it.
-    refreshBourbonSearchResults(els.smartSearchInput.value);
   }
 
   els.typeSelects.forEach((select) => {
