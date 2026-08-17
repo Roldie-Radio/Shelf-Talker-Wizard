@@ -650,8 +650,12 @@ function createApp({
   // data.db is always the one being updated.
   app.post('/api/beers/sync-library', async (req, res) => {
     try {
-      const { added, skipped, source } = await syncNewBeerBibleEntries(db);
-      res.json({ added, skipped, source, beers: listBeers() });
+      const {
+        added, merged, skipped, source,
+      } = await syncNewBeerBibleEntries(db);
+      res.json({
+        added, merged, skipped, source, beers: listBeers(),
+      });
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
     }
