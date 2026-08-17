@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.14',
+      items: [
+        'Fixed: some barcode scanners prepend a spurious "A" to every code they read - a real manufacturer UPC like 616673070044 was coming through as A616673070044, which the shared Search field mistook for a product-name search (and came back "no matches") instead of looking it up. That code shape (an "A" immediately followed by a 12- or 13-digit UPC-A/EAN-13) is now recognized as a UPC scan, unwrapped, and routed straight to Scan UPC - a product name that genuinely starts with "A" (Avery, Anchor Steam, ...) still searches by name exactly as before.',
+      ],
+    },
+    {
       version: '4.3.13',
       items: [
         'Fixed: The Beer Bible could end up with two entries for the same beer - one saved under a raw export/POS title, another under whatever wording an Untappd search happened to match - even though both carried the same store SKU. Every save (auto-save from a talker, Add Beer, Beer Bible Import) now matches an existing entry by SKU first, title second, so a repeat save for a SKU already on file updates that same entry instead of adding a duplicate. A SKU match never renames the entry\'s existing title.',
@@ -1683,6 +1689,22 @@
   // real manufacturer UPC, so it needs unwrapping back to a plain SKU
   // before it can go through the same SKU Lookup a typed 42420 would.
   const INTERNAL_UPC_RE = /^A(\d{7})$/i;
+  // Some USB/Bluetooth barcode scanners (confirmed on a real unit in the
+  // field) prepend a spurious "A" to every code they read, regardless of
+  // what's actually printed - a real manufacturer UPC-A/EAN-13 (12-13
+  // digits) comes out as e.g. "A616673070044" for an export row whose UPC
+  // column is plain "616673070044". Without this, that digitsOnly check
+  // just below sees the leading letter and falls through to `name` mode,
+  // running a name search for literal text like "A616673070044" instead of
+  // looking the item up - a scan that should just work silently does
+  // nothing. This is a different shape from INTERNAL_UPC_RE above (always
+  // exactly 7 digits after the "A", our own label format) so the two can't
+  // collide, and it only fires when the "A" is immediately followed by
+  // nothing but 12-13 digits - a product name that genuinely starts with
+  // the letter A ("Avery", "Anchor Steam", ...) always has more after that
+  // first letter than just digits, so it still falls through to `name`
+  // untouched.
+  const SCANNER_PREFIXED_UPC_RE = /^A(\d{12,13})$/i;
   const SMART_SEARCH_HINTS = {
     name: 'Searching by name…',
     sku: 'Looks like a SKU. Press Enter, or Look Up SKU below, to search it.',
@@ -1693,6 +1715,7 @@
     const value = raw.trim();
     if (!value) return null;
     if (INTERNAL_UPC_RE.test(value)) return 'internalUpc';
+    if (SCANNER_PREFIXED_UPC_RE.test(value)) return 'upc';
     const digitsOnly = value.replace(/[\s-]/g, '');
     if (!/^\d+$/.test(digitsOnly)) return 'name';
     return digitsOnly.length >= SMART_SEARCH_UPC_MIN_DIGITS ? 'upc' : 'sku';
@@ -1731,7 +1754,12 @@
     } else if (mode === 'internalUpc') {
       els.skuInput.value = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
     } else {
-      els.scanUpcInput.value = rawValue.trim();
+      // A scanner's spurious "A" prefix (see SCANNER_PREFIXED_UPC_RE above)
+      // isn't part of the real UPC - strip it so the field, and the lookup
+      // it triggers, both show the plain code that's actually in the export
+      // file rather than a stray leading letter.
+      const scannerMatch = rawValue.trim().match(SCANNER_PREFIXED_UPC_RE);
+      els.scanUpcInput.value = scannerMatch ? scannerMatch[1] : rawValue.trim();
     }
   }
 
