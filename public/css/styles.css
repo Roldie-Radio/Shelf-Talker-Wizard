@@ -708,6 +708,12 @@ h1, h2, h3 { margin: 0; }
 /* Bourbon profile page (renderBourbonProfile in app.js). */
 .profile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
 .profile-head h2 { margin: 0; font-size: 1.4rem; }
+/* Small "by <brewery>" kicker above the h2 (see renderBeerBibleProfile in
+   app.js) - the brewery's own name, on its own, sitting right over the
+   beer name the way it would on the bottle. .profile-head__by (below)
+   still carries the fuller "Brewery · Location" line underneath the
+   title, so a beer with a location on file still shows that. */
+.profile-head__eyebrow { margin: 0 0 0.15rem; color: var(--ui-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .profile-head__by { margin: 0.2rem 0 0; color: var(--ui-muted); font-size: 0.9rem; }
 .profile-head__by strong { color: var(--ui-ink); }
 .profile-tags { display: flex; gap: 0.4rem; margin-top: 0.5rem; }

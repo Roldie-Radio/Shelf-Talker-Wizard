@@ -8202,6 +8202,7 @@
       </div>
       <div class="profile-head">
         <div>
+          ${entry.brewery ? `<p class="profile-head__eyebrow">${escapeHtml(entry.brewery)}</p>` : ''}
           <h2>${escapeHtml(beerDisplayName(entry))}</h2>
           <p class="profile-head__by">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.location ? ` &middot; <strong>${escapeHtml(entry.location)}</strong>` : ''}</p>
           <div class="profile-tags">
