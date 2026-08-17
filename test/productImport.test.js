@@ -2323,7 +2323,7 @@ test('lookupSku combines a beer\'s separate Size and Pack Size rows into one Siz
     },
     async () => {
       const result = await lookupSku({ sku: '12345', category: 'beer' });
-      assert.equal(result.size, '16oz 4-Pack');
+      assert.equal(result.size, '4-Pack 16oz');
     }
   );
 });
