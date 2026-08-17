@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.11',
+      items: [
+        'New: The Rum Repository (a permanent sidebar rail icon, next to The Beer Bible) - a shared, store-wide record of researched rums: Distillery, Region, Style, ABV, Age Statement, Tasting Notes, and SKU. Click the rail icon to browse/search every saved rum as a card grid, Add Rum to research a new one, or click a card to edit or delete it. A Check GitHub for New Rums button pulls in a curated list the same way The Beer Bible\'s own GitHub sync does.',
+      ],
+    },
+    {
       version: '4.3.7',
       items: [
         'Changed: Tools → Mash Bill Library… is gone - the Bourbon Library sidebar screen now owns adding, editing, and deleting entries directly (an Add Bourbon button, and Edit/Delete on a profile page), instead of a separate management dialog duplicating its own search and list. Sync Now and Check GitHub for New Bourbons (Server PC only) moved onto the Bourbon Library page too.',
@@ -918,6 +924,7 @@
     railLibraryBtn: document.getElementById('railLibraryBtn'),
     railAtlasBtn: document.getElementById('railAtlasBtn'),
     railBeerBibleBtn: document.getElementById('railBeerBibleBtn'),
+    railRumRepositoryBtn: document.getElementById('railRumRepositoryBtn'),
     railSettingsBtn: document.getElementById('railSettingsBtn'),
     appBar: document.getElementById('appBar'),
     shelfTalkerView: document.getElementById('shelfTalkerView'),
@@ -947,6 +954,14 @@
     beerBibleFilterInput: document.getElementById('beerBibleFilterInput'),
     beerBibleStats: document.getElementById('beerBibleStats'),
     beerBibleBody: document.getElementById('beerBibleBody'),
+    rumRepositoryView: document.getElementById('rumRepositoryView'),
+    rumRepositoryAddBtn: document.getElementById('rumRepositoryAddBtn'),
+    rumRepositoryGithubSyncRow: document.getElementById('rumRepositoryGithubSyncRow'),
+    rumRepositoryGithubSyncStatus: document.getElementById('rumRepositoryGithubSyncStatus'),
+    rumRepositoryGithubSyncBtn: document.getElementById('rumRepositoryGithubSyncBtn'),
+    rumRepositoryFilterInput: document.getElementById('rumRepositoryFilterInput'),
+    rumRepositoryStats: document.getElementById('rumRepositoryStats'),
+    rumRepositoryBody: document.getElementById('rumRepositoryBody'),
 
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
@@ -1279,6 +1294,23 @@
     beerBibleFormCancelBtn: document.getElementById('beerBibleFormCancelBtn'),
     beerBibleFormDeleteBtn: document.getElementById('beerBibleFormDeleteBtn'),
     beerBibleFormStatus: document.getElementById('beerBibleFormStatus'),
+
+    rumRepositoryOverlay: document.getElementById('rumRepositoryOverlay'),
+    rumRepositoryCloseBtn: document.getElementById('rumRepositoryCloseBtn'),
+    rumRepositoryCloseFooterBtn: document.getElementById('rumRepositoryCloseFooterBtn'),
+    rumRepositoryFormTitle: document.getElementById('rumRepositoryFormTitle'),
+    rumRepositoryFormTitleInput: document.getElementById('rumRepositoryFormTitleInput'),
+    rumRepositoryFormDistilleryInput: document.getElementById('rumRepositoryFormDistilleryInput'),
+    rumRepositoryFormRegionInput: document.getElementById('rumRepositoryFormRegionInput'),
+    rumRepositoryFormStyleInput: document.getElementById('rumRepositoryFormStyleInput'),
+    rumRepositoryFormSkuInput: document.getElementById('rumRepositoryFormSkuInput'),
+    rumRepositoryFormAbvInput: document.getElementById('rumRepositoryFormAbvInput'),
+    rumRepositoryFormAgeStatementInput: document.getElementById('rumRepositoryFormAgeStatementInput'),
+    rumRepositoryFormDescriptionInput: document.getElementById('rumRepositoryFormDescriptionInput'),
+    rumRepositoryFormSaveBtn: document.getElementById('rumRepositoryFormSaveBtn'),
+    rumRepositoryFormCancelBtn: document.getElementById('rumRepositoryFormCancelBtn'),
+    rumRepositoryFormDeleteBtn: document.getElementById('rumRepositoryFormDeleteBtn'),
+    rumRepositoryFormStatus: document.getElementById('rumRepositoryFormStatus'),
 
     exportPreviewOverlay: document.getElementById('exportPreviewOverlay'),
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
@@ -7909,6 +7941,267 @@
     }
   });
 
+  // ---------- The Rum Repository (rail view) ----------
+  //
+  // A bare-scaffold browse screen over the shared `rums` data (see
+  // server/db.js) - search and a card grid, mirroring the Beer Bible above
+  // but for Rum instead of Beer. Adding/editing/deleting goes through the
+  // form modal below (opened via #rumRepositoryAddBtn, or a card's own
+  // click - there's no separate profile page here, so a click opens
+  // straight into Edit); this section itself never writes anything beyond
+  // what that form does, only reads rumRepositoryCache and re-fetches it
+  // after the form modal changes something.
+  //
+  // Same reach as the Beer Bible: no cross-register sync (this PC's own
+  // data.db is always the only copy), no Edit Talker recall banner, and no
+  // bulk import from an export file (that feature leans on a per-row
+  // Untappd lookup, which has no rum equivalent - see the rums table
+  // comment in db.js).
+
+  let rumRepositoryCache = [];
+  let rumRepositoryFilterQuery = '';
+
+  async function fetchRumRepository() {
+    try {
+      const resp = await fetch('/api/rums');
+      const data = await resp.json();
+      rumRepositoryCache = Array.isArray(data.rums) ? data.rums : [];
+    } catch {
+      rumRepositoryCache = [];
+    }
+    return rumRepositoryCache;
+  }
+
+  function rumMatchesSearch(entry) {
+    const q = rumRepositoryFilterQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (entry.title || '').toLowerCase().includes(q)
+      || (entry.distillery || '').toLowerCase().includes(q)
+      || (entry.style || '').toLowerCase().includes(q)
+      || (entry.sku || '').toLowerCase().includes(q);
+  }
+
+  function renderRumRepositoryStats() {
+    const distilleries = new Set(rumRepositoryCache.map((r) => r.distillery).filter(Boolean)).size;
+    const styles = new Set(rumRepositoryCache.map((r) => r.style).filter(Boolean)).size;
+    els.rumRepositoryStats.innerHTML = `
+      <div class="library-stat"><b>${rumRepositoryCache.length}</b><span>Rums</span></div>
+      <div class="library-stat"><b>${distilleries}</b><span>Distilleries</span></div>
+      <div class="library-stat"><b>${styles}</b><span>Styles</span></div>
+    `;
+  }
+
+  // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
+  // generic card grid the Bourbon Library and Beer Bible already share.
+  function rumCardHtml(entry) {
+    // Escape each piece individually, then join with a raw (already-safe)
+    // &middot; entity - same reasoning as beerCardHtml's own
+    // brewery/style join above.
+    const metaBits = [entry.distillery, entry.region].filter(Boolean).map(escapeHtml).join(' &middot; ');
+    const statBits = [];
+    if (entry.style) statBits.push(escapeHtml(entry.style));
+    if (entry.abv) statBits.push(`${escapeHtml(entry.abv)} ABV`);
+    return `
+      <button type="button" class="bourbon-card" data-id="${entry.id}">
+        <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
+        <div class="bourbon-card__sub">${metaBits || 'Distillery unknown'}</div>
+        <div class="bourbon-card__footer">
+          <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
+          <span class="bourbon-card__sub">${entry.ageStatement ? escapeHtml(entry.ageStatement) : ''}</span>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderRumRepositoryGrid() {
+    const rows = rumRepositoryCache.filter(rumMatchesSearch).slice().sort((a, b) => a.title.localeCompare(b.title));
+    if (!rows.length) {
+      els.rumRepositoryBody.innerHTML = rumRepositoryCache.length
+        ? '<p class="empty-hint">No rums match this search.</p>'
+        : '<p class="empty-hint">No rums yet - click Add Rum to research your first one.</p>';
+      return;
+    }
+    els.rumRepositoryBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => rumCardHtml(entry)).join('')}</div>`;
+    els.rumRepositoryBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const entry = rumRepositoryCache.find((r) => r.id === Number(btn.dataset.id));
+        rumRepositoryModal.open();
+        if (entry) loadRumRepositoryEntryIntoForm(entry);
+      });
+    });
+  }
+
+  els.rumRepositoryFilterInput.addEventListener('input', (e) => {
+    rumRepositoryFilterQuery = e.target.value;
+    renderRumRepositoryGrid();
+  });
+
+  // Called every time the rail switches to Rum Repository (see
+  // setActiveView below) - re-fetches so the screen reflects the table's
+  // actual current state rather than whatever this client happened to have
+  // cached from earlier in the session.
+  function renderRumRepositoryView() {
+    fetchRumRepository().then(() => {
+      els.rumRepositoryFilterInput.value = '';
+      rumRepositoryFilterQuery = '';
+      renderRumRepositoryStats();
+      renderRumRepositoryGrid();
+    });
+  }
+
+  // ---------- Rum Repository add/edit form ----------
+  //
+  // Manages the `rums` table directly (add/edit/delete) - opened from the
+  // Rum Repository page's own Add Rum button or a card's click. Reuses
+  // .settings-section/.reviewer-manager__add for the form itself, same
+  // pattern as the Beer Bible's own add/edit form above.
+
+  // null while adding a new entry; the entry's id while editing an existing
+  // one (see loadRumRepositoryEntryIntoForm) - one form serves both,
+  // switching label/button text based on which mode this is in.
+  let rumRepositoryEditingId = null;
+
+  function resetRumRepositoryForm() {
+    rumRepositoryEditingId = null;
+    els.rumRepositoryFormTitleInput.value = '';
+    els.rumRepositoryFormDistilleryInput.value = '';
+    els.rumRepositoryFormRegionInput.value = '';
+    els.rumRepositoryFormStyleInput.value = '';
+    els.rumRepositoryFormSkuInput.value = '';
+    els.rumRepositoryFormAbvInput.value = '';
+    els.rumRepositoryFormAgeStatementInput.value = '';
+    els.rumRepositoryFormDescriptionInput.value = '';
+    els.rumRepositoryFormTitle.textContent = 'Add an entry manually';
+    els.rumRepositoryFormSaveBtn.textContent = 'Add Entry';
+    els.rumRepositoryFormCancelBtn.hidden = true;
+    els.rumRepositoryFormDeleteBtn.hidden = true;
+    els.rumRepositoryFormStatus.textContent = '';
+  }
+
+  function loadRumRepositoryEntryIntoForm(entry) {
+    rumRepositoryEditingId = entry.id;
+    els.rumRepositoryFormTitleInput.value = entry.title;
+    els.rumRepositoryFormDistilleryInput.value = entry.distillery || '';
+    els.rumRepositoryFormRegionInput.value = entry.region || '';
+    els.rumRepositoryFormStyleInput.value = entry.style || '';
+    els.rumRepositoryFormSkuInput.value = entry.sku || '';
+    els.rumRepositoryFormAbvInput.value = entry.abv || '';
+    els.rumRepositoryFormAgeStatementInput.value = entry.ageStatement || '';
+    els.rumRepositoryFormDescriptionInput.value = entry.description || '';
+    els.rumRepositoryFormTitle.textContent = `Edit "${entry.title}"`;
+    els.rumRepositoryFormSaveBtn.textContent = 'Save Changes';
+    els.rumRepositoryFormCancelBtn.hidden = false;
+    els.rumRepositoryFormDeleteBtn.hidden = false;
+    els.rumRepositoryFormStatus.textContent = '';
+    els.rumRepositoryFormTitleInput.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Deletes an entry from the Rum Repository, then closes this form and
+  // refreshes the grid underneath it. The entry being deleted is always the
+  // one currently open in this form (see els.rumRepositoryFormDeleteBtn's
+  // own click handler below), so there's nothing left to keep editing once
+  // it succeeds.
+  async function deleteRumRepositoryEntry(id) {
+    try {
+      const resp = await fetch(`/api/rums/${id}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
+      rumRepositoryModal.close();
+      await fetchRumRepository();
+      renderRumRepositoryStats();
+      renderRumRepositoryGrid();
+    } catch (err) {
+      els.rumRepositoryFormStatus.textContent = err.message || 'Could not delete that entry.';
+    }
+  }
+
+  els.rumRepositoryFormDeleteBtn.addEventListener('click', () => {
+    if (rumRepositoryEditingId === null) return;
+    const title = els.rumRepositoryFormTitleInput.value.trim();
+    if (!confirm(`Delete "${title}" from the Rum Repository? This can't be undone.`)) return;
+    deleteRumRepositoryEntry(rumRepositoryEditingId);
+  });
+
+  // Always resets to a blank "Add an entry manually" form on open - the
+  // Edit path (renderRumRepositoryGrid's card click, above) opens first,
+  // then calls loadRumRepositoryEntryIntoForm afterward to fill it back in,
+  // same order the Beer Bible's own card click handler uses.
+  const rumRepositoryModal = createModal({
+    overlay: els.rumRepositoryOverlay,
+    closeBtns: [els.rumRepositoryCloseBtn, els.rumRepositoryCloseFooterBtn],
+    onOpen: resetRumRepositoryForm,
+  });
+
+  els.rumRepositoryAddBtn.addEventListener('click', () => rumRepositoryModal.open());
+  els.rumRepositoryFormCancelBtn.addEventListener('click', resetRumRepositoryForm);
+
+  els.rumRepositoryFormSaveBtn.addEventListener('click', async () => {
+    const title = els.rumRepositoryFormTitleInput.value.trim();
+    if (!title) {
+      els.rumRepositoryFormStatus.textContent = 'A rum name is required.';
+      return;
+    }
+    els.rumRepositoryFormSaveBtn.disabled = true;
+    els.rumRepositoryFormStatus.textContent = 'Saving...';
+    try {
+      const payload = {
+        title,
+        distillery: els.rumRepositoryFormDistilleryInput.value.trim(),
+        region: els.rumRepositoryFormRegionInput.value.trim(),
+        style: els.rumRepositoryFormStyleInput.value.trim(),
+        sku: els.rumRepositoryFormSkuInput.value.trim(),
+        abv: els.rumRepositoryFormAbvInput.value.trim(),
+        ageStatement: els.rumRepositoryFormAgeStatementInput.value.trim(),
+        description: els.rumRepositoryFormDescriptionInput.value.trim(),
+        source: 'Manual',
+      };
+      const resp = rumRepositoryEditingId
+        ? await fetch(`/api/rums/${rumRepositoryEditingId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        })
+        : await fetch('/api/rums', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
+      rumRepositoryModal.close();
+      await fetchRumRepository();
+      renderRumRepositoryStats();
+      renderRumRepositoryGrid();
+    } catch (err) {
+      els.rumRepositoryFormStatus.textContent = err.message || 'Could not save that entry.';
+    } finally {
+      els.rumRepositoryFormSaveBtn.disabled = false;
+    }
+  });
+
+  // Backs the Rum Repository page's "Check GitHub for New Rums" button -
+  // pulls in whatever's been added to the curated GitHub list since this
+  // PC's Rum Repository was last synced. Additive only server-side (see
+  // syncNewRumRepositoryEntries in rumRepositorySeed.js), so this never
+  // overwrites an existing entry, however it got there. Not gated behind
+  // Server PC, same reasoning as #beerBibleGithubSyncRow's own handler
+  // above.
+  els.rumRepositoryGithubSyncBtn.addEventListener('click', async () => {
+    els.rumRepositoryGithubSyncBtn.disabled = true;
+    els.rumRepositoryGithubSyncStatus.textContent = 'Checking GitHub...';
+    try {
+      const resp = await fetch('/api/rums/sync-library', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      rumRepositoryCache = Array.isArray(data.rums) ? data.rums : [];
+      renderRumRepositoryStats();
+      renderRumRepositoryGrid();
+      els.rumRepositoryGithubSyncStatus.textContent = data.added
+        ? `Added ${data.added} new rum${data.added === 1 ? '' : 's'} from ${data.source}.`
+        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+    } catch (err) {
+      els.rumRepositoryGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+    } finally {
+      els.rumRepositoryGithubSyncBtn.disabled = false;
+    }
+  });
+
   // ---------- The Pairing Atlas (rail view) ----------
   //
   // A read-focused browse/profile screen over WINE_PAIRING_RULES (a plain
@@ -8701,15 +8994,17 @@
     els.railLibraryBtn.classList.toggle('is-active', view === 'library');
     els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
     els.railBeerBibleBtn.classList.toggle('is-active', view === 'beerBible');
+    els.railRumRepositoryBtn.classList.toggle('is-active', view === 'rumRepository');
     els.shelfTalkerView.hidden = view !== 'shelfTalker';
     els.libraryView.hidden = view !== 'library';
     els.atlasView.hidden = view !== 'atlas';
     els.beerBibleView.hidden = view !== 'beerBible';
-    // The Library, Atlas, and Beer Bible screens render their own header
-    // band (name, search, stats) the moment they're shown - the "Shelf
-    // Talker Wizard" app bar above it would just be a second, redundant
-    // header, so it only shows on the Shelf Talker screen that actually
-    // needs it.
+    els.rumRepositoryView.hidden = view !== 'rumRepository';
+    // The Library, Atlas, Beer Bible, and Rum Repository screens render
+    // their own header band (name, search, stats) the moment they're shown
+    // - the "Shelf Talker Wizard" app bar above it would just be a second,
+    // redundant header, so it only shows on the Shelf Talker screen that
+    // actually needs it.
     els.appBar.hidden = view !== 'shelfTalker';
     if (view === 'shelfTalker') {
       // The preview stage reads 0 for its own width while
@@ -8738,6 +9033,10 @@
       // Bible has no cross-register sync yet, see its own rail-view section
       // further up.
       renderBeerBibleView();
+    } else if (view === 'rumRepository') {
+      // Same reasoning as Beer Bible above - the Rum Repository has no
+      // cross-register sync yet either.
+      renderRumRepositoryView();
     }
   }
 
@@ -8745,6 +9044,7 @@
   els.railLibraryBtn.addEventListener('click', () => setActiveView('library'));
   els.railAtlasBtn.addEventListener('click', () => setActiveView('atlas'));
   els.railBeerBibleBtn.addEventListener('click', () => setActiveView('beerBible'));
+  els.railRumRepositoryBtn.addEventListener('click', () => setActiveView('rumRepository'));
   els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
   // ---------- Menu bar ----------

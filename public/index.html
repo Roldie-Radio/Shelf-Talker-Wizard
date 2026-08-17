@@ -193,6 +193,13 @@
         <path d="M15.5,13 L17.3,13 C18.8,13 20,14.3 20,15.9 L20,19.1 C20,20.7 18.8,22 17.3,22 L15.5,22" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round"/>
       </svg>
     </button>
+    <button type="button" class="rail__icon" id="railRumRepositoryBtn" data-view="rumRepository" title="The Rum Repository">
+      <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+        <path d="M8,3 L14,3 L14,8.5 L16.5,12 L16.5,27 C16.5,27.6 16,28 15.3,28 L6.7,28 C6,28 5.5,27.6 5.5,27 L5.5,12 Z" fill="var(--ui-accent)"/>
+        <path d="M8,3 L14,3 L14,8.5 L16.5,12 L16.5,27 C16.5,27.6 16,28 15.3,28 L6.7,28 C6,28 5.5,27.6 5.5,27 L5.5,12 Z" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M5.5,19 L16.5,19" stroke="var(--ink)" stroke-width="1.1" opacity="0.5"/>
+      </svg>
+    </button>
     <div class="rail__spacer"></div>
     <button type="button" class="rail__icon" id="railSettingsBtn" title="Settings">
       <span class="rail__icon-glyph" aria-hidden="true">&#9881;&#65039;</span>
@@ -1089,6 +1096,56 @@
     <div class="library-body" id="beerBibleBody"></div>
   </section>
 
+  <!-- The Rum Repository - a browse screen over a shared, store-wide record
+       of researched rums (see the `rums` table in server/db.js), mirroring
+       the Beer Bible above but for Rum instead of Beer. Same bare-scaffold
+       reach as that screen: browse, search, and its own Add/Edit/Delete
+       form (#rumRepositoryOverlay below) - no cross-register sync (no
+       Server PC / Sync Now row here, unlike #libraryView's own
+       library-sync band), no Edit Talker recall, and no bulk import from an
+       export file (that feature leans on a per-row Untappd lookup, which
+       has no rum equivalent). Rendered by renderRumRepositoryView in
+       app.js. Hidden by default; the rail toggles it with
+       .layout/#libraryView/#atlasView/#beerBibleView. -->
+  <section class="library-view no-print" id="rumRepositoryView" hidden>
+    <div class="library-band">
+      <div class="library-band__top">
+        <div class="library-brand">
+          <div class="library-brand__icon">
+            <svg viewBox="0 0 22 30" aria-hidden="true">
+              <path d="M8,3 L14,3 L14,8.5 L16.5,12 L16.5,27 C16.5,27.6 16,28 15.3,28 L6.7,28 C6,28 5.5,27.6 5.5,27 L5.5,12 Z" fill="var(--ui-on-accent)" opacity="0.55"/>
+              <path d="M8,3 L14,3 L14,8.5 L16.5,12 L16.5,27 C16.5,27.6 16,28 15.3,28 L6.7,28 C6,28 5.5,27.6 5.5,27 L5.5,12 Z" fill="none" stroke="var(--ui-on-accent)" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="library-brand__name">The Rum Repository</div>
+            <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn--small btn--primary" id="rumRepositoryAddBtn">Add Rum</button>
+      </div>
+      <!-- No Server PC / Sync Now status row yet (contrast with
+           #libraryView's .library-sync above) - this PC's own data.db is
+           the only copy for now, so there's nothing to show sync status
+           for. The GitHub check below still applies on its own, same
+           reasoning as #beerBibleGithubSyncRow - see server/index.js's
+           POST /api/rums/sync-library. -->
+      <div class="library-sync" id="rumRepositoryGithubSyncRow">
+        <div class="library-sync__status">
+          <span>It can check for rums added to the curated list since this Rum Repository was last synced.</span>
+        </div>
+        <button type="button" class="btn btn--small" id="rumRepositoryGithubSyncBtn">Check GitHub for New Rums</button>
+      </div>
+      <p class="help-text" id="rumRepositoryGithubSyncStatus" role="status" aria-live="polite"></p>
+      <p class="help-text">Add rums you've researched with <strong>Add Rum</strong> below - typed in by hand, no bulk import yet.</p>
+      <div class="library-search">
+        <input type="search" id="rumRepositoryFilterInput" aria-label="Search The Rum Repository" placeholder="Search by name, distillery, or style&hellip;" />
+      </div>
+      <div class="library-stats" id="rumRepositoryStats"></div>
+    </div>
+    <div class="library-body" id="rumRepositoryBody"></div>
+  </section>
+
   </div><!-- /.app-shell -->
   </div><!-- /.app-main -->
   </div><!-- /.app-body -->
@@ -1652,6 +1709,79 @@
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="beerBibleCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- The Rum Repository's add/edit form, in a modal of its own - reached
+       from the Add Rum button on the library page (see #rumRepositoryView
+       above) for a new entry, or a card's own click for an existing one.
+       One shared `rums` table backs this (see server/db.js) - same
+       bare-scaffold reach as #beerBibleOverlay above: no Mash Bill
+       Confidence/References section here and no Edit Talker recall banner
+       reads from this table either. -->
+  <div id="rumRepositoryOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="rumRepositoryFormModalTitle">
+      <div class="modal__header">
+        <h2 id="rumRepositoryFormModalTitle">Rum Details</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="rumRepositoryCloseBtn">&times; Close</button>
+      </div>
+      <div class="history-body">
+        <!-- Doubles as both "Add an entry manually" and "Edit" - opening
+             this for an existing entry (see loadRumRepositoryEntryIntoForm
+             in app.js) fills this same form and switches Add Entry to Save
+             Changes, adding a Delete button next to Cancel. -->
+        <div class="settings-section">
+          <h3 class="settings-section-title" id="rumRepositoryFormTitle">Add an entry manually</h3>
+          <label class="field">
+            <span>Rum Name</span>
+            <input type="text" id="rumRepositoryFormTitleInput" maxlength="120" placeholder="Plantation Original Dark" />
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span>Distillery (optional)</span>
+              <input type="text" id="rumRepositoryFormDistilleryInput" maxlength="80" placeholder="Maison Ferrand" />
+            </label>
+            <label class="field">
+              <span>Region (optional)</span>
+              <input type="text" id="rumRepositoryFormRegionInput" maxlength="80" placeholder="Caribbean" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Style (optional)</span>
+              <input type="text" id="rumRepositoryFormStyleInput" maxlength="80" placeholder="Dark Rum" />
+            </label>
+            <label class="field">
+              <span>SKU (optional)</span>
+              <input type="text" id="rumRepositoryFormSkuInput" maxlength="40" placeholder="15614" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>ABV (optional)</span>
+              <input type="text" id="rumRepositoryFormAbvInput" maxlength="10" placeholder="40%" />
+            </label>
+            <label class="field">
+              <span>Age Statement (optional)</span>
+              <input type="text" id="rumRepositoryFormAgeStatementInput" maxlength="40" placeholder="Aged 8-14 years" />
+            </label>
+          </div>
+          <label class="field">
+            <span>Tasting Notes (optional)</span>
+            <textarea id="rumRepositoryFormDescriptionInput" rows="3" maxlength="600" placeholder="Rich notes of dried fruit, molasses, and baking spice."></textarea>
+          </label>
+
+          <div class="reviewer-manager__add">
+            <button type="button" class="btn btn--small btn--primary" id="rumRepositoryFormSaveBtn">Add Entry</button>
+            <button type="button" class="btn btn--small btn--ghost" id="rumRepositoryFormCancelBtn" hidden>Cancel</button>
+            <button type="button" class="btn btn--small btn--ghost" id="rumRepositoryFormDeleteBtn" hidden>Delete</button>
+          </div>
+          <p class="help-text" id="rumRepositoryFormStatus" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="rumRepositoryCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

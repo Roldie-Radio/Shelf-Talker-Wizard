@@ -14,6 +14,7 @@ const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
   listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
   listBeers, upsertBeer, updateBeerById, deleteBeer, getBeerByTitle,
+  listRums, upsertRum, updateRumById, deleteRum,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
@@ -25,6 +26,7 @@ const {
   getStatus: getBeerBibleImportStatus, startImport: startBeerBibleImport, cancelImport: cancelBeerBibleImport,
   isEnriched: isBeerBibleEntryEnriched,
 } = require('./beerBibleImport');
+const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
 
@@ -728,6 +730,76 @@ function createApp({
     res.json(cancelBeerBibleImport());
   });
 
+  // Backs the Rum Repository (rail "Rum Repository" view) - a bare-scaffold
+  // browse/add/edit/delete library for Rum, same idea as /api/beers above
+  // but for Rum instead of Beer. Same reach as /api/beers: no cross-
+  // register sync (every route below just reads/writes this PC's own
+  // data.db directly - no Server PC branching, no forwardWrite) and no
+  // bulk import-from-export-file route (that feature leans on a per-row
+  // Untappd lookup, which has no rum equivalent). See the rums table
+  // comment in db.js for the fuller picture.
+  app.get('/api/rums', (req, res) => {
+    res.json({ rums: listRums() });
+  });
+
+  // Rum Repository fields beyond title/source - see rumOptionalFieldParams
+  // in db.js for how an omitted (undefined) one leaves whatever's already
+  // saved alone rather than blanking it out.
+  function rumOptionalFields(body) {
+    const {
+      distillery, region, style, abv, ageStatement, description, sku,
+    } = body || {};
+    return {
+      distillery, region, style, abv, ageStatement, description, sku,
+    };
+  }
+
+  app.post('/api/rums', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = rumOptionalFields(req.body);
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'A rum name is required.' });
+    }
+    try {
+      res.status(201).json(upsertRum({ title, source, ...optional }));
+    } catch (err) {
+      res.status(err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.put('/api/rums/:id', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = rumOptionalFields(req.body);
+    try {
+      const updated = updateRumById(Number(req.params.id), { title, source, ...optional });
+      if (!updated) return res.status(404).json({ error: 'No rum entry with that id.' });
+      res.json(updated);
+    } catch (err) {
+      res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.delete('/api/rums/:id', (req, res) => {
+    const deleted = deleteRum(Number(req.params.id));
+    if (!deleted) return res.status(404).json({ error: 'No rum entry with that id.' });
+    res.json({ success: true });
+  });
+
+  // Backs the Rum Repository page's "Check GitHub for New Rums" button -
+  // the manual counterpart to maybeAutoSeedRumRepository's own auto-seed,
+  // for a library that's already populated, same pattern as
+  // /api/beers/sync-library. Not gated behind Server PC since there's no
+  // cross-register sync here yet - this PC's own data.db is always the one
+  // being updated.
+  app.post('/api/rums/sync-library', async (req, res) => {
+    try {
+      const { added, skipped, source } = await syncNewRumRepositoryEntries(db);
+      res.json({ added, skipped, source, rums: listRums() });
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
+  });
+
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
   // LAN-visible IPv4 addresses, the current isServer flag/db stats (so
   // staff can tell whether this looks like the PC with real accumulated
@@ -873,6 +945,9 @@ function start(port) {
       // Same fire-and-forget pattern for the Beer Bible - see
       // beerBibleSeed.js.
       maybeAutoSeedBeerBible(db);
+      // Same fire-and-forget pattern for the Rum Repository - see
+      // rumRepositorySeed.js.
+      maybeAutoSeedRumRepository(db);
       resolve(server);
     });
     server.on('error', reject);
