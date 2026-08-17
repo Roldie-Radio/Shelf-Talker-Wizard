@@ -182,6 +182,13 @@
         <path d="M6,3 L16,3 C16,9.4 15,13.4 11,17.4 C7,13.4 6,9.4 6,3 Z M11,17.4 L11,25 M6.6,27.2 C6.6,26.3 8.5,25.7 11,25.7 C13.5,25.7 15.4,26.3 15.4,27.2" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
       </svg>
     </button>
+    <button type="button" class="rail__icon" id="railBeerBibleBtn" data-view="beerBible" title="The Beer Bible">
+      <svg class="rail__icon-svg" viewBox="0 0 22 30" aria-hidden="true">
+        <rect x="5.5" y="10" width="10" height="17" rx="1.3" fill="var(--ui-accent)"/>
+        <rect x="5.5" y="10" width="10" height="17" rx="1.3" fill="none" stroke="var(--ink)" stroke-width="1.3"/>
+        <path d="M15.5,13 L17.3,13 C18.8,13 20,14.3 20,15.9 L20,19.1 C20,20.7 18.8,22 17.3,22 L15.5,22" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </button>
     <div class="rail__spacer"></div>
     <button type="button" class="rail__icon" id="railSettingsBtn" title="Settings">
       <span class="rail__icon-glyph" aria-hidden="true">&#9881;&#65039;</span>
@@ -1018,6 +1025,60 @@
     <div class="library-body" id="atlasBody"></div>
   </section>
 
+  <!-- The Beer Bible - a browse screen over a shared, store-wide record of
+       researched beers (see the `beers` table in server/db.js), mirroring
+       the Bourbon Library above but for Beer instead of Bourbon. This is a
+       bare-scaffold first cut: browse, search, and its own Add/Edit/Delete
+       form (#beerBibleOverlay below), same as the Bourbon Library's own
+       add/edit form owns adding/editing/deleting mash bills directly - but
+       no cross-register sync yet (no Server PC / Sync Now row here, unlike
+       #libraryView's own library-sync band - see the `beers` table comment
+       in server/db.js) and nothing on Edit Talker recalls from this table
+       yet either (contrast with #mashBillRecallBanner above). Both are
+       natural next steps once this is in real use, not ruled out by
+       anything here. Rendered by renderBeerBibleView in app.js. Hidden by
+       default; the rail toggles it with .layout/#libraryView/#atlasView. -->
+  <section class="library-view no-print" id="beerBibleView" hidden>
+    <div class="library-band">
+      <div class="library-band__top">
+        <div class="library-brand">
+          <div class="library-brand__icon">
+            <svg viewBox="0 0 22 30" aria-hidden="true">
+              <rect x="5.5" y="10" width="10" height="17" rx="1.3" fill="var(--ui-on-accent)" opacity="0.55"/>
+              <rect x="5.5" y="10" width="10" height="17" rx="1.3" fill="none" stroke="var(--ui-on-accent)" stroke-width="1.3"/>
+              <path d="M15.5,13 L17.3,13 C18.8,13 20,14.3 20,15.9 L20,19.1 C20,20.7 18.8,22 17.3,22 L15.5,22" fill="none" stroke="var(--ui-on-accent)" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="library-brand__name">The Beer Bible</div>
+            <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
+      </div>
+      <!-- No Server PC / Sync Now status row yet (contrast with
+           #libraryView's .library-sync above) - this PC's own data.db is
+           the only copy for now, so there's nothing to show sync status
+           for. The GitHub check below still applies on its own: it's not
+           gated behind Server PC the way the Bourbon Library's own
+           #libraryGithubSyncRow is, since there's no PC-to-PC role to be
+           "the" copy of yet - see server/index.js's POST
+           /api/beers/sync-library. -->
+      <div class="library-sync" id="beerBibleGithubSyncRow">
+        <div class="library-sync__status">
+          <span>It can check for beers added to the curated list since this Beer Bible was last synced.</span>
+        </div>
+        <button type="button" class="btn btn--small" id="beerBibleGithubSyncBtn">Check GitHub for New Beers</button>
+      </div>
+      <p class="help-text" id="beerBibleGithubSyncStatus" role="status" aria-live="polite"></p>
+      <div class="library-search">
+        <input type="search" id="beerBibleFilterInput" aria-label="Search The Beer Bible" placeholder="Search by name, brewery, or style&hellip;" />
+      </div>
+      <div class="library-stats" id="beerBibleStats"></div>
+    </div>
+    <div class="library-body" id="beerBibleBody"></div>
+  </section>
+
   </div><!-- /.app-shell -->
   </div><!-- /.app-main -->
   </div><!-- /.app-body -->
@@ -1496,6 +1557,91 @@
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="mashBillLibraryCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- The Beer Bible's add/edit form, in a modal of its own - reached from
+       the Add Beer button on the library page (see #beerBibleView above)
+       for a new entry, or a card's own Edit button for an existing one.
+       One shared `beers` table backs this (see server/db.js) - unlike the
+       Bourbon Library's own #mashBillLibraryOverlay, there's no Mash Bill
+       Confidence/References section here (nothing analogous exists yet for
+       Beer) and no Edit Talker recall banner reads from this table yet
+       either - see the #beerBibleView comment above for the fuller picture
+       of what this scaffold does and doesn't include yet. -->
+  <div id="beerBibleOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="beerBibleFormModalTitle">
+      <div class="modal__header">
+        <h2 id="beerBibleFormModalTitle">Beer Details</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="beerBibleCloseBtn">&times; Close</button>
+      </div>
+      <div class="history-body">
+        <!-- Doubles as both "Add an entry manually" and "Edit" - opening
+             this for an existing entry (see loadBeerBibleEntryIntoForm in
+             app.js) fills this same form and switches Add Entry to Save
+             Changes, adding a Delete button next to Cancel. -->
+        <div class="settings-section">
+          <h3 class="settings-section-title" id="beerBibleFormTitle">Add an entry manually</h3>
+          <label class="field">
+            <span>Beer Name</span>
+            <input type="text" id="beerBibleFormTitleInput" maxlength="120" placeholder="Slack Tide Flounder Pounder" />
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span>Brewery (optional)</span>
+              <input type="text" id="beerBibleFormBreweryInput" maxlength="80" placeholder="Slack Tide Brewing Company" />
+            </label>
+            <label class="field">
+              <span>Location (optional)</span>
+              <input type="text" id="beerBibleFormLocationInput" maxlength="80" placeholder="Wilmington, NC" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Style (optional)</span>
+              <input type="text" id="beerBibleFormStyleInput" maxlength="80" placeholder="American IPA" />
+            </label>
+            <label class="field">
+              <span>SKU (optional)</span>
+              <input type="text" id="beerBibleFormSkuInput" maxlength="40" placeholder="15614" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>ABV (optional)</span>
+              <input type="text" id="beerBibleFormAbvInput" maxlength="10" placeholder="6.2%" />
+            </label>
+            <label class="field">
+              <span>IBU (optional)</span>
+              <input type="text" id="beerBibleFormIbuInput" maxlength="10" placeholder="55" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Untappd Rating (optional)</span>
+              <input type="text" id="beerBibleFormRatingInput" maxlength="10" placeholder="3.9" />
+            </label>
+            <label class="field">
+              <span>Untappd Rating Count (optional)</span>
+              <input type="text" id="beerBibleFormRatingCountInput" maxlength="20" placeholder="1,204" />
+            </label>
+          </div>
+          <label class="field">
+            <span>Tasting Notes (optional)</span>
+            <textarea id="beerBibleFormDescriptionInput" rows="3" maxlength="600" placeholder="A hazy, tropical IPA with notes of mango and passionfruit."></textarea>
+          </label>
+
+          <div class="reviewer-manager__add">
+            <button type="button" class="btn btn--small btn--primary" id="beerBibleFormSaveBtn">Add Entry</button>
+            <button type="button" class="btn btn--small btn--ghost" id="beerBibleFormCancelBtn" hidden>Cancel</button>
+            <button type="button" class="btn btn--small btn--ghost" id="beerBibleFormDeleteBtn" hidden>Delete</button>
+          </div>
+          <p class="help-text" id="beerBibleFormStatus" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--primary" id="beerBibleCloseFooterBtn">Close</button>
       </div>
     </div>
   </div>

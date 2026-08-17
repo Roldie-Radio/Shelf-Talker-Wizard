@@ -1169,3 +1169,103 @@ test('POST /api/mashbills/sync-library adds only new titles on the Server PC, le
     );
   }));
 });
+
+// /api/beers - the Beer Bible (rail "Beer Bible" view), a bare-scaffold
+// first cut of the same idea as /api/mashbills above, for Beer instead of
+// Bourbon. Unlike those routes, there's no isServer/mashBillPuller
+// branching to cover here - every route always reads/writes this PC's own
+// data.db directly (see the beers table comment in db.js), so plain
+// withServer (no injected fakes) is enough for every test below.
+
+test('GET /api/beers returns an empty list on a fresh database', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status, body } = await getJson(port, '/api/beers');
+    assert.equal(status, 200);
+    assert.deepEqual(body.beers, []);
+  }));
+});
+
+test('POST /api/beers creates an entry and requires a title', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const missingTitle = await postJson(port, '/api/beers', { brewery: 'Anheuser-Busch' });
+    assert.equal(missingTitle.status, 400);
+
+    const created = await postJson(port, '/api/beers', {
+      title: 'Michelob ULTRA', brewery: 'Anheuser-Busch', style: 'Light Lager', abv: '4.2%', ibu: '',
+      untappdRating: '3.3', untappdRatingCount: '5,201', description: 'A superior light beer.', sku: '09144',
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.title, 'Michelob ULTRA');
+    assert.equal(created.body.brewery, 'Anheuser-Busch');
+    assert.equal(created.body.style, 'Light Lager');
+    assert.equal(created.body.abv, '4.2%');
+    assert.equal(created.body.untappdRating, '3.3');
+    assert.equal(created.body.untappdRatingCount, '5,201');
+    assert.equal(created.body.description, 'A superior light beer.');
+    assert.equal(created.body.sku, '09144');
+
+    const { body } = await getJson(port, '/api/beers');
+    assert.equal(body.beers.length, 1);
+    assert.equal(body.beers[0].title, 'Michelob ULTRA');
+  }));
+});
+
+test('PUT /api/beers/:id updates fields (preserving an omitted one), 404s for an unknown id, 409s on a title collision', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const a = await postJson(port, '/api/beers', { title: 'Sam Adams Boston Lager', brewery: 'Boston Beer Company' });
+    const b = await postJson(port, '/api/beers', { title: 'Dogfish Head 60 Minute IPA' });
+
+    const updated = await requestJson(port, 'PUT', `/api/beers/${a.body.id}`, { abv: '5.0%' });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.abv, '5.0%');
+    // brewery wasn't passed to this update, so it's unchanged.
+    assert.equal(updated.body.brewery, 'Boston Beer Company');
+
+    const missing = await requestJson(port, 'PUT', '/api/beers/999999', { title: 'Nope' });
+    assert.equal(missing.status, 404);
+
+    const collision = await requestJson(port, 'PUT', `/api/beers/${b.body.id}`, { title: 'sam adams boston lager' });
+    assert.equal(collision.status, 409);
+  }));
+});
+
+test('DELETE /api/beers/:id deletes and 404s for an unknown id', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const created = await postJson(port, '/api/beers', { title: 'Founders All Day IPA' });
+    const deleted = await requestJson(port, 'DELETE', `/api/beers/${created.body.id}`);
+    assert.equal(deleted.status, 200);
+    assert.deepEqual((await getJson(port, '/api/beers')).body.beers, []);
+
+    const missing = await requestJson(port, 'DELETE', `/api/beers/${created.body.id}`);
+    assert.equal(missing.status, 404);
+  }));
+});
+
+test('POST /api/beers/sync-library adds only new titles, leaving an existing entry untouched - not gated behind Server PC', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    // Deliberately not marked isServer - unlike /api/mashbills/sync-library,
+    // this route works on any PC (see the beers table comment in db.js).
+    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', brewery: 'Local Edit' });
+
+    await withMockFetch(
+      async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          { title: 'Slack Tide Flounder Pounder', brewery: 'GitHub Version' },
+          { title: 'Michelob ULTRA', brewery: 'Anheuser-Busch' },
+        ],
+      }),
+      async () => {
+        const { status, body } = await postJson(port, '/api/beers/sync-library', {});
+        assert.equal(status, 200);
+        assert.equal(body.added, 1);
+        assert.equal(body.skipped, 1);
+        assert.equal(body.source, 'GitHub');
+        assert.equal(body.beers.length, 2);
+        const flounderPounder = body.beers.find((b) => b.title === 'Slack Tide Flounder Pounder');
+        assert.equal(flounderPounder.brewery, 'Local Edit');
+      },
+    );
+  }));
+});

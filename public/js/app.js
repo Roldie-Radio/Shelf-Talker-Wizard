@@ -910,13 +910,14 @@
   // ---------- Elements ----------
 
   const els = {
-    // Persistent rail (Shelf Talker / Library / Settings) and the two
-    // screens it switches between - see the "Rail" section further down
-    // for the click handling.
+    // Persistent rail (Shelf Talker / Library / Atlas / Beer Bible /
+    // Settings) and the screens it switches between - see the "Rail"
+    // section further down for the click handling.
     rail: document.getElementById('rail'),
     railShelfTalkerBtn: document.getElementById('railShelfTalkerBtn'),
     railLibraryBtn: document.getElementById('railLibraryBtn'),
     railAtlasBtn: document.getElementById('railAtlasBtn'),
+    railBeerBibleBtn: document.getElementById('railBeerBibleBtn'),
     railSettingsBtn: document.getElementById('railSettingsBtn'),
     appBar: document.getElementById('appBar'),
     shelfTalkerView: document.getElementById('shelfTalkerView'),
@@ -938,6 +939,14 @@
     atlasChips: document.getElementById('atlasChips'),
     atlasStats: document.getElementById('atlasStats'),
     atlasBody: document.getElementById('atlasBody'),
+    beerBibleView: document.getElementById('beerBibleView'),
+    beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
+    beerBibleGithubSyncRow: document.getElementById('beerBibleGithubSyncRow'),
+    beerBibleGithubSyncStatus: document.getElementById('beerBibleGithubSyncStatus'),
+    beerBibleGithubSyncBtn: document.getElementById('beerBibleGithubSyncBtn'),
+    beerBibleFilterInput: document.getElementById('beerBibleFilterInput'),
+    beerBibleStats: document.getElementById('beerBibleStats'),
+    beerBibleBody: document.getElementById('beerBibleBody'),
 
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
@@ -1235,6 +1244,25 @@
     mashBillLibraryFormCancelBtn: document.getElementById('mashBillLibraryFormCancelBtn'),
     mashBillLibraryFormDeleteBtn: document.getElementById('mashBillLibraryFormDeleteBtn'),
     mashBillLibraryFormStatus: document.getElementById('mashBillLibraryFormStatus'),
+
+    beerBibleOverlay: document.getElementById('beerBibleOverlay'),
+    beerBibleCloseBtn: document.getElementById('beerBibleCloseBtn'),
+    beerBibleCloseFooterBtn: document.getElementById('beerBibleCloseFooterBtn'),
+    beerBibleFormTitle: document.getElementById('beerBibleFormTitle'),
+    beerBibleFormTitleInput: document.getElementById('beerBibleFormTitleInput'),
+    beerBibleFormBreweryInput: document.getElementById('beerBibleFormBreweryInput'),
+    beerBibleFormLocationInput: document.getElementById('beerBibleFormLocationInput'),
+    beerBibleFormStyleInput: document.getElementById('beerBibleFormStyleInput'),
+    beerBibleFormSkuInput: document.getElementById('beerBibleFormSkuInput'),
+    beerBibleFormAbvInput: document.getElementById('beerBibleFormAbvInput'),
+    beerBibleFormIbuInput: document.getElementById('beerBibleFormIbuInput'),
+    beerBibleFormRatingInput: document.getElementById('beerBibleFormRatingInput'),
+    beerBibleFormRatingCountInput: document.getElementById('beerBibleFormRatingCountInput'),
+    beerBibleFormDescriptionInput: document.getElementById('beerBibleFormDescriptionInput'),
+    beerBibleFormSaveBtn: document.getElementById('beerBibleFormSaveBtn'),
+    beerBibleFormCancelBtn: document.getElementById('beerBibleFormCancelBtn'),
+    beerBibleFormDeleteBtn: document.getElementById('beerBibleFormDeleteBtn'),
+    beerBibleFormStatus: document.getElementById('beerBibleFormStatus'),
 
     exportPreviewOverlay: document.getElementById('exportPreviewOverlay'),
     exportPreviewCloseBtn: document.getElementById('exportPreviewCloseBtn'),
@@ -7349,6 +7377,278 @@
     });
   }
 
+  // ---------- The Beer Bible (rail view) ----------
+  //
+  // A bare-scaffold browse screen over the shared `beers` data (see
+  // server/db.js) - search and a card grid, mirroring the Bourbon Library
+  // above but without its profile page, confidence tiers, or parent-company
+  // browse (nothing analogous exists for Beer yet). Adding/editing/deleting
+  // goes through the form modal below (opened via #beerBibleAddBtn, or a
+  // card's own click - there's no separate profile page here, so a click
+  // opens straight into Edit); this section itself never writes anything
+  // beyond what that form does, only reads beerBibleCache and re-fetches it
+  // after the form modal changes something.
+  //
+  // Two things the Bourbon Library also has that this deliberately doesn't
+  // yet: cross-register sync (this PC's own data.db is always the only
+  // copy - contrast with mash_bills' Server PC/mashBillSync.js) and an Edit
+  // Talker recall banner reading from this table (contrast with
+  // refreshMashBillRecall above). Both are natural next steps once this is
+  // in real use.
+
+  let beerBibleCache = [];
+  let beerBibleFilterQuery = '';
+
+  async function fetchBeerBible() {
+    try {
+      const resp = await fetch('/api/beers');
+      const data = await resp.json();
+      beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
+    } catch {
+      beerBibleCache = [];
+    }
+    return beerBibleCache;
+  }
+
+  function beerMatchesSearch(entry) {
+    const q = beerBibleFilterQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (entry.title || '').toLowerCase().includes(q)
+      || (entry.brewery || '').toLowerCase().includes(q)
+      || (entry.style || '').toLowerCase().includes(q)
+      || (entry.sku || '').toLowerCase().includes(q);
+  }
+
+  function renderBeerBibleStats() {
+    const breweries = new Set(beerBibleCache.map((b) => b.brewery).filter(Boolean)).size;
+    const styles = new Set(beerBibleCache.map((b) => b.style).filter(Boolean)).size;
+    els.beerBibleStats.innerHTML = `
+      <div class="library-stat"><b>${beerBibleCache.length}</b><span>Beers</span></div>
+      <div class="library-stat"><b>${breweries}</b><span>Breweries</span></div>
+      <div class="library-stat"><b>${styles}</b><span>Styles</span></div>
+    `;
+  }
+
+  // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
+  // generic card grid the Bourbon Library and The Pairing Atlas's own wine
+  // cards already share, just without a grain bar in the middle.
+  function beerCardHtml(entry) {
+    // Escape each piece individually, then join with a raw (already-safe)
+    // &middot; entity - escaping the joined string instead would turn that
+    // entity's own & into &amp;, printing the literal text "&middot;"
+    // rather than a middle dot (same reasoning as bourbonRowHtml's own
+    // distillery/category join above).
+    const metaBits = [entry.brewery, entry.style].filter(Boolean).map(escapeHtml).join(' &middot; ');
+    const statBits = [];
+    if (entry.abv) statBits.push(`${escapeHtml(entry.abv)} ABV`);
+    if (entry.ibu) statBits.push(`${escapeHtml(entry.ibu)} IBU`);
+    return `
+      <button type="button" class="bourbon-card" data-id="${entry.id}">
+        <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
+        <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
+        <div class="bourbon-card__footer">
+          <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
+          <span class="bourbon-card__sub">${entry.untappdRating ? `&#9733; ${escapeHtml(entry.untappdRating)}` : ''}</span>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderBeerBibleGrid() {
+    const rows = beerBibleCache.filter(beerMatchesSearch).slice().sort((a, b) => a.title.localeCompare(b.title));
+    if (!rows.length) {
+      els.beerBibleBody.innerHTML = beerBibleCache.length
+        ? '<p class="empty-hint">No beers match this search.</p>'
+        : '<p class="empty-hint">No beers yet - click Add Beer to research your first one.</p>';
+      return;
+    }
+    els.beerBibleBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => beerCardHtml(entry)).join('')}</div>`;
+    els.beerBibleBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const entry = beerBibleCache.find((b) => b.id === Number(btn.dataset.id));
+        beerBibleModal.open();
+        if (entry) loadBeerBibleEntryIntoForm(entry);
+      });
+    });
+  }
+
+  els.beerBibleFilterInput.addEventListener('input', (e) => {
+    beerBibleFilterQuery = e.target.value;
+    renderBeerBibleGrid();
+  });
+
+  // Called every time the rail switches to Beer Bible (see setActiveView
+  // below) - re-fetches so the screen reflects the table's actual current
+  // state rather than whatever this client happened to have cached from
+  // earlier in the session.
+  function renderBeerBibleView() {
+    fetchBeerBible().then(() => {
+      els.beerBibleFilterInput.value = '';
+      beerBibleFilterQuery = '';
+      renderBeerBibleStats();
+      renderBeerBibleGrid();
+    });
+  }
+
+  // ---------- Beer Bible add/edit form ----------
+  //
+  // Manages the `beers` table directly (add/edit/delete) - opened from the
+  // Beer Bible page's own Add Beer button or a card's click. Reuses
+  // .settings-section/.reviewer-manager__add for the form itself, same
+  // pattern as the Bourbon Library's own add/edit form above.
+
+  // null while adding a new entry; the entry's id while editing an existing
+  // one (see loadBeerBibleEntryIntoForm) - one form serves both, switching
+  // label/button text based on which mode this is in.
+  let beerBibleEditingId = null;
+
+  function resetBeerBibleForm() {
+    beerBibleEditingId = null;
+    els.beerBibleFormTitleInput.value = '';
+    els.beerBibleFormBreweryInput.value = '';
+    els.beerBibleFormLocationInput.value = '';
+    els.beerBibleFormStyleInput.value = '';
+    els.beerBibleFormSkuInput.value = '';
+    els.beerBibleFormAbvInput.value = '';
+    els.beerBibleFormIbuInput.value = '';
+    els.beerBibleFormRatingInput.value = '';
+    els.beerBibleFormRatingCountInput.value = '';
+    els.beerBibleFormDescriptionInput.value = '';
+    els.beerBibleFormTitle.textContent = 'Add an entry manually';
+    els.beerBibleFormSaveBtn.textContent = 'Add Entry';
+    els.beerBibleFormCancelBtn.hidden = true;
+    els.beerBibleFormDeleteBtn.hidden = true;
+    els.beerBibleFormStatus.textContent = '';
+  }
+
+  function loadBeerBibleEntryIntoForm(entry) {
+    beerBibleEditingId = entry.id;
+    els.beerBibleFormTitleInput.value = entry.title;
+    els.beerBibleFormBreweryInput.value = entry.brewery || '';
+    els.beerBibleFormLocationInput.value = entry.location || '';
+    els.beerBibleFormStyleInput.value = entry.style || '';
+    els.beerBibleFormSkuInput.value = entry.sku || '';
+    els.beerBibleFormAbvInput.value = entry.abv || '';
+    els.beerBibleFormIbuInput.value = entry.ibu || '';
+    els.beerBibleFormRatingInput.value = entry.untappdRating || '';
+    els.beerBibleFormRatingCountInput.value = entry.untappdRatingCount || '';
+    els.beerBibleFormDescriptionInput.value = entry.description || '';
+    els.beerBibleFormTitle.textContent = `Edit "${entry.title}"`;
+    els.beerBibleFormSaveBtn.textContent = 'Save Changes';
+    els.beerBibleFormCancelBtn.hidden = false;
+    els.beerBibleFormDeleteBtn.hidden = false;
+    els.beerBibleFormStatus.textContent = '';
+    els.beerBibleFormTitleInput.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Deletes an entry from the Beer Bible, then closes this form and
+  // refreshes the grid underneath it. The entry being deleted is always the
+  // one currently open in this form (see els.beerBibleFormDeleteBtn's own
+  // click handler below), so there's nothing left to keep editing once it
+  // succeeds.
+  async function deleteBeerBibleEntry(id) {
+    try {
+      const resp = await fetch(`/api/beers/${id}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
+      beerBibleModal.close();
+      await fetchBeerBible();
+      renderBeerBibleStats();
+      renderBeerBibleGrid();
+    } catch (err) {
+      els.beerBibleFormStatus.textContent = err.message || 'Could not delete that entry.';
+    }
+  }
+
+  els.beerBibleFormDeleteBtn.addEventListener('click', () => {
+    if (beerBibleEditingId === null) return;
+    const title = els.beerBibleFormTitleInput.value.trim();
+    if (!confirm(`Delete "${title}" from the Beer Bible? This can't be undone.`)) return;
+    deleteBeerBibleEntry(beerBibleEditingId);
+  });
+
+  // Always resets to a blank "Add an entry manually" form on open - the
+  // Edit path (renderBeerBibleGrid's card click, above) opens first, then
+  // calls loadBeerBibleEntryIntoForm afterward to fill it back in, same
+  // order the Bourbon Library's own libraryEditBtn handler uses.
+  const beerBibleModal = createModal({
+    overlay: els.beerBibleOverlay,
+    closeBtns: [els.beerBibleCloseBtn, els.beerBibleCloseFooterBtn],
+    onOpen: resetBeerBibleForm,
+  });
+
+  els.beerBibleAddBtn.addEventListener('click', () => beerBibleModal.open());
+  els.beerBibleFormCancelBtn.addEventListener('click', resetBeerBibleForm);
+
+  els.beerBibleFormSaveBtn.addEventListener('click', async () => {
+    const title = els.beerBibleFormTitleInput.value.trim();
+    if (!title) {
+      els.beerBibleFormStatus.textContent = 'A beer name is required.';
+      return;
+    }
+    els.beerBibleFormSaveBtn.disabled = true;
+    els.beerBibleFormStatus.textContent = 'Saving...';
+    try {
+      const payload = {
+        title,
+        brewery: els.beerBibleFormBreweryInput.value.trim(),
+        location: els.beerBibleFormLocationInput.value.trim(),
+        style: els.beerBibleFormStyleInput.value.trim(),
+        sku: els.beerBibleFormSkuInput.value.trim(),
+        abv: els.beerBibleFormAbvInput.value.trim(),
+        ibu: els.beerBibleFormIbuInput.value.trim(),
+        untappdRating: els.beerBibleFormRatingInput.value.trim(),
+        untappdRatingCount: els.beerBibleFormRatingCountInput.value.trim(),
+        description: els.beerBibleFormDescriptionInput.value.trim(),
+        source: 'Manual',
+      };
+      const resp = beerBibleEditingId
+        ? await fetch(`/api/beers/${beerBibleEditingId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        })
+        : await fetch('/api/beers', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
+      beerBibleModal.close();
+      await fetchBeerBible();
+      renderBeerBibleStats();
+      renderBeerBibleGrid();
+    } catch (err) {
+      els.beerBibleFormStatus.textContent = err.message || 'Could not save that entry.';
+    } finally {
+      els.beerBibleFormSaveBtn.disabled = false;
+    }
+  });
+
+  // Backs the Beer Bible page's "Check GitHub for New Beers" button - pulls
+  // in whatever's been added to the curated GitHub list since this PC's
+  // Beer Bible was last synced. Additive only server-side (see
+  // syncNewBeerBibleEntries in beerBibleSeed.js), so this never overwrites
+  // an existing entry, however it got there. Unlike the Bourbon Library's
+  // own #libraryGithubSyncBtn, this isn't gated behind Server PC - see the
+  // #beerBibleGithubSyncRow comment in index.html for why.
+  els.beerBibleGithubSyncBtn.addEventListener('click', async () => {
+    els.beerBibleGithubSyncBtn.disabled = true;
+    els.beerBibleGithubSyncStatus.textContent = 'Checking GitHub...';
+    try {
+      const resp = await fetch('/api/beers/sync-library', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
+      renderBeerBibleStats();
+      renderBeerBibleGrid();
+      els.beerBibleGithubSyncStatus.textContent = data.added
+        ? `Added ${data.added} new beer${data.added === 1 ? '' : 's'} from ${data.source}.`
+        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+    } catch (err) {
+      els.beerBibleGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+    } finally {
+      els.beerBibleGithubSyncBtn.disabled = false;
+    }
+  });
+
   // ---------- The Pairing Atlas (rail view) ----------
   //
   // A read-focused browse/profile screen over WINE_PAIRING_RULES (a plain
@@ -7989,12 +8289,13 @@
   // ---------- Rail (Shelf Talker / Library / Pairing Atlas / Settings) ----------
   //
   // Settings isn't a fourth screen - its rail button just opens the same
-  // settingsModal above, unchanged. Shelf Talker, Library, and Atlas are
-  // real screens: exactly one of els.shelfTalkerView (the existing .layout
-  // three-column form/preview/queue grid, untouched) / els.libraryView /
-  // els.atlasView is visible at a time, toggled here rather than with the
-  // tabs' full role="tablist" machinery (see activateTab) - this is a
-  // whole-screen swap, not adjacent panels of one form.
+  // settingsModal above, unchanged. Shelf Talker, Library, Atlas, and Beer
+  // Bible are real screens: exactly one of els.shelfTalkerView (the
+  // existing .layout three-column form/preview/queue grid, untouched) /
+  // els.libraryView / els.atlasView / els.beerBibleView is visible at a
+  // time, toggled here rather than with the tabs' full role="tablist"
+  // machinery (see activateTab) - this is a whole-screen swap, not adjacent
+  // panels of one form.
   let activeRailView = 'shelfTalker';
 
   function setActiveView(view) {
@@ -8004,13 +8305,16 @@
     els.railShelfTalkerBtn.classList.toggle('is-active', view === 'shelfTalker');
     els.railLibraryBtn.classList.toggle('is-active', view === 'library');
     els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
+    els.railBeerBibleBtn.classList.toggle('is-active', view === 'beerBible');
     els.shelfTalkerView.hidden = view !== 'shelfTalker';
     els.libraryView.hidden = view !== 'library';
     els.atlasView.hidden = view !== 'atlas';
-    // The Library and Atlas screens render their own header band (name,
-    // search, stats) the moment they're shown - the "Shelf Talker Wizard"
-    // app bar above it would just be a second, redundant header, so it
-    // only shows on the Shelf Talker screen that actually needs it.
+    els.beerBibleView.hidden = view !== 'beerBible';
+    // The Library, Atlas, and Beer Bible screens render their own header
+    // band (name, search, stats) the moment they're shown - the "Shelf
+    // Talker Wizard" app bar above it would just be a second, redundant
+    // header, so it only shows on the Shelf Talker screen that actually
+    // needs it.
     els.appBar.hidden = view !== 'shelfTalker';
     if (view === 'shelfTalker') {
       // The preview stage reads 0 for its own width while
@@ -8034,12 +8338,18 @@
       }, 5000);
     } else if (view === 'atlas') {
       renderAtlasView();
+    } else if (view === 'beerBible') {
+      // No sync status to poll for here (unlike Library above) - the Beer
+      // Bible has no cross-register sync yet, see its own rail-view section
+      // further up.
+      renderBeerBibleView();
     }
   }
 
   els.railShelfTalkerBtn.addEventListener('click', () => setActiveView('shelfTalker'));
   els.railLibraryBtn.addEventListener('click', () => setActiveView('library'));
   els.railAtlasBtn.addEventListener('click', () => setActiveView('atlas'));
+  els.railBeerBibleBtn.addEventListener('click', () => setActiveView('beerBible'));
   els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
   // ---------- Menu bar ----------

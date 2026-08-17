@@ -81,6 +81,40 @@ function applySchema(db) {
       sku TEXT
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_mash_bills_title_unique ON mash_bills (title COLLATE NOCASE);
+
+    -- The Beer Bible (rail "Beer Bible" view): one researched beer per
+    -- title, so a brewery/style/ABV/IBU/rating/tasting-notes lookup done
+    -- once doesn't need re-doing on the next talker made for that same
+    -- beer - the same idea as mash_bills above, just for Beer instead of
+    -- Bourbon. One row per title (case-insensitive - the unique index
+    -- below), same matching convention as mash_bills.
+    --
+    -- This is a bare-scaffold first cut, deliberately smaller than
+    -- mash_bills: no cross-register sync yet (this PC's own data.db is
+    -- always the only copy - contrast with mash_bills, whose authoritative
+    -- copy lives on whichever PC is marked Server PC, see
+    -- server/mashBillSync.js) and nothing on Edit Talker recalls from this
+    -- table yet either (see refreshMashBillRecall in app.js for the
+    -- Bourbon equivalent this doesn't have). Both are natural follow-ups
+    -- once this is in real use, not ruled out by this schema - see
+    -- server/beerBibleSeed.js for the GitHub-curated-list sync this *does*
+    -- already have, wired up the same way as mash_bills' own.
+    CREATE TABLE IF NOT EXISTS beers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      brewery TEXT,
+      location TEXT,
+      style TEXT,
+      abv TEXT,
+      ibu TEXT,
+      untappd_rating TEXT,
+      untappd_rating_count TEXT,
+      description TEXT,
+      sku TEXT,
+      source TEXT NOT NULL DEFAULT 'Manual',
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_beers_title_unique ON beers (title COLLATE NOCASE);
   `);
   applyMashBillColumns(db);
 }
@@ -236,6 +270,7 @@ function getStats() {
   return {
     printedTalkers: db.prepare('SELECT COUNT(*) AS n FROM printed_talkers').get().n,
     mashBills: db.prepare('SELECT COUNT(*) AS n FROM mash_bills').get().n,
+    beers: db.prepare('SELECT COUNT(*) AS n FROM beers').get().n,
   };
 }
 
@@ -470,6 +505,162 @@ function deleteMashBill(id) {
   return db.prepare('DELETE FROM mash_bills WHERE id = ?').run(id).changes > 0;
 }
 
+// ================================================================
+// The Beer Bible - see the beers table comment in applySchema above for
+// the shape/matching rules and how this deliberately differs from the
+// Bourbon Library's own mash_bills table (no cross-register sync, no Edit
+// Talker recall integration - both scaffolded to add later, not designed
+// against). No grains/confidence/references here - just the fields Beer
+// already pulls from Untappd (brewery, location, style, ABV, IBU, rating)
+// plus a free-text tasting-notes field, so the "leave blank if you don't
+// know it yet" rule the Bourbon Library form uses applies just as well
+// here.
+// ================================================================
+
+function rowToBeer(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    brewery: row.brewery || '',
+    location: row.location || '',
+    style: row.style || '',
+    abv: row.abv || '',
+    ibu: row.ibu || '',
+    untappdRating: row.untappd_rating || '',
+    untappdRatingCount: row.untappd_rating_count || '',
+    description: row.description || '',
+    sku: row.sku || '',
+    source: row.source,
+    updatedAt: row.updated_at,
+  };
+}
+
+function listBeers() {
+  const db = getDb();
+  return db.prepare('SELECT * FROM beers ORDER BY title COLLATE NOCASE ASC').all().map(rowToBeer);
+}
+
+function getBeer(id) {
+  const db = getDb();
+  return rowToBeer(db.prepare('SELECT * FROM beers WHERE id = ?').get(id));
+}
+
+function validateBeerInput({ title }) {
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) throw Object.assign(new Error('A beer name is required.'), { code: 'TITLE_REQUIRED' });
+  return { cleanTitle };
+}
+
+// Same "undefined leaves whatever's already there alone" convention as
+// mashBillOptionalFieldParams above - every field here beyond title/source
+// is optional, and `existing` is a rowToBeer()-shaped object or null.
+function beerOptionalFieldParams({
+  brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+}, existing) {
+  const prev = existing || {
+    brewery: '', location: '', style: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '',
+  };
+  return {
+    brewery: normalizeOptionalText(brewery !== undefined ? brewery : prev.brewery),
+    location: normalizeOptionalText(location !== undefined ? location : prev.location),
+    style: normalizeOptionalText(style !== undefined ? style : prev.style),
+    abv: normalizeOptionalText(abv !== undefined ? abv : prev.abv),
+    ibu: normalizeOptionalText(ibu !== undefined ? ibu : prev.ibu),
+    untappdRating: normalizeOptionalText(untappdRating !== undefined ? untappdRating : prev.untappdRating),
+    untappdRatingCount: normalizeOptionalText(untappdRatingCount !== undefined ? untappdRatingCount : prev.untappdRatingCount),
+    description: normalizeOptionalText(description !== undefined ? description : prev.description),
+    sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
+  };
+}
+
+const BEER_OPTIONAL_COLUMNS_SET = `
+  brewery = @brewery, location = @location, style = @style, abv = @abv, ibu = @ibu,
+  untappd_rating = @untappdRating, untappd_rating_count = @untappdRatingCount,
+  description = @description, sku = @sku
+`;
+
+// Create-or-update by title (case-insensitive), same reasoning as
+// upsertMashBill above: the Beer Bible form's Add/Save button always calls
+// this, so saving again after a typo fix updates the same entry instead of
+// erroring or duplicating it.
+function upsertBeer({
+  title, source, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+}) {
+  const db = getDb();
+  const { cleanTitle } = validateBeerInput({ title });
+  const now = nowIso();
+  const existingRow = db.prepare('SELECT id FROM beers WHERE title = ? COLLATE NOCASE').get(cleanTitle);
+  const existing = existingRow ? getBeer(existingRow.id) : null;
+  const params = {
+    title: cleanTitle,
+    source: source || 'Manual',
+    updatedAt: now,
+    ...beerOptionalFieldParams({
+      brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+    }, existing),
+  };
+
+  if (existing) {
+    db.prepare(`
+      UPDATE beers SET title = @title, source = @source, updated_at = @updatedAt,
+      ${BEER_OPTIONAL_COLUMNS_SET}
+      WHERE id = @id
+    `).run({ ...params, id: existing.id });
+    return getBeer(existing.id);
+  }
+  const info = db.prepare(`
+    INSERT INTO beers (
+      title, source, updated_at, brewery, location, style, abv, ibu, untappd_rating, untappd_rating_count, description, sku
+    )
+    VALUES (
+      @title, @source, @updatedAt, @brewery, @location, @style, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku
+    )
+  `).run(params);
+  return getBeer(info.lastInsertRowid);
+}
+
+// Explicit update-by-id - only the Beer Bible form's "Edit" flow uses this
+// (it already knows the id, and may be changing the title itself). Unlike
+// upsertBeer above, renaming onto a title another entry already owns is a
+// real conflict here, not a merge - same DUPLICATE_TITLE handling as
+// updateMashBillById.
+function updateBeerById(id, {
+  title, source, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+}) {
+  const db = getDb();
+  const existing = getBeer(id);
+  if (!existing) return null;
+  const { cleanTitle } = validateBeerInput({ title: title !== undefined ? title : existing.title });
+
+  try {
+    db.prepare(`
+      UPDATE beers SET title = @title, source = @source, updated_at = @updatedAt,
+      ${BEER_OPTIONAL_COLUMNS_SET}
+      WHERE id = @id
+    `).run({
+      id,
+      title: cleanTitle,
+      source: source || existing.source,
+      updatedAt: nowIso(),
+      ...beerOptionalFieldParams({
+        brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+      }, existing),
+    });
+  } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      throw Object.assign(new Error(`Another entry already uses the name "${cleanTitle}" - edit that one instead, or delete it first.`), { code: 'DUPLICATE_TITLE' });
+    }
+    throw err;
+  }
+  return getBeer(id);
+}
+
+function deleteBeer(id) {
+  const db = getDb();
+  return db.prepare('DELETE FROM beers WHERE id = ?').run(id).changes > 0;
+}
+
 module.exports = {
   getDb,
   closeDb,
@@ -483,6 +674,11 @@ module.exports = {
   upsertMashBill,
   updateMashBillById,
   deleteMashBill,
+  listBeers,
+  getBeer,
+  upsertBeer,
+  updateBeerById,
+  deleteBeer,
   // Exported for tests only.
   dbFilePath,
 };
