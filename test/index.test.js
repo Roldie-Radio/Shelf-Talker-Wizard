@@ -616,18 +616,62 @@ test('POST /api/name-search-select runs a Beer pick through Untappd, same as SKU
   }));
 });
 
-test('POST /api/name-search-select is a pass-through for Wine/Spirits (no Untappd data to fetch)', async () => {
+test('POST /api/name-search-select checks the store site for a sale price on a Wine/Spirits pick (no Untappd data to fetch)', async () => {
   await withTempDb(() => withServer(async (port) => {
-    let calls = 0;
+    const searchHtml = page({
+      body: `
+        <div class="product-list-item">
+          <input class="product-code" type="hidden" value="10432" />
+          <a class="product-link" href="/Josh-Cellars-Cabernet-Sauvignon-10432-1010432/">
+            <span class="productnameTitle">Josh Cellars Cabernet Sauvignon</span>
+          </a>
+        </div>
+      `,
+    });
+    const productHtml = page({
+      body: `
+        <h1 itemprop="name">Josh Cellars Cabernet Sauvignon</h1>
+        <div class="pricingDetails">
+          <span class="priceFull">$12.99</span>
+          <span class="priceCurrent">$9.99</span>
+        </div>
+      `,
+    });
+    const requestedUrls = [];
     await withMockFetch(
-      async () => { calls++; return mockResponse({ body: '<html></html>' }); },
+      async (url) => {
+        requestedUrls.push(url);
+        return mockResponse({ body: url.includes('/store/search.asp') ? searchHtml : productHtml });
+      },
       async () => {
         const product = { title: 'Josh Cellars Cabernet Sauvignon', sku: '10432', price: '12.99', vintage: '2021' };
         const result = await postJson(port, '/api/name-search-select', { product, category: 'wine' });
         assert.equal(result.status, 200);
+        // Title/vintage/price all still come from the export's own product,
+        // untouched - only salePrice is taken from the store site.
         assert.equal(result.body.title, 'Josh Cellars Cabernet Sauvignon');
         assert.equal(result.body.vintage, '2021');
-        assert.equal(calls, 0, 'Wine/Spirits should never hit the network here');
+        assert.equal(result.body.price, '12.99');
+        assert.equal(result.body.salePrice, '9.99');
+      }
+    );
+    assert.equal(requestedUrls.length, 2, 'should search, then fetch the matched product page');
+  }));
+});
+
+test('POST /api/name-search-select leaves salePrice blank (rather than failing the pick) when the store site has no match for the SKU', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const searchHtml = page({ body: '<div class="no-results">No products found.</div>' });
+    await withMockFetch(
+      async () => mockResponse({ body: searchHtml }),
+      async () => {
+        const product = { title: 'Josh Cellars Cabernet Sauvignon', sku: '99999', price: '12.99', vintage: '2021' };
+        const result = await postJson(port, '/api/name-search-select', { product, category: 'wine' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Josh Cellars Cabernet Sauvignon');
+        assert.equal(result.body.price, '12.99');
+        assert.equal(result.body.salePrice, undefined);
+        assert.match(result.body.salePriceSourceError, /No product found for SKU/);
       }
     );
   }));

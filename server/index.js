@@ -5,7 +5,7 @@ const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
   TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
-  enrichBeerScanFromStore, enrichBeerFromUntappd,
+  enrichBeerScanFromStore, enrichBeerFromUntappd, enrichSalePriceFromStore,
 } = require('./productImport');
 const {
   getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, lookupSkuInExport, searchByName, previewExport,
@@ -347,18 +347,21 @@ function createApp({
   // Backs picking a candidate off the "Search by Name" tab's dropdown - runs
   // once, on that click/Enter, not per keystroke against the whole result
   // list above (an Untappd search per row would be both slow and a good way
-  // to get this app's Algolia key rate-limited or revoked). Wine/Spirits has
-  // nothing further to fetch - the export file's own columns are already
-  // everything that tab shows - so this is a same-shape pass-through for it,
-  // matching the local-only lookup staff already got before this route
-  // existed. Beer runs the same best-effort Untappd step SKU Lookup and Scan
-  // UPC already layer on top of their own product (see enrichBeerFromUntappd
-  // in productImport.js), off of the export's own title/brand/size rather
-  // than a store page - Search by Name never touches
-  // liquoroutletwinecellars.com, only the local WinePOS export. A miss
-  // (blocked, no match) comes back as untappdError, same as those two tabs,
-  // rather than failing the pick outright - the export's own fields are
-  // still good enough to queue a talker from.
+  // to get this app's Algolia key rate-limited or revoked). Every pick now
+  // runs enrichSalePriceFromStore (productImport.js) first - a best-effort,
+  // never-throws lookup of the export's own SKU against
+  // liquoroutletwinecellars.com's product page, since the local WinePOS
+  // export often has no sale/promo price column of its own (see
+  // FIELD_ALIASES.salePrice in upcCatalog.js) even when the store's site is
+  // actually showing one. Everything else about the product (title/size/
+  // regular price) still comes from the export - only salePrice is ever
+  // taken from the store site here. Wine/Spirits stops there. Beer also
+  // runs the same best-effort Untappd step SKU Lookup and Scan UPC already
+  // layer on top of their own product (see enrichBeerFromUntappd in
+  // productImport.js), off of the export's own title/brand/size rather than
+  // the store page. A miss (blocked, no match) comes back as untappdError,
+  // same as those two tabs, rather than failing the pick outright - the
+  // export's own fields are still good enough to queue a talker from.
   //
   // Every pick runs a live Untappd search, same as SKU Lookup/Scan UPC - a
   // search that fails outright is a real error, not a stale fallback.
@@ -368,12 +371,13 @@ function createApp({
       return res.status(400).json({ error: 'A product is required.' });
     }
     const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
+    const withSalePrice = await enrichSalePriceFromStore(product);
     if (normalizedCategory !== 'beer') {
-      return res.json({ ...product, category: normalizedCategory });
+      return res.json({ ...withSalePrice, category: normalizedCategory });
     }
 
     try {
-      const data = { ...(await enrichBeerFromUntappd(product)), category: 'beer' };
+      const data = { ...(await enrichBeerFromUntappd(withSalePrice)), category: 'beer' };
       res.json(data);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not search Untappd for that beer.' });
