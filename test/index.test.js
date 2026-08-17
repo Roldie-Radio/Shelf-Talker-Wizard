@@ -1439,32 +1439,56 @@ test('POST /api/beers/:id/research 404s for an unknown id', async () => {
   }));
 });
 
-test('POST /api/beers/sync-library adds only new titles, leaving an existing entry untouched - not gated behind Server PC', async () => {
-  await withTempDb(() => withServer(async (port) => {
-    // Deliberately not marked isServer - unlike /api/mashbills/sync-library,
-    // this route works on any PC (see the beers table comment in db.js).
-    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', brewery: 'Local Edit' });
+// POST /api/beers/sync-export - the "Export File Sync" button (replaces
+// the old "Check GitHub for New Beers" - see beerBibleExportSync.js for the
+// full reasoning). Fills in upc on an already-saved entry whose sku
+// matches a row in the configured export; never adds new entries.
+test('POST /api/beers/sync-export fills in upc for a SKU-matched entry, leaves an unmatched one alone, and skips entries with no SKU', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, [
+      '085000010652,Josh Cellars Cabernet Sauvignon,55555,',
+    ]));
+    const matched = await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555' });
+    const unmatched = await postJson(port, '/api/beers', { title: 'Founders All Day IPA', sku: '99999' });
+    const noSku = await postJson(port, '/api/beers', { title: 'Michelob ULTRA' });
 
-    await withMockFetch(
-      async () => ({
-        ok: true,
-        status: 200,
-        json: async () => [
-          { title: 'Slack Tide Flounder Pounder', brewery: 'GitHub Version' },
-          { title: 'Michelob ULTRA', brewery: 'Anheuser-Busch' },
-        ],
-      }),
-      async () => {
-        const { status, body } = await postJson(port, '/api/beers/sync-library', {});
-        assert.equal(status, 200);
-        assert.equal(body.added, 1);
-        assert.equal(body.skipped, 1);
-        assert.equal(body.source, 'GitHub');
-        assert.equal(body.beers.length, 2);
-        const flounderPounder = body.beers.find((b) => b.title === 'Slack Tide Flounder Pounder');
-        assert.equal(flounderPounder.brewery, 'Local Edit');
-      },
-    );
+    const { status, body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(status, 200);
+    assert.equal(body.checked, 2);
+    assert.equal(body.noSku, 1);
+    assert.equal(body.matched, 1);
+    assert.equal(body.updated, 1);
+    assert.equal(body.noMatch, 1);
+
+    const beers = body.beers;
+    // The export's own leading zero is preserved as-is - cleanUpcDigits
+    // only strips the float ".0" artifact and non-digits, never pads or
+    // un-pads (see its own comment in upcCatalog.js).
+    assert.equal(beers.find((b) => b.id === matched.body.id).upc, '085000010652');
+    assert.equal(beers.find((b) => b.id === unmatched.body.id).upc, '');
+    assert.equal(beers.find((b) => b.id === noSku.body.id).upc, '');
+  }));
+});
+
+test('POST /api/beers/sync-export leaves an already-matching upc alone (reports it as matched, not updated)', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, [
+      '085000010652,Josh Cellars Cabernet Sauvignon,55555,',
+    ]));
+    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555', upc: '085000010652' });
+
+    const { body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(body.matched, 1);
+    assert.equal(body.updated, 0);
+  }));
+});
+
+test('POST /api/beers/sync-export 404s with NO_EXPORT_PATH when nothing is configured yet', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555' });
+    const { status, body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(status, 404);
+    assert.equal(body.code, 'NO_EXPORT_PATH');
   }));
 });
 

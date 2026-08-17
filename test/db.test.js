@@ -597,6 +597,7 @@ test('a new beer entry defaults every optional field to an empty string, not nul
       untappdRatingCount: '',
       description: '',
       sku: '',
+      upc: '',
       source: 'Manual',
       updatedAt: entry.updatedAt,
     });

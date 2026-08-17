@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const db = require('../server/db');
 const {
-  autoSeedBeerBible, maybeAutoSeedBeerBible, syncNewBeerBibleEntries, GITHUB_SEED_URL, BUNDLED_SEED_PATH,
+  autoSeedBeerBible, maybeAutoSeedBeerBible, GITHUB_SEED_URL, BUNDLED_SEED_PATH,
 } = require('../server/beerBibleSeed');
 
 // Same throwaway-directory pattern as test/bourbonLibrarySeed.test.js.
@@ -96,131 +96,6 @@ test('autoSeedBeerBible also falls back to the bundled file on a non-ok GitHub r
     const result = await autoSeedBeerBible(db);
     assert.equal(result.source, 'the bundled copy');
     assert.ok(result.seeded > 0);
-  },
-)));
-
-// ---------- syncNewBeerBibleEntries (manual "Check GitHub for New Beers"
-// sync, for a library that's already populated) ----------
-
-test('syncNewBeerBibleEntries adds only entries not already present, leaving existing ones untouched', () => withTempDb(() => {
-  db.upsertBeer({ title: 'Slack Tide Flounder Pounder', brewery: 'Local Edit' });
-
-  return withMockFetch(
-    async (url) => {
-      assert.equal(url, GITHUB_SEED_URL);
-      return jsonResponse(SAMPLE_ENTRIES);
-    },
-    async () => {
-      const result = await syncNewBeerBibleEntries(db);
-      assert.equal(result.added, 1);
-      assert.equal(result.skipped, 1);
-      assert.equal(result.source, 'GitHub');
-
-      const titles = db.listBeers().map((b) => b.title).sort();
-      assert.deepEqual(titles, ['Michelob ULTRA', 'Slack Tide Flounder Pounder']);
-
-      // The existing entry must not have been overwritten.
-      const flounderPounder = db.listBeers().find((b) => b.title === 'Slack Tide Flounder Pounder');
-      assert.equal(flounderPounder.brewery, 'Local Edit');
-    },
-  );
-}));
-
-test('syncNewBeerBibleEntries matches titles case-insensitively', () => withTempDb(() => {
-  db.upsertBeer({ title: 'MICHELOB ULTRA', brewery: 'Local Edit' });
-
-  return withMockFetch(
-    async () => jsonResponse(SAMPLE_ENTRIES),
-    async () => {
-      const result = await syncNewBeerBibleEntries(db);
-      assert.equal(result.added, 1);
-      assert.equal(db.listBeers().length, 2);
-    },
-  );
-}));
-
-test('syncNewBeerBibleEntries reports everything as skipped, adds nothing, when the library already has every entry', () => withTempDb(() => {
-  SAMPLE_ENTRIES.forEach((e) => db.upsertBeer(e));
-
-  return withMockFetch(
-    async () => jsonResponse(SAMPLE_ENTRIES),
-    async () => {
-      const result = await syncNewBeerBibleEntries(db);
-      assert.equal(result.added, 0);
-      assert.equal(result.skipped, 2);
-      assert.equal(db.listBeers().length, 2);
-    },
-  );
-}));
-
-// This is the exact real-world case that motivated matching by SKU as well
-// as title: a curated GitHub entry that's the same product as an existing
-// local row, just saved under a different title (e.g. the raw POS export
-// title here vs. the Untappd-enriched title a Shelf Talker/SKU Lookup
-// already saved it under via autoSaveBeerToBible in app.js). Exact-title
-// matching alone can't tell those apart and used to add a second row.
-test('syncNewBeerBibleEntries merges a same-SKU entry under a different title into the existing row, instead of adding a duplicate', () => withTempDb(() => {
-  db.upsertBeer({
-    title: 'Central Waters Bourbon Barrel Tiramisu Stout Can', brewery: 'Central Waters Brewing Company', style: 'Stout - Imperial / Double Coffee', abv: '11.1%', sku: '41299',
-  });
-
-  return withMockFetch(
-    async () => jsonResponse([
-      { title: 'CENTRAL WATERS BOURBON BARREL TIRAMISU STOUT 4PK CAN', sku: '41299' },
-      ...SAMPLE_ENTRIES,
-    ]),
-    async () => {
-      const result = await syncNewBeerBibleEntries(db);
-      assert.equal(result.added, 2); // the two SAMPLE_ENTRIES
-      assert.equal(result.merged, 1);
-      assert.equal(result.skipped, 0);
-
-      // No second row for the same SKU, and the existing row's own title and
-      // already-researched fields are untouched.
-      const matches = db.listBeers().filter((b) => b.sku === '41299');
-      assert.equal(matches.length, 1);
-      assert.equal(matches[0].title, 'Central Waters Bourbon Barrel Tiramisu Stout Can');
-      assert.equal(matches[0].brewery, 'Central Waters Brewing Company');
-    },
-  );
-}));
-
-// The reverse direction: the existing local row is the bare stub (just a
-// title/SKU, e.g. from Import Beer Bible from Export File...) and the
-// curated GitHub entry is the one with real data - merging should fill the
-// existing row in rather than leaving it blank forever or adding a second,
-// enriched row next to it.
-test('syncNewBeerBibleEntries fills in a same-SKU stub entry from the curated data, rather than adding a duplicate', () => withTempDb(() => {
-  db.upsertBeer({ title: 'CENTRAL WATERS BOURBON BARREL TIRAMISU STOUT 4PK CAN', sku: '41299' });
-
-  return withMockFetch(
-    async () => jsonResponse([
-      {
-        title: 'Central Waters Bourbon Barrel Tiramisu Stout Can', brewery: 'Central Waters Brewing Company', abv: '11.1%', sku: '41299',
-      },
-    ]),
-    async () => {
-      const result = await syncNewBeerBibleEntries(db);
-      assert.equal(result.added, 0);
-      assert.equal(result.merged, 1);
-
-      const matches = db.listBeers().filter((b) => b.sku === '41299');
-      assert.equal(matches.length, 1);
-      // Title is left as-is (never renamed by a merge) but the blank fields
-      // are now filled in.
-      assert.equal(matches[0].title, 'CENTRAL WATERS BOURBON BARREL TIRAMISU STOUT 4PK CAN');
-      assert.equal(matches[0].brewery, 'Central Waters Brewing Company');
-      assert.equal(matches[0].abv, '11.1%');
-    },
-  );
-}));
-
-test('syncNewBeerBibleEntries falls back to the bundled file when GitHub is unreachable, same as auto-seed', () => withTempDb(() => withMockFetch(
-  async () => { throw new Error('simulated network failure'); },
-  async () => {
-    const result = await syncNewBeerBibleEntries(db);
-    assert.equal(result.source, 'the bundled copy');
-    assert.ok(result.added > 0);
   },
 )));
 

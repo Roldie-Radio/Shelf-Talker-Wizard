@@ -972,9 +972,9 @@
     beerBibleView: document.getElementById('beerBibleView'),
     beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
     beerBibleExportBtn: document.getElementById('beerBibleExportBtn'),
-    beerBibleGithubSyncRow: document.getElementById('beerBibleGithubSyncRow'),
-    beerBibleGithubSyncStatus: document.getElementById('beerBibleGithubSyncStatus'),
-    beerBibleGithubSyncBtn: document.getElementById('beerBibleGithubSyncBtn'),
+    beerBibleExportSyncRow: document.getElementById('beerBibleExportSyncRow'),
+    beerBibleExportSyncStatus: document.getElementById('beerBibleExportSyncStatus'),
+    beerBibleExportSyncBtn: document.getElementById('beerBibleExportSyncBtn'),
     beerBibleFilterInput: document.getElementById('beerBibleFilterInput'),
     beerBibleStatusChips: document.getElementById('beerBibleStatusChips'),
     beerBibleStats: document.getElementById('beerBibleStats'),
@@ -1312,6 +1312,7 @@
     beerBibleFormLocationInput: document.getElementById('beerBibleFormLocationInput'),
     beerBibleFormStyleInput: document.getElementById('beerBibleFormStyleInput'),
     beerBibleFormSkuInput: document.getElementById('beerBibleFormSkuInput'),
+    beerBibleFormUpcInput: document.getElementById('beerBibleFormUpcInput'),
     beerBibleFormAbvInput: document.getElementById('beerBibleFormAbvInput'),
     beerBibleFormIbuInput: document.getElementById('beerBibleFormIbuInput'),
     beerBibleFormRatingInput: document.getElementById('beerBibleFormRatingInput'),
@@ -8321,12 +8322,12 @@
   function exportBeerBibleCsv() {
     const rows = beerBibleFilteredSortedRows();
     if (!rows.length) return;
-    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'Tasting Notes', 'Source', 'Researched'];
+    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched'];
     const lines = [header.map(csvField).join(',')];
     rows.forEach((b) => {
       lines.push([
         b.title, b.beerName, b.brewery, b.location, b.style, b.abv, b.ibu,
-        b.untappdRating, b.untappdRatingCount, b.sku, b.description,
+        b.untappdRating, b.untappdRatingCount, b.sku, b.upc, b.description,
         BEER_SOURCE_LABELS[b.source] || b.source || '',
         beerIsResearched(b) ? 'Yes' : 'No',
       ].map(csvField).join(','));
@@ -8437,6 +8438,8 @@
             ${entry.location ? `<div><dt>Location</dt><dd>${escapeHtml(entry.location)}</dd></div>` : ''}
             ${entry.style ? `<div><dt>Style</dt><dd>${escapeHtml(entry.style)}</dd></div>` : ''}
             ${entry.sku ? `<div><dt>SKU</dt><dd>${escapeHtml(entry.sku)}</dd></div>` : ''}
+            ${entry.upc ? `<div><dt>UPC</dt><dd>${escapeHtml(entry.upc)}</dd></div>` : ''}
+            ${entry.sku ? `<div><dt>Price</dt><dd id="beerBiblePriceValue" class="help-text" role="status" aria-live="polite">Checking the WinePOS export&hellip;</dd></div>` : ''}
           </dl>
           ${siblings.length ? `
             <dt class="info-card__siblings-label">Other ${escapeHtml(entry.brewery)} entries</dt>
@@ -8465,6 +8468,53 @@
       renderBeerBibleChipsAndStats();
       renderBeerBibleProfile();
     });
+    if (entry.sku) loadBeerBiblePrice(entry);
+  }
+
+  // Formats /api/export-price's own fields into one line - the regular/
+  // sale price the same way loadBourbonLibraryPrice's own formatMoney call
+  // does, plus (beer-only difference) a pack price alongside it when the
+  // export has one, since beer commonly sells by both the single can/bottle
+  // and the pack (see combineBeerSize/packPrice elsewhere in this file for
+  // the same Unit-vs-Pack distinction Scan UPC already makes for beer).
+  function formatBeerPriceLine(data) {
+    const onSale = data.salePrice && Number(data.salePrice) > 0;
+    const mainPrice = onSale ? `${formatMoney(data.salePrice)} (was ${formatMoney(data.price)})` : formatMoney(data.price);
+    if (!mainPrice) return 'No price on file for this SKU.';
+    if (!data.packPrice) return mainPrice;
+    return `${mainPrice} · ${formatMoney(data.packPrice)}${data.packQty ? ` (${data.packQty}-pack)` : ' (pack)'}`;
+  }
+
+  // Fills in the Price row renderBeerBibleProfile leaves as "Checking the
+  // WinePOS export..." - same live lookup (/api/export-price ->
+  // lookupSkuInExport in upcCatalog.js) against the entry's own sku as the
+  // Bourbon Library profile page's own Price row (loadBourbonLibraryPrice
+  // above), not a price stored on the entry itself, for the same reason:
+  // a beer's shelf price drifts, and this is meant to reflect today's,
+  // not whatever it was when the SKU was typed in (contrast with upc,
+  // which Export File Sync does store - a barcode doesn't go stale the way
+  // a price does). Checks beerBibleSelectedId before applying the result,
+  // same guard against a slow response landing after staff already clicked
+  // into a different beer.
+  async function loadBeerBiblePrice(entry) {
+    let data;
+    try {
+      const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
+      data = await res.json();
+      if (!res.ok) throw data;
+    } catch (err) {
+      if (beerBibleSelectedId !== entry.id) return;
+      const el = document.getElementById('beerBiblePriceValue');
+      if (!el) return;
+      el.textContent = err && err.code === 'SKU_NOT_FOUND'
+        ? 'Not found in the current WinePOS export.'
+        : (err && err.error) || 'Could not check the WinePOS export.';
+      return;
+    }
+    if (beerBibleSelectedId !== entry.id) return;
+    const el = document.getElementById('beerBiblePriceValue');
+    if (!el) return;
+    el.textContent = formatBeerPriceLine(data);
   }
 
   // Dispatcher - grid vs profile, same shape as renderLibraryBody/
@@ -8532,6 +8582,7 @@
     els.beerBibleFormLocationInput.value = '';
     els.beerBibleFormStyleInput.value = '';
     els.beerBibleFormSkuInput.value = '';
+    els.beerBibleFormUpcInput.value = '';
     els.beerBibleFormAbvInput.value = '';
     els.beerBibleFormIbuInput.value = '';
     els.beerBibleFormRatingInput.value = '';
@@ -8558,6 +8609,7 @@
     els.beerBibleFormLocationInput.value = entry.location || '';
     els.beerBibleFormStyleInput.value = entry.style || '';
     els.beerBibleFormSkuInput.value = entry.sku || '';
+    els.beerBibleFormUpcInput.value = entry.upc || '';
     els.beerBibleFormAbvInput.value = entry.abv || '';
     els.beerBibleFormIbuInput.value = entry.ibu || '';
     els.beerBibleFormRatingInput.value = entry.untappdRating || '';
@@ -8643,6 +8695,7 @@
         location: els.beerBibleFormLocationInput.value.trim(),
         style: els.beerBibleFormStyleInput.value.trim(),
         sku: els.beerBibleFormSkuInput.value.trim(),
+        upc: els.beerBibleFormUpcInput.value.trim(),
         abv: els.beerBibleFormAbvInput.value.trim(),
         ibu: els.beerBibleFormIbuInput.value.trim(),
         untappdRating: els.beerBibleFormRatingInput.value.trim(),
@@ -8675,49 +8728,53 @@
     }
   });
 
-  // Turns a POST /api/beers/sync-library response into the one-line status
-  // message under the button. `merged` (see syncNewBeerBibleEntries in
-  // beerBibleSeed.js) means a curated entry matched an existing row by SKU
-  // under a different title and was folded into it instead of adding a
-  // second row for the same product - called out separately from `added` so
-  // "nothing new" doesn't read the same as "found some duplicates and
-  // cleaned them up".
-  function describeBeerBibleSyncResult(data) {
-    const parts = [];
-    if (data.added) parts.push(`added ${data.added} new beer${data.added === 1 ? '' : 's'}`);
-    if (data.merged) parts.push(`merged ${data.merged} duplicate${data.merged === 1 ? '' : 's'} into existing entries`);
-    if (!parts.length) {
-      return `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+  // Turns a POST /api/beers/sync-export response into the one-line status
+  // message under the button (see server/beerBibleExportSync.js for what
+  // each of these counts means). noSku is called out separately from
+  // noMatch so "nothing to sync" (no SKUs on file yet) doesn't read the
+  // same as "checked, but none of those SKUs are in the export".
+  function describeBeerBibleExportSyncResult(data) {
+    if (data.checked === 0) {
+      return data.noSku
+        ? `None of the ${data.noSku} beer${data.noSku === 1 ? '' : 's'} here has a SKU on file yet to check against.`
+        : 'No beers here yet to check against the export.';
     }
-    const sentence = `${parts.join(', and ')} from ${data.source}.`;
-    return sentence[0].toUpperCase() + sentence.slice(1);
+    if (data.updated) {
+      return `Updated the UPC on ${data.updated} beer${data.updated === 1 ? '' : 's'} from the export `
+        + `(checked ${data.checked}, ${data.matched} matched a SKU in the file, ${data.noMatch} didn't).`;
+    }
+    return `Already up to date - checked ${data.checked} beer${data.checked === 1 ? '' : 's'} with a SKU on file, `
+      + `${data.matched} matched a SKU in the export, ${data.noMatch} didn't.`;
   }
 
-  // Backs the Beer Bible page's "Check GitHub for New Beers" button - pulls
-  // in whatever's been added to the curated GitHub list since this PC's
-  // Beer Bible was last synced. Additive-or-merge only server-side (see
-  // syncNewBeerBibleEntries in beerBibleSeed.js), so this never overwrites
-  // an existing entry's own fields, however it got there. Unlike the Bourbon
-  // Library's own #libraryGithubSyncBtn, this isn't gated behind Server PC -
-  // see the #beerBibleGithubSyncRow comment in index.html for why.
-  els.beerBibleGithubSyncBtn.addEventListener('click', async () => {
-    els.beerBibleGithubSyncBtn.disabled = true;
-    els.beerBibleGithubSyncStatus.textContent = 'Checking GitHub...';
+  // Backs the Beer Bible page's "Export File Sync" button - fills in upc on
+  // any already-saved entry whose sku matches a row in the same local
+  // WinePOS export Scan UPC/SKU Lookup already read (see
+  // server/beerBibleExportSync.js). Never adds new entries (see that
+  // module's own comment for why) or touches any other field - Price is a
+  // live per-view lookup instead (see loadBeerBiblePrice above), not
+  // something this button syncs. Not gated behind Server PC, same
+  // reasoning as the old GitHub sync button this replaces - see the
+  // #beerBibleExportSyncRow comment in index.html.
+  els.beerBibleExportSyncBtn.addEventListener('click', async () => {
+    els.beerBibleExportSyncBtn.disabled = true;
+    els.beerBibleExportSyncStatus.textContent = 'Checking the WinePOS export...';
     try {
-      const resp = await fetch('/api/beers/sync-library', { method: 'POST' });
+      const resp = await fetch('/api/beers/sync-export', { method: 'POST' });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      if (!resp.ok) throw new Error(data.error || 'Could not check the WinePOS export right now.');
       beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
       renderBeerBibleChipsAndStats();
-      // Additive-or-merge only (see the comment above) - a beer open on the
-      // profile page is never touched by this, so renderBeerBibleBody keeps
-      // whichever view was already showing rather than forcing back to grid.
+      // Enrich-only, never adds/removes a row (see the comment above) - a
+      // beer open on the profile page is never navigated away from by
+      // this, so renderBeerBibleBody keeps whichever view was already
+      // showing rather than forcing back to grid.
       renderBeerBibleBody();
-      els.beerBibleGithubSyncStatus.textContent = describeBeerBibleSyncResult(data);
+      els.beerBibleExportSyncStatus.textContent = describeBeerBibleExportSyncResult(data);
     } catch (err) {
-      els.beerBibleGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+      els.beerBibleExportSyncStatus.textContent = err.message || 'Could not check the WinePOS export right now.';
     } finally {
-      els.beerBibleGithubSyncBtn.disabled = false;
+      els.beerBibleExportSyncBtn.disabled = false;
     }
   });
 
@@ -8960,8 +9017,9 @@
   // PC's Rum Repository was last synced. Additive only server-side (see
   // syncNewRumRepositoryEntries in rumRepositorySeed.js), so this never
   // overwrites an existing entry, however it got there. Not gated behind
-  // Server PC, same reasoning as #beerBibleGithubSyncRow's own handler
-  // above.
+  // Server PC, same reasoning as the Bourbon Library's own
+  // #libraryGithubSyncBtn - there's no PC-to-PC role to be "the" copy of
+  // yet for the Rum Repository either.
   els.rumRepositoryGithubSyncBtn.addEventListener('click', async () => {
     els.rumRepositoryGithubSyncBtn.disabled = true;
     els.rumRepositoryGithubSyncStatus.textContent = 'Checking GitHub...';
