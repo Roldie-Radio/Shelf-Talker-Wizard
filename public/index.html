@@ -96,14 +96,6 @@
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="wine-pairing-rules" id="winePairingRulesMenuItem">
           <span>Wine Pairing Rules&hellip;</span>
         </button>
-        <!-- Product Type: Bourbon only - hidden outright rather than
-             shown-disabled unless the current talker's Product Type is
-             Bourbon, same as Store Pick/Mash Bill/Nose-Palate-Finish on Edit
-             Talker itself (see applyFormMode in app.js, which toggles
-             .hidden on every [data-requires-bourbon] element). -->
-        <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="mash-bill-library" data-requires-bourbon hidden>
-          <span>Mash Bill Library&hellip;</span>
-        </button>
         <button type="button" class="menubar__dropdown-item" role="menuitem" tabindex="-1" data-action="settings">
           <span>Settings&hellip;</span>
         </button>
@@ -933,13 +925,13 @@
 
   </main>
 
-  <!-- Bourbon Library - a read-focused screen over the Mash Bill Library's
-       own data (see server/db.js's mash_bills table). Rendered entirely by
-       renderLibraryView/renderBourbonProfile in app.js; editing an entry
-       still goes through the existing #mashBillLibraryOverlay dialog below,
-       reached from a profile page's own "Edit in Library" button - this
-       view is a browsing surface on top of that data, not a second editing
-       UI for it. Hidden by default; the rail toggles it with .layout. -->
+  <!-- Bourbon Library - a browse/profile screen over the shared mash_bills
+       data (see server/db.js) that also owns adding, editing, and deleting
+       entries directly - #mashBillLibraryOverlay below is just that add/
+       edit form's modal now (see the comment above it), reached from the
+       Add Bourbon button here and from a profile page's own Edit button.
+       Rendered entirely by renderLibraryView/renderBourbonProfile in
+       app.js. Hidden by default; the rail toggles it with .layout. -->
   <section class="library-view no-print" id="libraryView" hidden>
     <div class="library-band">
       <div class="library-band__top">
@@ -955,6 +947,7 @@
             <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
           </div>
         </div>
+        <button type="button" class="btn btn--small btn--primary" id="libraryAddBtn">Add Bourbon</button>
       </div>
       <div class="library-sync">
         <div class="library-sync__status">
@@ -963,6 +956,19 @@
         </div>
         <button type="button" class="btn btn--small" id="librarySyncNowBtn">Sync Now</button>
       </div>
+      <!-- Server PC only (see updateLibrarySyncUI in app.js, which hides
+           this row on any other PC) - pulls new entries added to the
+           curated GitHub list since this library was first seeded.
+           Additive only: never touches a title that already exists
+           locally, so it can't overwrite a correction or a from-scratch
+           entry staff typed in themselves. -->
+      <div class="library-sync" id="libraryGithubSyncRow" hidden>
+        <div class="library-sync__status">
+          <span>This PC is the Server PC - it can check for bourbons added to the curated list since this library was last synced.</span>
+        </div>
+        <button type="button" class="btn btn--small" id="libraryGithubSyncBtn">Check GitHub for New Bourbons</button>
+      </div>
+      <p class="help-text" id="libraryGithubSyncStatus" role="status" aria-live="polite"></p>
       <div class="library-search">
         <input type="search" id="libraryFilterInput" aria-label="Search the Bourbon Library" placeholder="Search by name, distillery, parent company, or SKU&hellip;" />
       </div>
@@ -1357,37 +1363,30 @@
     </div>
   </div>
 
-  <!-- Tools > Mash Bill Library… (Product Type: Bourbon only - see the
-       hidden [data-requires-bourbon] menu item above). A shared,
-       Server-PC-hosted table of researched grain compositions (see
-       server/db.js's mash_bills table and server/mashBillSync.js), so a
-       mash bill looked up once for a product can be recalled instead of
-       re-researched on the next talker for that same bottle. Search/add/
-       edit/delete here; recalling a saved entry onto a talker happens from
-       Edit Talker's own Mash Bill field (see #mashBillRecallBanner above),
-       not from this dialog. -->
+  <!-- The Bourbon Library's add/edit form, in a modal of its own - reached
+       from the Add Bourbon button on the library page (see #libraryView
+       above) for a new entry, or a profile page's own Edit button for an
+       existing one (see renderBourbonProfile in app.js, which calls
+       loadMashBillLibraryEntryIntoForm before opening this). One shared,
+       Server-PC-hosted table backs both (see server/db.js's mash_bills
+       table and server/mashBillSync.js), so a mash bill researched once for
+       a product can be recalled instead of re-researched on the next
+       talker for that same bottle - that recall happens from Edit Talker's
+       own Mash Bill field (see #mashBillRecallBanner above), not from this
+       form. -->
   <div id="mashBillLibraryOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="mashBillLibraryTitle">
       <div class="modal__header">
-        <h2 id="mashBillLibraryTitle">Mash Bill Library</h2>
+        <h2 id="mashBillLibraryTitle">Bourbon Details</h2>
         <button type="button" class="btn btn--ghost btn--small" id="mashBillLibraryCloseBtn">&times; Close</button>
       </div>
       <div class="history-body">
-        <label class="field">
-          <span>Search by title, distillery, or SKU</span>
-          <input type="search" id="mashBillLibrarySearchInput" placeholder="Four Roses, Buffalo Trace, 15614..." />
-        </label>
-        <p class="help-text" id="mashBillLibraryStatus" role="status" aria-live="polite"></p>
-        <div class="history-list" id="mashBillLibraryList"></div>
-
-        <hr class="settings-section-divider" />
-
-        <!-- Doubles as both "Add an entry manually" and "Edit" - clicking
-             Edit on a row (see renderMashBillLibraryList in app.js) fills
-             this same form and switches Add Entry to Save Changes, with
-             Cancel reverting to a blank Add form. Grain builder here is the
-             same three-control pattern as Edit Talker's own Mash Bill
-             field, just against its own local chip list. -->
+        <!-- Doubles as both "Add an entry manually" and "Edit" - opening
+             this for an existing entry (see loadMashBillLibraryEntryIntoForm
+             in app.js) fills this same form and switches Add Entry to Save
+             Changes, adding a Delete button next to Cancel. Grain builder
+             here is the same three-control pattern as Edit Talker's own
+             Mash Bill field, just against its own local chip list. -->
         <div class="settings-section">
           <h3 class="settings-section-title" id="mashBillLibraryFormTitle">Add an entry manually</h3>
           <div class="field-row">
@@ -1490,28 +1489,9 @@
           <div class="reviewer-manager__add">
             <button type="button" class="btn btn--small btn--primary" id="mashBillLibraryFormSaveBtn">Add Entry</button>
             <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormCancelBtn" hidden>Cancel</button>
+            <button type="button" class="btn btn--small btn--ghost" id="mashBillLibraryFormDeleteBtn" hidden>Delete</button>
           </div>
           <p class="help-text" id="mashBillLibraryFormStatus" role="status" aria-live="polite"></p>
-        </div>
-
-        <hr class="settings-section-divider" />
-        <p class="help-text" id="mashBillLibrarySyncStatus" role="status" aria-live="polite"></p>
-        <div class="reviewer-manager__add">
-          <button type="button" class="btn btn--small" id="mashBillLibrarySyncNowBtn">Sync Now</button>
-        </div>
-
-        <!-- Server PC only (see loadMashBillLibrary in app.js, which hides
-             this row on any other PC) - pulls new entries added to the
-             curated GitHub list since this library was first seeded.
-             Additive only: never touches a title that already exists
-             locally, so it can't overwrite a correction or a from-scratch
-             entry staff typed in themselves. -->
-        <div id="mashBillLibraryGithubSyncRow" hidden>
-          <p class="help-text">This PC is the Server PC - it can check for bourbons added to the curated list since this library was last synced.</p>
-          <p class="help-text" id="mashBillLibraryGithubSyncStatus" role="status" aria-live="polite"></p>
-          <div class="reviewer-manager__add">
-            <button type="button" class="btn btn--small" id="mashBillLibraryGithubSyncBtn">Check GitHub for New Bourbons</button>
-          </div>
         </div>
       </div>
       <div class="modal__footer">
