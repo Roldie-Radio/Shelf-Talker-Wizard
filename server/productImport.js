@@ -1495,6 +1495,35 @@ async function enrichWineDescriptionFromStore(product) {
 }
 
 // ================================================================
+// Search by Name sale-price enrichment - unlike Scan UPC/SKU Lookup, the
+// "Search by Name" tab used to never touch liquoroutletwinecellars.com on
+// its own (see the /api/name-search-select route comment in index.js) - it
+// only read the local WinePOS export (searchByName in upcCatalog.js), which
+// many stores' exports don't carry a sale/promo price column for at all
+// (see FIELD_ALIASES.salePrice), even when the store's own site is showing
+// a sale price for that item. This closes that gap the same best-effort way
+// enrichWineDescriptionFromStore does: look the export's own SKU up on the
+// store site and take its sale price, leaving everything else
+// (title/size/regular price) exactly as the export had it, since that data
+// is already trusted and doesn't need a second source - only salePrice is
+// ever fresher on the store site than in the export. A row with no SKU, a
+// SKU the store site doesn't recognize, or a blocked/failed request just
+// leaves salePrice as the export had it (usually blank) rather than failing
+// a pick that already succeeded once, against the local file -
+// `salePriceSourceError` carries why, same shape as the other
+// `...SourceError` fields above.
+async function enrichSalePriceFromStore(product) {
+  const sku = (product.sku || '').trim();
+  if (!sku) return product;
+  try {
+    const storeProduct = await lookupStoreSku(sku);
+    return { ...product, salePrice: storeProduct.salePrice || '' };
+  } catch (err) {
+    return { ...product, salePriceSourceError: err.message || 'Could not check liquoroutletwinecellars.com for a sale price.' };
+  }
+}
+
+// ================================================================
 // Untappd search-by-name - the SKU lookup's beer-specific second step. The
 // store site above has no idea what Untappd calls a beer, so this takes
 // whatever title the SKU lookup just filled in and searches Untappd for
@@ -2135,6 +2164,7 @@ module.exports = {
   lookupStoreSku,
   parsePastedStoreProduct,
   enrichWineDescriptionFromStore,
+  enrichSalePriceFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
   matchUntappdCandidates,

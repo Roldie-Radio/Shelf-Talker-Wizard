@@ -5262,14 +5262,19 @@
   }
 
   // Picking a result fills the form immediately from the export's own
-  // columns (title/size/price/etc - no network needed for those), then, for
-  // beer only, kicks off a best-effort Untappd search in the background (see
-  // /api/name-search-select in server/index.js) for the brewery/location/
-  // style/ABV/IBU/rating the export file doesn't carry - the same
-  // enrichment step SKU Lookup and Scan UPC already run for beer, just
-  // reached from a picked export row instead of a typed SKU or scanned UPC.
-  // Wine/Spirits has nothing further to fetch (see applyNameSearchProduct's
-  // note), so it's done the moment the export data lands.
+  // columns (title/size/price/etc - no network needed for those), then
+  // always kicks off a best-effort background call to
+  // /api/name-search-select, which runs enrichSalePriceFromStore
+  // (productImport.js) against the export's own SKU to pick up a sale price
+  // from liquoroutletwinecellars.com - the local export commonly has no
+  // sale/promo price column of its own (see FIELD_ALIASES.salePrice in
+  // upcCatalog.js), even when the store's site is actually showing one, and
+  // Search by Name used to never touch the store site at all, unlike SKU
+  // Lookup/Scan UPC. For beer, that same call also runs a best-effort
+  // Untappd search for the brewery/location/style/ABV/IBU/rating the export
+  // file doesn't carry - the same enrichment step SKU Lookup and Scan UPC
+  // already run for beer, just reached from a picked export row instead of
+  // a typed SKU or scanned UPC.
   async function selectNameSearchProduct(product) {
     const myToken = ++nameSearchSelectToken;
     nameSearchSelectedProduct = product;
@@ -5284,26 +5289,30 @@
     applyNameSearchProduct(product, isBeer, nameSearchPriceMode);
     renderNameSearchSelected();
 
-    if (!isBeer) {
-      els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
-      return;
-    }
-
     els.nameSearchSpinner.hidden = false;
     els.nameSearchSaveBtn.disabled = true;
-    els.nameSearchStatus.textContent = 'Found it! Searching Untappd...';
+    els.nameSearchStatus.textContent = isBeer ? 'Found it! Searching Untappd...' : 'Found it! Checking for a sale price...';
     try {
       const resp = await fetch('/api/name-search-select', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product, category: 'beer' }),
+        body: JSON.stringify({ product, category: isBeer ? 'beer' : 'wine' }),
       });
       const data = await resp.json();
       // Superseded by a newer pick while this was in flight - leave
       // whatever that pick already put on the form/status line alone.
       if (myToken !== nameSearchSelectToken) return;
-      if (!resp.ok) throw new Error(data.error || 'Could not search Untappd for that beer.');
+      if (!resp.ok) {
+        throw new Error(data.error || (isBeer ? 'Could not search Untappd for that beer.' : 'Could not check for a sale price.'));
+      }
       nameSearchSelectedProduct = data;
+
+      if (!isBeer) {
+        applyNameSearchProduct(data, false, nameSearchPriceMode);
+        renderNameSearchSelected();
+        els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+        return;
+      }
 
       // Same disambiguation step Scan UPC/SKU Lookup take above - see
       // openUntappdPicker's own comment for why this can't just auto-pick
@@ -5329,7 +5338,7 @@
 
       // A single, confident Untappd match still needs a staff sign-off -
       // see confirmBeerUntappdMatch's own comment. `isBeer` is already
-      // guaranteed true past the `if (!isBeer)` early return above.
+      // guaranteed true past the wine/spirits early return above.
       if (!data.untappdError) {
         const confirmed = await confirmBeerUntappdMatch(data, (d) => {
           applyNameSearchProduct(d, true, nameSearchPriceMode);
@@ -5347,7 +5356,9 @@
       els.nameSearchStatus.textContent = `Found it! Untappd: ${data.untappdError}`;
     } catch (err) {
       if (myToken !== nameSearchSelectToken) return;
-      els.nameSearchStatus.textContent = `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`;
+      els.nameSearchStatus.textContent = isBeer
+        ? `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`
+        : `Found it! ${err.message || 'Something went wrong checking for a sale price.'}`;
     } finally {
       if (myToken === nameSearchSelectToken) {
         els.nameSearchSpinner.hidden = true;
