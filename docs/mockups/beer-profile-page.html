@@ -1,0 +1,458 @@
+<title>Beer Profile Page — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted from Shelf Talker Wizard's own public/css/styles.css,
+   the same base set docs/mockups/bourbon-profile-page.html already uses,
+   so this sits in the same visual system as that proposal rather than
+   inventing a second one. No new tokens needed here (unlike the bourbon
+   mockup's --ui-low/--ui-low-tint) - see the design notes at the bottom
+   for why Beer doesn't need a confidence-tier system the way Bourbon does.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); position: relative; }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+
+.appbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.5rem; background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); flex-wrap: wrap; row-gap: 0.6rem; }
+.appbar h1 { font-size: 1.1rem; }
+.appbar p { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--ui-muted); }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--ui-accent-ink); }
+.btn--small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn:focus-visible, input:focus-visible, summary:focus-visible, .lib2-row:focus-visible { outline: 2px solid var(--ui-accent-ink); outline-offset: 2px; }
+
+.layout { display: grid; grid-template-columns: 300px 1fr; gap: 0; align-items: stretch; min-height: 560px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+/* ---------- left: library list ---------- */
+.lib-pane { border-right: 1px solid var(--ui-border); background: var(--ui-panel-alt); padding: 1rem; display: flex; flex-direction: column; min-width: 0; }
+.lib-pane input { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--ui-field); color: var(--ui-ink); width: 100%; margin-bottom: 0.75rem; }
+.lib2-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+.lib2-row { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 0.55rem 0.65rem; cursor: pointer; font-family: inherit; color: var(--ui-ink); display: flex; flex-direction: column; gap: 0.2rem; }
+.lib2-row:hover { background: var(--ui-hover); }
+.lib2-row.is-selected { background: var(--ui-panel); border-color: var(--ui-border); box-shadow: 0 1px 0 var(--ui-shadow); }
+.lib2-row__title { font-weight: 700; font-size: 0.86rem; }
+.lib2-row__sub { font-size: 0.74rem; color: var(--ui-muted); }
+.lib2-row__meta { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.15rem; font-size: 0.74rem; color: var(--ui-muted); }
+
+/* ---------- rating stars (shared, list + profile) ---------- */
+.stars { display: inline-flex; gap: 1px; font-size: 0.82rem; line-height: 1; letter-spacing: 1px; }
+.stars--sm { font-size: 0.7rem; }
+.stars__fill { color: var(--ui-accent-ink); }
+.stars__empty { color: var(--ui-border); }
+.rating-num { font-weight: 700; font-size: 0.78rem; color: var(--ui-ink-soft); }
+.src-badge { display: inline-flex; align-items: center; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.12rem 0.45rem; border-radius: 999px; background: var(--ui-code-bg); color: var(--ui-muted); }
+.src-badge--export { background: var(--ui-good-tint); color: var(--ui-good); }
+
+/* ---------- right: profile page ---------- */
+.profile-pane { padding: 1.4rem 1.6rem 1.8rem; min-width: 0; overflow-y: auto; }
+.profile-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1.2rem; }
+.profile-head h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+.profile-head__by { margin: 0.25rem 0 0; font-size: 0.88rem; color: var(--ui-ink-soft); }
+.profile-head__by strong { color: var(--ui-ink); }
+.profile-tags { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; align-items: center; }
+.tag { font-size: 0.72rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.18rem 0.55rem; border-radius: 999px; }
+.profile-head__actions { display: flex; gap: 0.5rem; }
+
+.profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.1rem; align-items: start; }
+@media (max-width: 760px) { .profile-grid { grid-template-columns: 1fr; } }
+
+.block { border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1rem 1.1rem; background: var(--ui-panel); margin-bottom: 1.1rem; }
+.block h3 { font-size: 0.92rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.block h3 .btn { margin-left: auto; }
+
+/* stat strip - ABV / IBU / Untappd rating, the three numbers Beer already
+   pulls from an Untappd export, given the same visual weight the bourbon
+   mockup gives its grain bar */
+.stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+@media (max-width: 560px) { .stat-strip { grid-template-columns: 1fr; } }
+.stat-tile { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.65rem 0.8rem; }
+.stat-tile__label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.25rem; }
+.stat-tile__value { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-tile__value--empty { color: var(--ui-muted); font-weight: 600; font-size: 0.85rem; }
+.stat-tile__sub { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.1rem; }
+
+.desc-block p { margin: 0; font-size: 0.9rem; color: var(--ui-ink); line-height: 1.6; }
+.desc-block p.empty { color: var(--ui-muted); font-style: italic; }
+.desc-source { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px dashed var(--ui-border); display: flex; align-items: center; gap: 0.4rem; }
+
+.info-card dl { margin: 0; display: flex; flex-direction: column; gap: 0.65rem; }
+.info-card dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); margin-bottom: 0.1rem; }
+.info-card dd { margin: 0; font-size: 0.88rem; font-weight: 600; }
+.info-card dd.is-muted { font-weight: 500; color: var(--ui-muted); font-style: italic; }
+.sibling-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+.sibling-btn { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.8rem; font-family: inherit; color: var(--ui-ink); cursor: pointer; }
+.sibling-btn:hover { background: var(--ui-hover); }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.05rem 1.1rem; }
+.panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed feature &middot; not part of the running app</p>
+    <h1>Beer Profile Pages</h1>
+    <p>
+      Today the <strong>Beer Bible</strong> is a card grid &mdash; click a beer and it opens straight into the
+      edit form, the same as clicking Add Beer. There's no read-focused view of an entry, the way the
+      <a href="bourbon-profile-page.html">Bourbon Library's profile page</a> proposal gives Bourbon. This mockup is
+      that same idea for Beer: brewery, style, ABV/IBU, Untappd rating, and tasting notes laid out as a page, with
+      the edit form still one click away rather than the only way in.
+    </p>
+    <p>
+      Unlike the Bourbon mockup, this one needs <strong>no new database columns</strong> &mdash; every field shown
+      here (<code>brewery</code>, <code>location</code>, <code>style</code>, <code>abv</code>, <code>ibu</code>,
+      <code>untappd_rating</code>, <code>untappd_rating_count</code>, <code>description</code>, <code>sku</code>,
+      <code>source</code>) already exists on the <code>beers</code> table. It's also why there's no Mash Bill
+      Confidence equivalent here: Beer's numbers come from a store's own Untappd export or from what a staffer
+      typed in by hand, not from conflicting industry sources, so there's nothing to arbitrate.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Beer Bible</div>
+    </div>
+    <div class="appbar">
+      <div>
+        <h1>Beer Bible</h1>
+        <p>6 of 6 entries shown &middot; 3 breweries</p>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="lib-pane">
+        <input id="libSearch" placeholder="Search title, brewery, or style&hellip;">
+        <div class="lib2-list" id="libList"></div>
+      </div>
+      <div class="profile-pane" id="profilePane"></div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>Profile page = a view, not a new editing surface</h3>
+        <p>Same principle as the Bourbon mockup: every field here still lives in the existing <code>beers</code> row
+        and is still edited through the same Beer Bible add/edit form (<code>server/db.js</code>'s
+        <code>upsertBeer</code>/<code>updateBeerById</code>). This page is a read-focused layout on top of that
+        data &mdash; "Edit in Library" opens the existing modal pre-filled, it doesn't duplicate its fields.</p>
+        <p>The "Other &hellip; in the Library" list on the right mirrors the Bourbon profile page's sibling list,
+        grouped by <code>brewery</code> instead of <code>distillery</code>.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Untappd rating in place of a confidence tier</h3>
+        <p>Bourbon's profile page needed a confidence system because mash bill data is often disputed or simply
+        undisclosed. Beer's <code>untappd_rating</code>/<code>untappd_rating_count</code> columns already carry
+        their own signal of how well-established a number is &mdash; a 5-star rating from 600K+ check-ins reads very
+        differently from one with no rating on file at all, which the star meter and count below make visible
+        without inventing a parallel scoring system.</p>
+      </div>
+    </div>
+
+    <div class="notes-card">
+      <h3>Sample data in this mockup</h3>
+      <p>All six entries are real, well-known beers with public ABV/IBU/Untappd figures, picked so two breweries
+      (Bell's, Founders) show up twice each &mdash; enough to exercise the "Other from this brewery" sibling list
+      &mdash; and one entry (Guinness Draught) is shown with no <code>description</code> on file, to show what an
+      unresearched entry looks like next to a fully filled-out one.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const beers = [
+  {
+    id: 1,
+    title: "Bell's Two Hearted Ale",
+    brewery: "Bell's Brewery",
+    location: 'Comstock, MI',
+    style: 'American IPA',
+    abv: '7.0%',
+    ibu: '55',
+    untappdRating: 4.32,
+    untappdRatingCount: '640,000+',
+    description: 'A hop-forward IPA built entirely around Centennial hops — bold grapefruit and pine aroma up front, a firm bitterness through the middle, and a clean, dry finish that keeps it drinkable rather than syrupy.',
+    sku: '18823',
+    source: 'Export',
+  },
+  {
+    id: 2,
+    title: "Bell's Oberon Ale",
+    brewery: "Bell's Brewery",
+    location: 'Comstock, MI',
+    style: 'American Wheat Ale',
+    abv: '5.8%',
+    ibu: '',
+    untappdRating: 3.79,
+    untappdRatingCount: '410,000+',
+    description: "Bell's seasonal wheat ale — a spicy, fruity hop character over a soft wheat body. Cloudy gold, lightly sweet, built for warm-weather drinking.",
+    sku: '21044',
+    source: 'Export',
+  },
+  {
+    id: 3,
+    title: 'Sierra Nevada Pale Ale',
+    brewery: 'Sierra Nevada Brewing Co.',
+    location: 'Chico, CA',
+    style: 'American Pale Ale',
+    abv: '5.6%',
+    ibu: '38',
+    untappdRating: 3.9,
+    untappdRatingCount: '590,000+',
+    description: 'The beer that helped define the American Pale Ale style. Whole-cone Cascade hops give it a distinct floral, citrusy character balanced against a caramel malt backbone.',
+    sku: '30217',
+    source: 'Export',
+  },
+  {
+    id: 4,
+    title: 'Allagash White',
+    brewery: 'Allagash Brewing Co.',
+    location: 'Portland, ME',
+    style: 'Belgian-Style Witbier',
+    abv: '5.2%',
+    ibu: '',
+    untappdRating: 3.93,
+    untappdRatingCount: '470,000+',
+    description: 'Unfiltered Belgian-style wheat ale spiced with coriander and Curaçao orange peel. Hazy straw color, soft body, a peppery yeast character on the finish.',
+    sku: '15590',
+    source: 'Manual',
+  },
+  {
+    id: 5,
+    title: 'Founders KBS',
+    brewery: 'Founders Brewing Co.',
+    location: 'Grand Rapids, MI',
+    style: 'Imperial Stout (Bourbon Barrel-Aged)',
+    abv: '12.0%',
+    ibu: '45',
+    untappdRating: 4.46,
+    untappdRatingCount: '480,000+',
+    description: 'Kentucky Breakfast Stout — a rich imperial stout brewed with coffee and chocolate, then aged in bourbon barrels for a year. Notes of vanilla, oak, and bittersweet chocolate dominate over real barrel heat.',
+    sku: '27781',
+    source: 'Export',
+  },
+  {
+    id: 6,
+    title: 'Founders All Day IPA',
+    brewery: 'Founders Brewing Co.',
+    location: 'Grand Rapids, MI',
+    style: 'Session IPA',
+    abv: '4.7%',
+    ibu: '42',
+    untappdRating: 3.72,
+    untappdRatingCount: '390,000+',
+    description: '',
+    sku: '29904',
+    source: 'Export',
+  },
+  {
+    id: 7,
+    title: 'Guinness Draught',
+    brewery: 'Guinness (St. James’s Gate)',
+    location: 'Dublin, Ireland',
+    style: 'Irish Dry Stout',
+    abv: '4.2%',
+    ibu: '',
+    untappdRating: 3.79,
+    untappdRatingCount: '750,000+',
+    description: '',
+    sku: '11402',
+    source: 'Manual',
+  },
+];
+
+let selectedId = 1;
+
+function starsHtml(rating, small) {
+  if (!rating) return `<span class="stars ${small ? 'stars--sm' : ''}"><span class="stars__empty">★★★★★</span></span>`;
+  const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
+  return `
+    <span class="stars ${small ? 'stars--sm' : ''}" style="position:relative; display:inline-block;">
+      <span class="stars__empty">★★★★★</span>
+      <span class="stars__fill" style="position:absolute; inset:0; overflow:hidden; width:${pct}%; white-space:nowrap;">★★★★★</span>
+    </span>
+  `;
+}
+
+function srcBadgeHtml(source) {
+  return `<span class="src-badge ${source === 'Export' ? 'src-badge--export' : ''}">${source === 'Export' ? 'Untappd export' : 'Manual entry'}</span>`;
+}
+
+function renderList(filter) {
+  const q = (filter || '').trim().toLowerCase();
+  const rows = beers.filter((b) => !q
+    || b.title.toLowerCase().includes(q)
+    || b.brewery.toLowerCase().includes(q)
+    || b.style.toLowerCase().includes(q));
+  document.getElementById('libList').innerHTML = rows.map((b) => `
+    <button type="button" class="lib2-row ${b.id === selectedId ? 'is-selected' : ''}" data-id="${b.id}">
+      <span class="lib2-row__title">${b.title}</span>
+      <span class="lib2-row__sub">${b.brewery}</span>
+      <span class="lib2-row__meta">${starsHtml(b.untappdRating, true)} ${b.untappdRating ? `<span class="rating-num">${b.untappdRating.toFixed(2)}</span>` : '<span>No rating</span>'}</span>
+    </button>
+  `).join('') || '<p class="lib2-row__sub">No entries match.</p>';
+  document.querySelectorAll('.lib2-row[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderAll(); });
+  });
+}
+
+function renderProfile() {
+  const b = beers.find((x) => x.id === selectedId);
+  const pane = document.getElementById('profilePane');
+  const siblings = beers.filter((x) => x.id !== b.id && x.brewery === b.brewery);
+
+  pane.innerHTML = `
+    <div class="profile-head">
+      <div>
+        <h2>${b.title}</h2>
+        <p class="profile-head__by">${b.brewery}${b.location ? ` &middot; <strong>${b.location}</strong>` : ''}</p>
+        <div class="profile-tags">
+          <span class="tag">${b.style}</span>
+          ${srcBadgeHtml(b.source)}
+        </div>
+      </div>
+      <div class="profile-head__actions">
+        <button type="button" class="btn btn--small">Edit in Library</button>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <div>
+        <div class="block">
+          <h3>At a Glance</h3>
+          <div class="stat-strip">
+            <div class="stat-tile">
+              <div class="stat-tile__label">ABV</div>
+              ${b.abv ? `<div class="stat-tile__value">${b.abv}</div>` : '<div class="stat-tile__value stat-tile__value--empty">Not on file</div>'}
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile__label">IBU</div>
+              ${b.ibu ? `<div class="stat-tile__value">${b.ibu}</div>` : '<div class="stat-tile__value stat-tile__value--empty">Not on file</div>'}
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile__label">Untappd Rating</div>
+              ${b.untappdRating ? `<div class="stat-tile__value">${b.untappdRating.toFixed(2)} <span style="font-size:0.6em; font-weight:600; color:var(--ui-muted);">/ 5</span></div><div class="stat-tile__sub">${starsHtml(b.untappdRating)} ${b.untappdRatingCount} ratings</div>` : '<div class="stat-tile__value stat-tile__value--empty">Not on file</div>'}
+            </div>
+          </div>
+        </div>
+
+        <div class="block desc-block">
+          <h3>Tasting Notes</h3>
+          ${b.description ? `<p>${b.description}</p>` : '<p class="empty">No description on file yet &mdash; add one from the edit form.</p>'}
+          <div class="desc-source">${srcBadgeHtml(b.source)} <span>${b.source === 'Export' ? 'Pulled in from the Untappd export' : 'Typed in by staff'}</span></div>
+        </div>
+      </div>
+
+      <div class="block info-card">
+        <h3>Beer &amp; Brewery</h3>
+        <dl>
+          <div><dt>Brewery</dt><dd>${b.brewery}</dd></div>
+          <div><dt>Location</dt><dd class="${b.location ? '' : 'is-muted'}">${b.location || 'Not on file'}</dd></div>
+          <div><dt>Style</dt><dd>${b.style}</dd></div>
+          <div><dt>SKU</dt><dd class="${b.sku ? '' : 'is-muted'}">${b.sku || 'Not on file'}</dd></div>
+        </dl>
+        ${siblings.length ? `
+          <dt style="margin-top:0.9rem;">Other ${b.brewery} entries in the Library</dt>
+          <div class="sibling-list">
+            ${siblings.map((s) => `<button type="button" class="sibling-btn" data-id="${s.id}"><span>${s.title}</span>${starsHtml(s.untappdRating, true)}</button>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  pane.querySelectorAll('.sibling-btn[data-id]').forEach((btn) => {
+    btn.addEventListener('click', () => { selectedId = Number(btn.dataset.id); renderAll(); });
+  });
+}
+
+function renderAll() {
+  renderList(document.getElementById('libSearch').value);
+  renderProfile();
+}
+
+document.getElementById('libSearch').addEventListener('input', (e) => renderList(e.target.value));
+renderAll();
+</script>
