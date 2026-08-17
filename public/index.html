@@ -1615,53 +1615,58 @@
        that aren't tied to any one tab: the accent (Change Theme) and the
        menu bar's own text size. -->
   <div id="settingsOverlay" class="modal-overlay no-print" hidden>
-    <div class="modal modal--narrow" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal modal--settings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
       <div class="modal__header">
         <h2 id="settingsTitle">Settings</h2>
         <button type="button" class="btn btn--ghost btn--small" id="settingsCloseBtn">&times; Close</button>
       </div>
-      <div class="server-pc-body">
-        <label class="field">
-          <span>Change Theme</span>
-          <div class="preview-toggle" role="radiogroup" aria-label="App colour theme">
-            <button type="button" class="toggle-btn" data-accent="amber" role="radio" aria-checked="false" id="settingsAccentAmberBtn">Amber Theme</button>
-            <button type="button" class="toggle-btn" data-accent="purple" role="radio" aria-checked="false" id="settingsAccentPurpleBtn">Purple Theme</button>
+      <div class="settings-body">
+        <nav class="settings-sidebar" aria-label="Settings sections">
+          <button type="button" class="settings-sidebar__item is-active" data-settings-panel="general" aria-current="true" id="settingsNavGeneralBtn">General</button>
+          <button type="button" class="settings-sidebar__item" data-settings-panel="experimental" aria-current="false" id="settingsNavExperimentalBtn">Experimental Features</button>
+        </nav>
+        <div class="settings-panels">
+          <div class="settings-panel" id="settingsPanelGeneral" data-settings-panel-content="general">
+            <label class="field">
+              <span>Change Theme</span>
+              <div class="preview-toggle" role="radiogroup" aria-label="App colour theme">
+                <button type="button" class="toggle-btn" data-accent="amber" role="radio" aria-checked="false" id="settingsAccentAmberBtn">Amber Theme</button>
+                <button type="button" class="toggle-btn" data-accent="purple" role="radio" aria-checked="false" id="settingsAccentPurpleBtn">Purple Theme</button>
+              </div>
+            </label>
+            <p class="help-text">Changes the colour of the app's own text and buttons. Shelf talkers and display signs keep whatever Theme (Amber/Purple) is picked for each one on the form - this only affects the app around them.</p>
+
+            <label class="field">
+              <span>Menu Bar Size</span>
+              <div class="preview-toggle preview-toggle--wrap" role="radiogroup" aria-label="Menu bar size">
+                <button type="button" class="toggle-btn" data-menu-size="compact" role="radio" aria-checked="false" id="settingsMenuSizeCompactBtn">Compact</button>
+                <button type="button" class="toggle-btn" data-menu-size="comfortable" role="radio" aria-checked="false" id="settingsMenuSizeComfortableBtn">Comfortable</button>
+                <button type="button" class="toggle-btn" data-menu-size="large" role="radio" aria-checked="false" id="settingsMenuSizeLargeBtn">Large</button>
+                <button type="button" class="toggle-btn" data-menu-size="xlarge" role="radio" aria-checked="false" id="settingsMenuSizeXlargeBtn">Extra Large</button>
+              </div>
+            </label>
+            <p class="help-text">Changes the size of the File / Tools / Help / Advanced menu bar at the top of the window - useful on a touchscreen register or a high-resolution display where the default can run small.</p>
           </div>
-        </label>
-        <p class="help-text">Changes the colour of the app's own text and buttons. Shelf talkers and display signs keep whatever Theme (Amber/Purple) is picked for each one on the form - this only affects the app around them.</p>
 
-        <label class="field">
-          <span>Menu Bar Size</span>
-          <div class="preview-toggle preview-toggle--wrap" role="radiogroup" aria-label="Menu bar size">
-            <button type="button" class="toggle-btn" data-menu-size="compact" role="radio" aria-checked="false" id="settingsMenuSizeCompactBtn">Compact</button>
-            <button type="button" class="toggle-btn" data-menu-size="comfortable" role="radio" aria-checked="false" id="settingsMenuSizeComfortableBtn">Comfortable</button>
-            <button type="button" class="toggle-btn" data-menu-size="large" role="radio" aria-checked="false" id="settingsMenuSizeLargeBtn">Large</button>
-            <button type="button" class="toggle-btn" data-menu-size="xlarge" role="radio" aria-checked="false" id="settingsMenuSizeXlargeBtn">Extra Large</button>
+          <div class="settings-panel" id="settingsPanelExperimental" data-settings-panel-content="experimental" hidden>
+            <label class="server-pc-checkbox">
+              <input type="checkbox" id="experimentalPairingsCheckbox" />
+              Wine Food Pairings
+            </label>
+            <p class="help-text">Adds a Food Pairing Suggestions section to Wine/Spirits Shelf Talkers: click Suggest Pairings to match the varietal detected in the Product Title/Description (e.g. Cabernet Sauvignon) against a short list of food pairings, then pick up to 3 to print under the description. Off by default; turning it off again hides the section and the printed pairings without deleting anything already on a talker.</p>
+
+            <label class="server-pc-checkbox">
+              <input type="checkbox" id="experimentalProfileCheckbox" />
+              Wine Profile
+            </label>
+            <p class="help-text">Adds a Wine Profile section to Wine/Spirits Shelf Talkers: five 1&ndash;5 dot meters &mdash; Fruit, Body, Dry, Acidity, Alcohol &mdash; printed under the description, Untappd-style. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (e.g. Cabernet Sauvignon), then adjust any dot by hand before printing. Off by default; turning it off again hides the section and the printed strip without deleting anything already on a talker.</p>
+
+            <label class="server-pc-checkbox">
+              <input type="checkbox" id="experimentalTastingNotesCheckbox" />
+              Find Tasting Notes
+            </label>
+            <p class="help-text">Adds a Find Tasting Notes button under the Description field for Wine/Spirits and Bourbon Shelf Talkers: searches Wine.com, Vivino, or (for Bourbon) Distiller.com using the Product Title and Vintage to fill in the description &mdash; Nose/Palate/Finish too, when the source has them. Off by default; turning it off again hides the button without removing anything already filled in.</p>
           </div>
-        </label>
-        <p class="help-text">Changes the size of the File / Tools / Help / Advanced menu bar at the top of the window - useful on a touchscreen register or a high-resolution display where the default can run small.</p>
-
-        <hr class="settings-section-divider" />
-
-        <div class="settings-section">
-          <h3 class="settings-section-title">Experimental Features</h3>
-          <label class="server-pc-checkbox">
-            <input type="checkbox" id="experimentalPairingsCheckbox" />
-            Wine Food Pairings
-          </label>
-          <p class="help-text">Adds a Food Pairing Suggestions section to Wine/Spirits Shelf Talkers: click Suggest Pairings to match the varietal detected in the Product Title/Description (e.g. Cabernet Sauvignon) against a short list of food pairings, then pick up to 3 to print under the description. Off by default; turning it off again hides the section and the printed pairings without deleting anything already on a talker.</p>
-
-          <label class="server-pc-checkbox">
-            <input type="checkbox" id="experimentalProfileCheckbox" />
-            Wine Profile
-          </label>
-          <p class="help-text">Adds a Wine Profile section to Wine/Spirits Shelf Talkers: five 1&ndash;5 dot meters &mdash; Fruit, Body, Dry, Acidity, Alcohol &mdash; printed under the description, Untappd-style. Click Suggest Profile to prefill all five from the varietal detected in the Product Title (e.g. Cabernet Sauvignon), then adjust any dot by hand before printing. Off by default; turning it off again hides the section and the printed strip without deleting anything already on a talker.</p>
-
-          <label class="server-pc-checkbox">
-            <input type="checkbox" id="experimentalTastingNotesCheckbox" />
-            Find Tasting Notes
-          </label>
-          <p class="help-text">Adds a Find Tasting Notes button under the Description field for Wine/Spirits and Bourbon Shelf Talkers: searches Wine.com, Vivino, or (for Bourbon) Distiller.com using the Product Title and Vintage to fill in the description &mdash; Nose/Palate/Finish too, when the source has them. Off by default; turning it off again hides the button without removing anything already filled in.</p>
         </div>
       </div>
       <div class="modal__footer">

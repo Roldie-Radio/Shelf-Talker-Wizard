@@ -1803,12 +1803,49 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    leave it swimming in empty space. */
 .modal--narrow { max-width: 480px; }
 
-/* Tools -> Settings (see index.html): separates "Change Theme" from the
-   Experimental Features placeholder below it without a full second modal
-   section header - this modal only has room-scale content, not a proper
-   sidebar/tab layout. */
+/* Mash Bill Library "Add an entry manually" form (see index.html) - divides
+   the form into Mash Bill Confidence / References & Sources groups. Also
+   still used by the Settings modal's own history until the sidebar rework
+   just below made it unnecessary there, but this pair stays for Mash Bill
+   Library. */
 .settings-section-divider { border: none; border-top: 1px solid var(--ui-border); margin: 1rem 0; }
 .settings-section-title { font-size: 0.85rem; font-weight: 700; color: var(--ui-ink); margin: 0 0 0.4rem; }
+
+/* Tools -> Settings (see index.html): a left-hand nav rail beside the
+   settings content, .settings-panels swaps in/out via [hidden] on
+   .settings-panel (data-settings-panel-content) as the .settings-sidebar__
+   item buttons are clicked (see settingsModal in app.js). Room for
+   expansion - new settings groups are a new sidebar button + panel rather
+   than more content stacked into one long scroll. Wider than
+   .modal--narrow (which this replaced) so the sidebar has room without
+   squeezing the panel content. */
+.modal--settings { max-width: 640px; }
+.settings-body { flex: 1; min-height: 0; display: flex; }
+.settings-sidebar {
+  flex: none;
+  width: 180px;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow-y: auto;
+  border-right: 1px solid var(--ui-border);
+}
+.settings-sidebar__item {
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ui-muted);
+  cursor: pointer;
+}
+.settings-sidebar__item:hover { background: var(--ui-hover); }
+.settings-sidebar__item.is-active { background: var(--ui-accent); color: var(--ui-on-accent); }
+.settings-panels { flex: 1; min-width: 0; overflow-y: auto; padding: 0 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.settings-panel[hidden] { display: none; }
 
 /* The "Beer Talker Info" guide (see .guide below) is a single 10.44in-
    wide document meant to be read closely, not a scrollable list of
@@ -4167,4 +4204,19 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   .btn { white-space: nowrap; }
   .layout { padding: 1rem 1rem 2rem; gap: 1rem; }
   .tabs { flex-wrap: wrap; }
+
+  /* Settings sidebar (see .settings-sidebar above) - a side-by-side column
+     doesn't leave enough room for the panel content on a narrow window, so
+     below the app's own phone/register breakpoint it becomes a horizontal
+     scrollable tab row above the panel instead. */
+  .settings-body { flex-direction: column; }
+  .settings-sidebar {
+    width: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: visible;
+    border-right: none;
+    border-bottom: 1px solid var(--ui-border);
+  }
+  .settings-sidebar__item { flex: none; white-space: nowrap; }
 }
