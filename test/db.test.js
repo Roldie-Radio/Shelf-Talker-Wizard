@@ -601,6 +601,17 @@ test('getBeer returns a single entry or null', () => {
   });
 });
 
+test('getBeerByTitle matches case-insensitively (same rule as upsertBeer\'s own uniqueness check) and returns null otherwise', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'Sierra Nevada Pale Ale', brewery: 'Sierra Nevada' });
+    assert.deepEqual(db.getBeerByTitle('sierra nevada pale ale'), entry);
+    assert.deepEqual(db.getBeerByTitle('SIERRA NEVADA PALE ALE'), entry);
+    assert.equal(db.getBeerByTitle('Not On File'), null);
+    assert.equal(db.getBeerByTitle(''), null);
+    assert.equal(db.getBeerByTitle(undefined), null);
+  });
+});
+
 test('updateBeerById changes fields and returns the updated entry, preserving an omitted (undefined) field', () => {
   withTempDb(() => {
     const entry = db.upsertBeer({ title: 'Modelo Especial', brewery: 'Grupo Modelo', style: 'Pale Lager' });

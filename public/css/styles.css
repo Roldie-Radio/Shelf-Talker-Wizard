@@ -854,6 +854,36 @@ h1, h2, h3 { margin: 0; }
 .atlas-region-item__swap .pairing-infographic__icon { font-size: 1.2rem; }
 .atlas-region-item__was { font-size: 0.72rem; color: var(--ui-muted); }
 
+/* ---------- The Beer Bible (profile page) ---------- */
+/* Shares .library-view/.library-band/.bourbon-grid/.bourbon-card/
+   .library-crumb/.profile-head/.profile-tags/.profile-grid/.block/
+   .info-card/.sibling-* with the Bourbon Library above (see
+   renderBeerBibleProfile in app.js) - only what's genuinely specific to
+   beer (the ABV/IBU/rating stat strip, the rating dot meter) gets its own
+   rules here. */
+
+.beer-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+.beer-stat-card { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.65rem 0.8rem; }
+.beer-stat-card__label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-muted); margin-bottom: 0.25rem; }
+.beer-stat-card__value { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.beer-stat-card__value--empty { font-size: 0.82rem; font-weight: 600; color: var(--ui-muted); }
+.beer-stat-card__sub { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.35rem; }
+
+/* Rating dot meter - the same half-fill-dot idea as the printed shelf
+   talker's own Untappd Rating widget (.card__beer-dot below), redrawn at a
+   fixed UI size and in --ui-accent-ink (theme-aware) rather than that
+   widget's fixed print amber, since this renders in the app chrome rather
+   than on the card itself. */
+.rating-dots { display: inline-flex; align-items: center; gap: 2px; }
+.rating-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ui-border); flex: 0 0 auto; }
+.rating-dot.is-full { background: var(--ui-accent-ink); }
+.rating-dot.is-half { background: linear-gradient(90deg, var(--ui-accent-ink) 50%, var(--ui-border) 50%); }
+.rating-num { font-size: 0.78rem; font-weight: 700; color: var(--ui-ink-soft); margin-left: 0.05rem; }
+
+.desc-block p { margin: 0; font-size: 0.88rem; line-height: 1.55; }
+.desc-block p.help-text { margin: 0; }
+.desc-source { font-size: 0.76rem; color: var(--ui-muted); margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px dashed var(--ui-border); }
+
 /* ---------- Layout ---------- */
 
 .layout {

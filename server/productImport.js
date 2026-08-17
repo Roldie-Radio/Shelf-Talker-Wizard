@@ -2172,6 +2172,7 @@ module.exports = {
   composeProducerTitle,
   buildUntappdSearchQuery,
   stripUnmatchedContainerWords,
+  mergeUntappdBeer,
   enrichBeerFromUntappd,
   enrichBeerScanFromStore,
   untappdBeerFromUrl,

@@ -577,6 +577,23 @@ function getBeer(id) {
   return rowToBeer(db.prepare('SELECT * FROM beers WHERE id = ?').get(id));
 }
 
+// Looks a beer up by title, case-insensitively - the same "one row per
+// title" matching rule upsertBeer's own uniqueness check already uses (see
+// idx_beers_title_unique in applySchema above), just exposed as a plain
+// lookup rather than an upsert. Backs the Untappd-miss fallback in
+// index.js's beer lookup routes: when a live Untappd search comes back
+// empty, this is how an already-researched Beer Bible entry for the same
+// beer - however it got there (a past successful Untappd match, a Beer
+// Bible Import run, or a manual entry) - gets reused instead of leaving
+// those fields blank. Returns null for a blank title rather than the first
+// row COLLATE NOCASE might otherwise match nothing against.
+function getBeerByTitle(title) {
+  const db = getDb();
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) return null;
+  return rowToBeer(db.prepare('SELECT * FROM beers WHERE title = ? COLLATE NOCASE').get(cleanTitle));
+}
+
 function validateBeerInput({ title }) {
   const cleanTitle = (title || '').trim();
   if (!cleanTitle) throw Object.assign(new Error('A beer name is required.'), { code: 'TITLE_REQUIRED' });
@@ -855,6 +872,7 @@ module.exports = {
   deleteMashBill,
   listBeers,
   getBeer,
+  getBeerByTitle,
   upsertBeer,
   updateBeerById,
   deleteBeer,

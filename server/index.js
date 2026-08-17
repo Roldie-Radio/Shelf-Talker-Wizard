@@ -5,7 +5,7 @@ const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
   TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
-  enrichBeerScanFromStore, enrichBeerFromUntappd, enrichSalePriceFromStore,
+  enrichBeerScanFromStore, enrichBeerFromUntappd, enrichSalePriceFromStore, mergeUntappdBeer,
 } = require('./productImport');
 const {
   getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, lookupSkuInExport, searchByName, previewExport,
@@ -13,7 +13,7 @@ const {
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
   listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
-  listBeers, upsertBeer, updateBeerById, deleteBeer,
+  listBeers, upsertBeer, updateBeerById, deleteBeer, getBeerByTitle,
   listRums, upsertRum, updateRumById, deleteRum,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
@@ -22,7 +22,10 @@ const { createExportServeServer, createExportPuller } = require('./exportSync');
 const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
 const { maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries } = require('./bourbonLibrarySeed');
 const { maybeAutoSeedBeerBible, syncNewBeerBibleEntries } = require('./beerBibleSeed');
-const { getStatus: getBeerBibleImportStatus, startImport: startBeerBibleImport, cancelImport: cancelBeerBibleImport } = require('./beerBibleImport');
+const {
+  getStatus: getBeerBibleImportStatus, startImport: startBeerBibleImport, cancelImport: cancelBeerBibleImport,
+  isEnriched: isBeerBibleEntryEnriched,
+} = require('./beerBibleImport');
 const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
@@ -146,6 +149,40 @@ function createApp({
     }
   });
 
+  // Beer's own live Untappd search (enrichBeerFromUntappd in
+  // productImport.js) coming back empty doesn't necessarily mean the beer
+  // is unknown - it can just as easily be Untappd's shared search key
+  // getting rate-limited, a network hiccup, or a store title that doesn't
+  // happen to match well. When it does come back empty (`untappdError`),
+  // the Beer Bible (the `beers` table in db.js) may already carry a
+  // fully-researched entry for the exact same beer - saved from an earlier
+  // successful Untappd match, a Beer Bible Import run, or typed in by hand -
+  // keyed by the same case-insensitive title the Beer Bible form itself
+  // uses (getBeerByTitle). Reusing it here is what lets staff still get a
+  // complete talker instead of a mostly-blank one on a lookup that hits a
+  // bad day, or a beer Untappd genuinely never had listed. Reused via
+  // mergeUntappdBeer - the exact same field-by-field merge a live match
+  // already goes through - so a Beer Bible entry missing one field (say,
+  // no rating) still lets whatever the store page already found for that
+  // field stand.
+  //
+  // A Beer Bible entry that's just a bare title+SKU stub (see isEnriched in
+  // beerBibleImport.js - e.g. left over from a bulk pre-seed pass that
+  // never actually ran Untappd) has nothing more to offer than `result`
+  // already has, so it's left alone the same as no entry at all. Untouched
+  // when Untappd DID find something (no untappdError) or came back
+  // ambiguous (untappdCandidates) - a tie needs a human pick, not a guess
+  // at which Beer Bible entry, if either, is the right one. Shared by every
+  // route below that can end up with a beer's untappdError set: SKU Lookup
+  // (live and pasted-HTML), Scan UPC, and Search by Name.
+  function applyBeerBibleFallback(result) {
+    if (!result || !result.untappdError) return result;
+    const beerBibleEntry = getBeerByTitle(result.title);
+    if (!beerBibleEntry || !isBeerBibleEntryEnriched(beerBibleEntry)) return result;
+    const { untappdError, ...rest } = result;
+    return { ...rest, ...mergeUntappdBeer(rest, beerBibleEntry), untappdSource: 'Beer Bible' };
+  }
+
   // Backs the "SKU Lookup" tab (which replaced Bulk CSV Import): staff type
   // in the store's own SKU, this searches liquoroutletwinecellars.com for
   // it and pulls title/size/price off the matching product page. For beer,
@@ -171,7 +208,8 @@ function createApp({
 
     try {
       const product = await lookupSku({ sku: trimmedSku, category });
-      res.json({ ...product, category: normalizedCategory });
+      const withBeerBibleFallback = normalizedCategory === 'beer' ? applyBeerBibleFallback(product) : product;
+      res.json({ ...withBeerBibleFallback, category: normalizedCategory });
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not look up that SKU.' });
     }
@@ -190,7 +228,7 @@ function createApp({
 
     try {
       const product = await lookupSkuFromHtml({ html, url, category });
-      res.json(product);
+      res.json(category === 'beer' ? applyBeerBibleFallback(product) : product);
     } catch (err) {
       res.status(400).json({ error: err.message || 'Could not read product data from that HTML.' });
     }
@@ -294,7 +332,7 @@ function createApp({
     try {
       const rawProduct = lookupUpc(trimmedUpc);
       const product = normalizedCategory === 'beer'
-        ? await enrichBeerScanFromStore(rawProduct)
+        ? applyBeerBibleFallback(await enrichBeerScanFromStore(rawProduct))
         : await enrichWineDescriptionFromStore(rawProduct);
       res.json({ ...product, lookupCategory: normalizedCategory });
     } catch (err) {
@@ -382,7 +420,7 @@ function createApp({
     }
 
     try {
-      const data = { ...(await enrichBeerFromUntappd(withSalePrice)), category: 'beer' };
+      const data = { ...applyBeerBibleFallback(await enrichBeerFromUntappd(withSalePrice)), category: 'beer' };
       res.json(data);
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not search Untappd for that beer.' });
