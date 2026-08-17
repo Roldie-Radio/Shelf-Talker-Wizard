@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.3.13',
+      items: [
+        'Fixed: The Beer Bible could end up with two entries for the same beer - one saved under a raw export/POS title, another under whatever wording an Untappd search happened to match - even though both carried the same store SKU. Every save (auto-save from a talker, Add Beer, Beer Bible Import) now matches an existing entry by SKU first, title second, so a repeat save for a SKU already on file updates that same entry instead of adding a duplicate. A SKU match never renames the entry\'s existing title.',
+      ],
+    },
+    {
       version: '4.3.12',
       items: [
         'New: The Beer Bible grid now has research-status chips (All / Researched / Needs research - handy for working through a freshly-imported product list), source chips (typed in by staff / from a product export / from the curated GitHub list), a Style filter, and a sort dropdown (Name, Brewery, Untappd rating, ABV, SKU) with a Card/List view toggle - the same toolbar the Bourbon Library already has.',

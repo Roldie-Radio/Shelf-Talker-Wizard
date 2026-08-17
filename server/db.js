@@ -594,6 +594,18 @@ function getBeerByTitle(title) {
   return rowToBeer(db.prepare('SELECT * FROM beers WHERE title = ? COLLATE NOCASE').get(cleanTitle));
 }
 
+// Same idea as getBeerByTitle just above, keyed on the store's own SKU
+// instead - trimmed, case-insensitive. This is what upsertBeer checks
+// first (see below) so a repeat save under a different title still finds
+// its way back to the same row. Returns null for a blank SKU rather than
+// matching every other blank-SKU row in the table.
+function getBeerBySku(sku) {
+  const db = getDb();
+  const cleanSku = (sku || '').toString().trim();
+  if (!cleanSku) return null;
+  return rowToBeer(db.prepare('SELECT * FROM beers WHERE sku = ? COLLATE NOCASE').get(cleanSku));
+}
+
 function validateBeerInput({ title }) {
   const cleanTitle = (title || '').trim();
   if (!cleanTitle) throw Object.assign(new Error('A beer name is required.'), { code: 'TITLE_REQUIRED' });
@@ -628,20 +640,46 @@ const BEER_OPTIONAL_COLUMNS_SET = `
   description = @description, sku = @sku
 `;
 
-// Create-or-update by title (case-insensitive), same reasoning as
-// upsertMashBill above: the Beer Bible form's Add/Save button always calls
-// this, so saving again after a typo fix updates the same entry instead of
-// erroring or duplicating it.
+// Create-or-update by SKU first, title (case-insensitive) second - see the
+// SKU/title matching comment inside this function for why. Same reasoning
+// as upsertMashBill above: the Beer Bible form's Add/Save button, every
+// talker's own auto-save, and the Beer Bible Import job all call this, so
+// saving again for a beer already on file updates that same entry instead
+// of erroring or duplicating it.
 function upsertBeer({
   title, source, brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
 }) {
   const db = getDb();
   const { cleanTitle } = validateBeerInput({ title });
   const now = nowIso();
-  const existingRow = db.prepare('SELECT id FROM beers WHERE title = ? COLLATE NOCASE').get(cleanTitle);
-  const existing = existingRow ? getBeer(existingRow.id) : null;
+
+  // SKU first, title second. Title alone used to be the only way this
+  // found a "same beer" match, but the same physical product can show up
+  // under more than one title over its life - a raw POS export's literal
+  // text, whatever wording an Untappd search happened to match on that
+  // day, a staff typo fix - while the store's own SKU on the shelf tag
+  // doesn't change. Matching SKU first is what makes a second save for the
+  // same SKU land on the existing row instead of adding a duplicate every
+  // time the title comes out a little different. Title stays as the
+  // fallback for saves with nothing to key off of (Manual Entry with no
+  // SKU, or a row saved before this PC had SKUs on file at all).
+  const bySku = getBeerBySku(sku);
+  let existing = bySku;
+  if (!existing) {
+    const existingRow = db.prepare('SELECT id FROM beers WHERE title = ? COLLATE NOCASE').get(cleanTitle);
+    existing = existingRow ? getBeer(existingRow.id) : null;
+  }
+
+  // A SKU match under a different title never renames the existing row -
+  // same "don't clobber an already-established name" rule
+  // syncNewBeerBibleEntries already uses for its own same-SKU merges (see
+  // server/beerBibleSeed.js). Only an actual title match (this save's
+  // title, not just its SKU, matches the existing row) updates the title
+  // text itself - e.g. to fix casing on a repeat save.
+  const resolvedTitle = bySku ? bySku.title : cleanTitle;
+
   const params = {
-    title: cleanTitle,
+    title: resolvedTitle,
     source: source || 'Manual',
     updatedAt: now,
     ...beerOptionalFieldParams({
@@ -873,6 +911,7 @@ module.exports = {
   listBeers,
   getBeer,
   getBeerByTitle,
+  getBeerBySku,
   upsertBeer,
   updateBeerById,
   deleteBeer,

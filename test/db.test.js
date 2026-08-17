@@ -612,6 +612,77 @@ test('getBeerByTitle matches case-insensitively (same rule as upsertBeer\'s own 
   });
 });
 
+test('getBeerBySku matches on the trimmed SKU, case-insensitively, and returns null otherwise', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'Sierra Nevada Pale Ale', sku: 'sw-4021' });
+    assert.deepEqual(db.getBeerBySku('SW-4021'), entry);
+    assert.deepEqual(db.getBeerBySku('  sw-4021  '), entry);
+    assert.equal(db.getBeerBySku('99999'), null);
+    assert.equal(db.getBeerBySku(''), null);
+    assert.equal(db.getBeerBySku(undefined), null);
+  });
+});
+
+test('upsertBeer matches an existing row by SKU even when the title is worded differently, instead of adding a duplicate', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({
+      title: 'CENTRAL WATERS BOURBON BARREL TIRAMISU STOUT 4PK CAN',
+      sku: '48213',
+      source: 'Import',
+    });
+    // Same SKU, but the title this time is the nicer Untappd-matched
+    // wording a Shelf Talker auto-save would send - still the same row,
+    // not a second one.
+    const second = db.upsertBeer({
+      title: 'Central Waters Bourbon Barrel Tiramisu Stout',
+      sku: '48213',
+      brewery: 'Central Waters Brewing Co.',
+      style: 'American Imperial Stout',
+      source: 'Shelf Talker',
+    });
+    assert.equal(second.id, first.id);
+    assert.equal(db.listBeers().length, 1);
+    // A SKU match never renames the existing row - the original title
+    // stands, the new save just fills in what was missing.
+    assert.equal(second.title, 'CENTRAL WATERS BOURBON BARREL TIRAMISU STOUT 4PK CAN');
+    assert.equal(second.brewery, 'Central Waters Brewing Co.');
+    assert.equal(second.style, 'American Imperial Stout');
+    assert.equal(second.source, 'Shelf Talker');
+  });
+});
+
+test('upsertBeer with no SKU (on either save) still falls back to matching by title', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({ title: 'Yuengling Lager', brewery: 'Yuengling' });
+    const second = db.upsertBeer({ title: 'yuengling lager', style: 'American Amber Lager' });
+    assert.equal(second.id, first.id);
+    assert.equal(db.listBeers().length, 1);
+  });
+});
+
+test('upsertBeer with a SKU that matches nothing on file still falls back to matching by title', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({ title: 'Blue Moon Belgian White', sku: '10001' });
+    const second = db.upsertBeer({ title: 'Blue Moon Belgian White', sku: '10002', style: 'Witbier' });
+    assert.equal(second.id, first.id);
+    assert.equal(db.listBeers().length, 1);
+    // The title match still updates the SKU field itself like any other
+    // optional field - only the title is protected from a SKU-driven rename.
+    assert.equal(second.sku, '10002');
+    assert.equal(second.style, 'Witbier');
+  });
+});
+
+test('upsertBeer with a SKU that belongs to a different title creates a genuinely new row', () => {
+  withTempDb(() => {
+    db.upsertBeer({ title: 'Bell\'s Two Hearted Ale', sku: '77001' });
+    const other = db.upsertBeer({ title: 'Founders All Day IPA', sku: '77002' });
+    assert.equal(db.listBeers().length, 2);
+    assert.equal(other.title, 'Founders All Day IPA');
+    assert.equal(other.sku, '77002');
+  });
+});
+
 test('updateBeerById changes fields and returns the updated entry, preserving an omitted (undefined) field', () => {
   withTempDb(() => {
     const entry = db.upsertBeer({ title: 'Modelo Especial', brewery: 'Grupo Modelo', style: 'Pale Lager' });
