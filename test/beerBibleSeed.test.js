@@ -69,21 +69,24 @@ test('autoSeedBeerBible skips entirely when the library already has entries', ()
   );
 }));
 
-// beer-bible-seed-data.json ships as an empty array (see its own header
-// comment) - unlike the Bourbon Library's bundled fallback, this settles on
-// zero entries rather than a real curated set, but it still has to resolve
-// cleanly (not throw, not error) against a real, unmocked read of that
-// bundled file - that's what this exercises.
-test('autoSeedBeerBible falls back to the bundled file when the GitHub fetch fails, which is empty for now', () => withTempDb(() => withMockFetch(
+// This is the exact real-world failure this fallback exists for: a store
+// PC where GitHub (or raw.githubusercontent.com specifically) is
+// unreachable - same reasoning as bourbonLibrarySeed.test.js's own
+// equivalent test. The library must still end up populated from the copy
+// bundled into the install - a real product export's worth of title/SKU
+// stubs (see scripts/populate-beer-bible-from-export.js's own history for
+// how this file was populated), not the empty placeholder it originally
+// shipped with.
+test('autoSeedBeerBible falls back to the bundled file when the GitHub fetch fails', () => withTempDb(() => withMockFetch(
   async () => { throw new Error('simulated network failure'); },
   async () => {
     const result = await autoSeedBeerBible(db);
     assert.equal(result.source, 'the bundled copy');
 
     const bundled = require(BUNDLED_SEED_PATH); // eslint-disable-line global-require
-    assert.deepEqual(bundled, []);
-    assert.equal(result.seeded, 0);
-    assert.deepEqual(db.listBeers(), []);
+    assert.ok(bundled.length > 0);
+    assert.equal(result.seeded, bundled.length);
+    assert.equal(db.listBeers().length, bundled.length);
   },
 )));
 
@@ -92,7 +95,7 @@ test('autoSeedBeerBible also falls back to the bundled file on a non-ok GitHub r
   async () => {
     const result = await autoSeedBeerBible(db);
     assert.equal(result.source, 'the bundled copy');
-    assert.equal(result.seeded, 0);
+    assert.ok(result.seeded > 0);
   },
 )));
 
@@ -155,17 +158,17 @@ test('syncNewBeerBibleEntries falls back to the bundled file when GitHub is unre
   async () => {
     const result = await syncNewBeerBibleEntries(db);
     assert.equal(result.source, 'the bundled copy');
-    assert.equal(result.added, 0);
+    assert.ok(result.added > 0);
   },
 )));
 
-test('maybeAutoSeedBeerBible never throws even when GitHub is unreachable', () => withTempDb(() => withMockFetch(
+test('maybeAutoSeedBeerBible never throws, and still seeds via the bundled fallback when GitHub is unreachable', () => withTempDb(() => withMockFetch(
   async () => { throw new Error('network is down'); },
   async () => {
     assert.doesNotThrow(() => maybeAutoSeedBeerBible(db));
     // Let the fire-and-forget promise chain settle before the temp dir gets
     // torn down out from under it.
     await new Promise((resolve) => setImmediate(resolve));
-    assert.deepEqual(db.listBeers(), []);
+    assert.ok(db.listBeers().length > 0);
   },
 )));
