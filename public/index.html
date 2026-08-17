@@ -1080,7 +1080,15 @@
             <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
           </div>
         </div>
-        <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
+        <div class="library-band__actions">
+          <!-- Downloads whatever the grid below currently shows (search box
+               + status/source/style chips + sort all applied) as a CSV
+               file, for backing the library up or opening it in a
+               spreadsheet - see exportBeerBibleCsv in app.js. Leave every
+               filter at its default to export the whole Beer Bible. -->
+          <button type="button" class="btn btn--small" id="beerBibleExportBtn">Export CSV&hellip;</button>
+          <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
+        </div>
       </div>
       <!-- No Server PC / Sync Now status row yet (contrast with
            #libraryView's .library-sync above) - this PC's own data.db is

@@ -971,6 +971,7 @@
     atlasBody: document.getElementById('atlasBody'),
     beerBibleView: document.getElementById('beerBibleView'),
     beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
+    beerBibleExportBtn: document.getElementById('beerBibleExportBtn'),
     beerBibleGithubSyncRow: document.getElementById('beerBibleGithubSyncRow'),
     beerBibleGithubSyncStatus: document.getElementById('beerBibleGithubSyncStatus'),
     beerBibleGithubSyncBtn: document.getElementById('beerBibleGithubSyncBtn'),
@@ -8001,10 +8002,21 @@
     `).join('');
   }
 
-  function renderBeerBibleGrid() {
+  // Shared by renderBeerBibleGrid (what's on screen) and exportBeerBibleCsv
+  // (what a click on Export CSV… downloads) so the two can never drift -
+  // the file always matches whatever the search box + status/source/style
+  // chips + sort dropdown currently have selected. Leaving every filter at
+  // its default exports the whole Beer Bible.
+  function beerBibleFilteredSortedRows() {
     const rows = beerBibleCache.filter((b) => beerMatchesSearch(b) && beerMatchesStatus(b) && beerMatchesSource(b) && beerMatchesStyle(b));
     const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
     rows.sort(sort.cmp);
+    return rows;
+  }
+
+  function renderBeerBibleGrid() {
+    const rows = beerBibleFilteredSortedRows();
+    const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
 
     const styleLabel = beerBibleStyleFilter === 'all' ? 'All styles' : beerBibleStyleFilter;
     const toolbarHtml = `
@@ -8088,6 +8100,54 @@
       });
     });
   }
+
+  // Wraps a single CSV field per RFC 4180: only quoted when it actually
+  // needs it (contains a comma, quote, or line break), with any inner
+  // quote doubled - so a plain title like "Slack Tide Flounder Pounder"
+  // stays unquoted and readable, while a description with a comma in it
+  // still round-trips through Excel/Sheets correctly.
+  function csvField(value) {
+    const s = value == null ? '' : String(value);
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  // Export CSV… button (see #beerBibleExportBtn in index.html) - downloads
+  // whatever beerBibleFilteredSortedRows currently has (search box +
+  // status/source/style chips + sort dropdown all applied) as a CSV file,
+  // same "download what's on screen" idea as the WinePOS export preview's
+  // own search box, just producing a file instead of a live table. Leaving
+  // every filter at its default exports the whole Beer Bible. One column
+  // per field the Beer Bible actually stores (see the `beers` table in
+  // server/db.js) plus a Researched Yes/No column mirroring the on-screen
+  // status chips, so the file means the same thing the grid does.
+  function exportBeerBibleCsv() {
+    const rows = beerBibleFilteredSortedRows();
+    if (!rows.length) return;
+    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'Tasting Notes', 'Source', 'Researched'];
+    const lines = [header.map(csvField).join(',')];
+    rows.forEach((b) => {
+      lines.push([
+        b.title, b.beerName, b.brewery, b.location, b.style, b.abv, b.ibu,
+        b.untappdRating, b.untappdRatingCount, b.sku, b.description,
+        BEER_SOURCE_LABELS[b.source] || b.source || '',
+        beerIsResearched(b) ? 'Yes' : 'No',
+      ].map(csvField).join(','));
+    });
+    // Leading BOM so Excel (the store PCs' actual use case) reads the file
+    // as UTF-8 instead of guessing a local codepage and mangling anything
+    // non-ASCII in a brewery/style name.
+    const blob = new Blob([`\uFEFF${lines.join('\r\n')}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `beer-bible-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  els.beerBibleExportBtn.addEventListener('click', exportBeerBibleCsv);
 
   // One stat tile for the profile page's "At a Glance" block (ABV, IBU) -
   // the Untappd Rating tile is its own function below since it also needs

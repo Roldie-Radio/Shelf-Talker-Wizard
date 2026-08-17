@@ -430,6 +430,7 @@ h1, h2, h3 { margin: 0; }
 .library-view { flex: 1; min-width: 0; overflow-y: auto; }
 .library-band { background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); padding: 1.1rem 1.5rem; }
 .library-band__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.library-band__actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .library-brand { display: flex; align-items: center; gap: 0.7rem; }
 .library-brand__icon { width: 38px; height: 38px; border-radius: 9px; background: var(--ui-accent); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .library-brand__icon svg { width: 22px; height: 30px; }
