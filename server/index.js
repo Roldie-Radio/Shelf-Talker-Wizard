@@ -13,12 +13,14 @@ const {
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
   listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
+  listBeers, upsertBeer, updateBeerById, deleteBeer,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
 const { createExportServeServer, createExportPuller } = require('./exportSync');
 const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
 const { maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries } = require('./bourbonLibrarySeed');
+const { maybeAutoSeedBeerBible, syncNewBeerBibleEntries } = require('./beerBibleSeed');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
 
@@ -582,6 +584,78 @@ function createApp({
     }
   });
 
+  // Backs the Beer Bible (rail "Beer Bible" view) - a bare-scaffold first
+  // cut of the same idea as the Mash Bill Library above (a shared record of
+  // researched products, so the same lookup doesn't need doing twice), for
+  // Beer instead of Bourbon. Unlike /api/mashbills, there's no cross-
+  // register sync yet, so every route below just reads/writes this PC's own
+  // data.db directly - no Server PC branching, no forwardWrite. Nothing on
+  // Edit Talker recalls from this yet either; it's reachable only from the
+  // rail's own Beer Bible screen (browse/add/edit/delete), same as the
+  // Bourbon Library page owns for mash bills. See the beers table comment
+  // in db.js for the fuller picture of what's scaffolded here vs. not.
+  app.get('/api/beers', (req, res) => {
+    res.json({ beers: listBeers() });
+  });
+
+  // Beer Bible fields beyond title/source - see beerOptionalFieldParams in
+  // db.js for how an omitted (undefined) one leaves whatever's already
+  // saved alone rather than blanking it out.
+  function beerOptionalFields(body) {
+    const {
+      brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+    } = body || {};
+    return {
+      brewery, location, style, abv, ibu, untappdRating, untappdRatingCount, description, sku,
+    };
+  }
+
+  app.post('/api/beers', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = beerOptionalFields(req.body);
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'A beer name is required.' });
+    }
+    try {
+      res.status(201).json(upsertBeer({ title, source, ...optional }));
+    } catch (err) {
+      res.status(err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.put('/api/beers/:id', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = beerOptionalFields(req.body);
+    try {
+      const updated = updateBeerById(Number(req.params.id), { title, source, ...optional });
+      if (!updated) return res.status(404).json({ error: 'No beer entry with that id.' });
+      res.json(updated);
+    } catch (err) {
+      res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.delete('/api/beers/:id', (req, res) => {
+    const deleted = deleteBeer(Number(req.params.id));
+    if (!deleted) return res.status(404).json({ error: 'No beer entry with that id.' });
+    res.json({ success: true });
+  });
+
+  // Backs the Beer Bible page's "Check GitHub for New Beers" button - the
+  // manual counterpart to maybeAutoSeedBeerBible's own auto-seed, for a
+  // library that's already populated, same pattern as
+  // /api/mashbills/sync-library. Not gated behind Server PC (unlike that
+  // route) since there's no cross-register sync here yet - this PC's own
+  // data.db is always the one being updated.
+  app.post('/api/beers/sync-library', async (req, res) => {
+    try {
+      const { added, skipped, source } = await syncNewBeerBibleEntries(db);
+      res.json({ added, skipped, source, beers: listBeers() });
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
+  });
+
   // Backs the desktop app's "Server PC" dialog (Advanced menu): this PC's
   // LAN-visible IPv4 addresses, the current isServer flag/db stats (so
   // staff can tell whether this looks like the PC with real accumulated
@@ -724,6 +798,9 @@ function start(port) {
       // no internet (or GitHub unreachable) just stays empty and retries
       // on its next launch - see bourbonLibrarySeed.js.
       maybeAutoSeedBourbonLibrary(db);
+      // Same fire-and-forget pattern for the Beer Bible - see
+      // beerBibleSeed.js.
+      maybeAutoSeedBeerBible(db);
       resolve(server);
     });
     server.on('error', reject);

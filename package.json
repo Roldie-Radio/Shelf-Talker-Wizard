@@ -9,6 +9,7 @@
     "dev": "node server/index.js",
     "test": "node --test",
     "db:seed-bourbon-library": "node scripts/seed-bourbon-library.js",
+    "db:seed-beer-bible": "node scripts/seed-beer-bible.js",
     "electron": "electron .",
     "dist:win": "electron-builder --win --x64 --publish never",
     "release:patch": "npm version patch && git push --follow-tags",
@@ -43,6 +44,7 @@
       "server/**/*",
       "public/**/*",
       "scripts/bourbon-library-seed-data.json",
+      "scripts/beer-bible-seed-data.json",
       "package.json"
     ],
     "directories": {

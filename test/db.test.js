@@ -165,14 +165,14 @@ test('deleteHistoryEntry removes the row and returns true, false if already gone
 
 test('getStats reports zero counts on a fresh database', () => {
   withTempDb(() => {
-    assert.deepEqual(db.getStats(), { printedTalkers: 0, mashBills: 0 });
+    assert.deepEqual(db.getStats(), { printedTalkers: 0, mashBills: 0, beers: 0 });
   });
 });
 
 test('getStats counts printed talkers', () => {
   withTempDb(() => {
     db.recordPrintedTalkers([sampleTalker({ id: 'a' }), sampleTalker({ id: 'b' })]);
-    assert.deepEqual(db.getStats(), { printedTalkers: 2, mashBills: 0 });
+    assert.deepEqual(db.getStats(), { printedTalkers: 2, mashBills: 0, beers: 0 });
   });
 });
 
@@ -503,5 +503,146 @@ test('applyMashBillColumns migrates a pre-existing 6-column mash_bills table cle
     // Re-running the migration (a second launch against the same file)
     // is a no-op, not a duplicate-column error.
     assert.doesNotThrow(() => db.getDb());
+  });
+});
+
+// ---------- The Beer Bible ----------
+
+test('upsertBeer creates a new entry with the given fields', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({
+      title: 'Slack Tide Flounder Pounder',
+      brewery: 'Slack Tide Brewing Company',
+      location: 'Wilmington, NC',
+      style: 'American IPA',
+      abv: '6.2%',
+      ibu: '55',
+      untappdRating: '3.9',
+      untappdRatingCount: '1,204',
+      description: 'A hazy, tropical IPA.',
+      sku: '15614',
+      source: 'Manual',
+    });
+    assert.equal(entry.title, 'Slack Tide Flounder Pounder');
+    assert.equal(entry.brewery, 'Slack Tide Brewing Company');
+    assert.equal(entry.location, 'Wilmington, NC');
+    assert.equal(entry.style, 'American IPA');
+    assert.equal(entry.abv, '6.2%');
+    assert.equal(entry.ibu, '55');
+    assert.equal(entry.untappdRating, '3.9');
+    assert.equal(entry.untappdRatingCount, '1,204');
+    assert.equal(entry.description, 'A hazy, tropical IPA.');
+    assert.equal(entry.sku, '15614');
+    assert.equal(entry.source, 'Manual');
+    assert.ok(entry.updatedAt);
+    assert.ok(entry.id);
+  });
+});
+
+test('upsertBeer updates the existing entry in place on a repeat save (case-insensitive title)', () => {
+  withTempDb(() => {
+    const first = db.upsertBeer({ title: 'Michelob ULTRA', brewery: 'Anheuser-Busch' });
+    const second = db.upsertBeer({ title: 'michelob ultra', style: 'Light Lager' });
+    assert.equal(second.id, first.id);
+    // Omitted (undefined) fields on the second save leave what's already
+    // there alone - same convention as upsertMashBill.
+    assert.equal(second.brewery, 'Anheuser-Busch');
+    assert.equal(second.style, 'Light Lager');
+    assert.equal(db.listBeers().length, 1);
+  });
+});
+
+test('upsertBeer rejects a missing title', () => {
+  withTempDb(() => {
+    assert.throws(() => db.upsertBeer({ title: '' }), { code: 'TITLE_REQUIRED' });
+    assert.throws(() => db.upsertBeer({}), { code: 'TITLE_REQUIRED' });
+  });
+});
+
+test('a new beer entry defaults every optional field to an empty string, not null/undefined', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'Mystery Lager' });
+    assert.deepEqual(entry, {
+      id: entry.id,
+      title: 'Mystery Lager',
+      brewery: '',
+      location: '',
+      style: '',
+      abv: '',
+      ibu: '',
+      untappdRating: '',
+      untappdRatingCount: '',
+      description: '',
+      sku: '',
+      source: 'Manual',
+      updatedAt: entry.updatedAt,
+    });
+  });
+});
+
+test('listBeers orders alphabetically by title, case-insensitively', () => {
+  withTempDb(() => {
+    db.upsertBeer({ title: 'yuengling lager' });
+    db.upsertBeer({ title: 'Blue Moon Belgian White' });
+    db.upsertBeer({ title: 'Michelob ULTRA' });
+    assert.deepEqual(db.listBeers().map((b) => b.title), ['Blue Moon Belgian White', 'Michelob ULTRA', 'yuengling lager']);
+  });
+});
+
+test('getBeer returns a single entry or null', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'Sierra Nevada Pale Ale' });
+    assert.deepEqual(db.getBeer(entry.id), entry);
+    assert.equal(db.getBeer(999999), null);
+  });
+});
+
+test('updateBeerById changes fields and returns the updated entry, preserving an omitted (undefined) field', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'Modelo Especial', brewery: 'Grupo Modelo', style: 'Pale Lager' });
+    const updated = db.updateBeerById(entry.id, { abv: '4.4%', ibu: '18' });
+    assert.equal(updated.abv, '4.4%');
+    assert.equal(updated.ibu, '18');
+    // brewery/style weren't passed to this update, so they're unchanged.
+    assert.equal(updated.brewery, 'Grupo Modelo');
+    assert.equal(updated.style, 'Pale Lager');
+  });
+});
+
+test('updateBeerById returns null for a missing id', () => {
+  withTempDb(() => {
+    assert.equal(db.updateBeerById(999999, { title: 'Nope' }), null);
+  });
+});
+
+test('updateBeerById refuses to rename onto another entry\'s title', () => {
+  withTempDb(() => {
+    db.upsertBeer({ title: 'Sam Adams Boston Lager' });
+    const other = db.upsertBeer({ title: 'Dogfish Head 60 Minute IPA' });
+    assert.throws(
+      () => db.updateBeerById(other.id, { title: 'sam adams boston lager' }),
+      { code: 'DUPLICATE_TITLE' },
+    );
+    // Unchanged - the failed rename didn't partially apply.
+    assert.equal(db.getBeer(other.id).title, 'Dogfish Head 60 Minute IPA');
+  });
+});
+
+test('deleteBeer removes the row and returns true, false if already gone', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({ title: 'Founders All Day IPA' });
+    assert.equal(db.deleteBeer(entry.id), true);
+    assert.equal(db.getBeer(entry.id), null);
+    assert.equal(db.deleteBeer(entry.id), false);
+  });
+});
+
+test('getStats includes the beer count, independent of mashBills', () => {
+  withTempDb(() => {
+    assert.equal(db.getStats().beers, 0);
+    db.upsertBeer({ title: 'Larceny Not Actually Bourbon' }); // deliberately beer-table only
+    db.upsertMashBill({ title: 'Larceny', grains: sampleGrains() });
+    assert.equal(db.getStats().beers, 1);
+    assert.equal(db.getStats().mashBills, 1);
   });
 });
