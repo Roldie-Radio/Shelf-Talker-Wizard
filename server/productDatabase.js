@@ -1,8 +1,8 @@
 // Backs the Product Database (rail "Product Database" view, table icon
 // above Settings) - a bare scaffold for now, same spirit as the Rum
 // Repository's own "browse a shared record" starting point: two staff-
-// picked spreadsheets get parsed and merged into one table, no editing,
-// no persistence beyond this process's own memory.
+// picked spreadsheets get parsed and merged into one table, no editing
+// beyond re-loading either file.
 //
 // The two files:
 //  - Export File: the same WinePOS product export Scan UPC/Export File
@@ -20,12 +20,21 @@
 // Department/Sub Department have no equivalent in upcCatalog.js's own
 // FIELD_ALIASES.
 //
-// State lives in memory only (module-level, like beerBibleImport.js's own
-// job status) - reloading either file replaces that file's half of the
-// merge; there's nothing to persist yet since the merged table has no
-// functionality beyond display for the time being.
-
+// Persisted to this PC's own app data directory as a plain JSON file (see
+// appData.js - same per-PC directory db.js's SQLite file and upcCatalog.js's
+// config.json already live in), not held in memory only - otherwise every
+// server restart (a PC reboot, a Windows Update, the app just being closed
+// and reopened) would silently lose both loaded files and leave the screen
+// blank until someone re-picked them. Deliberately stateless at the module
+// level (no cached variable, no read-once-at-startup) - every read re-reads
+// the file and every write rewrites it whole, the same "just re-read the
+// small JSON file, don't bother caching it" convention upcCatalog.js's own
+// readConfig/writeConfig already use, which also means this doesn't need
+// its own load-on-launch wiring in index.js/start() the way db.js's
+// SQLite connection or the beer/bourbon GitHub auto-seeds do.
+const fs = require('fs');
 const path = require('path');
+const { getAppDataDir } = require('./appData');
 const { parseDelimited, matchColumns, normalizeSkuKey } = require('./upcCatalog');
 
 // Reads an uploaded file's rows into the same [headerRow, ...dataRows]
@@ -191,9 +200,42 @@ function freshState() {
   };
 }
 
-let state = freshState();
+function stateFilePath() {
+  return path.join(getAppDataDir(), 'product-database.json');
+}
 
-function publicState() {
+// No file yet (first launch, or neither file has ever been loaded on this
+// PC) and a corrupt/unreadable file are both treated as "nothing loaded" -
+// same "missing config is just the default, not an error" reasoning as
+// upcCatalog.js's own readConfig. Each field is validated/defaulted
+// individually rather than trusting the parsed JSON's shape wholesale, so a
+// hand-edited or partially-written file degrades gracefully field by field
+// instead of losing everything to one bad key.
+function readState() {
+  try {
+    const raw = fs.readFileSync(stateFilePath(), 'utf-8');
+    const parsed = JSON.parse(raw);
+    return {
+      exportFileName: typeof parsed.exportFileName === 'string' ? parsed.exportFileName : '',
+      exportLoadedAt: typeof parsed.exportLoadedAt === 'string' ? parsed.exportLoadedAt : null,
+      exportCount: Number.isFinite(parsed.exportCount) ? parsed.exportCount : 0,
+      haFileName: typeof parsed.haFileName === 'string' ? parsed.haFileName : '',
+      haLoadedAt: typeof parsed.haLoadedAt === 'string' ? parsed.haLoadedAt : null,
+      haCount: Number.isFinite(parsed.haCount) ? parsed.haCount : 0,
+      exportProducts: Array.isArray(parsed.exportProducts) ? parsed.exportProducts : [],
+      haProducts: Array.isArray(parsed.haProducts) ? parsed.haProducts : [],
+    };
+  } catch {
+    return freshState();
+  }
+}
+
+function writeState(state) {
+  fs.mkdirSync(getAppDataDir(), { recursive: true });
+  fs.writeFileSync(stateFilePath(), JSON.stringify(state), 'utf-8');
+}
+
+function publicState(state) {
   return {
     exportFileName: state.exportFileName,
     exportLoadedAt: state.exportLoadedAt,
@@ -212,14 +254,15 @@ function setExportFile({ filename, contentBase64 }) {
     err.code = 'NO_ROWS';
     throw err;
   }
-  state = {
-    ...state,
+  const state = {
+    ...readState(),
     exportFileName: filename || 'Export File',
     exportLoadedAt: new Date().toISOString(),
     exportCount: products.length,
     exportProducts: products,
   };
-  return publicState();
+  writeState(state);
+  return publicState(state);
 }
 
 function setHaFile({ filename, contentBase64 }) {
@@ -229,18 +272,19 @@ function setHaFile({ filename, contentBase64 }) {
     err.code = 'NO_ROWS';
     throw err;
   }
-  state = {
-    ...state,
+  const state = {
+    ...readState(),
     haFileName: filename || 'HA Details',
     haLoadedAt: new Date().toISOString(),
     haCount: products.length,
     haProducts: products,
   };
-  return publicState();
+  writeState(state);
+  return publicState(state);
 }
 
 function getState() {
-  return publicState();
+  return publicState(readState());
 }
 
 // Backs the Rum Repository's "Add from Product Database" button (POST
