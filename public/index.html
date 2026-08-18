@@ -1323,7 +1323,33 @@
       <div class="untappd-picker-body">
         <p class="help-text" id="untappdPickerQueryLabel"></p>
         <button type="button" class="untappd-rec-card" id="untappdPickerRecCard"></button>
+        <!-- Shown instead of the rec card above when there's nothing to
+             recommend - either every candidate above was hand-typed and
+             found nothing (see the manual search form below), or (see
+             runBeerResearch in app.js) this dialog was opened directly on
+             a plain miss rather than a tie, specifically so staff land
+             straight on the manual search box instead of a dead end. -->
+        <div class="untappd-empty" id="untappdPickerEmpty" hidden></div>
         <div id="untappdPickerOthersBlock"></div>
+
+        <!-- "Or search Untappd yourself" - for when none of the options
+             above (or the empty state above) are the right beer.
+             POSTs to /api/untappd-search (unscored - always hands back
+             whatever Untappd found, same shape as a tie's own
+             untappdCandidates) and re-renders this same rec
+             card/others block with the results, same as
+             fetchPreview/render already do for the original candidates -
+             see openUntappdPicker's own loadCandidates for how the two
+             merge. -->
+        <div class="untappd-manual-search">
+          <div class="untappd-others-divider"><span>Or search Untappd yourself</span></div>
+          <p class="help-text" id="untappdPickerManualIntro">Not the right beer? Type in what you'd search Untappd for and we'll look again.</p>
+          <form id="untappdPickerManualForm" class="untappd-manual-search__row">
+            <input type="search" id="untappdPickerManualInput" placeholder="e.g. Devils Backbone Barleywine" autocomplete="off" />
+            <button type="submit" class="btn btn--small btn--primary" id="untappdPickerManualBtn">Search</button>
+          </form>
+        </div>
+
         <p class="help-text" id="untappdPickerStatus" role="status" aria-live="polite"></p>
       </div>
       <div class="modal__footer">

@@ -2404,6 +2404,56 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 }
 .untappd-more-toggle:hover { text-decoration: underline; }
 
+/* Empty state (#untappdPickerEmpty in index.html) - shown in the rec
+   card's own slot when there's nothing to recommend, either because a
+   manual search (see .untappd-manual-search below) came up empty, or the
+   picker was opened directly on a plain miss instead of a tie. Dashed
+   border instead of .untappd-rec-card's solid accent one, so it reads as
+   "nothing here" rather than another pickable option. */
+.untappd-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1.5px dashed var(--ui-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  background: var(--ui-panel-sunken);
+}
+.untappd-empty__title { font-size: 0.88rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-empty__sub { font-size: 0.8rem; color: var(--ui-muted); line-height: 1.4; }
+
+/* "Or search Untappd yourself" (#untappdPickerManualForm in index.html) -
+   sits at the bottom of whatever's shown above it (a tie's Recommended +
+   Others, the empty state, or a previous manual search's own results),
+   using the same divider/help-text language the rest of the dialog
+   already uses so it reads as one more section of it, not a bolted-on
+   extra. See openUntappdPicker's own loadCandidates in app.js. */
+.untappd-manual-search { display: flex; flex-direction: column; gap: 0.45rem; }
+.untappd-manual-search__row { display: flex; gap: 0.5rem; }
+.untappd-manual-search__row input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-field);
+  color: var(--ui-ink);
+}
+.untappd-manual-search__back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-accent-ink);
+  cursor: pointer;
+}
+.untappd-manual-search__back:hover { text-decoration: underline; }
+
 /* ---------- Confirm Untappd Match (#untappdConfirmOverlay in index.html) -
    a single card, not a list of rows like the picker above, since there's
    only ever one match here to look over before signing off on it. ---------- */

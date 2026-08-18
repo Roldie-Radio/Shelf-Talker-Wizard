@@ -1432,6 +1432,42 @@ test('POST /api/beers/:id/research surfaces untappdCandidates for a tie, and unt
   }));
 });
 
+test('POST /api/untappd-search returns raw candidates for a hand-typed query, unscored - the "Or search Untappd yourself" box in Pick the Right Beer', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'devils-backbone-danzig-barleywine', bid: 1, beer_name: 'Danzig Barleywine', brewery_name: 'Devils Backbone Brewing Company' },
+      { beer_slug: 'old-dominion-barleywine', bid: 2, beer_name: 'Barleywine', brewery_name: 'Old Dominion Brewhouse' },
+    ]);
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaBody }),
+      async () => {
+        const result = await postJson(port, '/api/untappd-search', { query: 'barleywine' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.candidates.length, 2);
+        assert.deepEqual(result.body.candidates.map((c) => c.brewery), ['Devils Backbone Brewing Company', 'Old Dominion Brewhouse']);
+        assert.equal(result.body.candidates[0].url, 'https://untappd.com/b/devils-backbone-danzig-barleywine/1');
+      }
+    );
+  }));
+});
+
+test('POST /api/untappd-search 400s on an empty query, and returns an empty list rather than an error on a real miss', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const empty = await postJson(port, '/api/untappd-search', { query: '   ' });
+    assert.equal(empty.status, 400);
+    assert.match(empty.body.error, /Enter something/);
+
+    await withMockFetch(
+      async () => mockResponse({ body: algoliaHitsResponse([]) }),
+      async () => {
+        const result = await postJson(port, '/api/untappd-search', { query: 'gobbledygook' });
+        assert.equal(result.status, 200);
+        assert.deepEqual(result.body.candidates, []);
+      }
+    );
+  }));
+});
+
 test('POST /api/beers/:id/research 404s for an unknown id', async () => {
   await withTempDb(() => withServer(async (port) => {
     const result = await postJson(port, '/api/beers/999999/research', {});

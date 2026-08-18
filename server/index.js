@@ -6,6 +6,7 @@ const {
   TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
   enrichBeerScanFromStore, enrichBeerFromUntappd, enrichSalePriceFromStore, mergeUntappdBeer,
+  algoliaSearchBeerCandidates,
 } = require('./productImport');
 const {
   getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, lookupSkuInExport, searchByName, previewExport,
@@ -987,6 +988,31 @@ function createApp({
       res.json(fields);
     } catch (err) {
       res.status(400).json({ error: err.message || 'Could not read that pasted HTML.' });
+    }
+  });
+
+  // Manual Untappd search - the "Or search Untappd yourself" box at the
+  // bottom of the Pick the Right Beer dialog (openUntappdPicker in
+  // app.js), for when the beer's own automatic search - its confident
+  // match, or the tied candidates it offered instead - wasn't actually
+  // the right beer. Reuses the exact same raw candidate search
+  // algoliaSearchBeerCandidates (productImport.js) does for a tie, but
+  // skips matchUntappdCandidates' scoring/tie-detection entirely: a
+  // hand-typed query doesn't get to silently guess a "best" one on
+  // staff's behalf, it always hands back whatever Untappd found (already
+  // ranked by Untappd's own relevance) for a human to pick from, same
+  // shape as UntappdAmbiguousMatchError's own `candidates` -
+  // {url, title, brewery, beerName} - so the client can render/pick from
+  // either set with the same code.
+  app.post('/api/untappd-search', async (req, res) => {
+    const query = ((req.body && req.body.query) || '').trim();
+    if (!query) return res.status(400).json({ error: 'Enter something to search Untappd for.' });
+
+    try {
+      const candidates = await algoliaSearchBeerCandidates(query);
+      res.json({ candidates });
+    } catch (err) {
+      res.status(502).json({ error: err.message || "Untappd's search isn't responding right now." });
     }
   });
 

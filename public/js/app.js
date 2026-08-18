@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.7',
+      items: [
+        'New: an "Or search Untappd yourself" box at the bottom of Pick the Right Beer - for when none of the suggested matches (or, now, a plain "no confident match" too) are actually the right beer, type in whatever you\'d search Untappd for and it looks again without leaving the dialog. Picking one of the new results works exactly like picking a suggested one; a Back to Untappd\'s own matches link returns to where you started.',
+        'New: the Beer Bible\'s Research button now opens this same dialog on a miss, not just a tie - what used to be a dead-end "Not found" now lands directly on the manual search box instead. Works the same on a Batch Research miss too, via a new Search Untappd… next to each unmatched beer in the results summary.',
+      ],
+    },
+    {
       version: '4.4.6',
       items: [
         'New: a Select button on the Beer Bible grid turns on multi-select - check off any number of beers (across searches/filters, and Card/List view both) and a bulk-action bar appears with Research, Edit Fields, Mark Variety Pack, Export CSV, and Delete for the whole selection at once.',
@@ -1126,8 +1133,13 @@
     untappdPickerQueryLabel: document.getElementById('untappdPickerQueryLabel'),
     untappdPickerRecCard: document.getElementById('untappdPickerRecCard'),
     untappdPickerOthersBlock: document.getElementById('untappdPickerOthersBlock'),
+    untappdPickerEmpty: document.getElementById('untappdPickerEmpty'),
     untappdPickerUseRecBtn: document.getElementById('untappdPickerUseRecBtn'),
     untappdPickerStatus: document.getElementById('untappdPickerStatus'),
+    untappdPickerManualIntro: document.getElementById('untappdPickerManualIntro'),
+    untappdPickerManualForm: document.getElementById('untappdPickerManualForm'),
+    untappdPickerManualInput: document.getElementById('untappdPickerManualInput'),
+    untappdPickerManualBtn: document.getElementById('untappdPickerManualBtn'),
     untappdConfirmOverlay: document.getElementById('untappdConfirmOverlay'),
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
     untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
@@ -4821,6 +4833,11 @@
     },
   });
 
+  // candidates may be empty - runBeerResearch (and any other caller) can
+  // open this directly on a plain miss (untappdError, nothing to pick
+  // from) instead of only ever a tie, specifically so staff land on the
+  // manual search box below rather than a dead end (see the empty state
+  // in render()/loadCandidates below).
   function openUntappdPicker(candidates, queryTitle, { getCurrent = readForm, applyFn = applyUntappdFields } = {}) {
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
@@ -4834,18 +4851,30 @@
       // brand-new tie for a completely unrelated scan would open already
       // greyed-out and unclickable, with no error message explaining why.
       setAllDisabled(false);
-      const count = candidates.length;
-      const otherCount = count - 1;
-      els.untappdPickerQueryLabel.textContent = `Untappd found ${count} equally-likely matches for `
-        + `"${queryTitle}" - review the recommended pick below, or ${otherCount} other option${otherCount === 1 ? '' : 's'}.`;
       els.untappdPickerStatus.textContent = '';
+      els.untappdPickerManualInput.value = '';
+      els.untappdPickerManualBtn.textContent = 'Search';
 
-      // `order` starts as Untappd's own tie order and only ever reshuffles
-      // within the visible window as preview fetches resolve (see
-      // reorderByPopularity below) - the hidden tail behind "+N more" stays
-      // in that original order until/unless it's expanded.
-      let order = candidates.slice();
-      let visibleCount = Math.min(UNTAPPD_PICKER_VISIBLE, order.length);
+      // The candidates/query this dialog was actually opened with - kept
+      // around separately from the mutable `order` below so a manual
+      // search (see loadCandidates/the manual form's onsubmit further
+      // down) has something to offer a "Back to Untappd's own matches"
+      // link to, and so its own empty/found label text can still refer to
+      // the original query rather than whatever was typed most recently.
+      const originalCandidates = candidates.slice();
+      // Whether `order` right now holds the original candidates above or a
+      // manual search's own results - render()/updateQueryLabel below read
+      // this to pick which of the two label/empty-state copy sets to show.
+      let manualActive = false;
+      let manualQuery = '';
+
+      // `order` starts as Untappd's own tie order (or a manual search's
+      // own ranking) and only ever reshuffles within the visible window as
+      // preview fetches resolve (see reorderByPopularity below) - the
+      // hidden tail behind "+N more" stays in that original order until/
+      // unless it's expanded. Actually populated by loadCandidates below.
+      let order = [];
+      let visibleCount = 0;
       // url -> { loading } | { error: true } | full /api/untappd-lookup fields.
       const details = new Map();
       // True while a candidate's real (apply-to-form) fetch is in flight -
@@ -4897,6 +4926,8 @@
         els.untappdPickerRecCard.disabled = disabled;
         els.untappdPickerUseRecBtn.disabled = disabled;
         els.untappdPickerOthersBlock.querySelectorAll('.alt-row').forEach((b) => { b.disabled = disabled; });
+        els.untappdPickerManualInput.disabled = disabled;
+        els.untappdPickerManualBtn.disabled = disabled;
       }
 
       async function selectCandidate(candidate) {
@@ -4938,7 +4969,73 @@
         }
       }
 
+      // Untappd found nothing to show above the manual search box - either
+      // this dialog was opened directly on a plain miss (originalCandidates
+      // is empty), or a manual search itself came up empty. Same slot the
+      // rec card would otherwise sit in (see .untappd-empty in styles.css),
+      // so the layout doesn't jump when there's finally something there.
+      function renderEmpty() {
+        els.untappdPickerRecCard.hidden = true;
+        els.untappdPickerUseRecBtn.hidden = true;
+        els.untappdPickerOthersBlock.innerHTML = '';
+        els.untappdPickerEmpty.hidden = false;
+        els.untappdPickerEmpty.innerHTML = manualActive
+          ? '<span class="untappd-empty__title">No results on Untappd</span>'
+            + '<span class="untappd-empty__sub">Try a different name or brewery below, or Cancel and fill this one in by hand.</span>'
+          : '<span class="untappd-empty__title">No confident match on Untappd</span>'
+            + '<span class="untappd-empty__sub">Try the search box below with a different name or brewery, or Cancel and fill this one in by hand.</span>';
+      }
+
+      function updateQueryLabel() {
+        const n = order.length;
+        if (manualActive) {
+          els.untappdPickerQueryLabel.textContent = n
+            ? `Showing ${n} result${n === 1 ? '' : 's'} for "${manualQuery}".`
+            : `No results for "${manualQuery}".`;
+          return;
+        }
+        if (!n) {
+          els.untappdPickerQueryLabel.textContent = `Untappd found no confident match for "${queryTitle}".`;
+          return;
+        }
+        const otherCount = n - 1;
+        els.untappdPickerQueryLabel.textContent = `Untappd found ${n} equally-likely match${n === 1 ? '' : 'es'} for `
+          + `"${queryTitle}"`
+          + (otherCount > 0 ? ` - review the recommended pick below, or ${otherCount} other option${otherCount === 1 ? '' : 's'}.` : ' - review the recommended pick below.');
+      }
+
+      // The manual search box's own intro line - a plain prompt normally,
+      // but once a manual search is showing its own results, a way back to
+      // where this dialog actually started (only offered when there was
+      // something original to go back to - a plain-miss open has nothing
+      // there, so that case just invites another search instead).
+      function updateManualIntro() {
+        if (manualActive && originalCandidates.length) {
+          els.untappdPickerManualIntro.innerHTML = '<button type="button" class="untappd-manual-search__back">&lsaquo; Back to Untappd&rsquo;s own matches</button>';
+          els.untappdPickerManualIntro.querySelector('.untappd-manual-search__back').addEventListener('click', () => {
+            manualActive = false;
+            manualQuery = '';
+            els.untappdPickerManualInput.value = '';
+            els.untappdPickerStatus.textContent = '';
+            loadCandidates(originalCandidates);
+          });
+        } else if (manualActive) {
+          els.untappdPickerManualIntro.textContent = 'Still not it? Try another search.';
+        } else {
+          els.untappdPickerManualIntro.textContent = "Not the right beer? Type in what you'd search Untappd for and we'll look again.";
+        }
+      }
+
       function render() {
+        updateQueryLabel();
+        updateManualIntro();
+        if (!order.length) {
+          renderEmpty();
+          return;
+        }
+        els.untappdPickerRecCard.hidden = false;
+        els.untappdPickerUseRecBtn.hidden = false;
+        els.untappdPickerEmpty.hidden = true;
         const [rec, ...rest] = order;
         const shownOthers = rest.slice(0, visibleCount - 1);
         const hiddenCount = order.length - visibleCount;
@@ -5011,11 +5108,67 @@
         }
       }
 
+      // Swaps in a fresh candidate set (the original tie/miss this dialog
+      // opened with, or a manual search's own results) and starts preview
+      // fetches for whatever's now visible - shared by the initial open
+      // below, the manual search form's own onsubmit, and its "Back to
+      // Untappd's own matches" link (see updateManualIntro above).
+      function loadCandidates(newCandidates) {
+        order = newCandidates.slice();
+        visibleCount = Math.min(UNTAPPD_PICKER_VISIBLE, order.length);
+        details.clear();
+        selecting = false;
+        setAllDisabled(false);
+        render();
+        order.slice(0, visibleCount).forEach(fetchPreview);
+      }
+
       els.untappdPickerUseRecBtn.onclick = () => selectCandidate(order[0]);
 
-      render();
+      // Reassigned (not addEventListener) each call, same reason
+      // els.untappdPickerUseRecBtn.onclick above already is - this
+      // function reruns every time the dialog opens, and addEventListener
+      // would stack a fresh listener on the same shared form node on top
+      // of every previous invocation's.
+      els.untappdPickerManualForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const q = els.untappdPickerManualInput.value.trim();
+        if (!q) {
+          els.untappdPickerStatus.textContent = 'Enter something to search Untappd for.';
+          return;
+        }
+        setAllDisabled(true);
+        els.untappdPickerStatus.textContent = '';
+        els.untappdPickerManualBtn.innerHTML = `${BEER_RESEARCH_SPIN_ICON}Searching&hellip;`;
+        try {
+          const resp = await fetch('/api/untappd-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || "Untappd's search isn't responding right now.");
+          // Staff already backed out of the dialog while this was in
+          // flight (same guard selectCandidate's own catch/success paths
+          // use above) - applying these results now would resurrect a
+          // dialog that's already closed, or step on whatever reopened it.
+          if (untappdPickerResolve !== resolve) return;
+          manualActive = true;
+          manualQuery = q;
+          loadCandidates(data.candidates || []);
+        } catch (err) {
+          if (untappdPickerResolve !== resolve) return;
+          els.untappdPickerStatus.textContent = err.message || "Untappd's search isn't responding right now.";
+        } finally {
+          if (untappdPickerResolve === resolve) {
+            setAllDisabled(false);
+            els.untappdPickerManualBtn.textContent = 'Search';
+          }
+        }
+      };
+
+      loadCandidates(originalCandidates);
       untappdPickerModal.open();
-      order.slice(0, visibleCount).forEach(fetchPreview);
     });
   }
 
@@ -8408,13 +8561,18 @@
       }
 
       if (data.untappdError) {
-        // No confident match and nothing to pick from - leave the entry
-        // alone and let staff try again (or fall back to Edit) rather than
-        // silently reverting to the plain idle chip with no explanation.
-        btn.disabled = false;
-        btn.title = data.untappdError;
-        btn.innerHTML = `${BEER_RESEARCH_ICON}Not found &ndash; Retry`;
-        return false;
+        // No confident match and nothing to pick from automatically - opens
+        // the same Pick the Right Beer dialog a tie does, just with an
+        // empty candidate list, so staff land on its "Or search Untappd
+        // yourself" box (see openUntappdPicker's own empty state) instead
+        // of a dead end. Same "picked doubles as was this saved" pattern
+        // the tie branch above already uses.
+        const picked = await openUntappdPicker([], beerDisplayName(entry) || entry.title, {
+          getCurrent: () => beerResearchCurrentFields(entry),
+          applyFn: (fields) => saveBeerResearchFields(entryId, fields),
+        });
+        if (!picked) resetBeerResearchButton(btn);
+        return picked;
       }
 
       // A single confident match still gets the same review step every
@@ -9535,8 +9693,9 @@
         <span class="rresult__icon rresult__icon--muted">${BEER_RESULT_ICON_MISS}</span>
         <div class="rresult__body">
           <div class="rresult__title">${escapeHtml(b.title)}</div>
-          <div class="rresult__detail">No confident match on Untappd - edit this one by hand.</div>
+          <div class="rresult__detail">No confident match on Untappd - edit this one by hand, or search Untappd yourself.</div>
           <button type="button" class="rcompare-toggle" data-toggle="${b.id}">Show comparison</button>
+          <button type="button" class="rcompare-toggle" data-manual-search="${b.id}">Search Untappd&hellip;</button>
           <div class="rresult__compare" data-compare-slot="${b.id}" hidden>${beerCompareCardHtml(b, 'miss')}</div>
         </div>
       </div>
@@ -9548,8 +9707,15 @@
   }
 
   let beerBulkResearchCancelled = false;
+  // The most recent batch's own results - kept around (not just passed
+  // through as a local) so the summary's own "Search Untappd…" button (see
+  // the [data-manual-search] handler below) can find and update the one
+  // result a manual search resolves, then redraw the whole summary the
+  // same way a fresh batch finishing already does.
+  let beerBulkResearchResults = [];
 
   function finishBeerBibleBulkResearch(results) {
+    beerBulkResearchResults = results;
     els.beerBibleBulkResearchCurrent.innerHTML = '';
     els.beerBibleBulkResearchLive.innerHTML = '';
     els.beerBibleBulkResearchProgress.hidden = true;
@@ -9657,13 +9823,35 @@
     finishBeerBibleBulkResearch(results);
   }
 
-  els.beerBibleBulkResearchResults.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-toggle]');
-    if (!btn) return;
-    const slot = document.querySelector(`[data-compare-slot="${btn.dataset.toggle}"]`);
-    if (!slot) return;
-    slot.hidden = !slot.hidden;
-    btn.textContent = slot.hidden ? 'Show comparison' : 'Hide comparison';
+  els.beerBibleBulkResearchResults.addEventListener('click', async (e) => {
+    const toggleBtn = e.target.closest('[data-toggle]');
+    if (toggleBtn) {
+      const slot = document.querySelector(`[data-compare-slot="${toggleBtn.dataset.toggle}"]`);
+      if (!slot) return;
+      slot.hidden = !slot.hidden;
+      toggleBtn.textContent = slot.hidden ? 'Show comparison' : 'Hide comparison';
+      return;
+    }
+
+    // A miss's own "Search Untappd…" (see beerBulkResearchResultRowHtml
+    // above) - opens the same Pick the Right Beer dialog a live tie during
+    // the batch already reuses, just for this one beer after the fact
+    // rather than pausing the whole run for it (a miss mid-batch is left
+    // alone precisely so an unattended batch can finish - see
+    // runBeerBibleBulkResearch's own miss branch).
+    const searchBtn = e.target.closest('[data-manual-search]');
+    if (!searchBtn) return;
+    const id = Number(searchBtn.dataset.manualSearch);
+    const result = beerBulkResearchResults.find((r) => r.beer.id === id);
+    if (!result) return;
+    const picked = await openUntappdPicker([], beerDisplayName(result.beer) || result.beer.title, {
+      getCurrent: () => beerResearchCurrentFields(result.beer),
+      applyFn: (fields) => saveBeerResearchFields(id, fields),
+    });
+    if (!picked) return;
+    result.outcome = 'match';
+    result.beer = beerBibleCache.find((b) => b.id === id) || result.beer;
+    finishBeerBibleBulkResearch(beerBulkResearchResults);
   });
 
   // No onOpen here - runBeerBibleBulkResearch itself resets/populates the
