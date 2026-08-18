@@ -9671,8 +9671,8 @@
   const BEER_LANDING_CUSTOMIZE_KEY = 'shelfTalkerBeerLandingCustomize.v1';
   const BEER_LANDING_SECTIONS = [
     { id: 'style', label: "What's in the library" },
-    { id: 'origin', label: "Where it's from" },
     { id: 'format', label: "How it's packaged" },
+    { id: 'origin', label: "Where it's from" },
     { id: 'progress', label: 'Research progress' },
     { id: 'spotlight', label: 'Top rated in the library' },
     { id: 'breweries', label: 'Breweries on the shelf' },
