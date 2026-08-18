@@ -12046,6 +12046,7 @@
     { key: 'upc', label: 'UPC' },
     { key: 'size', label: 'Size' },
     { key: 'price', label: 'Price' },
+    { key: 'onHand', label: 'On Hand' },
     { key: 'brand', label: 'Brand' },
     { key: 'department', label: 'Department' },
     { key: 'subDepartment', label: 'Sub Department' },

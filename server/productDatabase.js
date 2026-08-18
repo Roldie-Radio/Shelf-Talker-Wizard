@@ -6,8 +6,8 @@
 //
 // The two files:
 //  - Export File: the same WinePOS product export Scan UPC/Export File
-//    Settings already read (see upcCatalog.js) - has UPC, price, size, etc.
-//    per SKU.
+//    Settings already read (see upcCatalog.js) - has UPC, price, size,
+//    on-hand quantity, etc. per SKU.
 //  - HA Details: a separate spreadsheet staff export from wherever
 //    Department/Sub Department live (a system this app has no other
 //    integration with) - same SKUs, different columns.
@@ -103,6 +103,7 @@ function extractExportProducts(rows) {
       size: cellAt(row, colFor, 'size'),
       price: cellAt(row, colFor, 'price'),
       brand: cellAt(row, colFor, 'brand'),
+      onHand: cellAt(row, colFor, 'onHand'),
     }))
     .filter((p) => p.sku);
 }
@@ -153,6 +154,7 @@ function mergeProducts(exportProducts, haProducts) {
       size: p.size,
       price: p.price,
       brand: p.brand,
+      onHand: p.onHand,
       department: ha ? ha.department : '',
       subDepartment: ha ? ha.subDepartment : '',
     });
@@ -168,6 +170,7 @@ function mergeProducts(exportProducts, haProducts) {
       size: '',
       price: '',
       brand: '',
+      onHand: '',
       department: p.department,
       subDepartment: p.subDepartment,
     });

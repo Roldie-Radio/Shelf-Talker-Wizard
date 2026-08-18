@@ -7,9 +7,9 @@ const {
 } = require('../server/productDatabase');
 
 const EXPORT_ROWS = [
-  ['SKU', 'UPC', 'Description', 'Size', 'Price'],
-  ['1001', '012345678905', 'Josh Cellars Cab', '750ml', '13.99'],
-  ['1002', '012345678912', 'Some Beer 6pk', '6pk', '9.99'],
+  ['SKU', 'UPC', 'Description', 'Size', 'Price', 'Current Inv'],
+  ['1001', '012345678905', 'Josh Cellars Cab', '750ml', '13.99', '24'],
+  ['1002', '012345678912', 'Some Beer 6pk', '6pk', '9.99', '0'],
 ];
 
 const HA_ROWS = [
@@ -18,12 +18,13 @@ const HA_ROWS = [
   ['1003', 'Mystery Item', 'Beer', 'IPA'],
 ];
 
-test('extractExportProducts reads SKU/UPC/title/size/price by header alias, same as upcCatalog.js', () => {
+test('extractExportProducts reads SKU/UPC/title/size/price/on-hand by header alias, same as upcCatalog.js', () => {
   const products = extractExportProducts(EXPORT_ROWS);
   assert.equal(products.length, 2);
   assert.deepEqual(products[0], {
-    sku: '1001', title: 'Josh Cellars Cab', upc: '012345678905', size: '750ml', price: '13.99', brand: '',
+    sku: '1001', title: 'Josh Cellars Cab', upc: '012345678905', size: '750ml', price: '13.99', brand: '', onHand: '24',
   });
+  assert.equal(products[1].onHand, '0');
 });
 
 test('extractExportProducts throws NO_SKU_COLUMN when the header row has no recognizable SKU column', () => {
@@ -49,10 +50,13 @@ test('mergeProducts joins by SKU: a SKU in both files gets both halves, a SKU in
   const bySku = Object.fromEntries(merged.map((p) => [p.sku, p]));
   assert.equal(bySku['1001'].department, 'Wine');
   assert.equal(bySku['1001'].upc, '012345678905');
+  assert.equal(bySku['1001'].onHand, '24');
   assert.equal(bySku['1002'].department, ''); // export-only row
   assert.equal(bySku['1002'].upc, '012345678912');
+  assert.equal(bySku['1002'].onHand, '0');
   assert.equal(bySku['1003'].department, 'Beer'); // HA-only row
   assert.equal(bySku['1003'].upc, '');
+  assert.equal(bySku['1003'].onHand, ''); // HA-only row has no on-hand qty
 });
 
 test('mergeProducts matches SKUs that differ only by a trailing ".0" float artifact, same as upcCatalog.js', () => {
