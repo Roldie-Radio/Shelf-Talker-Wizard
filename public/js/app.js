@@ -9271,24 +9271,146 @@
   //
   // The screen renderBeerBibleView opens on - a third view mode alongside
   // the grid and a beer's own profile page (see beerBibleViewMode above),
-  // built as a straight dashboard over buildBeerBibleGroups: a hero stat
-  // strip, a style-mix donut, a Top Rated spotlight, a breweries grid, and
-  // a Recently Researched feed. See docs/mockups/beer-bible-landing.html
-  // for the mockup this was built from.
+  // built as a dashboard over buildBeerBibleGroups: a hero stat strip, an
+  // interactive style-mix donut, a package-format breakdown, a
+  // research-progress ring, a Top Rated spotlight, an ABV beeswarm, a
+  // breweries grid, and a Recently Researched feed - reorderable/hideable
+  // via the "Customize this page" control (see BEER_LANDING_SECTIONS
+  // below). See docs/mockups/beer-bible-landing.html for the mockup this
+  // was built from.
   //
   // Every number here is real, computed live off beerBibleCache - unlike
   // the mockup, which leaned on illustrative sample beers because the real
   // table ships with almost nothing researched at first. Each section
   // falls back to plain empty-hint copy instead (see
   // beerStyleMixHtml/beerLandingSpotlightHtml/beerLandingBreweryGridHtml/
-  // beerLandingActivityHtml below) rather than rendering a chart with
-  // nothing real behind it, so a freshly-imported, unresearched library
-  // reads as exactly that instead of looking more finished than it is.
+  // beerLandingActivityHtml/beerLandingAbvHtml below) rather than
+  // rendering a chart with nothing real behind it, so a freshly-imported,
+  // unresearched library reads as exactly that instead of looking more
+  // finished than it is.
 
   // Fixed amber/copper accent set for the style-mix donut below - not
   // generated per render, so a given slot's color doesn't shift between
   // renders while the set of styles on file is still small and changing.
+  // Only used as a fallback now (see BEER_STYLE_FAMILY_COLORS below) for a
+  // one-off style/family this list doesn't otherwise assign a color to.
   const BEER_LANDING_CHART_COLORS = ['#c8722c', '#8a5f27', '#d9a441', '#6b8f47', '#4a7c8c', '#a1493f', '#7d5a8a', '#5a8a6b'];
+
+  // Per-family donut colors, roughly SRM order (pale straw -> gold ->
+  // amber -> brown -> near-black) so the chart reads as actual beer color
+  // rather than an arbitrary categorical palette - matching each name in
+  // BEER_STYLE_FAMILIES below. Seltzer & RTD is the deliberate exception:
+  // it isn't beer-colored at all, so it gets a cool, near-clear tone
+  // instead of a spot on the amber scale. A family/style with no entry
+  // here (an uncommon one-off style with no family match) falls back to
+  // BEER_LANDING_CHART_COLORS above, cycled by slice position.
+  const BEER_STYLE_FAMILY_COLORS = {
+    'Golden & Blonde Ale': '#f0dd8e',
+    'Lager & Pilsner': '#eccf72',
+    'Wheat & Wit': '#e6bd5c',
+    'Pale Ale': '#d9924a',
+    'Belgian & Farmhouse': '#caa15b',
+    'Cider': '#d99a3a',
+    'IPA': '#c8722c',
+    'Amber & Red Ale': '#b5652f',
+    'Sour & Wild': '#b96a52',
+    'Non-Alcoholic': '#8f6a3e',
+    'Brown Ale': '#5a3b23',
+    'Barleywine & Strong Ale': '#5a2d16',
+    'Stout & Porter': '#3c2417',
+    'Seltzer & RTD': '#dbe4de',
+  };
+
+  // ABV beeswarm dot colors (see beerLandingAbvHtml below) - same
+  // session/standard/high-ABV three-way split the legend under the chart
+  // spells out.
+  const BEER_ABV_LOW_COLOR = '#d9a441';
+  const BEER_ABV_MID_COLOR = '#6b8f47';
+  const BEER_ABV_HIGH_COLOR = '#a1493f';
+
+  // Pack-size keyword pass over each beer's own title text, same idea as
+  // BEER_STYLE_FAMILIES below but for "How it's packaged" - checked in
+  // order (first match wins), same reasoning as that list's own ordering
+  // comment (Variety Pack before the plain pack-count rules, since a
+  // variety pack's title often also contains a pack count like "12PK").
+  // Runs over every beer regardless of research status, since pack size
+  // comes straight from the title text a product import already provides
+  // for 100% of rows, not anything that needs researching first.
+  const BEER_PACKAGE_FORMATS = [
+    { name: 'Variety pack', test: /variety/i },
+    { name: 'Keg / growler', test: /\bkeg\b|growler/i },
+    { name: '15/18/24-pack (case)', test: /\b(1[58]|2[04]|30)\s*pk\b/i },
+    { name: '12-pack', test: /\b12\s*pk\b/i },
+    { name: '6-pack', test: /\b6\s*pk\b/i },
+    { name: '4-pack', test: /\b4\s*pk\b/i },
+    { name: 'Single can/bottle', test: /\b(sgl|single|1\s*pk|ea)\b/i },
+  ];
+  function beerPackageFormat(title) {
+    const match = BEER_PACKAGE_FORMATS.find((f) => f.test.test(title || ''));
+    return match ? match.name : 'Other / unmatched';
+  }
+
+  // "Customize this page" - which sections a viewer wants shown and in
+  // what order, saved to this PC's own localStorage (same
+  // shelfTalker*.v1 convention as BEER_BIBLE_SORT_KEY above) so it's
+  // personal to whoever's using this install rather than a shared,
+  // store-wide setting. The hero stat strip and the "+ Add a Beer" CTA
+  // aren't in this list - they stay fixed regardless of what a viewer
+  // customizes, since they anchor the page.
+  const BEER_LANDING_CUSTOMIZE_KEY = 'shelfTalkerBeerLandingCustomize.v1';
+  const BEER_LANDING_SECTIONS = [
+    { id: 'style', label: "What's in the library" },
+    { id: 'format', label: "How it's packaged" },
+    { id: 'progress', label: 'Research progress' },
+    { id: 'spotlight', label: 'Top rated in the library' },
+    { id: 'abv', label: 'ABV mix' },
+    { id: 'breweries', label: 'Breweries on the shelf' },
+    { id: 'activity', label: 'Recently researched' },
+  ];
+
+  function defaultBeerLandingPrefs() {
+    return { order: BEER_LANDING_SECTIONS.map((s) => s.id), hidden: [] };
+  }
+  // Lazily loaded/cached rather than read fresh from localStorage on every
+  // render - renderBeerBibleLanding below mutates this object directly
+  // (toggling a checkbox, reordering) and calls saveBeerLandingPrefs, same
+  // in-memory-then-persist pattern as beerBibleSortKey elsewhere in this
+  // file.
+  let beerLandingPrefsCache = null;
+  function loadBeerLandingPrefs() {
+    if (beerLandingPrefsCache) return beerLandingPrefsCache;
+    const knownIds = BEER_LANDING_SECTIONS.map((s) => s.id);
+    try {
+      const raw = localStorage.getItem(BEER_LANDING_CUSTOMIZE_KEY);
+      const parsed = raw && JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.order) && Array.isArray(parsed.hidden)) {
+        const order = parsed.order.filter((id) => knownIds.includes(id));
+        knownIds.forEach((id) => { if (!order.includes(id)) order.push(id); }); // pick up any newly added section
+        beerLandingPrefsCache = { order, hidden: parsed.hidden.filter((id) => knownIds.includes(id)) };
+      } else {
+        beerLandingPrefsCache = defaultBeerLandingPrefs();
+      }
+    } catch {
+      beerLandingPrefsCache = defaultBeerLandingPrefs();
+    }
+    return beerLandingPrefsCache;
+  }
+  function saveBeerLandingPrefs() {
+    try { localStorage.setItem(BEER_LANDING_CUSTOMIZE_KEY, JSON.stringify(beerLandingPrefsCache)); } catch { /* choice just won't survive a restart */ }
+  }
+
+  // Which donut slice's own real styles are currently drilled into (see
+  // beerStyleMixHtml/selectBeerLandingFamily below) - null shows the plain
+  // totals. Reset whenever the landing page is freshly opened (see
+  // renderBeerBibleView), not on every render, so picking a slice and then
+  // toggling a "Customize this page" checkbox doesn't lose the drill-down.
+  let beerLandingSelectedFamily = null;
+  // Whether the "Customize this page" popover is open - a plain var rather
+  // than reading the DOM's own hidden attribute back, since
+  // renderBeerBibleLanding rebuilds that DOM from scratch on every call
+  // (including the ones a customize interaction itself triggers) and needs
+  // something outside the DOM to remember "stay open" across that rebuild.
+  let beerLandingCustomizePopoverOpen = false;
 
   function beerLandingAvgRating(groups) {
     const rated = groups.filter((g) => Number(g.untappdRating) > 0);
@@ -9346,12 +9468,20 @@
     return family ? family.name : s;
   }
 
-  // Style-mix donut + legend, conic-gradient built inline - same technique
-  // docs/mockups/mash-bill-pie-chart.html and beer-bible-landing.html both
-  // already use. Runs over researched beers only (an unresearched beer has
-  // no style worth charting); a researched beer with no style typed in
-  // still counts, in its own "Style not on file" bucket, rather than
-  // silently vanishing from the total the donut adds up to.
+  // Style-mix donut + legend, drawn as clickable SVG arcs (stroke-dasharray
+  // per slice, same technique docs/mockups/beer-bible-landing.html's own
+  // interactive donut uses) rather than the plain conic-gradient div this
+  // used to be - a conic-gradient has no per-slice element to attach a
+  // click handler to. Runs over researched beers only (an unresearched
+  // beer has no style worth charting); a researched beer with no style
+  // typed in still counts, in its own "Style not on file" bucket, rather
+  // than silently vanishing from the total the donut adds up to.
+  //
+  // Clicking a slice or legend row (see selectBeerLandingFamily below)
+  // drills into that bucket's own real styles - e.g. "IPA" breaks down
+  // into whatever exact style strings ("Hazy IPA", "West Coast IPA", ...)
+  // are actually on file for beers in that family, not fabricated
+  // sub-styles the way the mockup's own illustrative version had to use.
   function beerStyleMixHtml(researchedGroups) {
     if (!researchedGroups.length) {
       return '<p class="empty-hint">No beers researched yet - the style breakdown fills in as entries get researched.</p>';
@@ -9363,39 +9493,271 @@
     });
     const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
     const top = sorted.slice(0, 7);
-    const restTotal = sorted.slice(7).reduce((sum, [, n]) => sum + n, 0);
+    const rest = sorted.slice(7);
+    const restTotal = rest.reduce((sum, [, n]) => sum + n, 0);
     const slices = restTotal ? [...top, ['Other styles', restTotal]] : top;
     const total = researchedGroups.length;
+
+    let fallbackIdx = 0;
     let acc = 0;
-    const stops = slices.map(([name, count], i) => {
-      const color = name === 'Style not on file' ? 'var(--ui-border)' : BEER_LANDING_CHART_COLORS[i % BEER_LANDING_CHART_COLORS.length];
-      const start = (acc / total) * 360;
+    const stops = slices.map(([name, count]) => {
+      const color = name === 'Style not on file'
+        ? 'var(--ui-border)'
+        : (BEER_STYLE_FAMILY_COLORS[name] || BEER_LANDING_CHART_COLORS[fallbackIdx++ % BEER_LANDING_CHART_COLORS.length]);
+      const start = acc;
       acc += count;
-      return { name, count, color, start, end: (acc / total) * 360 };
+      return { name, count, color, start };
     });
-    const donutStops = stops.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(', ');
+
+    const selected = beerLandingSelectedFamily;
+    const cx = 85, cy = 85, r = 68, strokeWidth = 26;
+    const circumference = 2 * Math.PI * r;
+    const arcsHtml = stops.map((s) => {
+      const arcLen = (s.count / total) * circumference;
+      const dashoffset = -(s.start / total) * circumference;
+      const dimmed = selected && selected !== s.name;
+      const clickable = s.name !== 'Style not on file';
+      return `<circle class="beer-style-arc${dimmed ? ' beer-style-arc--dim' : ''}${clickable ? '' : ' beer-style-arc--static'}" cx="${cx}" cy="${cy}" r="${r}"
+        fill="none" style="stroke:${s.color}" stroke-width="${strokeWidth}"
+        stroke-dasharray="${arcLen} ${circumference - arcLen}" stroke-dashoffset="${dashoffset}"
+        transform="rotate(-90 ${cx} ${cy})" pointer-events="${clickable ? 'stroke' : 'none'}"
+        ${clickable ? `role="button" tabindex="0" aria-label="${escapeHtml(s.name)}, ${s.count} beer${s.count === 1 ? '' : 's'}"` : ''}
+        data-key="${escapeHtml(s.name)}"></circle>`;
+    }).join('');
+
     // `beer-` prefixed class names throughout - see the CSS block's own
     // comment in styles.css for why this doesn't reuse .donut-wrap/
     // .donut-center/.legend-* from the unrelated Mash Bill donut chart.
-    const legendHtml = stops.map((s) => `
-      <div class="beer-legend-row">
+    const legendHtml = stops.map((s) => {
+      const active = selected === s.name;
+      const dimmed = selected && !active;
+      const clickable = s.name !== 'Style not on file';
+      const tag = clickable ? 'button' : 'div';
+      return `
+      <${tag} ${clickable ? 'type="button"' : ''} class="beer-legend-row${clickable ? ' beer-legend-row--clickable' : ''}${active ? ' beer-legend-row--active' : ''}${dimmed ? ' beer-legend-row--dim' : ''}" ${clickable ? `data-key="${escapeHtml(s.name)}"` : ''}>
         <span class="beer-legend-swatch" style="background:${s.color};"></span>
         <span class="beer-legend-row__name">${escapeHtml(s.name)}</span>
         <span class="beer-legend-row__pct">${Math.round((s.count / total) * 100)}%</span>
         <span class="beer-legend-row__count">${s.count}</span>
-      </div>
-    `).join('');
+      </${tag}>
+    `;
+    }).join('');
+
+    const selectedStop = selected ? stops.find((s) => s.name === selected) : null;
+    const centerNum = selectedStop ? `${Math.round((selectedStop.count / total) * 100)}%` : total;
+    const centerLabel = selectedStop ? selectedStop.name : `researched ${total === 1 ? 'beer' : 'beers'}`;
+
     return `
       <div class="beer-donut-wrap">
-        <div class="beer-donut" style="background: conic-gradient(${donutStops});">
+        <div class="beer-donut">
+          <svg class="beer-donut-svg" viewBox="0 0 170 170">${arcsHtml}</svg>
           <div class="beer-donut-center">
-            <div class="beer-donut-center__num">${total}</div>
-            <div class="beer-donut-center__label">researched ${total === 1 ? 'beer' : 'beers'}</div>
+            <div class="beer-donut-center__num">${escapeHtml(String(centerNum))}</div>
+            <div class="beer-donut-center__label">${escapeHtml(centerLabel)}</div>
           </div>
         </div>
         <div class="beer-legend">${legendHtml}</div>
       </div>
+      ${selected ? beerStyleDrilldownHtml(selected, researchedGroups, counts, rest) : ''}
     `;
+  }
+
+  // The drill-down panel a donut slice/legend click above reveals - real
+  // styles, not fabricated ones (contrast with the mockup's illustrative
+  // sub-style split, which had to make its counts up since it wasn't
+  // wired to live data). Three cases: "Style not on file" has nothing to
+  // break down; "Other styles" breaks down into the exact families/styles
+  // that got folded into it (already computed by beerStyleMixHtml as
+  // `rest`, no need to recompute); any real family name re-groups
+  // researchedGroups by each beer's own raw style text within that
+  // family. A bucket that's already a single specific style (no family
+  // matched it, so its own bucket name IS that raw style) has nothing
+  // further to drill into either - shown as a short note instead of a
+  // redundant one-row bar chart.
+  function beerStyleDrilldownHtml(selected, researchedGroups, counts, rest) {
+    const bucketTotal = counts.get(selected) || 0;
+    const headHtml = `
+      <div class="drilldown__head">
+        <div class="drilldown__title">${escapeHtml(selected)} <span>&mdash; ${bucketTotal} beer${bucketTotal === 1 ? '' : 's'}</span></div>
+        <button type="button" class="drilldown__back" data-key="${escapeHtml(selected)}">&times; Clear</button>
+      </div>`;
+
+    if (selected === 'Style not on file') {
+      return `<div class="drilldown">${headHtml}
+        <p class="drilldown__note">These beers are researched but don't have a style typed in yet - add one on
+        each (Edit &rarr; Style) to sort them into the chart above.</p>
+      </div>`;
+    }
+
+    let subEntries;
+    if (selected === 'Other styles') {
+      subEntries = rest;
+    } else {
+      const subCounts = new Map();
+      researchedGroups.forEach((g) => {
+        if (beerStyleFamily(g.style) === selected) {
+          const raw = (g.style || '').trim();
+          subCounts.set(raw, (subCounts.get(raw) || 0) + 1);
+        }
+      });
+      subEntries = Array.from(subCounts.entries()).sort((a, b) => b[1] - a[1]);
+    }
+
+    if (subEntries.length <= 1) {
+      const onlyName = subEntries[0] ? subEntries[0][0] : selected;
+      return `<div class="drilldown">${headHtml}
+        <p class="drilldown__note">Every researched beer here already shares the exact style &ldquo;${escapeHtml(onlyName)}&rdquo;.</p>
+      </div>`;
+    }
+
+    const subMax = Math.max(...subEntries.map(([, n]) => n));
+    return `<div class="drilldown">${headHtml}
+      <div class="format-bars">
+        ${subEntries.map(([name, count]) => `
+          <div class="format-row">
+            <span class="format-row__label">${escapeHtml(name)}</span>
+            <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((count / subMax) * 100)}%;"></span></span>
+            <span class="format-row__count">${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  function selectBeerLandingFamily(key) {
+    beerLandingSelectedFamily = beerLandingSelectedFamily === key ? null : key;
+    renderBeerBibleLanding();
+  }
+
+  // "How it's packaged" - real pack-size counts from a keyword pass over
+  // every beer's own title (see BEER_PACKAGE_FORMATS above), not just
+  // researched ones, since pack size comes straight from the title text a
+  // product import already provides for every row. Reuses the same
+  // .format-row markup the style drill-down above does.
+  function beerLandingFormatHtml(groups) {
+    const counts = new Map();
+    groups.forEach((g) => {
+      const key = beerPackageFormat(g.title);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    const max = sorted[0][1];
+    return `<div class="format-bars">${sorted.map(([name, count]) => `
+      <div class="format-row">
+        <span class="format-row__label">${escapeHtml(name)}</span>
+        <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((count / max) * 100)}%;"></span></span>
+        <span class="format-row__count">${count}</span>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // Research progress ring - the one number on this whole page that's
+  // guaranteed to start near-empty on a freshly imported library and fill
+  // in for real as staff work through the backlog, same "researched" test
+  // beerIsResearched already uses everywhere else on this screen.
+  function beerLandingProgressHtml(researchedCount, total) {
+    if (!total) return '<p class="empty-hint">Nothing on file yet.</p>';
+    const pct = Math.round((researchedCount / total) * 100);
+    // Floors at 3deg so the ring reads as a ring (not an invisible sliver)
+    // even at 0-1%, same reasoning as the style donut never rendering a
+    // literally-zero-width arc.
+    const deg = researchedCount > 0 ? Math.max((pct / 100) * 360, 3) : 0;
+    return `
+      <div class="progress-ring-wrap">
+        <div class="progress-ring" style="--beer-progress-deg:${deg}deg;">
+          <div class="progress-ring__num">${pct}%</div>
+        </div>
+        <p class="progress-copy"><strong>${researchedCount} of ${total}</strong> beers have been researched so far.
+        Every beer that gets researched - by hand or pulled in from Untappd - fills the ring a little more.</p>
+      </div>`;
+  }
+
+  // ABV mix beeswarm - one dot per researched beer with a numeric ABV on
+  // file (see beerAbvNum above), positioned by its real value with a
+  // simple greedy lane-packing algorithm so close ABVs stack into rows
+  // instead of overlapping, rather than the mockup's fabricated sample
+  // beers. Needs a handful of real values before it's worth showing at
+  // all - four or fewer dots wouldn't read as a distribution, just a
+  // handful of unrelated points.
+  function beerLandingAbvHtml(researchedGroups) {
+    const beers = researchedGroups
+      .map((g) => ({ title: beerDisplayName(g), abv: beerAbvNum(g) }))
+      .filter((b) => b.abv >= 0);
+    if (beers.length < 5) {
+      return '<p class="empty-hint">Not enough researched ABVs yet - this fills in once a handful of beers have an ABV on file.</p>';
+    }
+    const maxAbv = Math.max(14, Math.ceil(Math.max(...beers.map((b) => b.abv)) / 2) * 2);
+    const minGapPct = 4.2; // percent-of-width gap before a dot needs a new lane
+    const lanes = []; // lanes[i] = x% of the last dot placed in that lane
+    const placed = beers
+      .slice()
+      .sort((a, b) => a.abv - b.abv)
+      .map((b) => {
+        const xPct = Math.min(100, (b.abv / maxAbv) * 100);
+        let lane = lanes.findIndex((lastX) => xPct - lastX >= minGapPct);
+        if (lane === -1) { lane = lanes.length; lanes.push(xPct); } else { lanes[lane] = xPct; }
+        return { ...b, xPct, lane };
+      });
+    const dotColor = (abv) => (abv < 4.5 ? BEER_ABV_LOW_COLOR : abv >= 9 ? BEER_ABV_HIGH_COLOR : BEER_ABV_MID_COLOR);
+    const dotsHtml = placed.map((b) => `
+      <div class="beeswarm__dot" style="left:${b.xPct}%; bottom:${8 + b.lane * 14}px; background:${dotColor(b.abv)};"
+        title="${escapeHtml(b.title)} — ${b.abv.toFixed(1)}% ABV"></div>
+    `).join('');
+    const axisSteps = 4;
+    const axisHtml = Array.from({ length: axisSteps + 1 }, (_, i) => `<span>${Math.round((maxAbv / axisSteps) * i)}%</span>`).join('');
+    return `
+      <div class="beeswarm">${dotsHtml}</div>
+      <div class="beeswarm__axis">${axisHtml}</div>
+      <div class="beeswarm__legend">
+        <span><i style="background:${BEER_ABV_LOW_COLOR};"></i> Session (&lt;4.5%)</span>
+        <span><i style="background:${BEER_ABV_MID_COLOR};"></i> Standard</span>
+        <span><i style="background:${BEER_ABV_HIGH_COLOR};"></i> High ABV (9%+)</span>
+      </div>`;
+  }
+
+  // "Customize this page" popover contents - see BEER_LANDING_SECTIONS/
+  // loadBeerLandingPrefs above for what's actually stored.
+  function beerLandingCustomizeListHtml() {
+    const prefs = loadBeerLandingPrefs();
+    return prefs.order.map((id, i) => {
+      const meta = BEER_LANDING_SECTIONS.find((s) => s.id === id);
+      const hidden = prefs.hidden.includes(id);
+      return `
+      <div class="customize-row">
+        <label class="customize-row__check">
+          <input type="checkbox" data-id="${id}" ${hidden ? '' : 'checked'}>
+          <span>${escapeHtml(meta.label)}</span>
+        </label>
+        <div class="customize-row__actions">
+          <button type="button" class="customize-row__btn" data-id="${id}" data-dir="up" ${i === 0 ? 'disabled' : ''} aria-label="Move ${escapeHtml(meta.label)} up">&uarr;</button>
+          <button type="button" class="customize-row__btn" data-id="${id}" data-dir="down" ${i === prefs.order.length - 1 ? 'disabled' : ''} aria-label="Move ${escapeHtml(meta.label)} down">&darr;</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function beerLandingCustomizeToolbarHtml() {
+    const prefs = loadBeerLandingPrefs();
+    const shown = BEER_LANDING_SECTIONS.length - prefs.hidden.length;
+    return `
+      <div class="beer-landing__toolbar">
+        <div class="beer-landing__toolbar-label">Showing ${shown} of ${BEER_LANDING_SECTIONS.length} sections</div>
+        <div class="customize-wrap">
+          <button type="button" class="btn btn--small btn--ghost customize-btn" id="beerLandingCustomizeBtn" aria-haspopup="true" aria-expanded="${beerLandingCustomizePopoverOpen}">Customize sections</button>
+          <div class="customize-popover" id="beerLandingCustomizePopover" ${beerLandingCustomizePopoverOpen ? '' : 'hidden'}>
+            <div class="customize-popover__head">
+              <strong>Customize this page</strong>
+              <button type="button" class="customize-popover__close" id="beerLandingCustomizeClose" aria-label="Close">&times;</button>
+            </div>
+            <p class="customize-popover__hint">Show, hide, and reorder sections below. Saved on this PC only - it
+            doesn't change what anyone else sees.</p>
+            <div class="customize-list" id="beerLandingCustomizeList">${beerLandingCustomizeListHtml()}</div>
+            <div class="customize-popover__foot">
+              <button type="button" class="btn btn--ghost btn--small" id="beerLandingCustomizeReset">Reset to default</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
   }
 
   // Top Rated spotlight - reuses ratingDotsHtml/beerDisplayName as-is, same
@@ -9515,6 +9877,79 @@
     const varietyPacks = groups.filter((g) => g.varietyPack).length;
     const avgRating = beerLandingAvgRating(groups);
 
+    // One panel-string per customizable section (see BEER_LANDING_SECTIONS),
+    // built up front so the "Customize this page" prefs below can pick
+    // which ones to actually include, and in what order - the hero and its
+    // stat strip aren't in this map, they're spliced in fixed at the top
+    // regardless of what a viewer's customized.
+    const sectionHtml = {
+      style: `
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>What's in the library</h3>
+              <p>Style breakdown of every researched beer on file. Click a slice or a legend row to see that
+              style's own breakdown.</p>
+            </div>
+          </div>
+          <div class="mix-grid">
+            ${beerStyleMixHtml(researchedGroups)}
+            <div class="stat-rail">
+              <div class="stat-tile"><span class="stat-tile__label">Researched</span><span class="stat-tile__value">${researchedGroups.length} <small>of ${groups.length}</small></span></div>
+              <div class="stat-tile"><span class="stat-tile__label">Needs research</span><span class="stat-tile__value">${needsResearch}</span></div>
+              <div class="stat-tile"><span class="stat-tile__label">Variety packs</span><span class="stat-tile__value">${varietyPacks}</span></div>
+            </div>
+          </div>
+        </div>`,
+      format: `
+        <div class="panel">
+          <div class="section-head">
+            <div><h3>How it's packaged</h3><p>Pack size read straight from each beer's own title - real for every beer on file, whether or not it's been researched yet.</p></div>
+          </div>
+          ${beerLandingFormatHtml(groups)}
+        </div>`,
+      progress: `
+        <div class="panel">
+          <div class="section-head">
+            <div><h3>Research progress</h3><p>Share of the library with brewery/style/ABV actually filled in.</p></div>
+          </div>
+          ${beerLandingProgressHtml(researchedGroups.length, groups.length)}
+        </div>`,
+      spotlight: `
+        <div class="panel">
+          <div class="section-head">
+            <div><h3>Top rated in the library</h3><p>Highest Untappd rating among researched beers.</p></div>
+            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeRatedBtn">See all rated &rarr;</button>
+          </div>
+          ${beerLandingSpotlightHtml(groups)}
+        </div>`,
+      abv: `
+        <div class="panel">
+          <div class="section-head">
+            <div><h3>ABV mix</h3><p>Each dot is one researched beer, positioned by its real ABV - shows the actual spread and outliers, not just a few bucket totals.</p></div>
+          </div>
+          ${beerLandingAbvHtml(researchedGroups)}
+        </div>`,
+      breweries: `
+        <div class="panel">
+          <div class="section-head"><div><h3>Breweries on the shelf</h3><p>Ranked by how many beers are on file for each. Click one to filter the library.</p></div></div>
+          ${beerLandingBreweryGridHtml(groups)}
+        </div>`,
+      activity: `
+        <div class="panel">
+          <div class="section-head">
+            <div><h3>Recently researched</h3><p>Newest first - brewery, style, ABV, and rating for each, wherever Untappd or a hand-typed edit found them.</p></div>
+            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeResearchedBtn">See all researched &rarr;</button>
+          </div>
+          ${beerLandingActivityHtml(researchedGroups)}
+        </div>`,
+    };
+    const prefs = loadBeerLandingPrefs();
+    const orderedSectionsHtml = prefs.order
+      .filter((id) => !prefs.hidden.includes(id))
+      .map((id) => sectionHtml[id])
+      .join('');
+
     els.beerBibleBody.innerHTML = `
       <div class="beer-landing">
         <div class="beer-landing__hero">
@@ -9534,43 +9969,9 @@
           </div>
         </div>
 
-        <div class="panel">
-          <div class="section-head">
-            <div>
-              <h3>What's in the library</h3>
-              <p>Style breakdown of every researched beer on file.</p>
-            </div>
-          </div>
-          <div class="mix-grid">
-            ${beerStyleMixHtml(researchedGroups)}
-            <div class="stat-rail">
-              <div class="stat-tile"><span class="stat-tile__label">Researched</span><span class="stat-tile__value">${researchedGroups.length} <small>of ${groups.length}</small></span></div>
-              <div class="stat-tile"><span class="stat-tile__label">Needs research</span><span class="stat-tile__value">${needsResearch}</span></div>
-              <div class="stat-tile"><span class="stat-tile__label">Variety packs</span><span class="stat-tile__value">${varietyPacks}</span></div>
-            </div>
-          </div>
-        </div>
+        ${beerLandingCustomizeToolbarHtml()}
 
-        <div class="panel">
-          <div class="section-head">
-            <div><h3>Top rated in the library</h3><p>Highest Untappd rating among researched beers.</p></div>
-            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeRatedBtn">See all rated &rarr;</button>
-          </div>
-          ${beerLandingSpotlightHtml(groups)}
-        </div>
-
-        <div class="panel">
-          <div class="section-head"><div><h3>Breweries on the shelf</h3><p>Ranked by how many beers are on file for each. Click one to filter the library.</p></div></div>
-          ${beerLandingBreweryGridHtml(groups)}
-        </div>
-
-        <div class="panel">
-          <div class="section-head">
-            <div><h3>Recently researched</h3><p>Newest first - brewery, style, ABV, and rating for each, wherever Untappd or a hand-typed edit found them.</p></div>
-            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeResearchedBtn">See all researched &rarr;</button>
-          </div>
-          ${beerLandingActivityHtml(researchedGroups)}
-        </div>
+        ${orderedSectionsHtml}
       </div>
     `;
 
@@ -9612,6 +10013,73 @@
         renderBeerBibleBody();
       });
     });
+
+    // Style donut slices/legend rows + the drill-down's own Clear button -
+    // see selectBeerLandingFamily above.
+    els.beerBibleBody.querySelectorAll('.beer-style-arc[data-key], .beer-legend-row--clickable[data-key]').forEach((node) => {
+      const activate = () => selectBeerLandingFamily(node.dataset.key);
+      node.addEventListener('click', activate);
+      node.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+      });
+    });
+    els.beerBibleBody.querySelector('.drilldown__back[data-key]')?.addEventListener('click', (e) => {
+      selectBeerLandingFamily(e.currentTarget.dataset.key);
+    });
+
+    // "Customize this page" - open/close, show/hide, and reorder each call
+    // renderBeerBibleLanding again from scratch (same pattern the rest of
+    // this screen already uses for a filter chip or sort change), relying
+    // on beerLandingCustomizePopoverOpen/beerLandingPrefsCache above to
+    // carry the popover's own open/edited state across that rebuild.
+    const customizeBtn = els.beerBibleBody.querySelector('#beerLandingCustomizeBtn');
+    const customizePopover = els.beerBibleBody.querySelector('#beerLandingCustomizePopover');
+    if (customizeBtn && customizePopover) {
+      if (beerLandingCustomizePopoverOpen) {
+        // Anchored with position: fixed (see styles.css) computed from the
+        // button's own on-screen position each render, not CSS alone -
+        // #beerBibleView scrolls in both axes (see .library-view), so a
+        // plain position: absolute popover could end up clipped or force a
+        // scrollbar depending on scroll position.
+        const rect = customizeBtn.getBoundingClientRect();
+        customizePopover.style.top = `${rect.bottom + 8}px`;
+        customizePopover.style.left = 'auto';
+        customizePopover.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+      }
+      customizeBtn.addEventListener('click', () => {
+        beerLandingCustomizePopoverOpen = !beerLandingCustomizePopoverOpen;
+        renderBeerBibleLanding();
+      });
+      els.beerBibleBody.querySelector('#beerLandingCustomizeClose')?.addEventListener('click', () => {
+        beerLandingCustomizePopoverOpen = false;
+        renderBeerBibleLanding();
+      });
+      els.beerBibleBody.querySelector('#beerLandingCustomizeReset')?.addEventListener('click', () => {
+        beerLandingPrefsCache = defaultBeerLandingPrefs();
+        saveBeerLandingPrefs();
+        renderBeerBibleLanding();
+      });
+      customizePopover.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+        cb.addEventListener('change', () => {
+          const id = cb.dataset.id;
+          const p = loadBeerLandingPrefs();
+          p.hidden = cb.checked ? p.hidden.filter((x) => x !== id) : [...p.hidden, id];
+          saveBeerLandingPrefs();
+          renderBeerBibleLanding();
+        });
+      });
+      customizePopover.querySelectorAll('.customize-row__btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const p = loadBeerLandingPrefs();
+          const idx = p.order.indexOf(btn.dataset.id);
+          const swapWith = btn.dataset.dir === 'up' ? idx - 1 : idx + 1;
+          if (swapWith < 0 || swapWith >= p.order.length) return;
+          [p.order[idx], p.order[swapWith]] = [p.order[swapWith], p.order[idx]];
+          saveBeerLandingPrefs();
+          renderBeerBibleLanding();
+        });
+      });
+    }
   }
 
   // Dispatcher - landing vs grid vs profile, same shape as renderLibraryBody/
@@ -9686,6 +10154,11 @@
       beerBibleSelectedId = null;
       beerBibleSelectMode = false;
       beerBibleSelectedIds.clear();
+      // Fresh visit to the landing page - drop any style drill-down and
+      // close the customize popover rather than carrying them over from
+      // last time (see renderBeerBibleLanding above).
+      beerLandingSelectedFamily = null;
+      beerLandingCustomizePopoverOpen = false;
       els.beerBibleSelectToggleBtn.classList.remove('btn--primary');
       els.beerBibleSelectToggleBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Select';
       renderBeerBibleChipsAndStats();
