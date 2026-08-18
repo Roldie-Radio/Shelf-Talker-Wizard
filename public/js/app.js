@@ -52,6 +52,15 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.0',
+      items: [
+        'New: Rum Repository entries can now carry a Country of Origin - the Rum Details form has a new field for it, and a "Where it\'s from" section (flag cards, click one to filter/search by country) now leads the Rum Repository screen. Seeded with a curated title + country list built from a real store\'s Rum department export.',
+        'New: the Rum Repository\'s "Add from Product Database" button pulls in any Product Database row whose Department/Sub Department names Rum as a new stub entry - additive only, same as "Check GitHub for New Rums" beside it.',
+        'New: the Product Database table can now be sorted by any column (click a header, click again to flip direction), has a search box, and picks up an On Hand column from the Export File.',
+        'Changed: the Product Database\'s rail icon now sits at the very bottom of the sidebar, directly above Settings, instead of with the other browse screens above it.',
+      ],
+    },
+    {
       version: '4.4.19',
       items: [
         'New: a Product Database section - a table icon in the rail, above Settings. Choose an Export File and an HA Details file (Department/Sub Department per SKU) and the two merge into one table by SKU. Read-only for now, no editing or search yet - the first step toward a shared product catalog the other library screens can eventually draw from.',
@@ -1160,6 +1169,7 @@
     rumRepositoryGithubSyncBtn: document.getElementById('rumRepositoryGithubSyncBtn'),
     rumRepositoryProductDbSyncStatus: document.getElementById('rumRepositoryProductDbSyncStatus'),
     rumRepositoryProductDbSyncBtn: document.getElementById('rumRepositoryProductDbSyncBtn'),
+    rumRepositoryOriginSection: document.getElementById('rumRepositoryOriginSection'),
     rumRepositoryFilterInput: document.getElementById('rumRepositoryFilterInput'),
     rumRepositoryStats: document.getElementById('rumRepositoryStats'),
     rumRepositoryBody: document.getElementById('rumRepositoryBody'),
@@ -1528,6 +1538,7 @@
     rumRepositoryFormDistilleryInput: document.getElementById('rumRepositoryFormDistilleryInput'),
     rumRepositoryFormRegionInput: document.getElementById('rumRepositoryFormRegionInput'),
     rumRepositoryFormStyleInput: document.getElementById('rumRepositoryFormStyleInput'),
+    rumRepositoryFormCountryInput: document.getElementById('rumRepositoryFormCountryInput'),
     rumRepositoryFormSkuInput: document.getElementById('rumRepositoryFormSkuInput'),
     rumRepositoryFormAbvInput: document.getElementById('rumRepositoryFormAbvInput'),
     rumRepositoryFormAgeStatementInput: document.getElementById('rumRepositoryFormAgeStatementInput'),
@@ -9604,12 +9615,12 @@
     'Seltzer & RTD': '#dbe4de',
   };
 
-  // Country -> flag icon for the "Where it's from" origin cards below.
-  // Keyed by lowercased country name rather than an ISO code, since that's
-  // the shape `country` actually holds on file (see
-  // parseLocationForGeoColumns in server/db.js - Untappd's own brewery
-  // location strings, e.g. "United States" or "Netherlands", not "US"/
-  // "NL").
+  // Country -> flag icon for a "Where it's from" origin card, shared by the
+  // Beer Bible's own landing page (see countryDisplayName/Untappd brewery
+  // location strings) and the Rum Repository landing page below (see
+  // renderRumOriginHtml) - both key off the same free-text `country` field
+  // shape (e.g. "United States", "Jamaica"), not an ISO code. Keyed by
+  // lowercased country name.
   //
   // Drawn as a hand-built inline SVG per country rather than a flag emoji
   // (the original approach) - regional-indicator flag emoji render as
@@ -9621,11 +9632,12 @@
   // everywhere Chromium runs, with no font/OS dependency at all. Simplified
   // shapes/colors, not vexillologically exact - legible at the ~30x20 card
   // size is the bar, not pixel-perfect detail. Covers the countries that
-  // actually show up on beer packaging; anything not in this list still
-  // gets its own card, just with a plain globe (also drawn, same reason)
-  // instead of a specific flag - no country is ever hidden for lacking an
-  // entry here.
-  const BEER_LANDING_COUNTRY_FLAG_SVGS = {
+  // actually show up on beer packaging or in the Rum Repository's own
+  // curated country list (see scripts/rum-repository-seed-data.json);
+  // anything not in this list still gets its own card, just with a plain
+  // globe (also drawn, same reason) instead of a specific flag - no
+  // country is ever hidden for lacking an entry here.
+  const COUNTRY_FLAG_SVGS = {
     'united states': '<rect width="30" height="20" fill="#fff"/><rect width="30" height="2.86" fill="#B22234"/><rect y="5.71" width="30" height="2.86" fill="#B22234"/><rect y="11.43" width="30" height="2.86" fill="#B22234"/><rect y="17.14" width="30" height="2.86" fill="#B22234"/><rect width="13" height="11.43" fill="#3C3B6E"/>',
     'usa': null, 'us': null,
     'mexico': '<rect width="10" height="20" fill="#006341"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE1126"/>',
@@ -9657,32 +9669,57 @@
     'new zealand': '<rect width="30" height="20" fill="#00247D"/><line x1="0" y1="0" x2="15" y2="10" stroke="#fff" stroke-width="2"/><line x1="15" y1="0" x2="0" y2="10" stroke="#fff" stroke-width="2"/><rect x="6" width="3" height="10" fill="#fff"/><rect y="3.5" width="15" height="3" fill="#fff"/><rect x="6.75" width="1.5" height="10" fill="#CF142B"/><rect y="4.25" width="15" height="1.5" fill="#CF142B"/><circle cx="21" cy="6" r="1.3" fill="#CF142B" stroke="#fff" stroke-width="0.4"/><circle cx="26" cy="8" r="1.3" fill="#CF142B" stroke="#fff" stroke-width="0.4"/><circle cx="24" cy="13" r="1.3" fill="#CF142B" stroke="#fff" stroke-width="0.4"/><circle cx="20" cy="15" r="1" fill="#CF142B" stroke="#fff" stroke-width="0.4"/>',
     'brazil': '<rect width="30" height="20" fill="#009739"/><polygon points="15,2 28,10 15,18 2,10" fill="#FEDD00"/><circle cx="15" cy="10" r="5" fill="#002776"/>',
     'south africa': '<rect width="30" height="20" fill="#fff"/><rect width="30" height="6" fill="#DE3831"/><rect y="14" width="30" height="6" fill="#002395"/><polygon points="0,6 15,10 0,14" fill="#000"/><polygon points="0,6 18,10 0,14" fill="#FFB612"/><polygon points="0,8 21,10 0,12" fill="#007A4D"/>',
+    // Added for the Rum Repository's own curated country list (see
+    // scripts/rum-repository-seed-data.json) - the Caribbean/Latin American
+    // rum-producing nations Beer Bible's own list never needed.
+    'puerto rico': '<rect width="30" height="20" fill="#fff"/><rect width="30" height="4" fill="#ED1C24"/><rect y="8" width="30" height="4" fill="#ED1C24"/><rect y="16" width="30" height="4" fill="#ED1C24"/><polygon points="0,0 15,10 0,20" fill="#0050A4"/><polygon points="5,10 6.3,7 7.7,7 6.6,8.8 7.1,11 5,9.8 2.9,11 3.4,8.8 2.3,7 3.7,7" fill="#fff"/>',
+    'jamaica': '<rect width="30" height="20" fill="#009B3A"/><polygon points="0,0 15,10 0,20" fill="#000"/><polygon points="30,0 15,10 30,20" fill="#000"/><line x1="0" y1="0" x2="30" y2="20" stroke="#FED100" stroke-width="3"/><line x1="30" y1="0" x2="0" y2="20" stroke="#FED100" stroke-width="3"/>',
+    'barbados': '<rect width="10" height="20" fill="#00267F"/><rect x="10" width="10" height="20" fill="#FFC726"/><rect x="20" width="10" height="20" fill="#00267F"/><polygon points="15,4 17,10 13,10" fill="#000"/><rect x="14.3" y="9" width="1.4" height="7" fill="#000"/>',
+    'trinidad and tobago': '<rect width="30" height="20" fill="#CE1126"/><line x1="0" y1="0" x2="30" y2="20" stroke="#fff" stroke-width="6"/><line x1="0" y1="0" x2="30" y2="20" stroke="#000" stroke-width="3.6"/>',
+    'guyana': '<rect width="30" height="20" fill="#009739"/><polygon points="0,0 20,10 0,20" fill="#FCD116"/><polygon points="0,0 14,10 0,20" fill="#000"/><polygon points="0,2 11,10 0,18" fill="#CE1126"/>',
+    'dominican republic': '<rect width="30" height="20" fill="#fff"/><rect width="13" height="8" fill="#002D62"/><rect x="17" width="13" height="8" fill="#CE1126"/><rect y="12" width="13" height="8" fill="#CE1126"/><rect x="17" y="12" width="13" height="8" fill="#002D62"/>',
+    'bermuda': '<rect width="30" height="20" fill="#C8102E"/><rect width="15" height="10" fill="#00247D"/><line x1="0" y1="0" x2="15" y2="10" stroke="#fff" stroke-width="2"/><line x1="15" y1="0" x2="0" y2="10" stroke="#fff" stroke-width="2"/><rect x="6" width="3" height="10" fill="#fff"/><rect y="3.5" width="15" height="3" fill="#fff"/><rect x="6.75" width="1.5" height="10" fill="#CF142B"/><rect y="4.25" width="15" height="1.5" fill="#CF142B"/><rect x="20" y="6" width="7" height="7" fill="#fff"/>',
+    'british virgin islands': '<rect width="30" height="20" fill="#00247D"/><rect width="15" height="10" fill="#00247D"/><line x1="0" y1="0" x2="15" y2="10" stroke="#fff" stroke-width="2"/><line x1="15" y1="0" x2="0" y2="10" stroke="#fff" stroke-width="2"/><rect x="6" width="3" height="10" fill="#fff"/><rect y="3.5" width="15" height="3" fill="#fff"/><rect x="6.75" width="1.5" height="10" fill="#CF142B"/><rect y="4.25" width="15" height="1.5" fill="#CF142B"/><rect x="19" y="5" width="9" height="10" fill="#fff"/>',
+    'saint kitts and nevis': '<polygon points="0,0 30,0 30,10" fill="#009739"/><polygon points="0,0 0,20 20,20" fill="#CE1126"/><line x1="0" y1="20" x2="30" y2="0" stroke="#FCD116" stroke-width="6"/><line x1="0" y1="20" x2="30" y2="0" stroke="#000" stroke-width="3.6"/><circle cx="11" cy="13" r="0.9" fill="#fff"/><circle cx="15" cy="9.5" r="0.9" fill="#fff"/>',
+    'saint lucia': '<rect width="30" height="20" fill="#66CCFF"/><polygon points="15,3 22,17 8,17" fill="#000"/><polygon points="15,6 19,16 11,16" fill="#fff"/><polygon points="15,8 17.5,15 12.5,15" fill="#FCD116"/>',
+    'venezuela': '<rect width="30" height="6.67" fill="#FFCC00"/><rect y="6.67" width="30" height="6.67" fill="#00247D"/><rect y="13.33" width="30" height="6.67" fill="#CF142B"/><circle cx="9" cy="10" r="0.8" fill="#fff"/><circle cx="12" cy="9" r="0.8" fill="#fff"/><circle cx="15" cy="8.5" r="0.8" fill="#fff"/><circle cx="18" cy="9" r="0.8" fill="#fff"/><circle cx="21" cy="10" r="0.8" fill="#fff"/>',
+    'panama': '<rect width="15" height="10" fill="#fff"/><rect x="15" width="15" height="10" fill="#DA121A"/><rect y="10" width="15" height="10" fill="#0033A0"/><rect x="15" y="10" width="15" height="10" fill="#fff"/><circle cx="7.5" cy="5" r="2" fill="none" stroke="#0033A0" stroke-width="1"/><circle cx="22.5" cy="15" r="2" fill="none" stroke="#DA121A" stroke-width="1"/>',
+    'nicaragua': '<rect width="30" height="6.67" fill="#0067C6"/><rect y="6.67" width="30" height="6.67" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#0067C6"/><polygon points="15,8 17,11.5 13,11.5" fill="none" stroke="#0067C6" stroke-width="0.8"/>',
+    'guatemala': '<rect width="10" height="20" fill="#4997D0"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#4997D0"/><circle cx="15" cy="10" r="2" fill="none" stroke="#4997D0" stroke-width="0.8"/>',
+    'costa rica': '<rect width="30" height="20" fill="#0000CE"/><rect y="2.86" width="30" height="14.28" fill="#fff"/><rect y="5.72" width="30" height="8.56" fill="#CE1126"/>',
+    'haiti': '<rect width="30" height="10" fill="#00209F"/><rect y="10" width="30" height="10" fill="#D21034"/><rect x="12" y="7" width="6" height="6" fill="#fff"/>',
+    'colombia': '<rect width="30" height="10" fill="#FCD116"/><rect y="10" width="30" height="5" fill="#003893"/><rect y="15" width="30" height="5" fill="#CE1126"/>',
+    // Martinique/Guadeloupe/Reunion are French overseas departments - the
+    // French tricolor is their official flag (the "snake"/regional flags
+    // some of these islands fly locally aren't standardized enough to draw
+    // one true version of), aliased below rather than repeated here.
   };
   // A handful of keys above are deliberately `null` - synonyms for a
   // country that's already fully spelled out (e.g. 'usa'/'us' for 'united
   // states') - so the lookup below can fall through to the real entry with
   // Object.assign-style aliasing instead of repeating the same SVG string
   // three times over.
-  BEER_LANDING_COUNTRY_FLAG_SVGS.usa = BEER_LANDING_COUNTRY_FLAG_SVGS.us = BEER_LANDING_COUNTRY_FLAG_SVGS['united states'];
-  BEER_LANDING_COUNTRY_FLAG_SVGS.uk = BEER_LANDING_COUNTRY_FLAG_SVGS['united kingdom'];
-  BEER_LANDING_COUNTRY_FLAG_SVGS.czechia = BEER_LANDING_COUNTRY_FLAG_SVGS['czech republic'];
+  COUNTRY_FLAG_SVGS.usa = COUNTRY_FLAG_SVGS.us = COUNTRY_FLAG_SVGS['united states'];
+  COUNTRY_FLAG_SVGS.uk = COUNTRY_FLAG_SVGS['united kingdom'];
+  COUNTRY_FLAG_SVGS.czechia = COUNTRY_FLAG_SVGS['czech republic'];
+  COUNTRY_FLAG_SVGS.martinique = COUNTRY_FLAG_SVGS.guadeloupe = COUNTRY_FLAG_SVGS.reunion = COUNTRY_FLAG_SVGS.france;
 
   // The drawn-globe fallback for a country with no entry above - same
   // "always draw it, never rely on a font" reasoning as the flags
   // themselves, just a generic mark instead of a specific one.
-  const BEER_LANDING_GLOBE_SVG = '<circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.4"/><ellipse cx="10" cy="10" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="2.5" y1="5" x2="17.5" y2="5" stroke="currentColor" stroke-width="1"/><line x1="2.5" y1="15" x2="17.5" y2="15" stroke="currentColor" stroke-width="1"/>';
+  const GLOBE_SVG = '<circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.4"/><ellipse cx="10" cy="10" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="2.5" y1="5" x2="17.5" y2="5" stroke="currentColor" stroke-width="1"/><line x1="2.5" y1="15" x2="17.5" y2="15" stroke="currentColor" stroke-width="1"/>';
 
-  function beerLandingCountryFlag(name) {
+  function countryFlagIcon(name) {
     const key = (name || '').trim().toLowerCase();
-    const inner = BEER_LANDING_COUNTRY_FLAG_SVGS[key];
+    const inner = COUNTRY_FLAG_SVGS[key];
     if (inner) return `<svg class="flag-icon" viewBox="0 0 30 20" role="img" aria-hidden="true">${inner}</svg>`;
-    return `<svg class="flag-icon flag-icon--globe" viewBox="0 0 20 20" role="img" aria-hidden="true">${BEER_LANDING_GLOBE_SVG}</svg>`;
+    return `<svg class="flag-icon flag-icon--globe" viewBox="0 0 20 20" role="img" aria-hidden="true">${GLOBE_SVG}</svg>`;
   }
 
-  // Canonical Title Case name for every country BEER_LANDING_COUNTRY_FLAG_SVGS
+  // Canonical Title Case name for every country COUNTRY_FLAG_SVGS
   // knows a flag for, keyed the same lowercase way - a synonym key (usa/us/
   // uk/czechia) collapses to the same spelled-out name its real entry uses.
-  const BEER_LANDING_COUNTRY_DISPLAY_NAMES = {
+  const COUNTRY_DISPLAY_NAMES = {
     'united states': 'United States', usa: 'United States', us: 'United States',
     mexico: 'Mexico', canada: 'Canada',
     'united kingdom': 'United Kingdom', uk: 'United Kingdom',
@@ -9694,11 +9731,22 @@
     sweden: 'Sweden', norway: 'Norway', finland: 'Finland', japan: 'Japan',
     china: 'China', australia: 'Australia', 'new zealand': 'New Zealand',
     brazil: 'Brazil', 'south africa': 'South Africa',
+    // Added for the Rum Repository's own curated country list - see the
+    // matching COUNTRY_FLAG_SVGS additions above.
+    'puerto rico': 'Puerto Rico', jamaica: 'Jamaica', barbados: 'Barbados',
+    'trinidad and tobago': 'Trinidad and Tobago', guyana: 'Guyana',
+    'dominican republic': 'Dominican Republic', bermuda: 'Bermuda',
+    'british virgin islands': 'British Virgin Islands',
+    'saint kitts and nevis': 'Saint Kitts and Nevis', 'saint lucia': 'Saint Lucia',
+    venezuela: 'Venezuela', panama: 'Panama', nicaragua: 'Nicaragua',
+    guatemala: 'Guatemala', 'costa rica': 'Costa Rica', haiti: 'Haiti',
+    colombia: 'Colombia', martinique: 'Martinique', guadeloupe: 'Guadeloupe',
+    reunion: 'Reunion',
   };
   // Longest-name-first, same precedence trick as card.js's own
   // COUNTRY_NAMES_BY_LENGTH_DESC (so 'united kingdom' is checked before a
   // shorter name it might otherwise be shadowed by).
-  const BEER_LANDING_COUNTRY_NAMES_BY_LENGTH_DESC = Object.keys(BEER_LANDING_COUNTRY_DISPLAY_NAMES).sort((a, b) => b.length - a.length);
+  const COUNTRY_NAMES_BY_LENGTH_DESC = Object.keys(COUNTRY_DISPLAY_NAMES).sort((a, b) => b.length - a.length);
 
   // Boils a raw Country value down to just the country name - e.g. "County
   // Dublin Ireland" (an Untappd brewery-location tail with no comma between
@@ -9712,15 +9760,15 @@
   // same approach as card.js's own countryNameMatches. A Country value that
   // doesn't contain any name from the list above is shown as-is - still a
   // real value, just not one this can confidently shorten.
-  function beerLandingCountryDisplayName(rawCountry) {
+  function countryDisplayName(rawCountry) {
     const text = (rawCountry || '').trim();
     if (!text) return text;
     const lower = text.toLowerCase();
-    const name = BEER_LANDING_COUNTRY_NAMES_BY_LENGTH_DESC.find((n) => {
+    const name = COUNTRY_NAMES_BY_LENGTH_DESC.find((n) => {
       const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`).test(lower);
     });
-    return name ? BEER_LANDING_COUNTRY_DISPLAY_NAMES[name] : text;
+    return name ? COUNTRY_DISPLAY_NAMES[name] : text;
   }
 
   // "Customize this page" - which sections a viewer wants shown and in
@@ -10044,7 +10092,7 @@
     }
     const counts = new Map();
     withCountry.forEach((g) => {
-      const key = beerLandingCountryDisplayName(g.country);
+      const key = countryDisplayName(g.country);
       counts.set(key, (counts.get(key) || 0) + 1);
     });
     const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
@@ -10057,7 +10105,7 @@
       return `
       <button type="button" class="origin-card${active ? ' origin-card--active' : ''}" data-origin-key="${escapeHtml(name)}" aria-expanded="${active}">
         <div class="origin-card__top">
-          <span class="origin-card__flag">${beerLandingCountryFlag(name)}</span>
+          <span class="origin-card__flag">${countryFlagIcon(name)}</span>
           <span class="origin-card__chevron">&#9660;</span>
         </div>
         <div class="origin-card__name">${escapeHtml(name)}</div>
@@ -10083,12 +10131,12 @@
     const bucketTotal = counts.get(selected) || 0;
     const headHtml = `
       <div class="drilldown__head">
-        <div class="drilldown__title">${beerLandingCountryFlag(selected)} ${escapeHtml(selected)} <span>&mdash; ${bucketTotal} beer${bucketTotal === 1 ? '' : 's'}</span></div>
+        <div class="drilldown__title">${countryFlagIcon(selected)} ${escapeHtml(selected)} <span>&mdash; ${bucketTotal} beer${bucketTotal === 1 ? '' : 's'}</span></div>
         <button type="button" class="drilldown__back" data-origin-key="${escapeHtml(selected)}">&times; Clear</button>
       </div>`;
 
     const subCounts = new Map();
-    withCountry.filter((g) => beerLandingCountryDisplayName(g.country) === selected).forEach((g) => {
+    withCountry.filter((g) => countryDisplayName(g.country) === selected).forEach((g) => {
       const key = (g.region || '').trim().toUpperCase() || 'State/region not on file';
       subCounts.set(key, (subCounts.get(key) || 0) + 1);
     });
@@ -11533,8 +11581,68 @@
     return (entry.title || '').toLowerCase().includes(q)
       || (entry.distillery || '').toLowerCase().includes(q)
       || (entry.style || '').toLowerCase().includes(q)
+      || (entry.country || '').toLowerCase().includes(q)
       || (entry.sku || '').toLowerCase().includes(q);
   }
+
+  // "Where it's from" - one card per distinct country among rums that have
+  // one set, sorted by count (most-represented first). Clicking a card sets
+  // the search box to that exact country name (click the active card again
+  // to clear it) rather than a separate filter mechanism - rumMatchesSearch
+  // above already matches country, so there's only ever one "what's
+  // currently shown" state instead of two that could disagree. Returns ''
+  // (no section at all) when nothing on file has a country yet, same
+  // "nothing to show yet" reasoning as the empty-state messages elsewhere
+  // on this screen.
+  function rumOriginCounts() {
+    const counts = new Map();
+    rumRepositoryCache.forEach((r) => {
+      const country = (r.country || '').trim();
+      if (!country) return;
+      counts.set(country, (counts.get(country) || 0) + 1);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }
+
+  function renderRumOriginHtml() {
+    const counts = rumOriginCounts();
+    if (!counts.length) return '';
+    const total = rumRepositoryCache.length;
+    const currentQuery = rumRepositoryFilterQuery.trim().toLowerCase();
+    const cards = counts.map(([country, count]) => {
+      const pct = total ? Math.round((count / total) * 100) : 0;
+      const active = currentQuery === country.toLowerCase();
+      return `
+        <button type="button" class="origin-card${active ? ' origin-card--active' : ''}" data-origin-key="${escapeHtml(country)}" aria-pressed="${active}">
+          <div class="origin-card__top">
+            <span class="origin-card__flag">${countryFlagIcon(country)}</span>
+          </div>
+          <div class="origin-card__name">${escapeHtml(country)}</div>
+          <div class="origin-card__count">${count} rum${count === 1 ? '' : 's'} &middot; ${pct}%</div>
+          <div class="origin-card__bar"><span style="width:${pct}%;"></span></div>
+        </button>
+      `;
+    }).join('');
+    return `
+      <h3 class="settings-section-title">Where it's from</h3>
+      <div class="origin-grid">${cards}</div>
+    `;
+  }
+
+  function renderRumRepositoryOrigin() {
+    els.rumRepositoryOriginSection.innerHTML = renderRumOriginHtml();
+  }
+
+  els.rumRepositoryOriginSection.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-origin-key]');
+    if (!btn) return;
+    const { originKey } = btn.dataset;
+    const current = rumRepositoryFilterQuery.trim().toLowerCase();
+    rumRepositoryFilterQuery = current === originKey.toLowerCase() ? '' : originKey;
+    els.rumRepositoryFilterInput.value = rumRepositoryFilterQuery;
+    renderRumRepositoryOrigin();
+    renderRumRepositoryGrid();
+  });
 
   function renderRumRepositoryStats() {
     const distilleries = new Set(rumRepositoryCache.map((r) => r.distillery).filter(Boolean)).size;
@@ -11551,8 +11659,13 @@
   function rumCardHtml(entry) {
     // Escape each piece individually, then join with a raw (already-safe)
     // &middot; entity - same reasoning as beerCardHtml's own
-    // brewery/style join above.
-    const metaBits = [entry.distillery, entry.region].filter(Boolean).map(escapeHtml).join(' &middot; ');
+    // brewery/style join above. Country gets its own flag icon prefix
+    // (countryFlagIcon, shared with the Beer Bible/origin cards above)
+    // rather than just plain text, so a card reads at a glance the same
+    // way the origin cards themselves do.
+    const metaParts = [entry.distillery, entry.region].filter(Boolean).map(escapeHtml);
+    if (entry.country) metaParts.push(`${countryFlagIcon(entry.country)} ${escapeHtml(entry.country)}`);
+    const metaBits = metaParts.join(' &middot; ');
     const statBits = [];
     if (entry.style) statBits.push(escapeHtml(entry.style));
     if (entry.abv) statBits.push(`${escapeHtml(entry.abv)} ABV`);
@@ -11588,6 +11701,7 @@
 
   els.rumRepositoryFilterInput.addEventListener('input', (e) => {
     rumRepositoryFilterQuery = e.target.value;
+    renderRumRepositoryOrigin();
     renderRumRepositoryGrid();
   });
 
@@ -11600,6 +11714,7 @@
       els.rumRepositoryFilterInput.value = '';
       rumRepositoryFilterQuery = '';
       renderRumRepositoryStats();
+      renderRumRepositoryOrigin();
       renderRumRepositoryGrid();
     });
   }
@@ -11622,6 +11737,7 @@
     els.rumRepositoryFormDistilleryInput.value = '';
     els.rumRepositoryFormRegionInput.value = '';
     els.rumRepositoryFormStyleInput.value = '';
+    els.rumRepositoryFormCountryInput.value = '';
     els.rumRepositoryFormSkuInput.value = '';
     els.rumRepositoryFormAbvInput.value = '';
     els.rumRepositoryFormAgeStatementInput.value = '';
@@ -11639,6 +11755,7 @@
     els.rumRepositoryFormDistilleryInput.value = entry.distillery || '';
     els.rumRepositoryFormRegionInput.value = entry.region || '';
     els.rumRepositoryFormStyleInput.value = entry.style || '';
+    els.rumRepositoryFormCountryInput.value = entry.country || '';
     els.rumRepositoryFormSkuInput.value = entry.sku || '';
     els.rumRepositoryFormAbvInput.value = entry.abv || '';
     els.rumRepositoryFormAgeStatementInput.value = entry.ageStatement || '';
@@ -11664,6 +11781,7 @@
       rumRepositoryModal.close();
       await fetchRumRepository();
       renderRumRepositoryStats();
+      renderRumRepositoryOrigin();
       renderRumRepositoryGrid();
     } catch (err) {
       els.rumRepositoryFormStatus.textContent = err.message || 'Could not delete that entry.';
@@ -11704,6 +11822,7 @@
         distillery: els.rumRepositoryFormDistilleryInput.value.trim(),
         region: els.rumRepositoryFormRegionInput.value.trim(),
         style: els.rumRepositoryFormStyleInput.value.trim(),
+        country: els.rumRepositoryFormCountryInput.value.trim(),
         sku: els.rumRepositoryFormSkuInput.value.trim(),
         abv: els.rumRepositoryFormAbvInput.value.trim(),
         ageStatement: els.rumRepositoryFormAgeStatementInput.value.trim(),
@@ -11722,6 +11841,7 @@
       rumRepositoryModal.close();
       await fetchRumRepository();
       renderRumRepositoryStats();
+      renderRumRepositoryOrigin();
       renderRumRepositoryGrid();
     } catch (err) {
       els.rumRepositoryFormStatus.textContent = err.message || 'Could not save that entry.';
@@ -11747,6 +11867,7 @@
       if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
       rumRepositoryCache = Array.isArray(data.rums) ? data.rums : [];
       renderRumRepositoryStats();
+      renderRumRepositoryOrigin();
       renderRumRepositoryGrid();
       els.rumRepositoryGithubSyncStatus.textContent = data.added
         ? `Added ${data.added} new rum${data.added === 1 ? '' : 's'} from ${data.source}.`
@@ -11772,6 +11893,7 @@
       if (!resp.ok) throw new Error(data.error || 'Could not check the Product Database right now.');
       rumRepositoryCache = Array.isArray(data.rums) ? data.rums : [];
       renderRumRepositoryStats();
+      renderRumRepositoryOrigin();
       renderRumRepositoryGrid();
       if (!data.matched) {
         els.rumRepositoryProductDbSyncStatus.textContent = 'Nothing labeled Rum found in the Product Database yet - load the Export File and/or HA Details file on that screen first.';

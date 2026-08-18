@@ -191,6 +191,7 @@ function applySchema(db) {
   `);
   applyMashBillColumns(db);
   applyBeerColumns(db);
+  applyRumColumns(db);
 }
 
 // beers shipped without beer_name (then later upc) for several releases -
@@ -214,6 +215,18 @@ function applyBeerColumns(db) {
   if (!existing.has('region')) db.exec('ALTER TABLE beers ADD COLUMN region TEXT');
   if (!existing.has('country')) db.exec('ALTER TABLE beers ADD COLUMN country TEXT');
   if (addingGeoColumns) backfillBeerGeoColumns(db);
+}
+
+// rums shipped without country for several releases - same "ALTER TABLE
+// whatever PRAGMA table_info says is actually missing" migration as
+// applyBeerColumns above. Unlike beers' own region/country split, there's
+// no existing free-text field to backfill this from (rums' own `region` is
+// a style-region string like "Caribbean", not a parseable location) - a
+// rum added before this column existed just starts with a blank country,
+// same as every other optional field already does.
+function applyRumColumns(db) {
+  const existing = new Set(db.pragma('table_info(rums)').map((col) => col.name));
+  if (!existing.has('country')) db.exec('ALTER TABLE rums ADD COLUMN country TEXT');
 }
 
 // Countries whose name this can recognize inside a Location tail, longest
@@ -934,6 +947,7 @@ function rowToRum(row) {
     ageStatement: row.age_statement || '',
     description: row.description || '',
     sku: row.sku || '',
+    country: row.country || '',
     source: row.source,
     updatedAt: row.updated_at,
   };
@@ -959,10 +973,10 @@ function validateRumInput({ title }) {
 // beerOptionalFieldParams above - every field here beyond title/source is
 // optional, and `existing` is a rowToRum()-shaped object or null.
 function rumOptionalFieldParams({
-  distillery, region, style, abv, ageStatement, description, sku,
+  distillery, region, style, abv, ageStatement, description, sku, country,
 }, existing) {
   const prev = existing || {
-    distillery: '', region: '', style: '', abv: '', ageStatement: '', description: '', sku: '',
+    distillery: '', region: '', style: '', abv: '', ageStatement: '', description: '', sku: '', country: '',
   };
   return {
     distillery: normalizeOptionalText(distillery !== undefined ? distillery : prev.distillery),
@@ -972,12 +986,13 @@ function rumOptionalFieldParams({
     ageStatement: normalizeOptionalText(ageStatement !== undefined ? ageStatement : prev.ageStatement),
     description: normalizeOptionalText(description !== undefined ? description : prev.description),
     sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
+    country: normalizeOptionalText(country !== undefined ? country : prev.country),
   };
 }
 
 const RUM_OPTIONAL_COLUMNS_SET = `
   distillery = @distillery, region = @region, style = @style, abv = @abv,
-  age_statement = @ageStatement, description = @description, sku = @sku
+  age_statement = @ageStatement, description = @description, sku = @sku, country = @country
 `;
 
 // Create-or-update by title (case-insensitive), same reasoning as
@@ -985,7 +1000,7 @@ const RUM_OPTIONAL_COLUMNS_SET = `
 // this, so saving again after a typo fix updates the same entry instead of
 // erroring or duplicating it.
 function upsertRum({
-  title, source, distillery, region, style, abv, ageStatement, description, sku,
+  title, source, distillery, region, style, abv, ageStatement, description, sku, country,
 }) {
   const db = getDb();
   const { cleanTitle } = validateRumInput({ title });
@@ -997,7 +1012,7 @@ function upsertRum({
     source: source || 'Manual',
     updatedAt: now,
     ...rumOptionalFieldParams({
-      distillery, region, style, abv, ageStatement, description, sku,
+      distillery, region, style, abv, ageStatement, description, sku, country,
     }, existing),
   };
 
@@ -1011,10 +1026,10 @@ function upsertRum({
   }
   const info = db.prepare(`
     INSERT INTO rums (
-      title, source, updated_at, distillery, region, style, abv, age_statement, description, sku
+      title, source, updated_at, distillery, region, style, abv, age_statement, description, sku, country
     )
     VALUES (
-      @title, @source, @updatedAt, @distillery, @region, @style, @abv, @ageStatement, @description, @sku
+      @title, @source, @updatedAt, @distillery, @region, @style, @abv, @ageStatement, @description, @sku, @country
     )
   `).run(params);
   return getRum(info.lastInsertRowid);
@@ -1026,7 +1041,7 @@ function upsertRum({
 // is a real conflict here, not a merge - same DUPLICATE_TITLE handling as
 // updateBeerById.
 function updateRumById(id, {
-  title, source, distillery, region, style, abv, ageStatement, description, sku,
+  title, source, distillery, region, style, abv, ageStatement, description, sku, country,
 }) {
   const db = getDb();
   const existing = getRum(id);
@@ -1044,7 +1059,7 @@ function updateRumById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...rumOptionalFieldParams({
-        distillery, region, style, abv, ageStatement, description, sku,
+        distillery, region, style, abv, ageStatement, description, sku, country,
       }, existing),
     });
   } catch (err) {

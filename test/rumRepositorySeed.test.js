@@ -69,11 +69,12 @@ test('autoSeedRumRepository skips entirely when the library already has entries'
   );
 }));
 
-// The bundled fallback file (scripts/rum-repository-seed-data.json) starts
-// as an empty array - there's no curated starting list for rum yet (see
-// its own comment). This still exercises the real fallback path end to
-// end: a network failure must not throw, and the library ends up matching
-// whatever the bundled file actually has (currently nothing).
+// The bundled fallback file (scripts/rum-repository-seed-data.json) now
+// carries the curated title/country list built from the store's own Rum
+// department export (see its own comment) - this exercises the real
+// fallback path end to end: a network failure must not throw, and the
+// library ends up matching whatever the bundled file actually has, whole,
+// not just some fixed sample count.
 test('autoSeedRumRepository falls back to the bundled file when the GitHub fetch fails', () => withTempDb(() => withMockFetch(
   async () => { throw new Error('simulated network failure'); },
   async () => {

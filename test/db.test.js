@@ -888,6 +888,7 @@ test('upsertRum creates a new entry with the given fields', () => {
       ageStatement: 'Aged 8-14 years',
       description: 'Rich notes of dried fruit, molasses, and baking spice.',
       sku: '15614',
+      country: 'France',
       source: 'Manual',
     });
     assert.equal(entry.title, 'Plantation Original Dark');
@@ -898,6 +899,7 @@ test('upsertRum creates a new entry with the given fields', () => {
     assert.equal(entry.ageStatement, 'Aged 8-14 years');
     assert.equal(entry.description, 'Rich notes of dried fruit, molasses, and baking spice.');
     assert.equal(entry.sku, '15614');
+    assert.equal(entry.country, 'France');
     assert.equal(entry.source, 'Manual');
     assert.ok(entry.updatedAt);
     assert.ok(entry.id);
@@ -937,6 +939,7 @@ test('a new rum entry defaults every optional field to an empty string, not null
       ageStatement: '',
       description: '',
       sku: '',
+      country: '',
       source: 'Manual',
       updatedAt: entry.updatedAt,
     });
@@ -969,6 +972,24 @@ test('updateRumById changes fields and returns the updated entry, preserving an 
     // distillery/style weren't passed to this update, so they're unchanged.
     assert.equal(updated.distillery, 'Bacardi');
     assert.equal(updated.style, 'White Rum');
+  });
+});
+
+test('country round-trips through upsertRum/updateRumById, same "omitted leaves it alone" convention as every other optional field', () => {
+  withTempDb(() => {
+    const entry = db.upsertRum({ title: 'El Dorado 12 Year Rum', country: 'Guyana' });
+    assert.equal(entry.country, 'Guyana');
+
+    // Repeat upsertRum with country omitted leaves the existing value alone.
+    const reupserted = db.upsertRum({ title: 'el dorado 12 year rum', style: 'Aged Rum' });
+    assert.equal(reupserted.country, 'Guyana');
+
+    const updated = db.updateRumById(entry.id, { country: 'Trinidad and Tobago' });
+    assert.equal(updated.country, 'Trinidad and Tobago');
+
+    // Omitted on this update - stays whatever updateRumById just set it to.
+    const untouched = db.updateRumById(entry.id, { abv: '43%' });
+    assert.equal(untouched.country, 'Trinidad and Tobago');
   });
 });
 
