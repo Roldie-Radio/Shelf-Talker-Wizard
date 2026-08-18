@@ -55,6 +55,7 @@
       version: '4.4.10',
       items: [
         'New: The Beer Bible now has cross-register sync, the same as the Bourbon Library\'s Mash Bill Library - research a beer (or edit/delete one) at any register and it shows up everywhere else within moments, instead of staying stuck on that one PC\'s own copy. Needs the same one-time setup, even for a single-PC store: mark a PC as the Server PC (Advanced → Server PC…). A Sync Now button and status dot on the Beer Bible page mirror the Bourbon Library\'s own. Export File Sync, Import CSV…, and Advanced → Import Beer Bible from Export File… are now Server-PC-only, since they write straight to the shared copy - every other register just picks the result up on its next sync.',
+        'New: State/Region and Country are now their own fields on the Beer Bible form, alongside the existing free-text Location field, with two new sort options - Country (A–Z) and State/Region (A–Z) - in the Beer Bible\'s sort dropdown. An install upgrading from an older version gets these best-effort filled in automatically from whatever\'s already in each beer\'s Location field; the search box also matches against Location/State/Country now, and both fields round-trip through Export CSV/Import CSV.',
       ],
     },
     {
