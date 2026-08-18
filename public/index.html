@@ -1216,6 +1216,20 @@
         <button type="button" class="btn btn--small" id="rumRepositoryGithubSyncBtn">Check GitHub for New Rums</button>
       </div>
       <p class="help-text" id="rumRepositoryGithubSyncStatus" role="status" aria-live="polite"></p>
+      <!-- Pulls in any Product Database row whose Department/Sub Department
+           names Rum (see findRumProducts in server/productDatabase.js) as a
+           new stub entry - additive only, same "already-there title is left
+           alone" convention as the GitHub sync row above. Needs the Export
+           File and/or HA Details file loaded on the Product Database screen
+           first; a run with nothing loaded just reports 0 matched, same as
+           an empty GitHub seed list does above. -->
+      <div class="library-sync" id="rumRepositoryProductDbSyncRow">
+        <div class="library-sync__status">
+          <span>It can also pull in anything labeled Rum in the Product Database (Department/Sub Department) that isn't already here.</span>
+        </div>
+        <button type="button" class="btn btn--small" id="rumRepositoryProductDbSyncBtn">Add from Product Database</button>
+      </div>
+      <p class="help-text" id="rumRepositoryProductDbSyncStatus" role="status" aria-live="polite"></p>
       <p class="help-text">Add rums you've researched with <strong>Add Rum</strong> below - typed in by hand, no bulk import yet.</p>
       <div class="library-search">
         <input type="search" id="rumRepositoryFilterInput" aria-label="Search The Rum Repository" placeholder="Search by name, distillery, or style&hellip;" />

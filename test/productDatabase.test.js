@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 
 const {
   extractExportProducts, extractHaProducts, mergeProducts, readRows,
-  setExportFile, setHaFile, getState,
+  setExportFile, setHaFile, getState, findRumProducts, isRumProduct,
 } = require('../server/productDatabase');
 
 const EXPORT_ROWS = [
@@ -104,4 +104,26 @@ test('setExportFile/setHaFile/getState round-trip through the module\'s in-memor
 test('setExportFile throws NO_ROWS for a file with no SKU-bearing rows', () => {
   const csv = Buffer.from('SKU,UPC\n', 'utf-8').toString('base64');
   assert.throws(() => setExportFile({ filename: 'empty.csv', contentBase64: csv }), { code: 'NO_ROWS' });
+});
+
+test('isRumProduct matches Department or Sub Department by whole word, case-insensitively', () => {
+  assert.equal(isRumProduct({ department: 'Rum', subDepartment: '' }), true);
+  assert.equal(isRumProduct({ department: 'SPIRITS', subDepartment: 'rum' }), true);
+  assert.equal(isRumProduct({ department: 'Spiced Rum', subDepartment: '' }), true);
+  assert.equal(isRumProduct({ department: 'Bourbon', subDepartment: 'Rye' }), false);
+  assert.equal(isRumProduct({ department: '', subDepartment: '' }), false);
+});
+
+test('isRumProduct does not match "rum" as a substring inside an unrelated word', () => {
+  assert.equal(isRumProduct({ department: 'Instruments', subDepartment: '' }), false);
+});
+
+test('findRumProducts filters a merged product list down to just the Rum rows', () => {
+  const products = [
+    { sku: '1', title: 'Plantation Original Dark', department: 'Spirits', subDepartment: 'Rum' },
+    { sku: '2', title: "Maker's Mark", department: 'Spirits', subDepartment: 'Bourbon' },
+    { sku: '3', title: 'Bacardi Superior', department: 'Rum', subDepartment: '' },
+  ];
+  const rums = findRumProducts(products);
+  assert.deepEqual(rums.map((p) => p.sku), ['1', '3']);
 });

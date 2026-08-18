@@ -1158,6 +1158,8 @@
     rumRepositoryGithubSyncRow: document.getElementById('rumRepositoryGithubSyncRow'),
     rumRepositoryGithubSyncStatus: document.getElementById('rumRepositoryGithubSyncStatus'),
     rumRepositoryGithubSyncBtn: document.getElementById('rumRepositoryGithubSyncBtn'),
+    rumRepositoryProductDbSyncStatus: document.getElementById('rumRepositoryProductDbSyncStatus'),
+    rumRepositoryProductDbSyncBtn: document.getElementById('rumRepositoryProductDbSyncBtn'),
     rumRepositoryFilterInput: document.getElementById('rumRepositoryFilterInput'),
     rumRepositoryStats: document.getElementById('rumRepositoryStats'),
     rumRepositoryBody: document.getElementById('rumRepositoryBody'),
@@ -11753,6 +11755,35 @@
       els.rumRepositoryGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
     } finally {
       els.rumRepositoryGithubSyncBtn.disabled = false;
+    }
+  });
+
+  // "Add from Product Database" - same additive-only shape as the GitHub
+  // sync button just above, just pulling from findRumProducts
+  // (server/productDatabase.js) instead of the curated GitHub list. See
+  // POST /api/rums/sync-product-database in index.js for the actual match/
+  // upsert logic - this is only the button/status wiring.
+  els.rumRepositoryProductDbSyncBtn.addEventListener('click', async () => {
+    els.rumRepositoryProductDbSyncBtn.disabled = true;
+    els.rumRepositoryProductDbSyncStatus.textContent = 'Checking the Product Database...';
+    try {
+      const resp = await fetch('/api/rums/sync-product-database', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check the Product Database right now.');
+      rumRepositoryCache = Array.isArray(data.rums) ? data.rums : [];
+      renderRumRepositoryStats();
+      renderRumRepositoryGrid();
+      if (!data.matched) {
+        els.rumRepositoryProductDbSyncStatus.textContent = 'Nothing labeled Rum found in the Product Database yet - load the Export File and/or HA Details file on that screen first.';
+      } else {
+        els.rumRepositoryProductDbSyncStatus.textContent = data.added
+          ? `Added ${data.added} new rum${data.added === 1 ? '' : 's'} from the Product Database (${data.matched} labeled Rum there in total).`
+          : `Already up to date - all ${data.matched} rum${data.matched === 1 ? '' : 's'} labeled Rum in the Product Database ${data.matched === 1 ? 'is' : 'are'} already here.`;
+      }
+    } catch (err) {
+      els.rumRepositoryProductDbSyncStatus.textContent = err.message || 'Could not check the Product Database right now.';
+    } finally {
+      els.rumRepositoryProductDbSyncBtn.disabled = false;
     }
   });
 

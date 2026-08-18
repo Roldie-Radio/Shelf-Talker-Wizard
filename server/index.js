@@ -33,6 +33,7 @@ const {
 const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
 const {
   getState: getProductDatabaseState, setExportFile: setProductDatabaseExportFile, setHaFile: setProductDatabaseHaFile,
+  findRumProducts,
 } = require('./productDatabase');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
@@ -986,6 +987,49 @@ function createApp({
       res.json({ added, skipped, source, rums: listRums() });
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
+  });
+
+  // Backs the Rum Repository page's "Add from Product Database" button -
+  // pulls in any Product Database row whose Department/Sub Department
+  // names Rum (see findRumProducts in productDatabase.js) as a new entry,
+  // titled and SKU'd from that row. Additive only, same convention as
+  // /api/rums/sync-library just above: a title that already exists locally
+  // (case-insensitive) is left alone rather than overwritten, so this can
+  // never clobber a distillery/region/style/etc. already researched by
+  // hand - it only ever adds the stub for staff to fill in later. Requires
+  // the Export File and/or HA Details file to already be loaded on this PC
+  // (see productDatabase.js's in-memory state) - matchedCount reports 0
+  // rather than erroring when neither is loaded yet, same "nothing to sync
+  // from" shape as an empty GitHub seed list.
+  app.post('/api/rums/sync-product-database', (req, res) => {
+    try {
+      const rumProducts = findRumProducts(getProductDatabaseState().products);
+      const existingTitles = new Set(listRums().map((r) => r.title.trim().toLowerCase()));
+      let added = 0;
+      let skipped = 0;
+      rumProducts.forEach((p) => {
+        const title = (p.title || '').trim();
+        const key = title.toLowerCase();
+        if (!title || existingTitles.has(key)) {
+          skipped += 1;
+          return;
+        }
+        try {
+          upsertRum({ title, source: 'Product Database', sku: p.sku });
+          existingTitles.add(key);
+          added += 1;
+        } catch {
+          // A malformed/duplicate-cased title shouldn't sink the rest of
+          // the batch - same spirit as syncNewRumRepositoryEntries above.
+          skipped += 1;
+        }
+      });
+      res.json({
+        added, skipped, matched: rumProducts.length, rums: listRums(),
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message || 'Could not sync from the Product Database.' });
     }
   });
 
