@@ -205,6 +205,22 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .rating-num { font-weight: 700; font-size: 0.76rem; color: var(--ui-ink-soft); }
 .beer-card__abv { font-size: 0.76rem; color: var(--ui-muted); font-weight: 600; }
 
+/* origin: flag cards + drilldown */
+.origin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.8rem; }
+.origin-card { border: 1px solid var(--ui-border); border-radius: var(--radius); background: var(--ui-panel); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.45rem; cursor: pointer; text-align: left; font-family: inherit; color: inherit; }
+.origin-card:hover { background: var(--ui-hover); }
+.origin-card--active { border-color: var(--ui-accent); background: var(--ui-panel-alt); }
+.origin-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.origin-card__flag { font-size: 1.9rem; line-height: 1; }
+.origin-card__chevron { font-size: 0.68rem; color: var(--ui-muted); transition: transform 0.15s ease; }
+.origin-card--active .origin-card__chevron { transform: rotate(180deg); color: var(--ui-accent-ink); }
+.origin-card__name { font-weight: 700; font-size: 0.92rem; }
+.origin-card__count { font-size: 0.78rem; color: var(--ui-muted); }
+.origin-card__bar { height: 6px; border-radius: 999px; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); overflow: hidden; margin-top: 0.05rem; }
+.origin-card__bar span { display: block; height: 100%; background: var(--ui-accent); }
+.stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.1rem; }
+.stat-row .stat-tile { flex: 1 1 170px; }
+
 /* brewery chip grid */
 .brewery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
 .brewery-chip { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--ui-panel-sunken); display: flex; flex-direction: column; gap: 0.15rem; }
@@ -243,16 +259,6 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .progress-ring__num { position: absolute; inset: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; }
 .progress-copy { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; max-width: 30ch; }
 .progress-copy strong { color: var(--ui-ink); }
-
-/* ABV mix: beeswarm dot strip - one dot per researched beer */
-.beeswarm { position: relative; height: 110px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel-sunken); margin-top: 0.4rem; }
-.beeswarm__dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--chart-4); border: 1px solid var(--ui-panel); transform: translate(-50%, 50%); cursor: default; }
-.beeswarm__dot--high { background: var(--chart-6); }
-.beeswarm__dot--low { background: var(--chart-3); }
-.beeswarm__axis { display: flex; justify-content: space-between; margin-top: 0.4rem; font-size: 0.68rem; color: var(--ui-muted); }
-.beeswarm__legend { display: flex; gap: 1rem; margin-top: 0.6rem; font-size: 0.72rem; color: var(--ui-muted); }
-.beeswarm__legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
-.beeswarm__legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
 /* customize toolbar - a mockup-viewer control, sits outside the simulated device
    frame so its popover isn't clipped by .device-frame's overflow:hidden */
@@ -407,6 +413,34 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         </div>
       </div>
 
+      <!-- ===== where it's from ===== -->
+      <div class="panel" data-section="origin" data-section-label="Where it's from">
+        <div class="section-head">
+          <div>
+            <h3>Where it's from</h3>
+            <p>There's no researched "origin" field yet &mdash; <code>state</code>/<code>country</code> aren't
+            columns on the <code>beers</code> table today. This is the same 36-brewery keyword match that powers
+            "Breweries on the shelf" below, each of those recognized names mapped to its home state or country, so
+            it's real data about a small recognizable slice of the catalog, not a live geographic breakdown of all
+            2,539 titles.</p>
+          </div>
+        </div>
+        <div class="origin-grid" id="originGrid"></div>
+        <div class="drilldown" id="originDrilldown" hidden></div>
+        <div class="stat-row">
+          <div class="stat-tile"><span class="stat-tile__label">Domestic titles</span><span class="stat-tile__value">221 <small>(84%)</small></span></div>
+          <div class="stat-tile"><span class="stat-tile__label">Imported titles</span><span class="stat-tile__value">42 <small>(16%)</small></span></div>
+          <div class="stat-tile"><span class="stat-tile__label">US states represented</span><span class="stat-tile__value">8</span></div>
+        </div>
+        <div class="gap-note">
+          <span class="gap-note__icon">&#127758;</span>
+          <span><strong>Small, recognizable slice only:</strong> these 263 titles are the ones a keyword match could
+          confidently pin to a brewery (and from there, a state or country) &mdash; the other 2,276 titles have no
+          origin info until <code>brewery</code> is actually researched and a real <code>state</code>/<code>country</code>
+          column exists to store it. <strong>Click a flag</strong> to break it down further.</span>
+        </div>
+      </div>
+
       <!-- ===== package format + research progress ===== -->
       <div class="panel" data-section="format" data-section-label="How it's packaged">
         <div class="section-head">
@@ -449,25 +483,6 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
           <button type="button" class="btn btn--small btn--ghost">See all rated &rarr;</button>
         </div>
         <div class="spotlight-grid" id="spotlightGrid"></div>
-      </div>
-
-      <!-- ===== ABV distribution ===== -->
-      <div class="panel" data-section="abv" data-section-label="ABV mix, once researched">
-        <div class="section-head">
-          <div>
-            <h3>ABV mix, once researched</h3>
-            <p>Each dot is one researched beer, positioned by its real ABV &mdash; shows the actual spread and
-            outliers instead of just bucket totals. Illustrative sample distribution, same convention as the
-            spotlight cards above.</p>
-          </div>
-        </div>
-        <div class="beeswarm" id="abvBeeswarm"></div>
-        <div class="beeswarm__axis"><span>0%</span><span>4%</span><span>8%</span><span>12%</span><span>16%</span></div>
-        <div class="beeswarm__legend">
-          <span><i style="background:var(--chart-3);"></i> Session (&lt;4.5%)</span>
-          <span><i style="background:var(--chart-4);"></i> Standard</span>
-          <span><i style="background:var(--chart-6);"></i> High ABV (9%+)</span>
-        </div>
       </div>
 
       <!-- ===== breweries ===== -->
@@ -533,11 +548,12 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         it isn't beer-colored, so it gets a cool, near-clear tone instead of a spot on the amber scale.</p>
       </div>
       <div class="notes-card">
-        <h3>ABV settled on the beeswarm</h3>
-        <p>The earlier bar-histogram design was replaced with two options for feedback; the beeswarm won. Each dot
-        is one illustrative researched beer, positioned by its real ABV, with a simple greedy lane-packing
-        algorithm so close values stack into rows instead of overlapping &mdash; it shows the actual spread and
-        outliers (a 0.0% and a 13.5% both visible at a glance) rather than just five bucket totals.</p>
+        <h3>Origin is flag cards, not a bar chart</h3>
+        <p>An earlier pass rendered "Where it's from" as a plain state/country bar list; it's now a row of clickable
+        flag cards instead, reusing the style donut's own drilldown component. The United States card expands into
+        the 8 states its recognized breweries call home; Mexico and Netherlands each expand into the single
+        recognized brewery behind their count. Same underlying real data (the 12-brewery keyword match), just an
+        interaction pattern the page already teaches elsewhere instead of a new one.</p>
       </div>
       <div class="notes-card">
         <h3>The page is viewer-customizable</h3>
@@ -559,9 +575,9 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       are blank on every seeded row).</p>
       <p><strong>Illustrative sample data:</strong> the hero's "styles researched" and "avg. Untappd rating" tiles,
       every beer in the Top Rated spotlight grid (real beers with real public ABV/IBU/Untappd figures, chosen to
-      match titles already in the import file), the style donut's sub-style drill-down, the ABV beeswarm, the
-      brewery bar-fill percentages, and the Recently Researched feed. None of it is live &mdash; it's there to show
-      what the page looks like with data in it, not what's on file today.</p>
+      match titles already in the import file), the style donut's sub-style drill-down, the brewery bar-fill
+      percentages, and the Recently Researched feed. None of it is live &mdash; it's there to show what the page
+      looks like with data in it, not what's on file today.</p>
     </div>
   </div>
 </div>
@@ -769,6 +785,92 @@ document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
   </div>
 `).join('');
 
+// ---- origin: same 12 recognized breweries as the "Breweries on the shelf" list below,
+// grouped by country (flag cards); the United States card drills into the state
+// breakdown, the other two drill into the single recognized brewery behind their count ----
+const originCountries = [
+  {
+    name: 'United States', flag: '\u{1F1FA}\u{1F1F8}', count: 221, breakdownType: 'state',
+    breakdown: [
+      { name: 'California', count: 40 },
+      { name: 'Colorado', count: 39 },
+      { name: 'Illinois', count: 28 },
+      { name: 'Michigan', count: 26 },
+      { name: 'Wisconsin', count: 25 },
+      { name: 'Delaware', count: 23 },
+      { name: 'Massachusetts', count: 22 },
+      { name: 'Missouri', count: 18 },
+    ],
+  },
+  {
+    name: 'Mexico', flag: '\u{1F1F2}\u{1F1FD}', count: 23, breakdownType: 'brewery',
+    breakdown: [{ name: 'Corona', count: 23 }],
+  },
+  {
+    name: 'Netherlands', flag: '\u{1F1F3}\u{1F1F1}', count: 19, breakdownType: 'brewery',
+    breakdown: [{ name: 'Heineken', count: 19 }],
+  },
+];
+const originTotal = originCountries.reduce((sum, c) => sum + c.count, 0);
+const originState = { selected: null };
+
+function renderOriginGrid() {
+  const grid = document.getElementById('originGrid');
+  grid.innerHTML = originCountries.map((c) => {
+    const active = originState.selected === c.name;
+    const pct = Math.round((c.count / originTotal) * 100);
+    return `
+    <button type="button" class="origin-card${active ? ' origin-card--active' : ''}" data-country="${c.name}" aria-expanded="${active}">
+      <div class="origin-card__top">
+        <span class="origin-card__flag">${c.flag}</span>
+        <span class="origin-card__chevron">&#9660;</span>
+      </div>
+      <div class="origin-card__name">${c.name}</div>
+      <div class="origin-card__count">${c.count.toLocaleString()} titles &middot; ${pct}%</div>
+      <div class="origin-card__bar"><span style="width:${pct}%;"></span></div>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('.origin-card').forEach((el) => {
+    el.addEventListener('click', () => selectOrigin(el.dataset.country));
+  });
+  renderOriginDrilldown();
+}
+
+function selectOrigin(name) {
+  originState.selected = originState.selected === name ? null : name;
+  renderOriginGrid();
+}
+
+function renderOriginDrilldown() {
+  const wrap = document.getElementById('originDrilldown');
+  if (!originState.selected) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+  wrap.hidden = false;
+  const c = originCountries.find((x) => x.name === originState.selected);
+  const maxSub = Math.max(...c.breakdown.map((b) => b.count));
+  const label = c.breakdownType === 'state' ? 'by state' : 'by recognized brewery';
+  const caveat = c.breakdownType === 'state'
+    ? 'State is each recognized brewery’s own headquarters, not a researched field on the title itself.'
+    : 'Only one recognized brewery name in the current keyword list maps to this country, so it’s a single row today — more would show up here as the brewery list grows.';
+  wrap.innerHTML = `
+    <div class="drilldown__head">
+      <div class="drilldown__title">${c.flag} ${c.name} <span>&mdash; ${c.count.toLocaleString()} titles, ${label}</span></div>
+      <button type="button" class="drilldown__back" id="originDrilldownBack">&times; Clear</button>
+    </div>
+    <div class="format-bars">
+      ${c.breakdown.map((b) => `
+        <div class="format-row">
+          <span class="format-row__label">${b.name}</span>
+          <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((b.count / maxSub) * 100)}%;"></span></span>
+          <span class="format-row__count">${b.count.toLocaleString()}</span>
+        </div>
+      `).join('')}
+    </div>
+    <p class="drilldown__caveat">${caveat}</p>`;
+  document.getElementById('originDrilldownBack').addEventListener('click', () => selectOrigin(c.name));
+}
+
+renderOriginGrid();
+
 // ---- research progress ring: real (0 of 2,539 today) ----
 (function renderProgressRing() {
   const researched = 0;
@@ -776,55 +878,6 @@ document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
   const pct = Math.max(1, Math.round((researched / total) * 100)); // floor of 1deg so the ring isn't invisible
   document.getElementById('progressRing').style.setProperty('--progress-deg', `${(pct / 100) * 360}deg`);
   document.getElementById('progressRingNum').textContent = `${Math.round((researched / total) * 100)}%`;
-})();
-
-// ---- ABV: beeswarm - illustrative individual researched beers, one dot each,
-// greedily stacked into lanes so close-ABV dots don't overlap ----
-const abvBeers = [
-  { title: 'Guinness Draught 0.0', abv: 0.0 },
-  { title: "Bell's Oberon Ale", abv: 5.8 },
-  { title: 'Allagash White', abv: 5.2 },
-  { title: 'Sierra Nevada Pale Ale', abv: 5.6 },
-  { title: 'Coors Light', abv: 4.2 },
-  { title: 'Michelob Ultra', abv: 4.2 },
-  { title: 'Corona Extra', abv: 4.6 },
-  { title: 'Heineken', abv: 5.0 },
-  { title: 'Sam Adams Boston Lager', abv: 5.0 },
-  { title: "Bell's Two Hearted Ale", abv: 7.0 },
-  { title: 'Lagunitas IPA', abv: 6.2 },
-  { title: 'Dogfish Head 60 Minute IPA', abv: 6.0 },
-  { title: 'New Belgium Fat Tire', abv: 5.2 },
-  { title: 'White Claw Black Cherry', abv: 5.0 },
-  { title: '1911 Cider Honeycrisp', abv: 6.9 },
-  { title: 'Guinness Draught', abv: 4.2 },
-  { title: 'Dogfish Head 90 Minute IPA', abv: 9.0 },
-  { title: 'Founders KBS', abv: 12.0 },
-  { title: 'Sierra Nevada Bigfoot', abv: 9.6 },
-  { title: 'Lagunitas Sucks', abv: 7.8 },
-  { title: 'Founders Backwoods Bastard', abv: 11.0 },
-  { title: 'Dogfish Head 120 Minute IPA', abv: 13.5 },
-];
-
-(function renderBeeswarm() {
-  const maxAbv = 14;
-  const minGapPct = 4.2; // percent-of-width gap before a dot needs a new lane
-  const lanes = []; // lanes[i] = x% of the last dot placed in that lane
-  const placed = abvBeers
-    .slice()
-    .sort((a, b) => a.abv - b.abv)
-    .map((beer) => {
-      const xPct = Math.min(100, (beer.abv / maxAbv) * 100);
-      let lane = lanes.findIndex((lastX) => xPct - lastX >= minGapPct);
-      if (lane === -1) { lane = lanes.length; lanes.push(xPct); }
-      else { lanes[lane] = xPct; }
-      return { ...beer, xPct, lane };
-    });
-
-  const colorClass = (abv) => (abv < 4.5 ? 'beeswarm__dot--low' : abv >= 9 ? 'beeswarm__dot--high' : '');
-  document.getElementById('abvBeeswarm').innerHTML = placed.map((b) => `
-    <div class="beeswarm__dot ${colorClass(b.abv)}" title="${b.title} — ${b.abv.toFixed(1)}% ABV"
-      style="left:${b.xPct}%; bottom:${8 + b.lane * 14}px;"></div>
-  `).join('');
 })();
 
 // ---- spotlight: sample researched beers (same convention as beer-profile-page.html) ----
