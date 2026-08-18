@@ -243,8 +243,25 @@ function getState() {
   return publicState();
 }
 
+// Backs the Rum Repository's "Add from Product Database" button (POST
+// /api/rums/sync-product-database in index.js) - a merged row counts as a
+// rum when its Department or Sub Department names Rum as a whole word, not
+// just a substring match (so a department like "Instruments" or "Costume"
+// - neither remotely rum-related - can't accidentally match on a stray
+// "rum" inside a longer word). Case-insensitive, since a WinePOS/HA Details
+// export's own casing convention isn't something this app controls.
+const RUM_DEPARTMENT_PATTERN = /\brum\b/i;
+
+function isRumProduct(product) {
+  return RUM_DEPARTMENT_PATTERN.test(product.department) || RUM_DEPARTMENT_PATTERN.test(product.subDepartment);
+}
+
+function findRumProducts(products) {
+  return products.filter(isRumProduct);
+}
+
 module.exports = {
-  getState, setExportFile, setHaFile,
+  getState, setExportFile, setHaFile, findRumProducts,
   // Exported for tests only.
-  readRows, extractExportProducts, extractHaProducts, mergeProducts,
+  readRows, extractExportProducts, extractHaProducts, mergeProducts, isRumProduct,
 };
