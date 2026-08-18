@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.14',
+      items: [
+        'Changed: the Beer Bible\'s Group By dropdown (Card/List toolbar) no longer offers Source as an option - Style, Brewery, Country, and Research Status remain.',
+      ],
+    },
+    {
       version: '4.4.13',
       items: [
         'New: a Group By dropdown next to Card/List on the Beer Bible grid - split the results into headed sections by Style, Brewery, Country, Research Status, or Source, on top of whatever sort order is already picked. Off (None) by default; the choice persists per PC, same as Card/List and Sort already do.',
@@ -8047,7 +8053,6 @@
     { key: 'brewery', label: 'Brewery' },
     { key: 'country', label: 'Country' },
     { key: 'status', label: 'Research Status' },
-    { key: 'source', label: 'Source' },
   ];
   const BEER_GROUP_BY_BY_KEY = Object.fromEntries(BEER_GROUP_BY_OPTIONS.map((g) => [g.key, g]));
 
@@ -8595,8 +8600,6 @@
         return (entry.country || '').trim() || 'No country on file';
       case 'status':
         return beerIsResearched(entry) ? 'Researched' : 'Needs research';
-      case 'source':
-        return BEER_SOURCE_LABELS[entry.source] || (entry.source || '').trim() || 'Unknown source';
       default:
         return '';
     }
@@ -8608,12 +8611,12 @@
   // relative order the active sort already put it in - grouping never
   // reorders anything sort.cmp decided, it only draws boundaries between
   // sections. Section order itself is alphabetical by label, with any
-  // "No X on file"/"Unknown source" bucket always last regardless of where
-  // that text would otherwise sort, so an incomplete record never
-  // interrupts the alphabetical run of real values above it. 'none' (the
-  // default) short-circuits to a single unheaded section, same shape as
-  // every other section so renderBeerBibleGrid doesn't need a separate code
-  // path for "no grouping".
+  // "No X on file" bucket always last regardless of where that text would
+  // otherwise sort, so an incomplete record never interrupts the
+  // alphabetical run of real values above it. 'none' (the default)
+  // short-circuits to a single unheaded section, same shape as every other
+  // section so renderBeerBibleGrid doesn't need a separate code path for
+  // "no grouping".
   function beerBibleGroupSections(rows) {
     if (beerBibleGroupBy === 'none') return [{ label: null, rows }];
     const buckets = new Map();
@@ -8622,7 +8625,7 @@
       if (!buckets.has(label)) buckets.set(label, []);
       buckets.get(label).push(row);
     });
-    const isFallback = (label) => /^(No .+ on file|Unknown source)$/.test(label);
+    const isFallback = (label) => /^No .+ on file$/.test(label);
     return Array.from(buckets.entries())
       .sort(([a], [b]) => {
         const aFallback = isFallback(a);
