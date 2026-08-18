@@ -2208,6 +2208,55 @@ test('enrichBeerFromUntappd leaves a container word in the displayed title when 
   );
 });
 
+// Regression coverage for untappdFieldsOnly's own reasoning: a confident
+// match must never quietly backfill from whatever `product` already had -
+// otherwise a stale style/ABV/description sitting in the Search tab form
+// (or already on file for the Beer Bible entry being re-Researched) would
+// silently survive a fresh Untappd match that genuinely doesn't have that
+// field, instead of the confirm dialog honestly showing blank.
+test('enrichBeerFromUntappd never falls back to the incoming product\'s own fields on a confident match - blank stays blank', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    {
+      beer_slug: 'slack-tide-brewing-company-flounder-pounder',
+      bid: 5150,
+      beer_name: 'Flounder Pounder',
+      brewery_name: 'Slack Tide Brewing Company',
+    },
+  ]);
+  // Untappd's own page here has a brewery but no style/ABV/IBU/rating/
+  // description - the fields a stale `product` below also happens to carry
+  // values for, so a fallback-to-current bug would be masked if this test
+  // left any of them out.
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Flounder Pounder by Slack Tide Brewing Company | Untappd" />',
+    body: '<p class="brewery"><a href="#">Slack Tide Brewing Company</a></p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
+    async () => {
+      const result = await enrichBeerFromUntappd({
+        title: 'Slack Tide Flounder Pounder Can',
+        brand: 'Slack Tide Brewing Company',
+        size: '12OZ',
+        sku: '41784',
+        // Stale values a leftover form/entry might already carry - none of
+        // these should survive into the result.
+        style: 'Stale IPA', abv: '9.9%', ibu: '99', untappdRating: '1.0',
+        untappdRatingCount: '1', description: 'Stale leftover description.',
+        location: 'Stale, ST',
+      });
+      assert.equal(result.brewery, 'Slack Tide Brewing Company', 'Untappd\'s own field still comes through');
+      assert.equal(result.style, '', 'not blanked to Untappd\'s value - blanked outright, since Untappd had none');
+      assert.equal(result.abv, '');
+      assert.equal(result.ibu, '');
+      assert.equal(result.untappdRating, '');
+      assert.equal(result.untappdRatingCount, '');
+      assert.equal(result.description, '');
+      assert.equal(result.location, '');
+    }
+  );
+});
+
 // Regression coverage for the disambiguation picker at the level Scan UPC/
 // SKU Lookup/Search by Name actually see it: enrichBeerFromUntappd's own
 // catch block special-cases UntappdAmbiguousMatchError into

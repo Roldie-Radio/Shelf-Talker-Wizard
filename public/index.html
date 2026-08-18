@@ -1964,19 +1964,19 @@
        researched), so there's no sibling-cascade concern for this one, unlike
        Bulk Edit above.
 
-       A confident match saves itself right away - no separate Confirm
-       Untappd Match step the way one click of the single per-card Research
-       button still gets (see runBeerResearch's own openUntappdConfirm
-       call) - a deliberate difference for the batch case specifically: the
-       live On File vs. Untappd comparison shown as each beer resolves
-       already doubles as that review, and re-confirming every single
-       match one at a time would defeat the point of doing this as a
-       batch. A tie still gets the exact same disambiguation dialog every
-       other beer lookup in this app already uses (openUntappdPicker),
-       opened right on top of this one - nothing new invented for that
-       case, since it already does its own live Untappd popularity lookups
-       per candidate that a flatter inline picker here couldn't replicate
-       without duplicating that logic. -->
+       A confident match still gets the exact same Confirm Untappd Match
+       step the single per-card Research button does (see runBeerResearch's
+       own openUntappdConfirm call) - nothing here ever saves without staff
+       actually looking at it and clicking Use This Match, batch or not; a
+       rejected match (Not the Right Beer) counts as its own outcome
+       ('rejected' - see the rtally chip below) rather than silently
+       becoming a miss, so the summary can tell "Untappd found nothing" apart
+       from "Untappd found something and staff said no". A tie still gets
+       the exact same disambiguation dialog every other beer lookup in this
+       app already uses (openUntappdPicker), opened right on top of this one
+       - nothing new invented for that case, since it already does its own
+       live Untappd popularity lookups per candidate that a flatter inline
+       picker here couldn't replicate without duplicating that logic. -->
   <div id="beerBibleBulkResearchOverlay" class="modal-overlay no-print" hidden>
     <div class="modal modal--research" role="dialog" aria-modal="true" aria-labelledby="beerBibleBulkResearchTitle">
       <div class="modal__header">
@@ -1997,6 +1997,11 @@
         <div class="rtally">
           <div class="rtally__chip rtally__chip--good"><b id="beerBibleBulkResearchTallyMatched">0</b><span>Matched</span></div>
           <div class="rtally__chip rtally__chip--warn"><b id="beerBibleBulkResearchTallyTie">0</b><span>Tie</span></div>
+          <!-- A confident match staff explicitly rejected (Not the Right
+               Beer) - its own tally, distinct from Tie (ambiguous) and No
+               Match (Untappd found nothing) - see the modal's own top
+               comment for why this exists. -->
+          <div class="rtally__chip rtally__chip--muted"><b id="beerBibleBulkResearchTallyRejected">0</b><span>Rejected</span></div>
           <div class="rtally__chip rtally__chip--muted"><b id="beerBibleBulkResearchTallyMiss">0</b><span>No Match</span></div>
         </div>
         <div class="modal__footer">

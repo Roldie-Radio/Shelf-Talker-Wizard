@@ -1076,6 +1076,7 @@
     beerBibleBulkResearchLive: document.getElementById('beerBibleBulkResearchLive'),
     beerBibleBulkResearchTallyMatched: document.getElementById('beerBibleBulkResearchTallyMatched'),
     beerBibleBulkResearchTallyTie: document.getElementById('beerBibleBulkResearchTallyTie'),
+    beerBibleBulkResearchTallyRejected: document.getElementById('beerBibleBulkResearchTallyRejected'),
     beerBibleBulkResearchTallyMiss: document.getElementById('beerBibleBulkResearchTallyMiss'),
     beerBibleBulkResearchCancelBtn: document.getElementById('beerBibleBulkResearchCancelBtn'),
     beerBibleBulkResearchSummary: document.getElementById('beerBibleBulkResearchSummary'),
@@ -9968,6 +9969,25 @@
         </div>
       `;
     }
+    // Untappd found a single confident match, but staff clicked Not the
+    // Right Beer on it during the batch (see runBeerBibleBulkResearch's own
+    // confirm branch) - distinct from 'miss' (Untappd found nothing at
+    // all), so the comparison toggle below has something real to show:
+    // r.rejectedData is exactly what was declined, not what's on file.
+    if (r.outcome === 'rejected') {
+      return `
+        <div class="rresult">
+          <span class="rresult__icon rresult__icon--warn">${BEER_RESULT_ICON_WARN}</span>
+          <div class="rresult__body">
+            <div class="rresult__title">${escapeHtml(b.title)}</div>
+            <div class="rresult__detail">Untappd found a match, but it wasn't confirmed - open this beer's own profile and click Research to review it again, or search Untappd yourself below.</div>
+            <button type="button" class="rcompare-toggle" data-toggle="${b.id}">Show comparison</button>
+            <button type="button" class="rcompare-toggle" data-manual-search="${b.id}">Search Untappd&hellip;</button>
+            <div class="rresult__compare" data-compare-slot="${b.id}" hidden>${beerCompareCardHtml(b, 'match', r.rejectedData)}</div>
+          </div>
+        </div>
+      `;
+    }
     return `
       <div class="rresult">
         <span class="rresult__icon rresult__icon--muted">${BEER_RESULT_ICON_MISS}</span>
@@ -10003,10 +10023,12 @@
 
     const matched = results.filter((r) => r.outcome === 'match').length;
     const tie = results.filter((r) => r.outcome === 'tie').length;
+    const rejected = results.filter((r) => r.outcome === 'rejected').length;
     const miss = results.filter((r) => r.outcome === 'miss').length;
     const parts = [];
     if (matched) parts.push(`${matched} matched and saved`);
     if (tie) parts.push(`${tie} left unresolved`);
+    if (rejected) parts.push(`${rejected} not confirmed`);
     if (miss) parts.push(`${miss} not found`);
     els.beerBibleBulkResearchSummaryLine.textContent = `Researched ${results.length} beer${results.length === 1 ? '' : 's'}: ${parts.join(', ')}.`;
     els.beerBibleBulkResearchSummaryNote.textContent = beerBulkResearchCancelled ? 'Cancelled - the rest of the selection was left untouched.' : '';
@@ -10044,6 +10066,12 @@
 
       let outcome;
       let freshBeer = beer;
+      // Only meaningful for outcome 'rejected' - the fields Untappd found
+      // that staff declined, kept so the result row's own "Show
+      // comparison" toggle can still show what was turned down (see
+      // beerBulkResearchResultRowHtml below), the same way a 'match' row
+      // shows what got saved.
+      let rejectedData = null;
       try {
         // eslint-disable-next-line no-await-in-loop -- deliberately
         // sequential and paced (see the sleep below), not a burst - same
@@ -10070,18 +10098,33 @@
           outcome = 'miss';
           els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'miss');
         } else {
+          // A single confident match - same Confirm Untappd Match review
+          // step runBeerResearch shows for the per-card Research button,
+          // one beer at a time here too (see this modal's own top comment
+          // in index.html for why bulk Research isn't an exemption from
+          // that). Nothing saves until staff actually clicks Use This
+          // Match.
+          els.beerBibleBulkResearchCurrent.innerHTML = `${BEER_RESEARCH_ICON}Confirm match for <b style="color:var(--ui-ink-soft)">${escapeHtml(beerDisplayName(beer) || beer.title)}</b>&hellip;`;
+          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'match', data);
           // eslint-disable-next-line no-await-in-loop
-          await saveBeerResearchFields(beer.id, data);
-          outcome = 'match';
-          freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
-          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
+          const confirmed = await openUntappdConfirm(data);
+          if (confirmed) {
+            // eslint-disable-next-line no-await-in-loop
+            await saveBeerResearchFields(beer.id, data);
+            outcome = 'match';
+            freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
+            els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
+          } else {
+            outcome = 'rejected';
+            rejectedData = data;
+          }
         }
       } catch (err) {
         outcome = 'miss';
         els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'miss');
       }
 
-      results.push({ beer: freshBeer, outcome });
+      results.push({ beer: freshBeer, outcome, rejectedData });
       const done = i + 1;
       const pct = Math.round((done / queue.length) * 100);
       els.beerBibleBulkResearchDone.textContent = done;
@@ -10089,6 +10132,7 @@
       els.beerBibleBulkResearchBar.value = pct;
       els.beerBibleBulkResearchTallyMatched.textContent = results.filter((r) => r.outcome === 'match').length;
       els.beerBibleBulkResearchTallyTie.textContent = results.filter((r) => r.outcome === 'tie').length;
+      els.beerBibleBulkResearchTallyRejected.textContent = results.filter((r) => r.outcome === 'rejected').length;
       els.beerBibleBulkResearchTallyMiss.textContent = results.filter((r) => r.outcome === 'miss').length;
 
       if (i < queue.length - 1 && !beerBulkResearchCancelled) {
@@ -10113,12 +10157,13 @@
       return;
     }
 
-    // A miss's own "Search Untappd…" (see beerBulkResearchResultRowHtml
-    // above) - opens the same Pick the Right Beer dialog a live tie during
-    // the batch already reuses, just for this one beer after the fact
-    // rather than pausing the whole run for it (a miss mid-batch is left
-    // alone precisely so an unattended batch can finish - see
-    // runBeerBibleBulkResearch's own miss branch).
+    // A miss or rejected row's own "Search Untappd…" (see
+    // beerBulkResearchResultRowHtml above) - opens the same Pick the Right
+    // Beer dialog a live tie during the batch already reuses, just for this
+    // one beer after the fact rather than pausing the whole run for it (a
+    // miss/rejected match mid-batch is left alone precisely so an
+    // unattended batch can finish - see runBeerBibleBulkResearch's own miss
+    // and rejected branches).
     const searchBtn = e.target.closest('[data-manual-search]');
     if (!searchBtn) return;
     const id = Number(searchBtn.dataset.manualSearch);
