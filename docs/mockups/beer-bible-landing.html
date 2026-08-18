@@ -1,0 +1,508 @@
+<title>Beer Bible Landing Page — Shelf Talker Wizard Mockup</title>
+<style>
+/* ===================================================================
+   Tokens - lifted from Shelf Talker Wizard's own public/css/styles.css,
+   the same base set beer-profile-page.html and wine-profile-infographic.html
+   already use, so this sits in the same visual system as those proposals
+   rather than inventing a second one.
+   =================================================================== */
+:root {
+  --ink: #1b1b1b;
+  --sale-red: #d21f1f;
+
+  --ui-bg: #f4f2ee;
+  --ui-panel: #ffffff;
+  --ui-panel-alt: #f7f3ec;
+  --ui-panel-sunken: #fbf9f5;
+  --ui-border: #ddd6cc;
+  --ui-ink: #1b1b1b;
+  --ui-ink-soft: #4a453d;
+  --ui-muted: #6b645a;
+  --ui-field: #fffdfa;
+  --ui-btn: #ffffff;
+  --ui-btn-hover: #f7f3ec;
+  --ui-accent: #8a5f27;
+  --ui-accent-hover: #71491d;
+  --ui-accent-ink: #8a5f27;
+  --ui-on-accent: #ffffff;
+  --ui-hover: rgba(27, 27, 27, 0.06);
+  --ui-code-bg: #f0ece3;
+  --ui-danger: #c81a1a;
+  --ui-shadow: rgba(27, 27, 27, 0.16);
+  --ui-good: #2e7d32;
+  --ui-good-tint: rgba(46, 125, 50, 0.1);
+  --ui-warn: #96590a;
+  --ui-warn-tint: rgba(191, 128, 15, 0.12);
+
+  /* infographic accents - amber/copper family so the charts read as
+     "beer" without leaning on the wine mockup's purple band */
+  --chart-1: #c8722c;
+  --chart-2: #8a5f27;
+  --chart-3: #d9a441;
+  --chart-4: #6b8f47;
+  --chart-5: #4a7c8c;
+  --chart-6: #a1493f;
+  --chart-7: #b9a26a;
+  --chart-8: #7d5a8a;
+  --chart-muted: #cfc7b8;
+
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+    --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+    --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+    --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+    --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+    --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+    --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+    --chart-muted: #3b3733;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #171614; --ui-panel: #23211e; --ui-panel-alt: #2b2825; --ui-panel-sunken: #1c1a18;
+  --ui-border: #3b3733; --ui-ink: #f0ece6; --ui-ink-soft: #d8d2c8; --ui-muted: #b0a89e;
+  --ui-field: #1c1a18; --ui-btn: #2b2825; --ui-btn-hover: #35312c;
+  --ui-accent: #d9a441; --ui-accent-hover: #e8b563; --ui-accent-ink: #e8b563; --ui-on-accent: #241a08;
+  --ui-hover: rgba(255, 255, 255, 0.08); --ui-code-bg: #302c28; --ui-danger: #ff8f8f; --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-good: #6fcf74; --ui-good-tint: rgba(111, 207, 116, 0.12);
+  --ui-warn: #e8b563; --ui-warn-tint: rgba(232, 181, 99, 0.14);
+  --chart-muted: #3b3733;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ui-bg); color: var(--ui-ink); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+.intro { display: flex; flex-direction: column; gap: 0.6rem; max-width: 84ch; }
+.eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-accent-ink); }
+.intro h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--ui-ink-soft); line-height: 1.55; font-size: 0.96rem; }
+.intro p strong { color: var(--ui-ink); }
+.intro code { background: var(--ui-code-bg); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.88em; }
+.intro a { color: var(--ui-accent-ink); }
+
+.device-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--ui-border); box-shadow: 0 20px 44px var(--ui-shadow); background: var(--ui-panel); }
+.device-chrome { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0.9rem; background: var(--ui-panel-alt); border-bottom: 1px solid var(--ui-border); }
+.device-chrome__dots { display: flex; gap: 0.3rem; }
+.device-chrome__dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--ui-border); }
+.device-chrome__label { font-size: 0.78rem; color: var(--ui-muted); font-weight: 600; flex: 1; }
+.device-chrome__count { font-size: 0.72rem; font-weight: 700; color: var(--ui-accent-ink); background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 999px; padding: 0.2rem 0.6rem; white-space: nowrap; }
+
+.btn { border: 1px solid var(--ui-border); background: var(--ui-btn); color: var(--ui-ink); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: inherit; }
+.btn:hover { background: var(--ui-btn-hover); }
+.btn--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-on-accent); }
+.btn--primary:hover { background: var(--ui-accent-hover); }
+.btn--ghost { background: transparent; border-color: var(--ui-border); }
+.btn--onhero { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.4); color: #fff8ec; }
+.btn--onhero:hover { background: rgba(255,255,255,0.24); }
+.btn--onhero.btn--primary { background: #fff8ec; border-color: #fff8ec; color: #5a3d16; }
+.btn--onhero.btn--primary:hover { background: #ffffff; }
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative;
+  padding: 2.4rem 2rem 2.2rem;
+  background:
+    radial-gradient(1200px 320px at 12% -20%, rgba(255,255,255,0.16), transparent 60%),
+    linear-gradient(135deg, #4a2e10 0%, #8a5f27 55%, #c8722c 100%);
+  color: #fff8ec;
+  overflow: hidden;
+}
+.hero::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 34px);
+  pointer-events: none;
+}
+.hero__inner { position: relative; display: flex; justify-content: space-between; gap: 2rem; flex-wrap: wrap; align-items: flex-end; }
+.hero__copy { max-width: 46ch; }
+.hero__eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffe6bd; margin-bottom: 0.6rem; }
+.hero h2 { font-size: 2.1rem; letter-spacing: -0.01em; margin-bottom: 0.6rem; }
+.hero p { margin: 0 0 1.2rem; font-size: 0.95rem; line-height: 1.6; color: #fce6c8; }
+.hero__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.hero__stats { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 0.7rem 1.4rem; min-width: 260px; }
+.hero__stat-num { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.hero__stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #ffe6bd; margin-top: 0.15rem; }
+
+/* ---------- main content ---------- */
+.content { padding: 1.6rem 1.9rem 2.1rem; display: flex; flex-direction: column; gap: 1.6rem; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.section-head h3 { font-size: 1.05rem; }
+.section-head p { margin: 0.15rem 0 0; font-size: 0.82rem; color: var(--ui-muted); max-width: 62ch; line-height: 1.5; }
+.section-head a.btn { flex-shrink: 0; }
+
+.panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.2rem 1.3rem; }
+
+/* two-column: style-mix donut + secondary stat rail */
+.mix-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.2rem; align-items: stretch; }
+@media (max-width: 920px) { .mix-grid { grid-template-columns: 1fr; } }
+
+.donut-wrap { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+.donut { width: 168px; height: 168px; border-radius: 50%; flex-shrink: 0; position: relative; background: conic-gradient(var(--donut-stops)); }
+.donut::after { content: ""; position: absolute; inset: 20px; border-radius: 50%; background: var(--ui-panel); }
+.donut-center { position: absolute; inset: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.donut-center__num { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
+.donut-center__label { font-size: 0.62rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 8em; line-height: 1.2; }
+
+.legend { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 210px; }
+.legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; }
+.legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.legend-row__name { flex: 1; color: var(--ui-ink-soft); }
+.legend-row__pct { font-weight: 700; font-variant-numeric: tabular-nums; }
+.legend-row__count { font-size: 0.72rem; color: var(--ui-muted); min-width: 3.6em; text-align: right; }
+
+.stat-rail { display: flex; flex-direction: column; gap: 0.7rem; justify-content: center; }
+.stat-tile { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.stat-tile__label { font-size: 0.78rem; color: var(--ui-ink-soft); font-weight: 600; }
+.stat-tile__value { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat-tile__value small { font-size: 0.6em; font-weight: 600; color: var(--ui-muted); }
+
+/* research-gap callout */
+.gap-note { display: flex; gap: 0.7rem; align-items: flex-start; background: var(--ui-warn-tint); border: 1px solid color-mix(in srgb, var(--ui-warn) 35%, var(--ui-border)); border-radius: 8px; padding: 0.75rem 0.9rem; font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; margin-top: 1rem; }
+.gap-note__icon { font-size: 1.1rem; line-height: 1; }
+.gap-note strong { color: var(--ui-ink); }
+
+/* spotlight beer cards */
+.spotlight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; }
+@media (max-width: 980px) { .spotlight-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .spotlight-grid { grid-template-columns: 1fr; } }
+.beer-card { border: 1px solid var(--ui-border); border-radius: var(--radius); background: var(--ui-panel); padding: 0.95rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.beer-card__top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+.beer-card__title { font-size: 0.92rem; font-weight: 700; line-height: 1.3; }
+.beer-card__brewery { font-size: 0.76rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.rank-badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--ui-accent); color: var(--ui-on-accent); font-size: 0.76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.beer-card__tags { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.tag { font-size: 0.68rem; font-weight: 700; background: var(--ui-code-bg); color: var(--ui-ink-soft); padding: 0.16rem 0.5rem; border-radius: 999px; }
+.beer-card__meta { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; margin-top: 0.1rem; }
+.stars { display: inline-flex; gap: 1px; font-size: 0.8rem; line-height: 1; letter-spacing: 1px; position: relative; }
+.stars__empty { color: var(--ui-border); }
+.stars__fill { color: var(--ui-accent-ink); position: absolute; inset: 0; overflow: hidden; white-space: nowrap; }
+.rating-num { font-weight: 700; font-size: 0.76rem; color: var(--ui-ink-soft); }
+.beer-card__abv { font-size: 0.76rem; color: var(--ui-muted); font-weight: 600; }
+
+/* brewery chip grid */
+.brewery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+.brewery-chip { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--ui-panel-sunken); display: flex; flex-direction: column; gap: 0.15rem; }
+.brewery-chip__name { font-size: 0.82rem; font-weight: 700; }
+.brewery-chip__count { font-size: 0.72rem; color: var(--ui-muted); }
+.brewery-chip__bar { height: 4px; border-radius: 999px; background: var(--ui-border); margin-top: 0.35rem; overflow: hidden; }
+.brewery-chip__bar span { display: block; height: 100%; background: var(--ui-accent); }
+
+/* activity feed */
+.feed { display: flex; flex-direction: column; }
+.feed-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px dashed var(--ui-border); font-size: 0.84rem; }
+.feed-row:last-child { border-bottom: none; }
+.feed-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--ui-good); }
+.feed-dot--manual { background: var(--ui-accent-ink); }
+.feed-title { font-weight: 700; flex: 1; min-width: 0; }
+.feed-title span { font-weight: 500; color: var(--ui-muted); }
+.feed-when { font-size: 0.74rem; color: var(--ui-muted); white-space: nowrap; }
+
+.panel-footer-cta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: var(--ui-panel-alt); border-radius: var(--radius); padding: 1.1rem 1.3rem; }
+.panel-footer-cta p { margin: 0; font-size: 0.86rem; color: var(--ui-ink-soft); max-width: 56ch; line-height: 1.5; }
+.panel-footer-cta p strong { color: var(--ui-ink); }
+
+.panel.notes-panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.9rem; }
+@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
+.notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+.notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
+.notes-card ul { margin: 0; padding-left: 1.1rem; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="eyebrow">Proposed feature &middot; not part of the running app</p>
+    <h1>Beer Bible Landing Page</h1>
+    <p>
+      Today "Beer Bible" opens straight into a card grid &mdash; useful once you know what you're looking for, but it
+      gives a new user no sense of what's actually in there. This mockup proposes a <strong>landing page</strong> in
+      front of that grid: one screen that shows the shape of the data at a glance (how many titles, how researched
+      they are, what styles dominate, who the top breweries are) before dropping into search or an individual
+      <a href="beer-profile-page.html">beer profile</a>.
+    </p>
+    <p>
+      The catalog-scale numbers below (<strong>2,539 titles</strong>, the style-mix chart) are computed from the real
+      <code>scripts/beer-bible-seed-data.json</code> import file, so they reflect the store's actual SKU list. Every
+      other number &mdash; ratings, breweries researched, the activity feed &mdash; is illustrative sample data,
+      the same convention <a href="beer-profile-page.html">beer-profile-page.html</a> uses, since the bundled seed
+      file ships with <code>brewery</code>/<code>style</code>/<code>abv</code>/etc. all blank until someone researches
+      each entry.
+    </p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-chrome">
+      <div class="device-chrome__dots"><span></span><span></span><span></span></div>
+      <div class="device-chrome__label">Shelf Talker Wizard &mdash; Beer Bible</div>
+      <div class="device-chrome__count">2,539 titles imported</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <p class="hero__eyebrow">Beer Bible</p>
+          <h2>Every beer in the store, one page.</h2>
+          <p>Brewery, style, ABV/IBU, and Untappd rating for every title you carry &mdash; researched once, reused
+          on every shelf talker from here on.</p>
+          <div class="hero__actions">
+            <button type="button" class="btn btn--onhero btn--primary">Browse the Library</button>
+            <button type="button" class="btn btn--onhero">+ Add a Beer</button>
+          </div>
+        </div>
+        <div class="hero__stats">
+          <div>
+            <div class="hero__stat-num">2,539</div>
+            <div class="hero__stat-label">Titles imported</div>
+          </div>
+          <div>
+            <div class="hero__stat-num">36</div>
+            <div class="hero__stat-label">Recognizable breweries</div>
+          </div>
+          <div>
+            <div class="hero__stat-num">9</div>
+            <div class="hero__stat-label">Styles researched</div>
+          </div>
+          <div>
+            <div class="hero__stat-num">4.1<small style="font-size:0.55em; font-weight:600;">/5</small></div>
+            <div class="hero__stat-label">Avg. Untappd rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- ===== style mix ===== -->
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>What's in the catalog</h3>
+            <p>Style guessed from each title's own text (e.g. "IPA", "STOUT", "SELTZER") &mdash; not the researched
+            <code>style</code> field, which is still blank for nearly every title. It's a preview of what full
+            research would sort the shelf into.</p>
+          </div>
+        </div>
+        <div class="mix-grid">
+          <div class="donut-wrap">
+            <div class="donut" id="styleDonut">
+              <div class="donut-center">
+                <div class="donut-center__num">1,683</div>
+                <div class="donut-center__label">titles not yet keyword-matched</div>
+              </div>
+            </div>
+            <div class="legend" id="styleLegend"></div>
+          </div>
+          <div class="stat-rail">
+            <div class="stat-tile"><span class="stat-tile__label">Fully researched entries</span><span class="stat-tile__value">0 <small>of 2,539</small></span></div>
+            <div class="stat-tile"><span class="stat-tile__label">From Untappd export</span><span class="stat-tile__value">2,539 <small>(100%)</small></span></div>
+            <div class="stat-tile"><span class="stat-tile__label">Added manually</span><span class="stat-tile__value">0</span></div>
+            <div class="stat-tile"><span class="stat-tile__label">Distinct SKUs on file</span><span class="stat-tile__value">2,539</span></div>
+          </div>
+        </div>
+        <div class="gap-note">
+          <span class="gap-note__icon">&#128269;</span>
+          <span><strong>The opportunity, in one number:</strong> 2,539 titles are already in the Beer Bible, but 0
+          have brewery/style/ABV/tasting-notes filled in yet. Everything below this line shows what the page looks
+          like <em>once</em> entries are researched &mdash; sample beers, not a live count.</span>
+        </div>
+      </div>
+
+      <!-- ===== spotlight ===== -->
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Top rated in the library</h3>
+            <p>Highest Untappd rating among researched entries. Sample beers &mdash; real public ABV/IBU/rating
+            figures, picked to match titles that already exist in this store's import file.</p>
+          </div>
+          <button type="button" class="btn btn--small btn--ghost">See all rated &rarr;</button>
+        </div>
+        <div class="spotlight-grid" id="spotlightGrid"></div>
+      </div>
+
+      <!-- ===== breweries ===== -->
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Breweries on the shelf</h3>
+            <p>Distinct brewery names already recognizable in the SKU titles, ranked by how many titles carry that
+            name &mdash; a rough proxy for research priority.</p>
+          </div>
+        </div>
+        <div class="brewery-grid" id="breweryGrid"></div>
+      </div>
+
+      <!-- ===== activity ===== -->
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Recently researched</h3>
+            <p>What the feed looks like once staff start filling entries in &mdash; illustrative only.</p>
+          </div>
+        </div>
+        <div class="feed" id="activityFeed"></div>
+      </div>
+
+      <div class="panel-footer-cta">
+        <p><strong>Don't see a beer you carry?</strong> Add it to the Library and it's ready for the next shelf
+        talker &mdash; and every profile page after that.</p>
+        <button type="button" class="btn btn--primary">+ Add a Beer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel notes-panel">
+    <h2>Design notes</h2>
+
+    <div class="notes-grid">
+      <div class="notes-card">
+        <h3>A landing page, not a new data model</h3>
+        <p>Every number here reads from the existing <code>beers</code> table (see <code>server/db.js</code>) &mdash;
+        no new columns, same as <code>beer-profile-page.html</code>'s design notes for the same reason. The
+        style-mix chart is the one exception worth calling out: it's computed client-side from each title's text,
+        since <code>style</code> itself is blank on nearly every row today. A real implementation would run that
+        same keyword pass server-side once and cache it, falling back to the researched <code>style</code> column
+        wherever it's actually filled in.</p>
+      </div>
+      <div class="notes-card">
+        <h3>Honest about the research gap</h3>
+        <p>It would be easy to make this page look more finished than the data actually is. The gap-note callout is
+        deliberate: 2,539 titles imported, effectively zero researched, is the real current state of
+        <code>scripts/beer-bible-seed-data.json</code>. Leading with that number (rather than hiding it behind
+        cherry-picked sample cards) is what makes the "Add a Beer" CTA at the bottom feel earned instead of
+        decorative.</p>
+      </div>
+    </div>
+
+    <div class="notes-card">
+      <h3>Where the numbers come from</h3>
+      <p><strong>Real, computed from the repo's own data:</strong> 2,539 total titles, the style-mix chart's nine
+      buckets and counts (simple keyword match against each title, run over the actual bundled seed file), and the
+      "36 recognizable breweries" figure (a fixed list of well-known national/regional brand names checked against
+      the same titles).</p>
+      <p><strong>Illustrative sample data:</strong> the hero's "styles researched" and "avg. Untappd rating" tiles,
+      every beer in the Top Rated spotlight grid (real beers with real public ABV/IBU/Untappd figures, chosen to
+      match titles already in the import file), the brewery bar-fill percentages, and the Recently Researched
+      feed. None of it is live &mdash; it's there to show what the page looks like with data in it, not what's on
+      file today.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- style mix: real counts from a keyword pass over scripts/beer-bible-seed-data.json ----
+const styleMix = [
+  { name: 'Uncategorized (not yet researched)', count: 1683, color: 'var(--chart-muted)' },
+  { name: 'IPA', count: 195, color: 'var(--chart-1)' },
+  { name: 'Lager & Pilsner', count: 172, color: 'var(--chart-2)' },
+  { name: 'Seltzer / RTD', count: 113, color: 'var(--chart-3)' },
+  { name: 'Cider', count: 93, color: 'var(--chart-4)' },
+  { name: 'Stout & Porter', count: 77, color: 'var(--chart-5)' },
+  { name: 'Non-Alcoholic', count: 68, color: 'var(--chart-6)' },
+  { name: 'Light Beer', count: 57, color: 'var(--chart-7)' },
+  { name: 'Wheat & Wit', count: 50, color: 'var(--chart-8)' },
+  { name: 'Sour', count: 31, color: '#5a8a6b' },
+];
+const styleTotal = styleMix.reduce((s, x) => s + x.count, 0);
+
+(function renderDonut() {
+  let acc = 0;
+  const stops = styleMix.map((s) => {
+    const start = (acc / styleTotal) * 360;
+    acc += s.count;
+    const end = (acc / styleTotal) * 360;
+    return `${s.color} ${start}deg ${end}deg`;
+  }).join(', ');
+  document.getElementById('styleDonut').style.setProperty('--donut-stops', stops);
+
+  document.getElementById('styleLegend').innerHTML = styleMix.map((s) => `
+    <div class="legend-row">
+      <span class="legend-swatch" style="background:${s.color};"></span>
+      <span class="legend-row__name">${s.name}</span>
+      <span class="legend-row__pct">${Math.round((s.count / styleTotal) * 100)}%</span>
+      <span class="legend-row__count">${s.count.toLocaleString()}</span>
+    </div>
+  `).join('');
+})();
+
+// ---- spotlight: sample researched beers (same convention as beer-profile-page.html) ----
+const spotlight = [
+  { title: "Founders KBS", brewery: 'Founders Brewing Co.', style: 'Imperial Stout', abv: '12.0%', rating: 4.46 },
+  { title: "Bell's Two Hearted Ale", brewery: "Bell's Brewery", style: 'American IPA', abv: '7.0%', rating: 4.32 },
+  { title: 'Allagash White', brewery: 'Allagash Brewing Co.', style: 'Belgian Witbier', abv: '5.2%', rating: 3.93 },
+  { title: 'Sierra Nevada Pale Ale', brewery: 'Sierra Nevada Brewing Co.', style: 'American Pale Ale', abv: '5.6%', rating: 3.90 },
+  { title: "Bell's Oberon Ale", brewery: "Bell's Brewery", style: 'American Wheat Ale', abv: '5.8%', rating: 3.79 },
+  { title: 'Guinness Draught', brewery: 'Guinness', style: 'Irish Dry Stout', abv: '4.2%', rating: 3.79 },
+];
+
+function starsHtml(rating) {
+  const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
+  return `<span class="stars"><span class="stars__empty">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span class="stars__fill" style="width:${pct}%;">&#9733;&#9733;&#9733;&#9733;&#9733;</span></span>`;
+}
+
+document.getElementById('spotlightGrid').innerHTML = spotlight.map((b, i) => `
+  <div class="beer-card">
+    <div class="beer-card__top">
+      <div>
+        <div class="beer-card__title">${b.title}</div>
+        <div class="beer-card__brewery">${b.brewery}</div>
+      </div>
+      <span class="rank-badge">${i + 1}</span>
+    </div>
+    <div class="beer-card__tags"><span class="tag">${b.style}</span></div>
+    <div class="beer-card__meta">
+      <span>${starsHtml(b.rating)} <span class="rating-num">${b.rating.toFixed(2)}</span></span>
+      <span class="beer-card__abv">${b.abv} ABV</span>
+    </div>
+  </div>
+`).join('');
+
+// ---- breweries: real name-recognition counts against the import file ----
+const breweries = [
+  { name: 'Founders Brewing Co.', count: 26 },
+  { name: 'Sierra Nevada', count: 21 },
+  { name: 'Miller', count: 25 },
+  { name: 'Corona', count: 23 },
+  { name: 'Dogfish Head', count: 23 },
+  { name: 'Sam Adams', count: 22 },
+  { name: 'Coors', count: 22 },
+  { name: 'White Claw', count: 28 },
+  { name: 'Heineken', count: 19 },
+  { name: 'Lagunitas', count: 19 },
+  { name: 'Michelob', count: 18 },
+  { name: 'New Belgium', count: 17 },
+].sort((a, b) => b.count - a.count);
+const maxBreweryCount = Math.max(...breweries.map((b) => b.count));
+
+document.getElementById('breweryGrid').innerHTML = breweries.map((b) => `
+  <div class="brewery-chip">
+    <span class="brewery-chip__name">${b.name}</span>
+    <span class="brewery-chip__count">${b.count} titles</span>
+    <div class="brewery-chip__bar"><span style="width:${Math.round((b.count / maxBreweryCount) * 100)}%;"></span></div>
+  </div>
+`).join('');
+
+// ---- activity feed: illustrative ----
+const activity = [
+  { title: 'Founders KBS', who: 'researched by Dana', when: '2h ago', manual: true },
+  { title: "Bell's Two Hearted Ale", who: 'pulled from Untappd export', when: 'Yesterday', manual: false },
+  { title: 'Allagash White', who: 'researched by Marcus', when: '2 days ago', manual: true },
+  { title: 'Sierra Nevada Pale Ale', who: 'pulled from Untappd export', when: '3 days ago', manual: false },
+  { title: 'Guinness Draught 0.0', who: 'researched by Dana', when: '4 days ago', manual: true },
+];
+document.getElementById('activityFeed').innerHTML = activity.map((a) => `
+  <div class="feed-row">
+    <span class="feed-dot ${a.manual ? 'feed-dot--manual' : ''}"></span>
+    <span class="feed-title">${a.title} <span>&mdash; ${a.who}</span></span>
+    <span class="feed-when">${a.when}</span>
+  </div>
+`).join('');
+</script>
