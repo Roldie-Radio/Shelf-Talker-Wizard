@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.19',
+      items: [
+        'New: a Product Database section - a table icon in the rail, above Settings. Choose an Export File and an HA Details file (Department/Sub Department per SKU) and the two merge into one table by SKU. Read-only for now, no editing or search yet - the first step toward a shared product catalog the other library screens can eventually draw from.',
+      ],
+    },
+    {
       version: '4.4.18',
       items: [
         'Fixed: a non-US country on the Beer Bible landing page\'s "Where it\'s from" section could show its full state/region text alongside the country name (e.g. "County Dublin Ireland" instead of just "Ireland") and go without a flag - both were the same underlying gap, a spelled-out region with no comma before the country wasn\'t being split off the way a US state code already was. Country now always shows as just the country name, with its flag matched to go with it.',
