@@ -1081,6 +1081,17 @@
           </div>
         </div>
         <div class="library-band__actions">
+          <!-- Select mode - see toggleBeerBibleSelectMode in app.js. Turns
+               every card/row in the grid below into a checkbox target and
+               shows the bulk-action bar (#beerBibleBulkBar) once anything's
+               picked, for batch-researching/editing/deleting several beers
+               at once instead of one at a time. Hidden while a profile page
+               is open (see renderBeerBibleBody) - selection only makes
+               sense against the grid itself. -->
+          <button type="button" class="btn btn--small" id="beerBibleSelectToggleBtn">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Select
+          </button>
           <!-- Downloads whatever the grid below currently shows (search box
                + status/style chips + sort all applied) as a CSV file, for
                backing the library up or opening it in a spreadsheet - see
@@ -1143,6 +1154,39 @@
       <div class="library-stats" id="beerBibleStats"></div>
     </div>
     <div class="library-body" id="beerBibleBody"></div>
+    <!-- Bulk-action bar (Select mode) - static markup, not part of
+         #beerBibleBody's own innerHTML rebuilds (see renderBeerBibleGrid in
+         app.js), since which beers are selected lives in a JS Set, not the
+         DOM, and this needs to survive a grid re-render (a sort/filter/
+         search change while some cards are picked) without getting torn
+         down and losing its own state along the way. position:sticky
+         against #beerBibleView's own scrolling container (not
+         position:fixed against the viewport) so it never needs to know the
+         rail's width or the window size - see .bulk-bar in styles.css. -->
+    <div class="bulk-bar" id="beerBibleBulkBar" hidden>
+      <div class="bulk-bar__main" id="beerBibleBulkBarMain">
+        <span class="bulk-bar__count"><b id="beerBibleBulkCount">0</b> beer<span id="beerBibleBulkPlural">s</span> selected</span>
+        <div class="bulk-bar__actions">
+          <button type="button" class="btn btn--small" id="beerBibleBulkResearchBtn">
+            <svg width="12" height="12" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.3" cy="8.3" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="13" y1="13" x2="17.5" y2="17.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span id="beerBibleBulkResearchLabel">Research</span>
+          </button>
+          <button type="button" class="btn btn--small" id="beerBibleBulkVarietyPackBtn">Mark Variety Pack</button>
+          <button type="button" class="btn btn--small" id="beerBibleBulkExportBtn">Export CSV&hellip;</button>
+          <span class="bulk-bar__divider"></span>
+          <button type="button" class="btn btn--small btn--danger" id="beerBibleBulkDeleteBtn">Delete</button>
+          <button type="button" class="btn btn--small btn--primary" id="beerBibleBulkEditBtn">Edit Fields&hellip;</button>
+          <button type="button" class="btn btn--small btn--ghost" id="beerBibleBulkClearBtn">Clear</button>
+        </div>
+      </div>
+      <div class="bulk-bar__confirm" id="beerBibleBulkConfirmRow" hidden>
+        <span class="bulk-bar__confirm-text">Delete <b id="beerBibleBulkConfirmCount">0</b> beer<span id="beerBibleBulkConfirmPlural">s</span> - every package size on file for each - from the Beer Bible? This can&rsquo;t be undone.</span>
+        <div class="bulk-bar__confirm-actions">
+          <button type="button" class="btn btn--small" id="beerBibleBulkCancelDeleteBtn">Cancel</button>
+          <button type="button" class="btn btn--small btn--danger" id="beerBibleBulkConfirmDeleteBtn">Delete beers</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- The Rum Repository - a browse screen over a shared, store-wide record
@@ -1800,6 +1844,141 @@
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--primary" id="beerBibleCloseFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Edit Fields - opened from the bulk-action bar's own Edit
+       Fields… button (#beerBibleBulkEditBtn) once at least one beer is
+       selected in Select mode (see #beerBibleBulkBar above). One row per
+       field, each with its own "apply to every selected beer" checkbox
+       that unlocks that row's input - a field left unchecked is never
+       touched on any beer, the same "leave it alone unless you say
+       otherwise" rule every other Beer Bible save already follows (see
+       beerOptionalFieldParams in server/db.js). Size and Variety Pack are
+       deliberately left out here - both are true per-package-size facts
+       (see the beers table's own size/variety_pack comments), and a
+       selected card can already represent more than one package size (see
+       buildBeerBibleGroups in app.js), so there's no single row bulk-Size
+       could unambiguously mean; Brewery/Location/Style/ABV/IBU/Untappd
+       Rating are real per-beer facts that make sense to set the same way
+       across many beers at once, and are cascaded to every package size
+       behind each selected card the same way a single Edit's own save
+       already does (see els.beerBibleFormSaveBtn's own cascade). -->
+  <div id="beerBibleBulkEditOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="beerBibleBulkEditTitle">
+      <div class="modal__header">
+        <div>
+          <h2 id="beerBibleBulkEditTitle">Edit <span id="beerBibleBulkEditCount">0</span> beers</h2>
+          <p>Check a field to change it on every beer selected below. Anything left unchecked stays exactly as it is.</p>
+        </div>
+        <button type="button" class="btn btn--ghost btn--small" id="beerBibleBulkEditCloseBtn">&times; Close</button>
+      </div>
+      <div class="history-body">
+        <div class="selected-chips" id="beerBibleBulkEditChips"></div>
+        <div class="settings-section" id="beerBibleBulkEditFields">
+          <div class="fieldrow" data-bulk-field="brewery">
+            <input type="checkbox" class="fieldrow__check" id="beerBibleBulkApplyBrewery" />
+            <span class="fieldrow__label">Brewery</span>
+            <input type="text" class="fieldrow__input" id="beerBibleBulkBrewery" maxlength="80" placeholder="Devils Backbone Brewing Company" disabled />
+          </div>
+          <div class="fieldrow" data-bulk-field="location">
+            <input type="checkbox" class="fieldrow__check" id="beerBibleBulkApplyLocation" />
+            <span class="fieldrow__label">Location</span>
+            <input type="text" class="fieldrow__input" id="beerBibleBulkLocation" maxlength="80" placeholder="Roseland, VA" disabled />
+          </div>
+          <div class="fieldrow" data-bulk-field="style">
+            <input type="checkbox" class="fieldrow__check" id="beerBibleBulkApplyStyle" />
+            <span class="fieldrow__label">Style</span>
+            <input type="text" class="fieldrow__input" id="beerBibleBulkStyle" maxlength="80" placeholder="American Lager" disabled />
+          </div>
+          <div class="fieldrow" data-bulk-field="abv">
+            <input type="checkbox" class="fieldrow__check" id="beerBibleBulkApplyAbv" />
+            <span class="fieldrow__label">ABV</span>
+            <input type="text" class="fieldrow__input" id="beerBibleBulkAbv" maxlength="10" placeholder="5.2%" disabled />
+          </div>
+          <div class="fieldrow" data-bulk-field="ibu">
+            <input type="checkbox" class="fieldrow__check" id="beerBibleBulkApplyIbu" />
+            <span class="fieldrow__label">IBU</span>
+            <input type="text" class="fieldrow__input" id="beerBibleBulkIbu" maxlength="10" placeholder="18" disabled />
+          </div>
+          <div class="fieldrow" data-bulk-field="untappdRating">
+            <input type="checkbox" class="fieldrow__check" id="beerBibleBulkApplyRating" />
+            <span class="fieldrow__label">Untappd Rating</span>
+            <input type="text" class="fieldrow__input" id="beerBibleBulkRating" maxlength="10" placeholder="3.7" disabled />
+          </div>
+        </div>
+        <p class="help-text" id="beerBibleBulkEditFooterNote">No fields checked yet</p>
+        <p class="help-text" id="beerBibleBulkEditStatus" role="status" aria-live="polite"></p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--small" id="beerBibleBulkEditCancelBtn">Cancel</button>
+        <button type="button" class="btn btn--small btn--primary" id="beerBibleBulkEditApplyBtn" disabled>Apply to <span id="beerBibleBulkEditApplyCount">0</span> beers</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Research - the bulk-action bar's own Research button
+       (#beerBibleBulkResearchBtn), same live Untappd search the single
+       per-card Research button already runs (see runBeerResearch above),
+       just looped over every eligible selected beer, one at a time and
+       paced the same way Import Beer Bible from Export File already is
+       (see beerBibleImport.js's own DELAY_MS). Every eligible beer here is
+       necessarily its own group of one (see researchEligibleGroups'
+       comment in app.js - a beer only ever groups with a sibling once it
+       already has a beerName+brewery on file, which means it's already
+       researched), so there's no sibling-cascade concern for this one, unlike
+       Bulk Edit above.
+
+       A confident match saves itself right away - no separate Confirm
+       Untappd Match step the way one click of the single per-card Research
+       button still gets (see runBeerResearch's own openUntappdConfirm
+       call) - a deliberate difference for the batch case specifically: the
+       live On File vs. Untappd comparison shown as each beer resolves
+       already doubles as that review, and re-confirming every single
+       match one at a time would defeat the point of doing this as a
+       batch. A tie still gets the exact same disambiguation dialog every
+       other beer lookup in this app already uses (openUntappdPicker),
+       opened right on top of this one - nothing new invented for that
+       case, since it already does its own live Untappd popularity lookups
+       per candidate that a flatter inline picker here couldn't replicate
+       without duplicating that logic. -->
+  <div id="beerBibleBulkResearchOverlay" class="modal-overlay no-print" hidden>
+    <div class="modal modal--research" role="dialog" aria-modal="true" aria-labelledby="beerBibleBulkResearchTitle">
+      <div class="modal__header">
+        <div>
+          <h3 id="beerBibleBulkResearchTitle">Researching <span id="beerBibleBulkResearchTotal">0</span> beer<span id="beerBibleBulkResearchPlural">s</span></h3>
+        </div>
+        <button type="button" class="btn btn--ghost btn--small" id="beerBibleBulkResearchCloseBtn" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Progress state -->
+      <div id="beerBibleBulkResearchProgress">
+        <div class="rprogress">
+          <progress class="rprogress-bar" id="beerBibleBulkResearchBar" max="100" value="0"></progress>
+          <div class="rprogress__line"><span>Checked <b id="beerBibleBulkResearchDone">0</b> of <b id="beerBibleBulkResearchTotal2">0</b></span><span id="beerBibleBulkResearchPercent">0%</span></div>
+          <div class="rprogress__current" id="beerBibleBulkResearchCurrent"></div>
+        </div>
+        <div class="rlive" id="beerBibleBulkResearchLive"></div>
+        <div class="rtally">
+          <div class="rtally__chip rtally__chip--good"><b id="beerBibleBulkResearchTallyMatched">0</b><span>Matched</span></div>
+          <div class="rtally__chip rtally__chip--warn"><b id="beerBibleBulkResearchTallyTie">0</b><span>Tie</span></div>
+          <div class="rtally__chip rtally__chip--muted"><b id="beerBibleBulkResearchTallyMiss">0</b><span>No Match</span></div>
+        </div>
+        <div class="modal__footer">
+          <span class="modal__footer-note">Untappd's search is rate-limited, so this is paced - larger batches take longer.</span>
+          <button type="button" class="btn btn--small" id="beerBibleBulkResearchCancelBtn">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Summary state -->
+      <div id="beerBibleBulkResearchSummary" hidden>
+        <div class="rsummary-head"><p id="beerBibleBulkResearchSummaryLine"></p></div>
+        <div class="rresults" id="beerBibleBulkResearchResults"></div>
+        <div class="modal__footer">
+          <span class="modal__footer-note" id="beerBibleBulkResearchSummaryNote"></span>
+          <button type="button" class="btn btn--small btn--primary" id="beerBibleBulkResearchDoneBtn">Done</button>
+        </div>
       </div>
     </div>
   </div>
