@@ -17,11 +17,17 @@
 // slows down app startup either way (see start() in index.js, which fires
 // this off without awaiting it).
 //
-// rum-repository-seed-data.json starts as an empty array - there's no
-// curated starting list for rum yet. Wiring this up now (rather than only
-// once one exists) means a curated list can be dropped in later with no
-// code changes; against an empty file, auto-seed/GitHub sync are both
-// harmless no-ops.
+// rum-repository-seed-data.json now carries a curated title + country-of-
+// origin list, built batch by batch from a real store's own Rum department
+// export (see server/productDatabase.js's own "Add from Product Database"
+// sync for the SKU-discovery half of that same workflow) - staff research
+// the country, this ships it store-wide via GitHub the same way a Bourbon
+// Library mash bill does. Each entry is deliberately a stub beyond title/
+// country/sku (no distillery/style/ABV yet) - there's no per-row Untappd
+// equivalent to fill those in automatically, so they're left for a future
+// batch or a manual edit. This module itself was wired up before the list
+// existed (auto-seed/GitHub sync are harmless no-ops against an empty
+// file), so a growing list needs no code changes here.
 const path = require('path');
 const GITHUB_SEED_URL = 'https://raw.githubusercontent.com/Roldie-Radio/Shelf-Talker-Wizard/Main/scripts/rum-repository-seed-data.json';
 const BUNDLED_SEED_PATH = path.join(__dirname, '..', 'scripts', 'rum-repository-seed-data.json');

@@ -936,10 +936,10 @@ function createApp({
   // saved alone rather than blanking it out.
   function rumOptionalFields(body) {
     const {
-      distillery, region, style, abv, ageStatement, description, sku,
+      distillery, region, style, abv, ageStatement, description, sku, country,
     } = body || {};
     return {
-      distillery, region, style, abv, ageStatement, description, sku,
+      distillery, region, style, abv, ageStatement, description, sku, country,
     };
   }
 

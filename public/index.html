@@ -1231,8 +1231,19 @@
       </div>
       <p class="help-text" id="rumRepositoryProductDbSyncStatus" role="status" aria-live="polite"></p>
       <p class="help-text">Add rums you've researched with <strong>Add Rum</strong> below - typed in by hand, no bulk import yet.</p>
+      <!-- "Where it's from" - the landing/browse-by-country entry point
+           requested alongside the country-of-origin curated data (see
+           scripts/rum-repository-seed-data.json and countryFlagIcon in
+           app.js). Built by renderRumOriginHtml, same origin-card/flag
+           component the Beer Bible's own landing page uses - clicking a
+           card sets the search box below to that country (click again to
+           clear), rather than a separate filter mechanism, so there's only
+           ever one "what's currently shown" state to reason about. Empty
+           (no markup at all) until at least one rum on file has a Country
+           set, rather than showing an empty/all-globe grid. -->
+      <div id="rumRepositoryOriginSection"></div>
       <div class="library-search">
-        <input type="search" id="rumRepositoryFilterInput" aria-label="Search The Rum Repository" placeholder="Search by name, distillery, or style&hellip;" />
+        <input type="search" id="rumRepositoryFilterInput" aria-label="Search The Rum Repository" placeholder="Search by name, distillery, style, or country&hellip;" />
       </div>
       <div class="library-stats" id="rumRepositoryStats"></div>
     </div>
@@ -2112,16 +2123,28 @@
               <input type="text" id="rumRepositoryFormRegionInput" maxlength="80" placeholder="Caribbean" />
             </label>
           </div>
+          <!-- Country of origin - backs the Rum Repository landing page's
+               "Where it's from" cards/search (see renderRumOriginHtml in
+               app.js), same idea as the Beer Bible's own Country field.
+               Free text rather than a fixed dropdown (same as Region above)
+               so an edge case (a multi-island blend, a territory not on
+               the flag list) can still be typed in - it just falls back to
+               a plain globe icon on the landing page instead of a specific
+               flag (see countryFlagIcon in app.js). -->
           <div class="field-row">
             <label class="field">
               <span>Style (optional)</span>
               <input type="text" id="rumRepositoryFormStyleInput" maxlength="80" placeholder="Dark Rum" />
             </label>
             <label class="field">
-              <span>SKU (optional)</span>
-              <input type="text" id="rumRepositoryFormSkuInput" maxlength="40" placeholder="15614" />
+              <span>Country of Origin (optional)</span>
+              <input type="text" id="rumRepositoryFormCountryInput" maxlength="80" placeholder="Jamaica" />
             </label>
           </div>
+          <label class="field">
+            <span>SKU (optional)</span>
+            <input type="text" id="rumRepositoryFormSkuInput" maxlength="40" placeholder="15614" />
+          </label>
           <div class="field-row">
             <label class="field">
               <span>ABV (optional)</span>
