@@ -579,3 +579,20 @@ browser.
   states its recognized breweries call home, Mexico/Netherlands each
   break down to the single recognized brewery behind their count. Its own
   gap-note says so, the same way the style-mix panel's does for style.
+  **Implemented** &mdash; the landing page itself shipped first (real
+  `renderBeerBibleLanding` in `public/js/app.js`, computed live off
+  `beerBibleCache` rather than the illustrative sample data this mockup
+  leaned on, since a real library starts out with almost nothing
+  researched), and the "Where it's from" origin section followed as a
+  second pass: real clickable flag cards, one per country actually on
+  file, each drilling into that country's own real states/provinces. Ended
+  up simpler than this mockup's proposal in one respect and richer in
+  another - `beers` already had real `region`/`country` columns (backing
+  the grid's own Country/State sort options) by the time this shipped, so
+  the section didn't need the mockup's recognized-brewery-name keyword
+  match at all; every country/state shown is whatever staff (or an
+  Untappd pull) actually typed into those fields, not inferred from a
+  fixed 12-brewery list. The ABV mix beeswarm this mockup originally
+  proposed alongside the origin section was cut in the same pass, both
+  here and in its own already-shipped real implementation, for being too
+  busy next to everything else on the page.
