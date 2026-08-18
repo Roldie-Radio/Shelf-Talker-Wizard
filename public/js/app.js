@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.2',
+      items: [
+        'Fixed: the Product Database used to forget both loaded files (Export File and HA Details) every time the app restarted - a PC reboot, a Windows Update, or just closing and reopening it - leaving the table blank until someone re-picked them. It\'s now saved to disk on this PC and reloaded automatically on launch.',
+      ],
+    },
+    {
       version: '4.5.1',
       items: [
         'New: an In-Stock Only switch on the Rum Repository, next to Add Rum - cross-references each rum\'s SKU against the Product Database\'s own On Hand column to hide anything not currently in stock. Needs an Export File loaded on the Product Database screen first; each in-stock rum also gets an "In Stock" badge on its card.',

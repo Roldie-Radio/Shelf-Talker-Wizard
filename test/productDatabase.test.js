@@ -1,10 +1,30 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   extractExportProducts, extractHaProducts, mergeProducts, readRows,
   setExportFile, setHaFile, getState, findRumProducts, isRumProduct,
 } = require('../server/productDatabase');
+
+// Same throwaway-directory pattern as test/beerBibleCsvImport.test.js -
+// setExportFile/setHaFile now persist to this PC's own app data directory
+// (see productDatabase.js's own header), so a test that calls them without
+// this would read/write the real one on whatever machine runs the suite.
+function withTempConfigDir(fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelf-talker-product-database-test-'));
+  const prev = process.env.SHELF_TALKER_CONFIG_DIR;
+  process.env.SHELF_TALKER_CONFIG_DIR = dir;
+  try {
+    return fn(dir);
+  } finally {
+    if (prev === undefined) delete process.env.SHELF_TALKER_CONFIG_DIR;
+    else process.env.SHELF_TALKER_CONFIG_DIR = prev;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 const EXPORT_ROWS = [
   ['SKU', 'UPC', 'Description', 'Size', 'Price', 'Current Inv'],
@@ -82,7 +102,7 @@ test('readRows rejects when contentBase64 is missing', () => {
   assert.throws(() => readRows({ filename: 'export.csv' }), { code: 'NO_FILE' });
 });
 
-test('setExportFile/setHaFile/getState round-trip through the module\'s in-memory state', () => {
+test('setExportFile/setHaFile/getState round-trip through disk-persisted state', () => withTempConfigDir(() => {
   const exportCsv = Buffer.from('SKU,UPC,Description,Size,Price\n2001,099999999999,Test Wine,750ml,19.99\n', 'utf-8').toString('base64');
   const haCsv = Buffer.from('SKU,Department,Sub Department\n2001,Wine,Red Wine\n', 'utf-8').toString('base64');
 
@@ -99,12 +119,49 @@ test('setExportFile/setHaFile/getState round-trip through the module\'s in-memor
   const state = getState();
   assert.equal(state.products.length, 1);
   assert.equal(state.products[0].sku, '2001');
-});
+}));
 
-test('setExportFile throws NO_ROWS for a file with no SKU-bearing rows', () => {
+test('getState with nothing ever loaded (no state file on disk yet) returns the empty default, not an error', () => withTempConfigDir(() => {
+  const state = getState();
+  assert.deepEqual(state, {
+    exportFileName: '',
+    exportLoadedAt: null,
+    exportCount: 0,
+    haFileName: '',
+    haLoadedAt: null,
+    haCount: 0,
+    products: [],
+  });
+}));
+
+test('a corrupt/unreadable state file on disk is treated as nothing loaded, not a crash', () => withTempConfigDir((dir) => {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'product-database.json'), 'not valid json{{{', 'utf-8');
+  assert.doesNotThrow(() => getState());
+  assert.equal(getState().products.length, 0);
+}));
+
+test('setExportFile/setHaFile survive a fresh module load (real restart persistence, not just this process\'s memory)', () => withTempConfigDir(() => {
+  const exportCsv = Buffer.from('SKU,UPC,Description,Size,Price\n3001,088888888888,Restart Test Wine,750ml,9.99\n', 'utf-8').toString('base64');
+  setExportFile({ filename: 'export.csv', contentBase64: exportCsv });
+
+  // Re-require as a fresh module instance (clearing the require cache) -
+  // simulates the app process restarting (a PC reboot, closing and
+  // reopening the app), not just re-reading the same already-running
+  // module's own state.
+  delete require.cache[require.resolve('../server/productDatabase')];
+  // eslint-disable-next-line global-require -- deliberate fresh re-require, see above
+  const reloaded = require('../server/productDatabase');
+  const state = reloaded.getState();
+  assert.equal(state.exportFileName, 'export.csv');
+  assert.equal(state.products.length, 1);
+  assert.equal(state.products[0].sku, '3001');
+}));
+
+test('setExportFile throws NO_ROWS for a file with no SKU-bearing rows', () => withTempConfigDir(() => {
   const csv = Buffer.from('SKU,UPC\n', 'utf-8').toString('base64');
   assert.throws(() => setExportFile({ filename: 'empty.csv', contentBase64: csv }), { code: 'NO_ROWS' });
-});
+}));
 
 test('isRumProduct matches Department or Sub Department by whole word, case-insensitively', () => {
   assert.equal(isRumProduct({ department: 'Rum', subDepartment: '' }), true);
