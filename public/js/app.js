@@ -52,6 +52,21 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.7',
+      items: [
+        'New: an "Or search Untappd yourself" box at the bottom of Pick the Right Beer - for when none of the suggested matches (or, now, a plain "no confident match" too) are actually the right beer, type in whatever you\'d search Untappd for and it looks again without leaving the dialog. Picking one of the new results works exactly like picking a suggested one; a Back to Untappd\'s own matches link returns to where you started.',
+        'New: the Beer Bible\'s Research button now opens this same dialog on a miss, not just a tie - what used to be a dead-end "Not found" now lands directly on the manual search box instead. Works the same on a Batch Research miss too, via a new Search Untappd… next to each unmatched beer in the results summary.',
+      ],
+    },
+    {
+      version: '4.4.6',
+      items: [
+        'New: a Select button on the Beer Bible grid turns on multi-select - check off any number of beers (across searches/filters, and Card/List view both) and a bulk-action bar appears with Research, Edit Fields, Mark Variety Pack, Export CSV, and Delete for the whole selection at once.',
+        'New: batch research runs the same live Untappd search Research already does, one beer at a time, showing an On File vs. Untappd comparison as each one is checked - a confident match saves itself automatically, a tie opens the same Pick the Right Beer dialog Research already uses, and a miss is left for a look by hand. A running tally (Matched/Tie/No Match) and a Cancel button track progress; a summary lists every result afterward with its own comparison to expand.',
+        'New: Edit Fields on a multi-beer selection changes Brewery, Location, Style, ABV, IBU, and/or Untappd Rating on every beer selected at once - check only the fields to change; anything left unchecked stays exactly as it is on each one. Applies to every package size of a consolidated beer profile, same as editing one by hand already does.',
+      ],
+    },
+    {
       version: '4.4.4',
       items: [
         'New: the Beer Bible now consolidates every package size of the same beer (a 6-pack and a 12-pack, say) onto one profile page instead of a duplicate card for each - any two entries that share a Brewery and an Untappd Beer Name are shown together automatically, with a new Size field (e.g. "6-Pack") labeling each one\'s own row in a new Package Sizes list on the profile, each with its own live price, SKU, UPC, Edit, and Delete. A "+ Add Package Size" button adds another size to an already-researched beer without re-typing its brewery/style/ABV/IBU/rating/description - editing any one package size\'s shared fields keeps every sibling size in sync. Size also rides along with a Beer talker\'s own auto-save to the Beer Bible, and round-trips through Export CSV/Import CSV.',
@@ -1005,6 +1020,7 @@
     atlasBody: document.getElementById('atlasBody'),
     beerBibleView: document.getElementById('beerBibleView'),
     beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
+    beerBibleSelectToggleBtn: document.getElementById('beerBibleSelectToggleBtn'),
     beerBibleExportBtn: document.getElementById('beerBibleExportBtn'),
     beerBibleImportCsvBtn: document.getElementById('beerBibleImportCsvBtn'),
     beerBibleImportCsvInput: document.getElementById('beerBibleImportCsvInput'),
@@ -1016,6 +1032,56 @@
     beerBibleStatusChips: document.getElementById('beerBibleStatusChips'),
     beerBibleStats: document.getElementById('beerBibleStats'),
     beerBibleBody: document.getElementById('beerBibleBody'),
+    // Bulk-action bar (Select mode) - static markup, see its own comment in
+    // index.html for why.
+    beerBibleBulkBar: document.getElementById('beerBibleBulkBar'),
+    beerBibleBulkBarMain: document.getElementById('beerBibleBulkBarMain'),
+    beerBibleBulkCount: document.getElementById('beerBibleBulkCount'),
+    beerBibleBulkPlural: document.getElementById('beerBibleBulkPlural'),
+    beerBibleBulkResearchBtn: document.getElementById('beerBibleBulkResearchBtn'),
+    beerBibleBulkResearchLabel: document.getElementById('beerBibleBulkResearchLabel'),
+    beerBibleBulkVarietyPackBtn: document.getElementById('beerBibleBulkVarietyPackBtn'),
+    beerBibleBulkExportBtn: document.getElementById('beerBibleBulkExportBtn'),
+    beerBibleBulkDeleteBtn: document.getElementById('beerBibleBulkDeleteBtn'),
+    beerBibleBulkEditBtn: document.getElementById('beerBibleBulkEditBtn'),
+    beerBibleBulkClearBtn: document.getElementById('beerBibleBulkClearBtn'),
+    beerBibleBulkConfirmRow: document.getElementById('beerBibleBulkConfirmRow'),
+    beerBibleBulkConfirmCount: document.getElementById('beerBibleBulkConfirmCount'),
+    beerBibleBulkConfirmPlural: document.getElementById('beerBibleBulkConfirmPlural'),
+    beerBibleBulkCancelDeleteBtn: document.getElementById('beerBibleBulkCancelDeleteBtn'),
+    beerBibleBulkConfirmDeleteBtn: document.getElementById('beerBibleBulkConfirmDeleteBtn'),
+    // Bulk Edit Fields modal.
+    beerBibleBulkEditOverlay: document.getElementById('beerBibleBulkEditOverlay'),
+    beerBibleBulkEditCloseBtn: document.getElementById('beerBibleBulkEditCloseBtn'),
+    beerBibleBulkEditCount: document.getElementById('beerBibleBulkEditCount'),
+    beerBibleBulkEditChips: document.getElementById('beerBibleBulkEditChips'),
+    beerBibleBulkEditFields: document.getElementById('beerBibleBulkEditFields'),
+    beerBibleBulkEditFooterNote: document.getElementById('beerBibleBulkEditFooterNote'),
+    beerBibleBulkEditStatus: document.getElementById('beerBibleBulkEditStatus'),
+    beerBibleBulkEditCancelBtn: document.getElementById('beerBibleBulkEditCancelBtn'),
+    beerBibleBulkEditApplyBtn: document.getElementById('beerBibleBulkEditApplyBtn'),
+    beerBibleBulkEditApplyCount: document.getElementById('beerBibleBulkEditApplyCount'),
+    // Batch Research modal.
+    beerBibleBulkResearchOverlay: document.getElementById('beerBibleBulkResearchOverlay'),
+    beerBibleBulkResearchCloseBtn: document.getElementById('beerBibleBulkResearchCloseBtn'),
+    beerBibleBulkResearchTotal: document.getElementById('beerBibleBulkResearchTotal'),
+    beerBibleBulkResearchTotal2: document.getElementById('beerBibleBulkResearchTotal2'),
+    beerBibleBulkResearchPlural: document.getElementById('beerBibleBulkResearchPlural'),
+    beerBibleBulkResearchProgress: document.getElementById('beerBibleBulkResearchProgress'),
+    beerBibleBulkResearchBar: document.getElementById('beerBibleBulkResearchBar'),
+    beerBibleBulkResearchDone: document.getElementById('beerBibleBulkResearchDone'),
+    beerBibleBulkResearchPercent: document.getElementById('beerBibleBulkResearchPercent'),
+    beerBibleBulkResearchCurrent: document.getElementById('beerBibleBulkResearchCurrent'),
+    beerBibleBulkResearchLive: document.getElementById('beerBibleBulkResearchLive'),
+    beerBibleBulkResearchTallyMatched: document.getElementById('beerBibleBulkResearchTallyMatched'),
+    beerBibleBulkResearchTallyTie: document.getElementById('beerBibleBulkResearchTallyTie'),
+    beerBibleBulkResearchTallyMiss: document.getElementById('beerBibleBulkResearchTallyMiss'),
+    beerBibleBulkResearchCancelBtn: document.getElementById('beerBibleBulkResearchCancelBtn'),
+    beerBibleBulkResearchSummary: document.getElementById('beerBibleBulkResearchSummary'),
+    beerBibleBulkResearchSummaryLine: document.getElementById('beerBibleBulkResearchSummaryLine'),
+    beerBibleBulkResearchResults: document.getElementById('beerBibleBulkResearchResults'),
+    beerBibleBulkResearchSummaryNote: document.getElementById('beerBibleBulkResearchSummaryNote'),
+    beerBibleBulkResearchDoneBtn: document.getElementById('beerBibleBulkResearchDoneBtn'),
     rumRepositoryView: document.getElementById('rumRepositoryView'),
     rumRepositoryAddBtn: document.getElementById('rumRepositoryAddBtn'),
     rumRepositoryGithubSyncRow: document.getElementById('rumRepositoryGithubSyncRow'),
@@ -1067,8 +1133,13 @@
     untappdPickerQueryLabel: document.getElementById('untappdPickerQueryLabel'),
     untappdPickerRecCard: document.getElementById('untappdPickerRecCard'),
     untappdPickerOthersBlock: document.getElementById('untappdPickerOthersBlock'),
+    untappdPickerEmpty: document.getElementById('untappdPickerEmpty'),
     untappdPickerUseRecBtn: document.getElementById('untappdPickerUseRecBtn'),
     untappdPickerStatus: document.getElementById('untappdPickerStatus'),
+    untappdPickerManualIntro: document.getElementById('untappdPickerManualIntro'),
+    untappdPickerManualForm: document.getElementById('untappdPickerManualForm'),
+    untappdPickerManualInput: document.getElementById('untappdPickerManualInput'),
+    untappdPickerManualBtn: document.getElementById('untappdPickerManualBtn'),
     untappdConfirmOverlay: document.getElementById('untappdConfirmOverlay'),
     untappdConfirmCloseBtn: document.getElementById('untappdConfirmCloseBtn'),
     untappdConfirmRejectBtn: document.getElementById('untappdConfirmRejectBtn'),
@@ -4762,6 +4833,11 @@
     },
   });
 
+  // candidates may be empty - runBeerResearch (and any other caller) can
+  // open this directly on a plain miss (untappdError, nothing to pick
+  // from) instead of only ever a tie, specifically so staff land on the
+  // manual search box below rather than a dead end (see the empty state
+  // in render()/loadCandidates below).
   function openUntappdPicker(candidates, queryTitle, { getCurrent = readForm, applyFn = applyUntappdFields } = {}) {
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
@@ -4775,18 +4851,30 @@
       // brand-new tie for a completely unrelated scan would open already
       // greyed-out and unclickable, with no error message explaining why.
       setAllDisabled(false);
-      const count = candidates.length;
-      const otherCount = count - 1;
-      els.untappdPickerQueryLabel.textContent = `Untappd found ${count} equally-likely matches for `
-        + `"${queryTitle}" - review the recommended pick below, or ${otherCount} other option${otherCount === 1 ? '' : 's'}.`;
       els.untappdPickerStatus.textContent = '';
+      els.untappdPickerManualInput.value = '';
+      els.untappdPickerManualBtn.textContent = 'Search';
 
-      // `order` starts as Untappd's own tie order and only ever reshuffles
-      // within the visible window as preview fetches resolve (see
-      // reorderByPopularity below) - the hidden tail behind "+N more" stays
-      // in that original order until/unless it's expanded.
-      let order = candidates.slice();
-      let visibleCount = Math.min(UNTAPPD_PICKER_VISIBLE, order.length);
+      // The candidates/query this dialog was actually opened with - kept
+      // around separately from the mutable `order` below so a manual
+      // search (see loadCandidates/the manual form's onsubmit further
+      // down) has something to offer a "Back to Untappd's own matches"
+      // link to, and so its own empty/found label text can still refer to
+      // the original query rather than whatever was typed most recently.
+      const originalCandidates = candidates.slice();
+      // Whether `order` right now holds the original candidates above or a
+      // manual search's own results - render()/updateQueryLabel below read
+      // this to pick which of the two label/empty-state copy sets to show.
+      let manualActive = false;
+      let manualQuery = '';
+
+      // `order` starts as Untappd's own tie order (or a manual search's
+      // own ranking) and only ever reshuffles within the visible window as
+      // preview fetches resolve (see reorderByPopularity below) - the
+      // hidden tail behind "+N more" stays in that original order until/
+      // unless it's expanded. Actually populated by loadCandidates below.
+      let order = [];
+      let visibleCount = 0;
       // url -> { loading } | { error: true } | full /api/untappd-lookup fields.
       const details = new Map();
       // True while a candidate's real (apply-to-form) fetch is in flight -
@@ -4838,6 +4926,8 @@
         els.untappdPickerRecCard.disabled = disabled;
         els.untappdPickerUseRecBtn.disabled = disabled;
         els.untappdPickerOthersBlock.querySelectorAll('.alt-row').forEach((b) => { b.disabled = disabled; });
+        els.untappdPickerManualInput.disabled = disabled;
+        els.untappdPickerManualBtn.disabled = disabled;
       }
 
       async function selectCandidate(candidate) {
@@ -4879,7 +4969,73 @@
         }
       }
 
+      // Untappd found nothing to show above the manual search box - either
+      // this dialog was opened directly on a plain miss (originalCandidates
+      // is empty), or a manual search itself came up empty. Same slot the
+      // rec card would otherwise sit in (see .untappd-empty in styles.css),
+      // so the layout doesn't jump when there's finally something there.
+      function renderEmpty() {
+        els.untappdPickerRecCard.hidden = true;
+        els.untappdPickerUseRecBtn.hidden = true;
+        els.untappdPickerOthersBlock.innerHTML = '';
+        els.untappdPickerEmpty.hidden = false;
+        els.untappdPickerEmpty.innerHTML = manualActive
+          ? '<span class="untappd-empty__title">No results on Untappd</span>'
+            + '<span class="untappd-empty__sub">Try a different name or brewery below, or Cancel and fill this one in by hand.</span>'
+          : '<span class="untappd-empty__title">No confident match on Untappd</span>'
+            + '<span class="untappd-empty__sub">Try the search box below with a different name or brewery, or Cancel and fill this one in by hand.</span>';
+      }
+
+      function updateQueryLabel() {
+        const n = order.length;
+        if (manualActive) {
+          els.untappdPickerQueryLabel.textContent = n
+            ? `Showing ${n} result${n === 1 ? '' : 's'} for "${manualQuery}".`
+            : `No results for "${manualQuery}".`;
+          return;
+        }
+        if (!n) {
+          els.untappdPickerQueryLabel.textContent = `Untappd found no confident match for "${queryTitle}".`;
+          return;
+        }
+        const otherCount = n - 1;
+        els.untappdPickerQueryLabel.textContent = `Untappd found ${n} equally-likely match${n === 1 ? '' : 'es'} for `
+          + `"${queryTitle}"`
+          + (otherCount > 0 ? ` - review the recommended pick below, or ${otherCount} other option${otherCount === 1 ? '' : 's'}.` : ' - review the recommended pick below.');
+      }
+
+      // The manual search box's own intro line - a plain prompt normally,
+      // but once a manual search is showing its own results, a way back to
+      // where this dialog actually started (only offered when there was
+      // something original to go back to - a plain-miss open has nothing
+      // there, so that case just invites another search instead).
+      function updateManualIntro() {
+        if (manualActive && originalCandidates.length) {
+          els.untappdPickerManualIntro.innerHTML = '<button type="button" class="untappd-manual-search__back">&lsaquo; Back to Untappd&rsquo;s own matches</button>';
+          els.untappdPickerManualIntro.querySelector('.untappd-manual-search__back').addEventListener('click', () => {
+            manualActive = false;
+            manualQuery = '';
+            els.untappdPickerManualInput.value = '';
+            els.untappdPickerStatus.textContent = '';
+            loadCandidates(originalCandidates);
+          });
+        } else if (manualActive) {
+          els.untappdPickerManualIntro.textContent = 'Still not it? Try another search.';
+        } else {
+          els.untappdPickerManualIntro.textContent = "Not the right beer? Type in what you'd search Untappd for and we'll look again.";
+        }
+      }
+
       function render() {
+        updateQueryLabel();
+        updateManualIntro();
+        if (!order.length) {
+          renderEmpty();
+          return;
+        }
+        els.untappdPickerRecCard.hidden = false;
+        els.untappdPickerUseRecBtn.hidden = false;
+        els.untappdPickerEmpty.hidden = true;
         const [rec, ...rest] = order;
         const shownOthers = rest.slice(0, visibleCount - 1);
         const hiddenCount = order.length - visibleCount;
@@ -4952,11 +5108,67 @@
         }
       }
 
+      // Swaps in a fresh candidate set (the original tie/miss this dialog
+      // opened with, or a manual search's own results) and starts preview
+      // fetches for whatever's now visible - shared by the initial open
+      // below, the manual search form's own onsubmit, and its "Back to
+      // Untappd's own matches" link (see updateManualIntro above).
+      function loadCandidates(newCandidates) {
+        order = newCandidates.slice();
+        visibleCount = Math.min(UNTAPPD_PICKER_VISIBLE, order.length);
+        details.clear();
+        selecting = false;
+        setAllDisabled(false);
+        render();
+        order.slice(0, visibleCount).forEach(fetchPreview);
+      }
+
       els.untappdPickerUseRecBtn.onclick = () => selectCandidate(order[0]);
 
-      render();
+      // Reassigned (not addEventListener) each call, same reason
+      // els.untappdPickerUseRecBtn.onclick above already is - this
+      // function reruns every time the dialog opens, and addEventListener
+      // would stack a fresh listener on the same shared form node on top
+      // of every previous invocation's.
+      els.untappdPickerManualForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const q = els.untappdPickerManualInput.value.trim();
+        if (!q) {
+          els.untappdPickerStatus.textContent = 'Enter something to search Untappd for.';
+          return;
+        }
+        setAllDisabled(true);
+        els.untappdPickerStatus.textContent = '';
+        els.untappdPickerManualBtn.innerHTML = `${BEER_RESEARCH_SPIN_ICON}Searching&hellip;`;
+        try {
+          const resp = await fetch('/api/untappd-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || "Untappd's search isn't responding right now.");
+          // Staff already backed out of the dialog while this was in
+          // flight (same guard selectCandidate's own catch/success paths
+          // use above) - applying these results now would resurrect a
+          // dialog that's already closed, or step on whatever reopened it.
+          if (untappdPickerResolve !== resolve) return;
+          manualActive = true;
+          manualQuery = q;
+          loadCandidates(data.candidates || []);
+        } catch (err) {
+          if (untappdPickerResolve !== resolve) return;
+          els.untappdPickerStatus.textContent = err.message || "Untappd's search isn't responding right now.";
+        } finally {
+          if (untappdPickerResolve === resolve) {
+            setAllDisabled(false);
+            els.untappdPickerManualBtn.textContent = 'Search';
+          }
+        }
+      };
+
+      loadCandidates(originalCandidates);
       untappdPickerModal.open();
-      order.slice(0, visibleCount).forEach(fetchPreview);
     });
   }
 
@@ -7790,6 +8002,16 @@
   let beerBibleStyleFilter = 'all'; // 'all' or an exact beers.style value
   let beerBibleGridView = loadBeerBibleGridView();
   let beerBibleSortKey = loadBeerBibleSortKey();
+  // Select mode (grid view only - see toggleBeerBibleSelectMode below) and
+  // which beers are currently picked while it's on. Holds group ids (see
+  // buildBeerBibleGroups) - the same id beerCardHtml/beerRowHtml already
+  // put in data-id, so a click handler that already has that id can look
+  // either up interchangeably. A plain in-memory Set, not anything stored
+  // on an entry itself or persisted - selection is always transient,
+  // cleared on leaving Select mode, switching away from the Beer Bible
+  // rail, or after any bulk action actually runs.
+  let beerBibleSelectMode = false;
+  let beerBibleSelectedIds = new Set();
 
   async function fetchBeerBible() {
     try {
@@ -8079,6 +8301,19 @@
     return `<button type="button" class="btn btn--small btn--primary research-btn" data-beer-research="${entry.id}" title="Search Untappd for this beer">${BEER_RESEARCH_ICON}Research on Untappd</button>`;
   }
 
+  // The little checkmark overlay beerCardHtml/beerRowHtml below render in
+  // Select mode (see beerBibleSelectMode) - `cls` is which of
+  // .bourbon-card__check/.bourbon-row__check this instance is (see
+  // styles.css for the shared checkbox-look rules both share). Not a real
+  // <input type="checkbox"> - the whole card/row is already the click
+  // target (see renderBeerBibleGrid's own click handler), so this is
+  // purely the visual state, same "styled span, not a real control"
+  // approach the rest of this app's own toggle-btn/chip patterns already
+  // use.
+  function beerSelectCheckHtml(cls) {
+    return `<span class="${cls}"><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  }
+
   // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
   // generic card grid the Bourbon Library and The Pairing Atlas's own wine
   // cards already share, just without a grain bar in the middle. A plain
@@ -8109,8 +8344,18 @@
     // entry - there's nothing on Untappd for it to look up (see
     // beerResearchBadgeHtml above).
     const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
+    // Select mode (see toggleBeerBibleSelectMode) - the checkbox overlay
+    // and its .bourbon-card--checkable indent only render at all while
+    // selecting, rather than a CSS show/hide toggle, so there's nothing
+    // extra in the DOM the rest of the time (see the class's own comment
+    // in styles.css).
+    const checkHtml = beerBibleSelectMode ? beerSelectCheckHtml('bourbon-card__check') : '';
+    const cardClasses = ['bourbon-card'];
+    if (beerBibleSelectMode) cardClasses.push('bourbon-card--checkable');
+    if (beerBibleSelectedIds.has(entry.id)) cardClasses.push('is-selected');
     return `
-      <div class="bourbon-card" role="button" tabindex="0" data-id="${entry.id}">
+      <div class="${cardClasses.join(' ')}" role="button" tabindex="0" data-id="${entry.id}">
+        ${checkHtml}
         <div class="bourbon-card__title">${escapeHtml(beerDisplayName(entry))}</div>
         <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
         <div class="bourbon-card__footer">
@@ -8127,8 +8372,12 @@
   function beerRowHtml(entry, sort) {
     const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
     const sizesHint = entry.groupCount > 1 ? ` &middot; ${entry.groupCount} sizes` : '';
+    const checkHtml = beerBibleSelectMode ? beerSelectCheckHtml('bourbon-row__check') : '';
+    const rowClasses = ['bourbon-row'];
+    if (beerBibleSelectedIds.has(entry.id)) rowClasses.push('is-selected');
     return `
-      <div class="bourbon-row" role="button" tabindex="0" data-id="${entry.id}">
+      <div class="${rowClasses.join(' ')}" role="button" tabindex="0" data-id="${entry.id}">
+        ${checkHtml}
         <div>
           <div class="bourbon-row__title">${escapeHtml(beerDisplayName(entry))}</div>
           <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}${sizesHint}</div>
@@ -8312,13 +8561,18 @@
       }
 
       if (data.untappdError) {
-        // No confident match and nothing to pick from - leave the entry
-        // alone and let staff try again (or fall back to Edit) rather than
-        // silently reverting to the plain idle chip with no explanation.
-        btn.disabled = false;
-        btn.title = data.untappdError;
-        btn.innerHTML = `${BEER_RESEARCH_ICON}Not found &ndash; Retry`;
-        return false;
+        // No confident match and nothing to pick from automatically - opens
+        // the same Pick the Right Beer dialog a tie does, just with an
+        // empty candidate list, so staff land on its "Or search Untappd
+        // yourself" box (see openUntappdPicker's own empty state) instead
+        // of a dead end. Same "picked doubles as was this saved" pattern
+        // the tie branch above already uses.
+        const picked = await openUntappdPicker([], beerDisplayName(entry) || entry.title, {
+          getCurrent: () => beerResearchCurrentFields(entry),
+          applyFn: (fields) => saveBeerResearchFields(entryId, fields),
+        });
+        if (!picked) resetBeerResearchButton(btn);
+        return picked;
       }
 
       // A single confident match still gets the same review step every
@@ -8357,9 +8611,108 @@
     });
   }
 
+  // ---- Select mode / bulk actions ----
+  //
+  // Turns any number of grid cards into a working set for a batch action
+  // (Research, Edit Fields, Mark Variety Pack, Export CSV, Delete) instead
+  // of repeating each one card at a time. Selection itself
+  // (beerBibleSelectMode/beerBibleSelectedIds above) is plain, transient
+  // module state - never persisted, never part of an entry's own saved
+  // fields - so every function below is really just "keep the bulk bar and
+  // the grid's own checkbox marks in sync with that state."
+
+  function getSelectedBeerGroups() {
+    return Array.from(beerBibleSelectedIds)
+      .map((id) => findBeerBibleGroupById(id))
+      .filter(Boolean);
+  }
+
+  // Same guard the per-card Research chip already uses (see beerCardHtml's
+  // own metricHtml) - a beer that's already researched, or marked Variety
+  // Pack, has nothing left for a Untappd search to find. Every group this
+  // returns is necessarily its own group of one: grouping only ever
+  // happens once a beer already has a beerName+brewery on file (see
+  // buildBeerBibleGroups), and a non-blank brewery alone is already enough
+  // for beerIsResearched to call it researched - so a still-eligible group
+  // can never have picked up a sibling yet, and Batch Research below never
+  // needs to think about siblings the way Bulk Edit does.
+  function researchEligibleSelectedGroups() {
+    return getSelectedBeerGroups().filter((g) => !beerIsResearched(g) && !g.varietyPack);
+  }
+
+  function toggleBeerBibleCardSelection(id, cardEl) {
+    if (beerBibleSelectedIds.has(id)) beerBibleSelectedIds.delete(id);
+    else beerBibleSelectedIds.add(id);
+    cardEl.classList.toggle('is-selected', beerBibleSelectedIds.has(id));
+    updateBeerBibleBulkBar();
+  }
+
+  function clearBeerBibleSelection() {
+    beerBibleSelectedIds.clear();
+    updateBeerBibleBulkBar();
+  }
+
+  function hideBeerBibleBulkConfirmRow() {
+    els.beerBibleBulkBarMain.hidden = false;
+    els.beerBibleBulkConfirmRow.hidden = true;
+  }
+
+  function showBeerBibleBulkConfirmRow() {
+    const n = beerBibleSelectedIds.size;
+    els.beerBibleBulkConfirmCount.textContent = n;
+    els.beerBibleBulkConfirmPlural.textContent = n === 1 ? '' : 's';
+    els.beerBibleBulkBarMain.hidden = true;
+    els.beerBibleBulkConfirmRow.hidden = false;
+  }
+
+  // Turns the bulk bar (#beerBibleBulkBar - static markup, see its own
+  // comment in index.html) on/off and keeps its count/labels in sync with
+  // beerBibleSelectedIds. Called after every selection change (a card
+  // click, Clear, a bulk action finishing) instead of re-rendering the
+  // whole grid just to update a handful of numbers - the bar's own DOM
+  // node is never rebuilt, only updated in place.
+  function updateBeerBibleBulkBar() {
+    const n = beerBibleSelectedIds.size;
+    els.beerBibleBulkBar.hidden = n === 0;
+    if (n === 0) return;
+    els.beerBibleBulkCount.textContent = n;
+    els.beerBibleBulkPlural.textContent = n === 1 ? '' : 's';
+    hideBeerBibleBulkConfirmRow();
+
+    const eligible = researchEligibleSelectedGroups();
+    els.beerBibleBulkResearchBtn.disabled = eligible.length === 0;
+    els.beerBibleBulkResearchLabel.textContent = eligible.length ? `Research ${eligible.length} Beer${eligible.length === 1 ? '' : 's'}` : 'Research';
+    els.beerBibleBulkResearchBtn.title = eligible.length ? '' : 'Nothing selected needs research - already researched or a Variety Pack.';
+  }
+
+  // Select mode toggle (#beerBibleSelectToggleBtn) - only meaningful in
+  // grid view; renderBeerBibleBody below hides the toggle entirely while a
+  // profile page is open, since selection doesn't mean anything there.
+  // Turning it off always clears whatever was selected, same as backing
+  // out of any other in-progress multi-step action in this app.
+  function toggleBeerBibleSelectMode() {
+    beerBibleSelectMode = !beerBibleSelectMode;
+    if (!beerBibleSelectMode) beerBibleSelectedIds.clear();
+    els.beerBibleSelectToggleBtn.classList.toggle('btn--primary', beerBibleSelectMode);
+    els.beerBibleSelectToggleBtn.innerHTML = beerBibleSelectMode
+      ? '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Cancel'
+      : '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Select';
+    renderBeerBibleGrid();
+  }
+
+  els.beerBibleSelectToggleBtn.addEventListener('click', toggleBeerBibleSelectMode);
+  els.beerBibleBulkClearBtn.addEventListener('click', clearBeerBibleSelection);
+
   function renderBeerBibleGrid() {
     const rows = beerBibleFilteredSortedGroups();
     const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
+    // A card/row rebuilt here (search/filter/sort change, a delete, etc.)
+    // reads its own selected look straight off beerBibleSelectedIds inside
+    // beerCardHtml/beerRowHtml, so this class is the only extra state a
+    // fresh render needs to restore - the Set itself already survives the
+    // rebuild since it's plain module state, not anything read out of the
+    // DOM being replaced below.
+    els.beerBibleBody.classList.toggle('is-selecting', beerBibleSelectMode);
 
     const styleLabel = beerBibleStyleFilter === 'all' ? 'All styles' : beerBibleStyleFilter;
     const toolbarHtml = `
@@ -8400,28 +8753,38 @@
     }
 
     els.beerBibleBody.querySelectorAll('.bourbon-card[data-id], .bourbon-row[data-id]').forEach((card) => {
-      const openProfile = () => {
-        beerBibleSelectedId = Number(card.dataset.id);
+      const id = Number(card.dataset.id);
+      // Select mode swaps what a click/Enter/Space on the card actually
+      // does - toggle this one beer's selection instead of opening its
+      // profile - rather than needing a second, separate click target
+      // layered on top of the same card (the checkbox overlay itself is
+      // purely visual, see beerSelectCheckHtml above).
+      const activate = () => {
+        if (beerBibleSelectMode) {
+          toggleBeerBibleCardSelection(id, card);
+          return;
+        }
+        beerBibleSelectedId = id;
         beerBibleViewMode = 'profile';
         renderBeerBibleBody();
       };
-      card.addEventListener('click', openProfile);
+      card.addEventListener('click', activate);
       // Card/row is a role="button" div now, not a real <button> (see
       // beerCardHtml/beerRowHtml above) - specifically so the Research chip
       // below can nest a real <button> inside it, which a <button>-in-a-
       // <button> can't do without invalid markup and a double-firing click.
       // That trades away the free keyboard activation a real <button> gets,
-      // so it's replaced here: Enter/Space opens the profile the same as a
-      // click, matching every other card/row in the app that's still a
-      // plain <button>. Only fires when the div itself is focused - a
-      // focused Research chip already handles its own Enter/Space as a real
+      // so it's replaced here: Enter/Space activates the same as a click,
+      // matching every other card/row in the app that's still a plain
+      // <button>. Only fires when the div itself is focused - a focused
+      // Research chip already handles its own Enter/Space as a real
       // button, and stopPropagation in wireBeerResearchButtons below keeps
       // its click from also bubbling up into this handler.
       card.addEventListener('keydown', (e) => {
         if (e.target !== card) return;
         if (e.key !== 'Enter' && e.key !== ' ') return;
         e.preventDefault();
-        openProfile();
+        activate();
       });
     });
     wireBeerResearchButtons(els.beerBibleBody, () => {
@@ -8464,6 +8827,7 @@
         renderBeerBibleGrid();
       });
     });
+    updateBeerBibleBulkBar();
   }
 
   // Wraps a single CSV field per RFC 4180: only quoted when it actually
@@ -8476,17 +8840,16 @@
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
 
-  // Export CSV… button (see #beerBibleExportBtn in index.html) - downloads
-  // whatever beerBibleFilteredSortedRows currently has (search box +
-  // status/style chips + sort dropdown all applied) as a CSV file,
-  // same "download what's on screen" idea as the WinePOS export preview's
-  // own search box, just producing a file instead of a live table. Leaving
-  // every filter at its default exports the whole Beer Bible. One column
-  // per field the Beer Bible actually stores (see the `beers` table in
-  // server/db.js) plus a Researched Yes/No column mirroring the on-screen
-  // status chips, so the file means the same thing the grid does.
-  function exportBeerBibleCsv() {
-    const rows = beerBibleFilteredSortedRows();
+  // Builds the actual CSV text for `rows` (a flat array of beers-table
+  // entries - see the `beers` table in server/db.js) and triggers a
+  // download for it - shared by the Export CSV… button below (whatever
+  // beerBibleFilteredSortedRows currently has, search box + status/style
+  // chips + sort dropdown all applied) and the bulk bar's own Export CSV…
+  // action (just the selected beers' own rows instead). One column per
+  // field the Beer Bible actually stores, plus a Researched Yes/No column
+  // mirroring the on-screen status chips, so the file means the same thing
+  // the grid does either way.
+  function downloadBeerBibleCsv(rows, filenameSuffix) {
     if (!rows.length) return;
     const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'Size', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched', 'Variety Pack'];
     const lines = [header.map(csvField).join(',')];
@@ -8506,14 +8869,27 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `beer-bible-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `beer-bible-${filenameSuffix}-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
   }
 
+  function exportBeerBibleCsv() {
+    downloadBeerBibleCsv(beerBibleFilteredSortedRows(), 'export');
+  }
+
   els.beerBibleExportBtn.addEventListener('click', exportBeerBibleCsv);
+
+  // Bulk bar's own Export CSV… - every underlying beers-table row (every
+  // package size, not just each selected card's own primary) behind the
+  // current selection, same "download what's picked" idea as Bulk Edit/
+  // Bulk Delete below.
+  els.beerBibleBulkExportBtn.addEventListener('click', () => {
+    const rows = getSelectedBeerGroups().flatMap((g) => g.variants);
+    downloadBeerBibleCsv(rows, 'selected');
+  });
 
   // Import CSV… button (see #beerBibleImportCsvBtn in index.html) - the
   // round-trip counterpart to Export CSV above. Clicking the visible button
@@ -8801,8 +9177,25 @@
   // automatically, since renderBeerBibleProfile above does that itself when
   // beerBibleSelectedId no longer matches anything in beerBibleCache.
   function renderBeerBibleBody() {
-    if (beerBibleViewMode === 'profile') renderBeerBibleProfile();
-    else renderBeerBibleGrid();
+    const inProfile = beerBibleViewMode === 'profile';
+    // Select mode/the bulk bar only mean anything against the grid - a
+    // single beer's own profile page has nothing to bulk-act on. Backing
+    // out of Select mode here (rather than just hiding the button) matches
+    // toggleBeerBibleSelectMode's own "turning it off always clears
+    // whatever was selected" rule, so re-opening the grid later never
+    // shows a stale selection nobody meant to keep.
+    els.beerBibleSelectToggleBtn.hidden = inProfile;
+    if (inProfile) {
+      if (beerBibleSelectMode) {
+        beerBibleSelectMode = false;
+        beerBibleSelectedIds.clear();
+        els.beerBibleSelectToggleBtn.classList.remove('btn--primary');
+      }
+      els.beerBibleBulkBar.hidden = true;
+      renderBeerBibleProfile();
+    } else {
+      renderBeerBibleGrid();
+    }
   }
 
   els.beerBibleFilterInput.addEventListener('input', (e) => {
@@ -8833,6 +9226,10 @@
       beerBibleFilterQuery = '';
       beerBibleViewMode = 'grid';
       beerBibleSelectedId = null;
+      beerBibleSelectMode = false;
+      beerBibleSelectedIds.clear();
+      els.beerBibleSelectToggleBtn.classList.remove('btn--primary');
+      els.beerBibleSelectToggleBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Select';
       renderBeerBibleChipsAndStats();
       renderBeerBibleBody();
     });
@@ -9021,6 +9418,468 @@
     const title = els.beerBibleFormTitleInput.value.trim();
     if (!confirm(`Delete "${title}" from the Beer Bible? This can't be undone.`)) return;
     deleteBeerBibleEntry(beerBibleEditingId);
+  });
+
+  // Bulk Delete - every underlying beers-table row (every package size,
+  // not just each selected card's own primary) behind the current
+  // selection. Uses the bulk bar's own inline confirm row
+  // (#beerBibleBulkConfirmRow) rather than a native confirm() - a bulk
+  // action deletes more rows than the count on the button already shows
+  // (a selected card can represent several package sizes), so the confirm
+  // text spells that out instead of just repeating the card count.
+  els.beerBibleBulkDeleteBtn.addEventListener('click', showBeerBibleBulkConfirmRow);
+  els.beerBibleBulkCancelDeleteBtn.addEventListener('click', hideBeerBibleBulkConfirmRow);
+  els.beerBibleBulkConfirmDeleteBtn.addEventListener('click', async () => {
+    const ids = getSelectedBeerGroups().flatMap((g) => g.variants.map((v) => v.id));
+    if (!ids.length) return;
+    els.beerBibleBulkConfirmDeleteBtn.disabled = true;
+    try {
+      // Independent deletes, no ordering/pacing concern the way Batch
+      // Research's own live Untappd searches have - safe to fire together.
+      await Promise.all(ids.map((id) => fetch(`/api/beers/${id}`, { method: 'DELETE' })));
+    } catch (err) {
+      console.warn('Bulk delete failed:', err.message);
+    } finally {
+      els.beerBibleBulkConfirmDeleteBtn.disabled = false;
+    }
+    clearBeerBibleSelection();
+    await fetchBeerBible();
+    renderBeerBibleChipsAndStats();
+    renderBeerBibleGrid();
+  });
+
+  // Bulk bar's own Mark Variety Pack - a quick single-field action, no
+  // modal, same one-click spirit as the per-card badge this sets (see
+  // beerResearchBadgeHtml). Only ever writes to each selected group's own
+  // primary row, not cascaded to its siblings the way Bulk Edit's shared
+  // fields below are - Variety Pack (like Size) is a real per-package-size
+  // fact, and a variety pack essentially never has siblings to begin with
+  // (grouping needs a beerName+brewery on file, which a beer with no
+  // Untappd page of its own is unlikely to have - see the beers table's
+  // own variety_pack comment in server/db.js).
+  els.beerBibleBulkVarietyPackBtn.addEventListener('click', async () => {
+    const groups = getSelectedBeerGroups();
+    if (!groups.length) return;
+    els.beerBibleBulkVarietyPackBtn.disabled = true;
+    try {
+      await Promise.all(groups.map((g) => fetch(`/api/beers/${g.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ varietyPack: true }),
+      })));
+    } catch (err) {
+      console.warn('Bulk Mark Variety Pack failed:', err.message);
+    } finally {
+      els.beerBibleBulkVarietyPackBtn.disabled = false;
+    }
+    await fetchBeerBible();
+    renderBeerBibleChipsAndStats();
+    renderBeerBibleGrid();
+  });
+
+  // ---------- Bulk Edit Fields (#beerBibleBulkEditOverlay) ----------
+  //
+  // One row per field, each with its own "apply to every selected beer"
+  // checkbox that unlocks that row's input - see the modal's own comment
+  // in index.html for why Size/Variety Pack aren't offered here. A field
+  // left unchecked is never touched on any beer, same "leave it alone
+  // unless you say otherwise" rule every other Beer Bible save follows.
+
+  function resetBeerBibleBulkEditForm() {
+    els.beerBibleBulkEditFields.querySelectorAll('.fieldrow').forEach((row) => {
+      row.classList.remove('is-on');
+      const check = row.querySelector('.fieldrow__check');
+      const input = row.querySelector('.fieldrow__input');
+      check.checked = false;
+      input.value = '';
+      input.disabled = true;
+    });
+    els.beerBibleBulkEditStatus.textContent = '';
+    updateBeerBibleBulkEditFooter();
+  }
+
+  function updateBeerBibleBulkEditFooter() {
+    const onRows = Array.from(els.beerBibleBulkEditFields.querySelectorAll('.fieldrow.is-on'));
+    els.beerBibleBulkEditApplyCount.textContent = beerBibleSelectedIds.size;
+    if (!onRows.length) {
+      els.beerBibleBulkEditFooterNote.textContent = 'No fields checked yet';
+      els.beerBibleBulkEditApplyBtn.disabled = true;
+      return;
+    }
+    const labels = onRows.map((row) => row.querySelector('.fieldrow__label').textContent);
+    els.beerBibleBulkEditFooterNote.textContent = `Will set ${labels.join(', ')} - everything else stays as-is`;
+    els.beerBibleBulkEditApplyBtn.disabled = false;
+  }
+
+  els.beerBibleBulkEditFields.addEventListener('change', (e) => {
+    const check = e.target.closest('.fieldrow__check');
+    if (!check) return;
+    const row = check.closest('.fieldrow');
+    const input = row.querySelector('.fieldrow__input');
+    row.classList.toggle('is-on', check.checked);
+    input.disabled = !check.checked;
+    if (check.checked) input.focus();
+    updateBeerBibleBulkEditFooter();
+  });
+
+  const beerBulkEditModal = createModal({
+    overlay: els.beerBibleBulkEditOverlay,
+    closeBtns: [els.beerBibleBulkEditCloseBtn, els.beerBibleBulkEditCancelBtn],
+    onOpen: resetBeerBibleBulkEditForm,
+  });
+
+  els.beerBibleBulkEditBtn.addEventListener('click', () => {
+    const groups = getSelectedBeerGroups();
+    if (!groups.length) return;
+    beerBulkEditModal.open();
+    els.beerBibleBulkEditCount.textContent = groups.length;
+    els.beerBibleBulkEditChips.innerHTML = groups.map((g) => `<span class="selected-chip">${escapeHtml(beerDisplayName(g))}</span>`).join('');
+  });
+
+  els.beerBibleBulkEditApplyBtn.addEventListener('click', async () => {
+    const groups = getSelectedBeerGroups();
+    const onRows = Array.from(els.beerBibleBulkEditFields.querySelectorAll('.fieldrow.is-on'));
+    if (!groups.length || !onRows.length) return;
+    const fields = {};
+    onRows.forEach((row) => {
+      fields[row.dataset.bulkField] = row.querySelector('.fieldrow__input').value.trim();
+    });
+    els.beerBibleBulkEditApplyBtn.disabled = true;
+    els.beerBibleBulkEditStatus.textContent = 'Saving...';
+    try {
+      // Every checked field here (Brewery/Location/Style/ABV/IBU/Untappd
+      // Rating) is a real per-beer fact, so it cascades to every package
+      // size behind each selected group - the same cascade the single Edit
+      // form's own Save Changes handler already does for one beer at a
+      // time (see els.beerBibleFormSaveBtn's own comment), just looped
+      // over every selected beer here instead of one. Best-effort per
+      // beer, same "one failure doesn't undo the rest" spirit as Bulk
+      // Delete/Mark Variety Pack above.
+      await Promise.all(groups.flatMap((g) => g.variants.map((v) => fetch(`/api/beers/${v.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields),
+      }).catch((err) => {
+        console.warn('Bulk Edit Fields failed for one beer:', err.message);
+      }))));
+      beerBulkEditModal.close();
+      clearBeerBibleSelection();
+      await fetchBeerBible();
+      renderBeerBibleChipsAndStats();
+      renderBeerBibleGrid();
+    } catch (err) {
+      els.beerBibleBulkEditStatus.textContent = err.message || 'Could not save those changes.';
+    } finally {
+      els.beerBibleBulkEditApplyBtn.disabled = false;
+    }
+  });
+
+  // ---------- Batch Research (#beerBibleBulkResearchOverlay) ----------
+  //
+  // The single-beer Research button already runs one live Untappd search
+  // per click (see runBeerResearch above) - this loops that same search
+  // over every eligible selected beer, one at a time and paced the same
+  // way Import Beer Bible from Export File already is (see
+  // beerBibleImport.js's own DELAY_MS). Every eligible beer is necessarily
+  // its own group of one (see researchEligibleSelectedGroups' own
+  // comment), so there's no sibling-cascade concern here the way Bulk Edit
+  // above has.
+  //
+  // A confident match saves itself right away - no separate Confirm
+  // Untappd Match step the way one click of the single per-card Research
+  // button still gets (see runBeerResearch's own openUntappdConfirm call).
+  // Deliberate for the batch case specifically: the live On File vs.
+  // Untappd comparison shown as each beer resolves already doubles as that
+  // review, and re-confirming every match one at a time would defeat the
+  // point of doing this as a batch. A tie still gets the exact same
+  // disambiguation dialog every other beer lookup in this app already uses
+  // (openUntappdPicker), opened right on top of this one - see
+  // #beerBibleBulkResearchOverlay's own z-index comment in styles.css for
+  // why that dialog always wins the stacking.
+
+  // Same field set the profile page's own SKU/UPC/Price info-card already
+  // shows - just the subset that's actually useful to compare against
+  // whatever a fresh Untappd search just found.
+  const BEER_COMPARE_FIELDS = [
+    { key: 'brewery', label: 'Brewery' },
+    { key: 'style', label: 'Style' },
+    { key: 'abv', label: 'ABV' },
+    { key: 'ibu', label: 'IBU' },
+  ];
+  const BEER_COMPARE_ICON_ARROW = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 10h14M11 4l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // Result-row icons (beerBulkResearchResultRowHtml below) - a checkmark/
+  // caution/x, not BEER_RESEARCH_ICON's own magnifying glass (that one
+  // means "go search", not "here's what searching found" - the wrong
+  // signal to leave sitting next to a finished result).
+  const BEER_RESULT_ICON_GOOD = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const BEER_RESULT_ICON_WARN = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="13.6" r="0.9" fill="currentColor"/></svg>';
+  const BEER_RESULT_ICON_MISS = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="7.2" y1="7.2" x2="12.8" y2="12.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12.8" y1="7.2" x2="7.2" y2="12.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+  function beerCompareFactsHtml(data) {
+    return BEER_COMPARE_FIELDS.map((f) => {
+      const val = data && data[f.key];
+      return `<div><dt>${f.label}</dt><dd class="${val ? 'is-new' : 'is-empty'}">${val ? escapeHtml(val) : '&mdash;'}</dd></div>`;
+    }).join('');
+  }
+
+  // The On File vs. Untappd comparison card - shown live as each beer
+  // resolves (#beerBibleBulkResearchLive), and again (collapsed behind a
+  // "Show comparison" toggle) in the summary. `mode` is 'loading' | 'match'
+  // | 'tie' | 'miss'; `data` is the found fields for 'match' (a beer-shaped
+  // object - brewery/style/abv/ibu) or the candidate count for 'tie',
+  // unused otherwise.
+  function beerCompareCardHtml(beer, mode, data) {
+    let head;
+    let name;
+    let facts;
+    if (mode === 'loading') {
+      head = '<span class="compare__label">Searching Untappd&hellip;</span>';
+      name = '&nbsp;';
+      facts = BEER_COMPARE_FIELDS.map(() => '<div><dt><span class="skel" style="width:34px"></span></dt><dd><span class="skel" style="width:64px"></span></dd></div>').join('');
+    } else if (mode === 'miss') {
+      head = '<span class="compare__label">Untappd</span><span class="compare__badge compare__badge--muted">No Match</span>';
+      name = 'No confident match';
+      facts = beerCompareFactsHtml(null);
+    } else if (mode === 'tie') {
+      head = '<span class="compare__label">Untappd</span><span class="compare__badge compare__badge--warn">Tie</span>';
+      name = `${data} beers share this name`;
+      facts = beerCompareFactsHtml(null);
+    } else {
+      head = '<span class="compare__label">Untappd</span><span class="compare__badge compare__badge--good">Match</span>';
+      name = escapeHtml(data.style || '');
+      facts = beerCompareFactsHtml(data);
+    }
+    return `
+      <div class="compare">
+        <div class="compare__col">
+          <div class="compare__head"><span class="compare__label">On File</span></div>
+          <div class="compare__name">${escapeHtml(beer.title)}</div>
+          <dl class="compare__facts">${beerCompareFactsHtml(null)}</dl>
+        </div>
+        <div class="compare__mid">${BEER_COMPARE_ICON_ARROW}</div>
+        <div class="compare__col compare__col--untappd">
+          <div class="compare__head">${head}</div>
+          <div class="compare__name">${name}</div>
+          <dl class="compare__facts">${facts}</dl>
+        </div>
+      </div>
+    `;
+  }
+
+  function beerBulkResearchResultRowHtml(r) {
+    const b = r.beer;
+    if (r.outcome === 'match') {
+      return `
+        <div class="rresult">
+          <span class="rresult__icon rresult__icon--good">${BEER_RESULT_ICON_GOOD}</span>
+          <div class="rresult__body">
+            <div class="rresult__title">${escapeHtml(beerDisplayName(b))}</div>
+            <div class="rresult__detail">Matched <b>${escapeHtml(b.brewery || '')}</b>${b.style ? ` &middot; ${escapeHtml(b.style)}` : ''}</div>
+            <button type="button" class="rcompare-toggle" data-toggle="${b.id}">Show comparison</button>
+            <div class="rresult__compare" data-compare-slot="${b.id}" hidden>${beerCompareCardHtml(b, 'match', b)}</div>
+          </div>
+        </div>
+      `;
+    }
+    if (r.outcome === 'tie') {
+      return `
+        <div class="rresult">
+          <span class="rresult__icon rresult__icon--warn">${BEER_RESULT_ICON_WARN}</span>
+          <div class="rresult__body">
+            <div class="rresult__title">${escapeHtml(b.title)}</div>
+            <div class="rresult__detail">Several beers on Untappd share this name and nothing was picked - open this beer's own profile and click Research to try again.</div>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="rresult">
+        <span class="rresult__icon rresult__icon--muted">${BEER_RESULT_ICON_MISS}</span>
+        <div class="rresult__body">
+          <div class="rresult__title">${escapeHtml(b.title)}</div>
+          <div class="rresult__detail">No confident match on Untappd - edit this one by hand, or search Untappd yourself.</div>
+          <button type="button" class="rcompare-toggle" data-toggle="${b.id}">Show comparison</button>
+          <button type="button" class="rcompare-toggle" data-manual-search="${b.id}">Search Untappd&hellip;</button>
+          <div class="rresult__compare" data-compare-slot="${b.id}" hidden>${beerCompareCardHtml(b, 'miss')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => { setTimeout(resolve, ms); });
+  }
+
+  let beerBulkResearchCancelled = false;
+  // The most recent batch's own results - kept around (not just passed
+  // through as a local) so the summary's own "Search Untappd…" button (see
+  // the [data-manual-search] handler below) can find and update the one
+  // result a manual search resolves, then redraw the whole summary the
+  // same way a fresh batch finishing already does.
+  let beerBulkResearchResults = [];
+
+  function finishBeerBibleBulkResearch(results) {
+    beerBulkResearchResults = results;
+    els.beerBibleBulkResearchCurrent.innerHTML = '';
+    els.beerBibleBulkResearchLive.innerHTML = '';
+    els.beerBibleBulkResearchProgress.hidden = true;
+    els.beerBibleBulkResearchSummary.hidden = false;
+
+    const matched = results.filter((r) => r.outcome === 'match').length;
+    const tie = results.filter((r) => r.outcome === 'tie').length;
+    const miss = results.filter((r) => r.outcome === 'miss').length;
+    const parts = [];
+    if (matched) parts.push(`${matched} matched and saved`);
+    if (tie) parts.push(`${tie} left unresolved`);
+    if (miss) parts.push(`${miss} not found`);
+    els.beerBibleBulkResearchSummaryLine.textContent = `Researched ${results.length} beer${results.length === 1 ? '' : 's'}: ${parts.join(', ')}.`;
+    els.beerBibleBulkResearchSummaryNote.textContent = beerBulkResearchCancelled ? 'Cancelled - the rest of the selection was left untouched.' : '';
+    els.beerBibleBulkResearchResults.innerHTML = results.map(beerBulkResearchResultRowHtml).join('');
+
+    renderBeerBibleChipsAndStats();
+    renderBeerBibleGrid();
+  }
+
+  async function runBeerBibleBulkResearch() {
+    const queue = researchEligibleSelectedGroups();
+    if (!queue.length) return;
+    beerBulkResearchCancelled = false;
+    els.beerBibleBulkResearchTotal.textContent = queue.length;
+    els.beerBibleBulkResearchTotal2.textContent = queue.length;
+    els.beerBibleBulkResearchPlural.textContent = queue.length === 1 ? '' : 's';
+    els.beerBibleBulkResearchDone.textContent = '0';
+    els.beerBibleBulkResearchPercent.textContent = '0%';
+    els.beerBibleBulkResearchBar.value = 0;
+    els.beerBibleBulkResearchCurrent.innerHTML = `${BEER_RESEARCH_SPIN_ICON}Starting&hellip;`;
+    els.beerBibleBulkResearchLive.innerHTML = '';
+    els.beerBibleBulkResearchTallyMatched.textContent = '0';
+    els.beerBibleBulkResearchTallyTie.textContent = '0';
+    els.beerBibleBulkResearchTallyMiss.textContent = '0';
+    els.beerBibleBulkResearchProgress.hidden = false;
+    els.beerBibleBulkResearchSummary.hidden = true;
+    beerBulkResearchModal.open();
+
+    const results = [];
+    for (let i = 0; i < queue.length; i += 1) {
+      if (beerBulkResearchCancelled) break;
+      const beer = queue[i];
+      els.beerBibleBulkResearchCurrent.innerHTML = `${BEER_RESEARCH_SPIN_ICON}Checking <b style="color:var(--ui-ink-soft)">${escapeHtml(beer.title)}</b>&hellip;`;
+      els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'loading');
+
+      let outcome;
+      let freshBeer = beer;
+      try {
+        // eslint-disable-next-line no-await-in-loop -- deliberately
+        // sequential and paced (see the sleep below), not a burst - same
+        // reasoning as beerBibleImport.js's own row-by-row loop.
+        const resp = await fetch(`/api/beers/${beer.id}/research`, { method: 'POST' });
+        // eslint-disable-next-line no-await-in-loop
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Could not search Untappd for that beer.');
+
+        if (data.untappdCandidates && data.untappdCandidates.length) {
+          els.beerBibleBulkResearchCurrent.innerHTML = `${BEER_RESEARCH_ICON}${data.untappdCandidates.length} beers share this name &ndash; pick one`;
+          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'tie', data.untappdCandidates.length);
+          // eslint-disable-next-line no-await-in-loop
+          const picked = await openUntappdPicker(data.untappdCandidates, beerDisplayName(beer) || beer.title, {
+            getCurrent: () => beerResearchCurrentFields(beer),
+            applyFn: (fields) => saveBeerResearchFields(beer.id, fields),
+          });
+          outcome = picked ? 'match' : 'tie';
+          if (picked) {
+            freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
+            els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
+          }
+        } else if (data.untappdError) {
+          outcome = 'miss';
+          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'miss');
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          await saveBeerResearchFields(beer.id, data);
+          outcome = 'match';
+          freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
+          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
+        }
+      } catch (err) {
+        outcome = 'miss';
+        els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'miss');
+      }
+
+      results.push({ beer: freshBeer, outcome });
+      const done = i + 1;
+      const pct = Math.round((done / queue.length) * 100);
+      els.beerBibleBulkResearchDone.textContent = done;
+      els.beerBibleBulkResearchPercent.textContent = `${pct}%`;
+      els.beerBibleBulkResearchBar.value = pct;
+      els.beerBibleBulkResearchTallyMatched.textContent = results.filter((r) => r.outcome === 'match').length;
+      els.beerBibleBulkResearchTallyTie.textContent = results.filter((r) => r.outcome === 'tie').length;
+      els.beerBibleBulkResearchTallyMiss.textContent = results.filter((r) => r.outcome === 'miss').length;
+
+      if (i < queue.length - 1 && !beerBulkResearchCancelled) {
+        // Same courtesy pacing beerBibleImport.js's own bulk Untappd job
+        // already gives the shared search key - this is a second bulk
+        // caller of the same endpoint, not a reason to hit it any harder.
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(400);
+      }
+    }
+
+    finishBeerBibleBulkResearch(results);
+  }
+
+  els.beerBibleBulkResearchResults.addEventListener('click', async (e) => {
+    const toggleBtn = e.target.closest('[data-toggle]');
+    if (toggleBtn) {
+      const slot = document.querySelector(`[data-compare-slot="${toggleBtn.dataset.toggle}"]`);
+      if (!slot) return;
+      slot.hidden = !slot.hidden;
+      toggleBtn.textContent = slot.hidden ? 'Show comparison' : 'Hide comparison';
+      return;
+    }
+
+    // A miss's own "Search Untappd…" (see beerBulkResearchResultRowHtml
+    // above) - opens the same Pick the Right Beer dialog a live tie during
+    // the batch already reuses, just for this one beer after the fact
+    // rather than pausing the whole run for it (a miss mid-batch is left
+    // alone precisely so an unattended batch can finish - see
+    // runBeerBibleBulkResearch's own miss branch).
+    const searchBtn = e.target.closest('[data-manual-search]');
+    if (!searchBtn) return;
+    const id = Number(searchBtn.dataset.manualSearch);
+    const result = beerBulkResearchResults.find((r) => r.beer.id === id);
+    if (!result) return;
+    const picked = await openUntappdPicker([], beerDisplayName(result.beer) || result.beer.title, {
+      getCurrent: () => beerResearchCurrentFields(result.beer),
+      applyFn: (fields) => saveBeerResearchFields(id, fields),
+    });
+    if (!picked) return;
+    result.outcome = 'match';
+    result.beer = beerBibleCache.find((b) => b.id === id) || result.beer;
+    finishBeerBibleBulkResearch(beerBulkResearchResults);
+  });
+
+  // No onOpen here - runBeerBibleBulkResearch itself resets/populates the
+  // progress view and calls .open(), the same order openBeerBibleEditForm
+  // above already uses (open first, then fill in what's specific to this
+  // run) rather than needing this modal's own onOpen to somehow know the
+  // queue before the button that triggers it has even built one.
+  const beerBulkResearchModal = createModal({
+    overlay: els.beerBibleBulkResearchOverlay,
+    closeBtns: [els.beerBibleBulkResearchCloseBtn],
+    // Covers every way this modal can close early - the X button, Escape,
+    // or a backdrop click, all wired in by createModal itself - not just
+    // the dedicated Cancel button in the footer. The loop above only
+    // checks this cooperatively, before starting its next beer - whichever
+    // beer was already in flight when this fires still finishes and gets
+    // counted, same as clicking the dedicated Cancel button below.
+    onClose: () => { beerBulkResearchCancelled = true; },
+  });
+
+  els.beerBibleBulkResearchBtn.addEventListener('click', () => {
+    runBeerBibleBulkResearch();
+  });
+  els.beerBibleBulkResearchCancelBtn.addEventListener('click', () => {
+    beerBulkResearchCancelled = true;
+  });
+  els.beerBibleBulkResearchDoneBtn.addEventListener('click', () => {
+    beerBulkResearchModal.close();
+    clearBeerBibleSelection();
   });
 
   // Always resets to a blank "Add an entry manually" form on open - the

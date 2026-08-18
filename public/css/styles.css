@@ -86,6 +86,17 @@
   --ui-low: #a8391a;
   --ui-low-tint: rgba(168, 57, 26, 0.1);
 
+  /* Beer Bible Select mode (see .is-selected in this file) - --ui-accent
+     itself mixed lightly into the panel, not a new hue, so a selected card
+     reads as "the app's own accent, lightly" rather than a fourth semantic
+     color alongside good/warn/low above. color-mix() resolves against
+     whichever of --ui-accent/--ui-panel is currently cascaded, so this one
+     definition already tracks dark mode and the Purple accent choice
+     (Settings -> Change Theme) without needing its own override in either
+     of those blocks - same color-mix() pattern .untappd-rec-card already
+     uses below for its own accent-tinted background. */
+  --ui-select-tint: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-panel));
+
   --radius: 10px;
   color-scheme: light;
 
@@ -959,6 +970,226 @@ h1, h2, h3 { margin: 0; }
 .desc-block p { margin: 0; font-size: 0.88rem; line-height: 1.55; }
 .desc-block p.help-text { margin: 0; }
 .desc-source { font-size: 0.76rem; color: var(--ui-muted); margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px dashed var(--ui-border); }
+
+/* ---------- The Beer Bible - Select mode / bulk actions ----------
+   Select mode (toggleBeerBibleSelectMode in app.js) adds a checkbox to
+   every .bourbon-card/.bourbon-row in the grid - beerCardHtml/beerRowHtml
+   only render that markup at all while selecting, rather than a CSS
+   show/hide toggle, so there's nothing extra in the DOM the rest of the
+   time. #beerBibleBody.is-selecting only changes cursor/hover affordance;
+   .is-selected (driven by beerBibleSelectedIds, a plain id Set - not
+   anything stored on the entry itself) is what actually marks a card
+   picked. */
+#beerBibleBody.is-selecting .bourbon-card,
+#beerBibleBody.is-selecting .bourbon-row { cursor: pointer; }
+.bourbon-card.is-selected,
+.bourbon-row.is-selected {
+  border-color: var(--ui-accent);
+  background: var(--ui-select-tint);
+  box-shadow: 0 0 0 1px var(--ui-accent);
+}
+.bourbon-card__check,
+.bourbon-row__check {
+  width: 19px;
+  height: 19px;
+  border-radius: 5px;
+  border: 1.5px solid var(--ui-border);
+  background: var(--ui-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  pointer-events: none;
+  color: var(--ui-on-accent);
+}
+.bourbon-card__check { position: absolute; top: 0.6rem; left: 0.6rem; }
+.bourbon-card__check svg,
+.bourbon-row__check svg { opacity: 0; transform: scale(0.6); transition: opacity 0.1s ease, transform 0.1s ease; }
+.bourbon-card.is-selected .bourbon-card__check,
+.bourbon-row.is-selected .bourbon-row__check { background: var(--ui-accent); border-color: var(--ui-accent); }
+.bourbon-card.is-selected .bourbon-card__check svg,
+.bourbon-row.is-selected .bourbon-row__check svg { opacity: 1; transform: scale(1); }
+/* Beer Bible cards render the checkbox inside the card's own top-left
+   corner (position:absolute, same as beerBibleAddPackageSizeBtn-style
+   overlays elsewhere) - the title/sub lines get a matching left indent so
+   they don't sit underneath it. Scoped to .bourbon-card--checkable (added
+   by beerCardHtml only in Select mode) rather than every .bourbon-card
+   everywhere .bourbon-grid is reused (Bourbon Library, Rum Repository),
+   which never render this checkbox at all. */
+.bourbon-card--checkable { position: relative; }
+.bourbon-card--checkable .bourbon-card__title,
+.bourbon-card--checkable .bourbon-card__sub { padding-left: 1.55rem; }
+.bourbon-row__check { margin-right: 0.2rem; }
+
+/* Sticky bulk-action bar (#beerBibleBulkBar in index.html) - see that
+   element's own comment for why it's static markup rather than part of
+   #beerBibleBody's rebuilt innerHTML. Sticks to the bottom of
+   #beerBibleView's own scrolling viewport (that section's overflow-y:auto
+   - see .library-view above), not the window, so it's automatically
+   bounded to the content column and never overlaps .rail. */
+.bulk-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 1.5rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.85rem 0.7rem 1.1rem;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.4);
+  animation: bulk-bar-in 0.18s ease;
+}
+@keyframes bulk-bar-in { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.bulk-bar__main { display: flex; align-items: center; gap: 0.85rem; width: 100%; flex-wrap: wrap; }
+.bulk-bar__count { font-size: 0.86rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bulk-bar__actions { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+.bulk-bar__divider { width: 1px; align-self: stretch; background: var(--ui-border); margin: 0 0.15rem; }
+.bulk-bar__confirm { display: flex; align-items: center; gap: 0.7rem; width: 100%; flex-wrap: wrap; }
+.bulk-bar__confirm-text { font-size: 0.84rem; color: var(--ui-ink-soft); }
+.bulk-bar__confirm-text b { color: var(--ui-ink); }
+.bulk-bar__confirm-actions { display: flex; gap: 0.4rem; margin-left: auto; }
+
+/* Bulk Edit Fields modal (#beerBibleBulkEditOverlay) - each row's own
+   checkbox unlocks that row's input, same convention as the field-by-field
+   opt-in the mock this was built from used. */
+.selected-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
+.selected-chip { font-size: 0.74rem; font-weight: 600; color: var(--ui-ink-soft); background: var(--ui-code-bg); border-radius: 999px; padding: 0.22rem 0.6rem; }
+.fieldrow {
+  display: grid;
+  grid-template-columns: auto 130px 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--ui-border);
+}
+.fieldrow:first-child { border-top: none; }
+.fieldrow__check { width: 17px; height: 17px; accent-color: var(--ui-accent); cursor: pointer; }
+.fieldrow__label { font-size: 0.87rem; font-weight: 600; color: var(--ui-ink-soft); }
+.fieldrow.is-on .fieldrow__label { color: var(--ui-ink); }
+.fieldrow__input {
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-code-bg);
+  color: var(--ui-muted);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+}
+.fieldrow.is-on .fieldrow__input { background: var(--ui-field); color: var(--ui-ink); border-color: var(--ui-accent-ink); }
+.fieldrow__input:disabled { cursor: not-allowed; }
+
+/* Batch Research modal (#beerBibleBulkResearchOverlay) - progress bar +
+   live On File vs. Untappd comparison while it runs, then a per-beer
+   summary. z-index sits below the shared .modal-overlay z-index (100) -
+   see the note above this rule's own overlay in index.html - so
+   openUntappdPicker's own dialog, opened on top of this one for a tie,
+   always wins the stacking regardless of DOM order. */
+#beerBibleBulkResearchOverlay { z-index: 90; }
+.modal--research { max-width: 560px; }
+
+.rprogress-bar {
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: 5px;
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--ui-code-bg);
+}
+.rprogress-bar::-webkit-progress-bar { background: var(--ui-code-bg); border-radius: 5px; }
+.rprogress-bar::-webkit-progress-value { background: var(--ui-accent); border-radius: 5px; transition: width 0.25s ease; }
+.rprogress-bar::-moz-progress-bar { background: var(--ui-accent); border-radius: 5px; }
+
+.rprogress { padding: 1rem 1.1rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.rprogress__line { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--ui-muted); }
+.rprogress__line b { color: var(--ui-ink-soft); font-variant-numeric: tabular-nums; }
+.rprogress__current { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--ui-ink-soft); min-height: 1.3em; }
+.rspinner {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--ui-border);
+  border-top-color: var(--ui-accent);
+  flex: 0 0 auto;
+  animation: rspin 0.7s linear infinite;
+}
+@keyframes rspin { to { transform: rotate(360deg); } }
+
+.rlive { padding: 0.7rem 1.1rem; min-height: 2px; }
+.rlive:empty { padding: 0; }
+
+.rtally { display: flex; gap: 0.5rem; padding: 0.15rem 1.1rem 1.1rem; }
+.rtally__chip { flex: 1; text-align: center; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.4rem 0.3rem; background: var(--ui-panel-sunken); }
+.rtally__chip b { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.rtally__chip span { font-size: 0.68rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.rtally__chip--good b { color: var(--ui-good); }
+.rtally__chip--warn b { color: var(--ui-warn); }
+.rtally__chip--muted b { color: var(--ui-muted); }
+
+.rresults { padding: 0.4rem 1.1rem 0.2rem; display: flex; flex-direction: column; }
+.rresult { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.6rem 0; border-top: 1px solid var(--ui-border); }
+.rresult:first-child { border-top: none; }
+.rresult__icon { flex: 0 0 auto; margin-top: 0.1rem; }
+.rresult__icon--good { color: var(--ui-good); }
+.rresult__icon--warn { color: var(--ui-warn); }
+.rresult__icon--muted { color: var(--ui-muted); }
+.rresult__body { flex: 1; min-width: 0; }
+.rresult__title { font-size: 0.85rem; font-weight: 700; }
+.rresult__detail { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.1rem; line-height: 1.4; }
+.rresult__detail b { color: var(--ui-ink-soft); font-weight: 600; }
+.rcompare-toggle { border: none; background: transparent; color: var(--ui-accent-ink); font-size: 0.74rem; font-weight: 600; cursor: pointer; padding: 0.2rem 0; margin-top: 0.15rem; }
+.rcompare-toggle:hover { text-decoration: underline; }
+.rresult__compare { margin-top: 0.55rem; }
+
+.rsummary-head { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.1rem 0; }
+.rsummary-head p { margin: 0; font-size: 0.83rem; color: var(--ui-ink-soft); }
+
+/* On File vs. Untappd comparison card (compareCardHtml in app.js) - shown
+   live as each beer resolves, and again (collapsed behind a "Show
+   comparison" toggle) in the summary. Reuses the dt/dd fact-list shape
+   .info-card already uses above, not a new layout. */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-panel-sunken);
+  border-radius: 10px;
+}
+.compare__col { min-width: 0; }
+.compare__head { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem; }
+.compare__label { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-muted); }
+.compare__col--untappd .compare__label { color: var(--ui-accent-ink); }
+.compare__badge { font-size: 0.64rem; font-weight: 700; padding: 0.08rem 0.4rem; border-radius: 999px; margin-left: auto; }
+.compare__badge--good { color: var(--ui-good); background: var(--ui-good-tint); }
+.compare__badge--warn { color: var(--ui-warn); background: var(--ui-warn-tint); }
+.compare__badge--muted { color: var(--ui-muted); background: var(--ui-code-bg); }
+.compare__name { font-size: 0.82rem; font-weight: 700; line-height: 1.35; margin-bottom: 0.5rem; min-height: 2.2em; }
+.compare__facts { margin: 0; display: flex; flex-direction: column; gap: 0.32rem; }
+.compare__facts > div { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; }
+.compare__facts dt { color: var(--ui-muted); flex: 0 0 auto; }
+.compare__facts dd { margin: 0; font-weight: 600; text-align: right; }
+.compare__facts dd.is-empty { color: var(--ui-muted); font-weight: 400; }
+.compare__facts dd.is-new { color: var(--ui-good); }
+.compare__mid { display: flex; align-items: center; justify-content: center; color: var(--ui-border); padding-top: 1.9rem; }
+
+.skel {
+  display: inline-block;
+  height: 0.72em;
+  border-radius: 4px;
+  background: var(--ui-border);
+  opacity: 0.55;
+  animation: skel-pulse 1.1s ease-in-out infinite;
+}
+@keyframes skel-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.7; } }
 
 /* ---------- Layout ---------- */
 
@@ -2172,6 +2403,56 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   padding: 0.1rem;
 }
 .untappd-more-toggle:hover { text-decoration: underline; }
+
+/* Empty state (#untappdPickerEmpty in index.html) - shown in the rec
+   card's own slot when there's nothing to recommend, either because a
+   manual search (see .untappd-manual-search below) came up empty, or the
+   picker was opened directly on a plain miss instead of a tie. Dashed
+   border instead of .untappd-rec-card's solid accent one, so it reads as
+   "nothing here" rather than another pickable option. */
+.untappd-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1.5px dashed var(--ui-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  background: var(--ui-panel-sunken);
+}
+.untappd-empty__title { font-size: 0.88rem; font-weight: 700; color: var(--ui-ink); }
+.untappd-empty__sub { font-size: 0.8rem; color: var(--ui-muted); line-height: 1.4; }
+
+/* "Or search Untappd yourself" (#untappdPickerManualForm in index.html) -
+   sits at the bottom of whatever's shown above it (a tie's Recommended +
+   Others, the empty state, or a previous manual search's own results),
+   using the same divider/help-text language the rest of the dialog
+   already uses so it reads as one more section of it, not a bolted-on
+   extra. See openUntappdPicker's own loadCandidates in app.js. */
+.untappd-manual-search { display: flex; flex-direction: column; gap: 0.45rem; }
+.untappd-manual-search__row { display: flex; gap: 0.5rem; }
+.untappd-manual-search__row input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-field);
+  color: var(--ui-ink);
+}
+.untappd-manual-search__back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-accent-ink);
+  cursor: pointer;
+}
+.untappd-manual-search__back:hover { text-decoration: underline; }
 
 /* ---------- Confirm Untappd Match (#untappdConfirmOverlay in index.html) -
    a single card, not a list of rows like the picker above, since there's
