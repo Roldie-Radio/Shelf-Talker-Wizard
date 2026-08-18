@@ -1155,7 +1155,16 @@ button.beer-legend-row { border: none; background: none; font-family: inherit; t
 .origin-card:hover { background: var(--ui-hover); }
 .origin-card--active { border-color: var(--ui-accent); background: var(--ui-panel-alt); }
 .origin-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.origin-card__flag { font-size: 1.8rem; line-height: 1; }
+.origin-card__flag { line-height: 1; }
+/* Drawn flag/globe icons (see beerLandingCountryFlag in app.js) - inline
+   SVG rather than a flag emoji, so a country's flag looks the same on
+   every store PC instead of depending on Windows's own (unreliable) emoji
+   flag support. Sized here rather than in the SVG itself (no width/height
+   attribute on the <svg> tag) so each context below can size the same
+   markup differently just with CSS. */
+.flag-icon { display: inline-block; width: 1.5em; height: 1em; vertical-align: -0.15em; border-radius: 2px; box-shadow: 0 0 0 1px var(--ui-border) inset; overflow: hidden; color: var(--ui-muted); flex: 0 0 auto; }
+.origin-card__flag .flag-icon { width: 2.5rem; height: 1.7rem; }
+.drilldown__title .flag-icon { width: 1.4em; height: 0.95em; margin-right: 0.2em; }
 .origin-card__chevron { font-size: 0.66rem; color: var(--ui-muted); transition: transform 0.15s ease; }
 .origin-card--active .origin-card__chevron { transform: rotate(180deg); color: var(--ui-accent-ink); }
 .origin-card__name { font-weight: 700; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

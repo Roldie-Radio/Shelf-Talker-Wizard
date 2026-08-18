@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.15',
+      items: [
+        'Fixed: country flags on the Beer Bible landing page\'s "Where it\'s from" section were showing as plain two-letter codes instead of an actual flag on a lot of store PCs - Windows doesn\'t reliably render flag emoji unless it has the newer color-flag update to Segoe UI Emoji. Flags are now drawn directly (a small built-in icon per country) instead of relying on the PC\'s own emoji font, so they look the same everywhere.',
+      ],
+    },
+    {
       version: '4.4.14',
       items: [
         'Changed: the Beer Bible\'s Group By dropdown (Card/List toolbar) no longer offers Source as an option - Style, Brewery, Country, and Research Status remain.',
@@ -9558,46 +9564,79 @@
     'Seltzer & RTD': '#dbe4de',
   };
 
-  // Country -> flag emoji for the "Where it's from" origin cards below.
+  // Country -> flag icon for the "Where it's from" origin cards below.
   // Keyed by lowercased country name rather than an ISO code, since that's
   // the shape `country` actually holds on file (see
   // parseLocationForGeoColumns in server/db.js - Untappd's own brewery
   // location strings, e.g. "United States" or "Netherlands", not "US"/
-  // "NL"). Covers the countries that actually show up on beer packaging;
-  // anything not in this list still gets its own card, just with a plain
-  // globe instead of a specific flag - no country is ever hidden for
-  // lacking an entry here.
-  const BEER_LANDING_COUNTRY_FLAGS = {
-    'united states': '\u{1F1FA}\u{1F1F8}', 'usa': '\u{1F1FA}\u{1F1F8}', 'us': '\u{1F1FA}\u{1F1F8}',
-    'mexico': '\u{1F1F2}\u{1F1FD}',
-    'canada': '\u{1F1E8}\u{1F1E6}',
-    'united kingdom': '\u{1F1EC}\u{1F1E7}', 'uk': '\u{1F1EC}\u{1F1E7}', 'england': '\u{1F1EC}\u{1F1E7}',
-    'scotland': '\u{1F1EC}\u{1F1E7}',
-    'ireland': '\u{1F1EE}\u{1F1EA}',
-    'netherlands': '\u{1F1F3}\u{1F1F1}',
-    'germany': '\u{1F1E9}\u{1F1EA}',
-    'belgium': '\u{1F1E7}\u{1F1EA}',
-    'france': '\u{1F1EB}\u{1F1F7}',
-    'italy': '\u{1F1EE}\u{1F1F9}',
-    'spain': '\u{1F1EA}\u{1F1F8}',
-    'portugal': '\u{1F1F5}\u{1F1F9}',
-    'czech republic': '\u{1F1E8}\u{1F1FF}', 'czechia': '\u{1F1E8}\u{1F1FF}',
-    'poland': '\u{1F1F5}\u{1F1F1}',
-    'austria': '\u{1F1E6}\u{1F1F9}',
-    'switzerland': '\u{1F1E8}\u{1F1ED}',
-    'denmark': '\u{1F1E9}\u{1F1F0}',
-    'sweden': '\u{1F1F8}\u{1F1EA}',
-    'norway': '\u{1F1F3}\u{1F1F4}',
-    'finland': '\u{1F1EB}\u{1F1EE}',
-    'japan': '\u{1F1EF}\u{1F1F5}',
-    'china': '\u{1F1E8}\u{1F1F3}',
-    'australia': '\u{1F1E6}\u{1F1FA}',
-    'new zealand': '\u{1F1F3}\u{1F1FF}',
-    'brazil': '\u{1F1E7}\u{1F1F7}',
-    'south africa': '\u{1F1FF}\u{1F1E6}',
+  // "NL").
+  //
+  // Drawn as a hand-built inline SVG per country rather than a flag emoji
+  // (the original approach) - regional-indicator flag emoji render as
+  // plain two-letter codes ("US", "DE", ...) instead of an actual flag on
+  // a lot of real store PCs (any Windows build before the color-flag
+  // update to Segoe UI Emoji, which is most of what's still out there),
+  // which on this app's actual install base meant "no flags" instead of
+  // just "a slightly different flag style". A drawn SVG renders the same
+  // everywhere Chromium runs, with no font/OS dependency at all. Simplified
+  // shapes/colors, not vexillologically exact - legible at the ~30x20 card
+  // size is the bar, not pixel-perfect detail. Covers the countries that
+  // actually show up on beer packaging; anything not in this list still
+  // gets its own card, just with a plain globe (also drawn, same reason)
+  // instead of a specific flag - no country is ever hidden for lacking an
+  // entry here.
+  const BEER_LANDING_COUNTRY_FLAG_SVGS = {
+    'united states': '<rect width="30" height="20" fill="#fff"/><rect width="30" height="2.86" fill="#B22234"/><rect y="5.71" width="30" height="2.86" fill="#B22234"/><rect y="11.43" width="30" height="2.86" fill="#B22234"/><rect y="17.14" width="30" height="2.86" fill="#B22234"/><rect width="13" height="11.43" fill="#3C3B6E"/>',
+    'usa': null, 'us': null,
+    'mexico': '<rect width="10" height="20" fill="#006341"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE1126"/>',
+    'canada': '<rect width="30" height="20" fill="#fff"/><rect width="7.5" height="20" fill="#FF0000"/><rect x="22.5" width="7.5" height="20" fill="#FF0000"/><polygon points="15,5 17,9 21,9 18,12 19,16 15,13.5 11,16 12,12 9,9 13,9" fill="#FF0000"/>',
+    'united kingdom': '<rect width="30" height="20" fill="#00247D"/><line x1="0" y1="0" x2="30" y2="20" stroke="#fff" stroke-width="4"/><line x1="30" y1="0" x2="0" y2="20" stroke="#fff" stroke-width="4"/><line x1="0" y1="0" x2="30" y2="20" stroke="#CF142B" stroke-width="1.6"/><line x1="30" y1="0" x2="0" y2="20" stroke="#CF142B" stroke-width="1.6"/><rect x="12.5" width="5" height="20" fill="#fff"/><rect y="7.5" width="30" height="5" fill="#fff"/><rect x="13.5" width="3" height="20" fill="#CF142B"/><rect y="8.5" width="30" height="3" fill="#CF142B"/>',
+    'uk': null,
+    'england': '<rect width="30" height="20" fill="#fff"/><rect x="12.5" width="5" height="20" fill="#CF142B"/><rect y="7.5" width="30" height="5" fill="#CF142B"/>',
+    'scotland': '<rect width="30" height="20" fill="#005EB8"/><line x1="0" y1="0" x2="30" y2="20" stroke="#fff" stroke-width="4"/><line x1="30" y1="0" x2="0" y2="20" stroke="#fff" stroke-width="4"/>',
+    'ireland': '<rect width="10" height="20" fill="#169B62"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#FF883E"/>',
+    'netherlands': '<rect width="30" height="6.67" fill="#AE1C28"/><rect y="6.67" width="30" height="6.67" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#21468B"/>',
+    'germany': '<rect width="30" height="6.67" fill="#000"/><rect y="6.67" width="30" height="6.67" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/>',
+    'belgium': '<rect width="10" height="20" fill="#000"/><rect x="10" width="10" height="20" fill="#FFD90C"/><rect x="20" width="10" height="20" fill="#EF3340"/>',
+    'france': '<rect width="10" height="20" fill="#0055A4"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#EF4135"/>',
+    'italy': '<rect width="10" height="20" fill="#009246"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE2B37"/>',
+    'spain': '<rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/>',
+    'portugal': '<rect width="12" height="20" fill="#006600"/><rect x="12" width="18" height="20" fill="#FF0000"/><circle cx="12" cy="10" r="3" fill="#FFCC00"/>',
+    'czech republic': '<rect width="30" height="10" fill="#fff"/><rect y="10" width="30" height="10" fill="#D7141A"/><polygon points="0,0 0,20 13,10" fill="#11457E"/>',
+    'czechia': null,
+    'poland': '<rect width="30" height="10" fill="#fff"/><rect y="10" width="30" height="10" fill="#DC143C"/>',
+    'austria': '<rect width="30" height="20" fill="#ED2939"/><rect y="6.67" width="30" height="6.67" fill="#fff"/>',
+    'switzerland': '<rect width="30" height="20" fill="#D52B1E"/><rect x="12.5" y="6" width="5" height="8" fill="#fff"/><rect x="10.5" y="8" width="9" height="4" fill="#fff"/>',
+    'denmark': '<rect width="30" height="20" fill="#C60C30"/><rect x="9" width="4" height="20" fill="#fff"/><rect y="8" width="30" height="4" fill="#fff"/>',
+    'sweden': '<rect width="30" height="20" fill="#006AA7"/><rect x="9" width="4" height="20" fill="#FECC00"/><rect y="8" width="30" height="4" fill="#FECC00"/>',
+    'norway': '<rect width="30" height="20" fill="#EF2B2D"/><rect x="8" width="6" height="20" fill="#fff"/><rect y="7" width="30" height="6" fill="#fff"/><rect x="9.5" width="3" height="20" fill="#002868"/><rect y="8.5" width="30" height="3" fill="#002868"/>',
+    'finland': '<rect width="30" height="20" fill="#fff"/><rect x="9" width="4" height="20" fill="#002F6C"/><rect y="8" width="30" height="4" fill="#002F6C"/>',
+    'japan': '<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="6" fill="#BC002D"/>',
+    'china': '<rect width="30" height="20" fill="#DE2910"/><polygon points="7,3 8.2,6.2 11.6,6.2 8.9,8.2 9.9,11.4 7,9.4 4.1,11.4 5.1,8.2 2.4,6.2 5.8,6.2" fill="#FFDE00"/>',
+    'australia': '<rect width="30" height="20" fill="#00247D"/><line x1="0" y1="0" x2="15" y2="10" stroke="#fff" stroke-width="2"/><line x1="15" y1="0" x2="0" y2="10" stroke="#fff" stroke-width="2"/><rect x="6" width="3" height="10" fill="#fff"/><rect y="3.5" width="15" height="3" fill="#fff"/><rect x="6.75" width="1.5" height="10" fill="#CF142B"/><rect y="4.25" width="15" height="1.5" fill="#CF142B"/><circle cx="22" cy="6" r="1" fill="#fff"/><circle cx="25" cy="9" r="1" fill="#fff"/><circle cx="22" cy="13" r="1" fill="#fff"/><circle cx="26" cy="15" r="1" fill="#fff"/><circle cx="19" cy="17" r="1.4" fill="#fff"/>',
+    'new zealand': '<rect width="30" height="20" fill="#00247D"/><line x1="0" y1="0" x2="15" y2="10" stroke="#fff" stroke-width="2"/><line x1="15" y1="0" x2="0" y2="10" stroke="#fff" stroke-width="2"/><rect x="6" width="3" height="10" fill="#fff"/><rect y="3.5" width="15" height="3" fill="#fff"/><rect x="6.75" width="1.5" height="10" fill="#CF142B"/><rect y="4.25" width="15" height="1.5" fill="#CF142B"/><circle cx="21" cy="6" r="1.3" fill="#CF142B" stroke="#fff" stroke-width="0.4"/><circle cx="26" cy="8" r="1.3" fill="#CF142B" stroke="#fff" stroke-width="0.4"/><circle cx="24" cy="13" r="1.3" fill="#CF142B" stroke="#fff" stroke-width="0.4"/><circle cx="20" cy="15" r="1" fill="#CF142B" stroke="#fff" stroke-width="0.4"/>',
+    'brazil': '<rect width="30" height="20" fill="#009739"/><polygon points="15,2 28,10 15,18 2,10" fill="#FEDD00"/><circle cx="15" cy="10" r="5" fill="#002776"/>',
+    'south africa': '<rect width="30" height="20" fill="#fff"/><rect width="30" height="6" fill="#DE3831"/><rect y="14" width="30" height="6" fill="#002395"/><polygon points="0,6 15,10 0,14" fill="#000"/><polygon points="0,6 18,10 0,14" fill="#FFB612"/><polygon points="0,8 21,10 0,12" fill="#007A4D"/>',
   };
+  // A handful of keys above are deliberately `null` - synonyms for a
+  // country that's already fully spelled out (e.g. 'usa'/'us' for 'united
+  // states') - so the lookup below can fall through to the real entry with
+  // Object.assign-style aliasing instead of repeating the same SVG string
+  // three times over.
+  BEER_LANDING_COUNTRY_FLAG_SVGS.usa = BEER_LANDING_COUNTRY_FLAG_SVGS.us = BEER_LANDING_COUNTRY_FLAG_SVGS['united states'];
+  BEER_LANDING_COUNTRY_FLAG_SVGS.uk = BEER_LANDING_COUNTRY_FLAG_SVGS['united kingdom'];
+  BEER_LANDING_COUNTRY_FLAG_SVGS.czechia = BEER_LANDING_COUNTRY_FLAG_SVGS['czech republic'];
+
+  // The drawn-globe fallback for a country with no entry above - same
+  // "always draw it, never rely on a font" reasoning as the flags
+  // themselves, just a generic mark instead of a specific one.
+  const BEER_LANDING_GLOBE_SVG = '<circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.4"/><ellipse cx="10" cy="10" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="2.5" y1="5" x2="17.5" y2="5" stroke="currentColor" stroke-width="1"/><line x1="2.5" y1="15" x2="17.5" y2="15" stroke="currentColor" stroke-width="1"/>';
+
   function beerLandingCountryFlag(name) {
-    return BEER_LANDING_COUNTRY_FLAGS[(name || '').trim().toLowerCase()] || '\u{1F30E}';
+    const key = (name || '').trim().toLowerCase();
+    const inner = BEER_LANDING_COUNTRY_FLAG_SVGS[key];
+    if (inner) return `<svg class="flag-icon" viewBox="0 0 30 20" role="img" aria-hidden="true">${inner}</svg>`;
+    return `<svg class="flag-icon flag-icon--globe" viewBox="0 0 20 20" role="img" aria-hidden="true">${BEER_LANDING_GLOBE_SVG}</svg>`;
   }
 
   // Pack-size keyword pass over each beer's own title text, same idea as
@@ -9632,8 +9671,8 @@
   const BEER_LANDING_CUSTOMIZE_KEY = 'shelfTalkerBeerLandingCustomize.v1';
   const BEER_LANDING_SECTIONS = [
     { id: 'style', label: "What's in the library" },
-    { id: 'origin', label: "Where it's from" },
     { id: 'format', label: "How it's packaged" },
+    { id: 'origin', label: "Where it's from" },
     { id: 'progress', label: 'Research progress' },
     { id: 'spotlight', label: 'Top rated in the library' },
     { id: 'breweries', label: 'Breweries on the shelf' },
