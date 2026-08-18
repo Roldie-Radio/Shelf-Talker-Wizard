@@ -37,6 +37,8 @@ const BEER_CSV_COLUMNS = {
   'beer name (untappd)': 'beerName',
   brewery: 'brewery',
   location: 'location',
+  'state/region': 'region',
+  country: 'country',
   style: 'style',
   size: 'size',
   abv: 'abv',

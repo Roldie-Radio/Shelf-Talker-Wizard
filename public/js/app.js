@@ -1448,6 +1448,8 @@
     beerBibleFormVarietyPackInput: document.getElementById('beerBibleFormVarietyPackInput'),
     beerBibleFormBreweryInput: document.getElementById('beerBibleFormBreweryInput'),
     beerBibleFormLocationInput: document.getElementById('beerBibleFormLocationInput'),
+    beerBibleFormRegionInput: document.getElementById('beerBibleFormRegionInput'),
+    beerBibleFormCountryInput: document.getElementById('beerBibleFormCountryInput'),
     beerBibleFormStyleInput: document.getElementById('beerBibleFormStyleInput'),
     beerBibleFormSizeInput: document.getElementById('beerBibleFormSizeInput'),
     beerBibleFormSkuInput: document.getElementById('beerBibleFormSkuInput'),
@@ -7982,6 +7984,18 @@
     const n = parseFloat(entry.abv);
     return Number.isFinite(n) ? n : -1;
   }
+  // Blank-safe localeCompare for the Country/State sorts below - a blank
+  // value (no country/region on file) always sorts after any real value,
+  // rather than wherever an empty string happens to localeCompare against
+  // real text (locale-dependent, and not always "last").
+  function beerGeoCompare(a, b) {
+    const av = (a || '').trim();
+    const bv = (b || '').trim();
+    if (!av && !bv) return 0;
+    if (!av) return 1;
+    if (!bv) return -1;
+    return av.localeCompare(bv);
+  }
 
   // Sort options for the grid, grouped for the dropdown - same shape as
   // LIBRARY_SORTS above, just over beer fields instead of grain/confidence
@@ -7999,6 +8013,12 @@
     { group: 'Alphabetical', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => beerDisplayName(a).localeCompare(beerDisplayName(b)) },
     { group: 'Alphabetical', key: 'name-desc', label: 'Name (Z–A)', cmp: (a, b) => beerDisplayName(b).localeCompare(beerDisplayName(a)) },
     { group: 'Alphabetical', key: 'brewery-asc', label: 'Brewery (A–Z)', cmp: (a, b) => (a.brewery || '').localeCompare(b.brewery || '') || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    // Country/state sort on the region/country columns (see the beers table
+    // comment in server/db.js) rather than the raw location string. Blank
+    // sorts after every real value (beerGeoCompare below), not wherever an
+    // empty string would otherwise happen to localeCompare.
+    { group: 'Location', key: 'country-asc', label: 'Country (A–Z)', metric: 'country', cmp: (a, b) => beerGeoCompare(a.country, b.country) || beerGeoCompare(a.region, b.region) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
+    { group: 'Location', key: 'region-asc', label: 'State/Region (A–Z)', metric: 'region', cmp: (a, b) => beerGeoCompare(a.region, b.region) || beerGeoCompare(a.country, b.country) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
     { group: 'Rating', key: 'rating-best', label: 'Highest Rated first', metric: 'rating', cmp: (a, b) => beerRatingNum(b) - beerRatingNum(a) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
     { group: 'Rating', key: 'rating-most', label: 'Most Rated first', metric: 'ratingCount', cmp: (a, b) => beerRatingCountNum(b) - beerRatingCountNum(a) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
     { group: 'ABV', key: 'abv-high', label: 'Highest ABV first', metric: 'abv', cmp: (a, b) => beerAbvNum(b) - beerAbvNum(a) || beerDisplayName(a).localeCompare(beerDisplayName(b)) },
@@ -8080,6 +8100,9 @@
     return (entry.title || '').toLowerCase().includes(q)
       || (entry.beerName || '').toLowerCase().includes(q)
       || (entry.brewery || '').toLowerCase().includes(q)
+      || (entry.location || '').toLowerCase().includes(q)
+      || (entry.region || '').toLowerCase().includes(q)
+      || (entry.country || '').toLowerCase().includes(q)
       || (entry.style || '').toLowerCase().includes(q)
       || (entry.sku || '').toLowerCase().includes(q);
   }
@@ -8317,6 +8340,8 @@
     }
     if (sort.metric === 'abv') return `<span class="sort-metric">${entry.abv ? `${escapeHtml(entry.abv)} ABV` : 'No ABV'}</span>`;
     if (sort.metric === 'sku') return `<span class="sort-metric">${entry.sku ? `SKU ${escapeHtml(entry.sku)}` : 'No SKU'}</span>`;
+    if (sort.metric === 'country') return `<span class="sort-metric">${entry.country ? escapeHtml(entry.country) : 'No country'}</span>`;
+    if (sort.metric === 'region') return `<span class="sort-metric">${entry.region ? escapeHtml(entry.region) : 'No region'}</span>`;
     return beerResearchBadgeHtml(entry);
   }
 
@@ -8912,11 +8937,11 @@
   // the grid does either way.
   function downloadBeerBibleCsv(rows, filenameSuffix) {
     if (!rows.length) return;
-    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'Style', 'Size', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched', 'Variety Pack'];
+    const header = ['Title', 'Beer Name (Untappd)', 'Brewery', 'Location', 'State/Region', 'Country', 'Style', 'Size', 'ABV', 'IBU', 'Untappd Rating', 'Untappd Rating Count', 'SKU', 'UPC', 'Tasting Notes', 'Source', 'Researched', 'Variety Pack'];
     const lines = [header.map(csvField).join(',')];
     rows.forEach((b) => {
       lines.push([
-        b.title, b.beerName, b.brewery, b.location, b.style, b.size, b.abv, b.ibu,
+        b.title, b.beerName, b.brewery, b.location, b.region, b.country, b.style, b.size, b.abv, b.ibu,
         b.untappdRating, b.untappdRatingCount, b.sku, b.upc, b.description,
         BEER_SOURCE_LABELS[b.source] || b.source || '',
         beerIsResearched(b) ? 'Yes' : 'No',
@@ -10230,6 +10255,8 @@
     els.beerBibleFormVarietyPackInput.checked = false;
     els.beerBibleFormBreweryInput.value = '';
     els.beerBibleFormLocationInput.value = '';
+    els.beerBibleFormRegionInput.value = '';
+    els.beerBibleFormCountryInput.value = '';
     els.beerBibleFormStyleInput.value = '';
     els.beerBibleFormSizeInput.value = '';
     els.beerBibleFormSkuInput.value = '';
@@ -10263,6 +10290,8 @@
     els.beerBibleFormVarietyPackInput.checked = !!entry.varietyPack;
     els.beerBibleFormBreweryInput.value = entry.brewery || '';
     els.beerBibleFormLocationInput.value = entry.location || '';
+    els.beerBibleFormRegionInput.value = entry.region || '';
+    els.beerBibleFormCountryInput.value = entry.country || '';
     els.beerBibleFormStyleInput.value = entry.style || '';
     els.beerBibleFormSizeInput.value = entry.size || '';
     els.beerBibleFormSkuInput.value = entry.sku || '';
@@ -10311,6 +10340,8 @@
       beerName: group.beerName || beerDisplayName(group),
       brewery: group.brewery,
       location: group.location,
+      region: group.region,
+      country: group.country,
       style: group.style,
       abv: group.abv,
       ibu: group.ibu,
@@ -10322,6 +10353,8 @@
     els.beerBibleFormTitleInput.placeholder = 'e.g. "…12-Pack Cans" - must differ from this beer\'s other titles';
     els.beerBibleFormBreweryInput.value = group.brewery || '';
     els.beerBibleFormLocationInput.value = group.location || '';
+    els.beerBibleFormRegionInput.value = group.region || '';
+    els.beerBibleFormCountryInput.value = group.country || '';
     els.beerBibleFormStyleInput.value = group.style || '';
     els.beerBibleFormAbvInput.value = group.abv || '';
     els.beerBibleFormIbuInput.value = group.ibu || '';
@@ -10929,6 +10962,8 @@
       Object.assign(payload, {
         brewery: els.beerBibleFormBreweryInput.value.trim(),
         location: els.beerBibleFormLocationInput.value.trim(),
+        region: els.beerBibleFormRegionInput.value.trim(),
+        country: els.beerBibleFormCountryInput.value.trim(),
         style: els.beerBibleFormStyleInput.value.trim(),
         size: els.beerBibleFormSizeInput.value.trim(),
         sku: els.beerBibleFormSkuInput.value.trim(),

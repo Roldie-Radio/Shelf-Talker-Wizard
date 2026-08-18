@@ -1820,6 +1820,21 @@
               <input type="text" id="beerBibleFormLocationInput" maxlength="80" placeholder="Wilmington, NC" />
             </label>
           </div>
+          <!-- Split out of the free-text Location field above so the Beer
+               Bible's sort dropdown (see BEER_SORTS in app.js) can group/
+               sort by state/province and country without having to re-parse
+               that string - Location itself stays as-is, still just typed/
+               shown as one field. -->
+          <div class="field-row">
+            <label class="field">
+              <span>State/Region (optional)</span>
+              <input type="text" id="beerBibleFormRegionInput" maxlength="40" placeholder="NC" />
+            </label>
+            <label class="field">
+              <span>Country (optional)</span>
+              <input type="text" id="beerBibleFormCountryInput" maxlength="60" placeholder="United States" />
+            </label>
+          </div>
           <div class="field-row">
             <label class="field">
               <span>Style (optional)</span>
