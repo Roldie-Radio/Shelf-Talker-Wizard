@@ -1262,8 +1262,11 @@
           <input type="file" id="productDatabaseHaInput" accept=".csv,.tsv,.txt,.xlsx,.xlsm" hidden />
         </div>
       </div>
-      <p class="help-text">Both files are matched up by SKU into the table below - Export File supplies UPC/price/size, HA Details supplies Department/Sub Department. A SKU only found in one file still shows a row, just with the other file's columns blank.</p>
+      <p class="help-text">Both files are matched up by SKU into the table below - Export File supplies UPC/price/size/on-hand, HA Details supplies Department/Sub Department. A SKU only found in one file still shows a row, just with the other file's columns blank.</p>
       <p class="help-text" id="productDatabaseStatus" role="status" aria-live="polite">Nothing loaded yet - choose the Export File and the HA Details file above.</p>
+      <div class="library-search">
+        <input type="search" id="productDatabaseFilterInput" aria-label="Search the Product Database" placeholder="Search by SKU, title, UPC, brand, department&hellip;" />
+      </div>
     </div>
     <div class="library-body">
       <div class="preview-table-wrap" id="productDatabaseTableWrap"></div>

@@ -1170,6 +1170,7 @@
     productDatabaseHaInput: document.getElementById('productDatabaseHaInput'),
     productDatabaseStatus: document.getElementById('productDatabaseStatus'),
     productDatabaseTableWrap: document.getElementById('productDatabaseTableWrap'),
+    productDatabaseFilterInput: document.getElementById('productDatabaseFilterInput'),
 
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
@@ -12058,6 +12059,16 @@
   // there's nothing here that needs to survive a reload anyway.
   let productDatabaseProducts = [];
   let productDatabaseSort = { key: 'sku', dir: 'asc' };
+  // Search box above the table (see #productDatabaseFilterInput) - matched
+  // against every column's value, not just Title/SKU, so a search for a
+  // department or brand name works too.
+  let productDatabaseFilterQuery = '';
+
+  function filterProductDatabaseProducts(products) {
+    const q = productDatabaseFilterQuery.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => PRODUCT_DATABASE_COLUMNS.some((col) => String(p[col.key] || '').toLowerCase().includes(q)));
+  }
 
   // Numeric-aware compare, same reasoning as SKU Lookup/export preview
   // sorting elsewhere - a plain string compare would put SKU "10" before
@@ -12104,7 +12115,12 @@
       els.productDatabaseTableWrap.innerHTML = '<p class="empty-hint">Nothing to show yet - choose the Export File and the HA Details file above.</p>';
       return;
     }
-    const rows = sortProductDatabaseProducts(productDatabaseProducts);
+    const filtered = filterProductDatabaseProducts(productDatabaseProducts);
+    if (!filtered.length) {
+      els.productDatabaseTableWrap.innerHTML = `<p class="empty-hint">No rows match “${escapeHtml(productDatabaseFilterQuery.trim())}”.</p>`;
+      return;
+    }
+    const rows = sortProductDatabaseProducts(filtered);
     const headHtml = PRODUCT_DATABASE_COLUMNS.map((col) => {
       const isActive = productDatabaseSort.key === col.key;
       const arrow = isActive ? (productDatabaseSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
@@ -12184,6 +12200,11 @@
     productDatabaseSort = productDatabaseSort.key === sortKey
       ? { key: sortKey, dir: productDatabaseSort.dir === 'asc' ? 'desc' : 'asc' }
       : { key: sortKey, dir: 'asc' };
+    renderProductDatabaseTable();
+  });
+
+  els.productDatabaseFilterInput.addEventListener('input', (e) => {
+    productDatabaseFilterQuery = e.target.value;
     renderProductDatabaseTable();
   });
 
