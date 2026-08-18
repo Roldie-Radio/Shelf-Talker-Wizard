@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.12',
+      items: [
+        'New: a Group By dropdown next to Card/List on the Beer Bible grid - split the results into headed sections by Style, Brewery, Country, Research Status, or Source, on top of whatever sort order is already picked. Off (None) by default; the choice persists per PC, same as Card/List and Sort already do.',
+      ],
+    },
+    {
       version: '4.4.10',
       items: [
         'New: The Beer Bible now has cross-register sync, the same as the Bourbon Library\'s Mash Bill Library - research a beer (or edit/delete one) at any register and it shows up everywhere else within moments, instead of staying stuck on that one PC\'s own copy. Needs the same one-time setup, even for a single-PC store: mark a PC as the Server PC (Advanced → Server PC…). A Sync Now button and status dot on the Beer Bible page mirror the Bourbon Library\'s own. Export File Sync, Import CSV…, and Advanced → Import Beer Bible from Export File… are now Server-PC-only, since they write straight to the shared copy - every other register just picks the result up on its next sync.',
@@ -8028,10 +8034,29 @@
   ];
   const BEER_SORTS_BY_KEY = Object.fromEntries(BEER_SORTS.map((s) => [s.key, s]));
 
-  // Card/List and the chosen sort persist per PC (localStorage), same as
-  // the Bourbon Library's own LIBRARY_GRID_VIEW_KEY/LIBRARY_SORT_KEY above.
+  // Group By options for the grid/list - splits whatever beerBibleSortKey
+  // already put in order into headed sections instead of one flat
+  // list/grid. Purely a display grouping (section headers only) - distinct
+  // from the package-size grouping buildBeerBibleGroups does below, which
+  // collapses multiple SKU rows of the very same beer into one card/row
+  // regardless of this setting. 'none' (the default) renders exactly like
+  // before this existed - one ungrouped section with no header at all.
+  const BEER_GROUP_BY_OPTIONS = [
+    { key: 'none', label: 'None' },
+    { key: 'style', label: 'Style' },
+    { key: 'brewery', label: 'Brewery' },
+    { key: 'country', label: 'Country' },
+    { key: 'status', label: 'Research Status' },
+    { key: 'source', label: 'Source' },
+  ];
+  const BEER_GROUP_BY_BY_KEY = Object.fromEntries(BEER_GROUP_BY_OPTIONS.map((g) => [g.key, g]));
+
+  // Card/List, the chosen sort, and the chosen Group By persist per PC
+  // (localStorage), same as the Bourbon Library's own
+  // LIBRARY_GRID_VIEW_KEY/LIBRARY_SORT_KEY above.
   const BEER_BIBLE_GRID_VIEW_KEY = 'shelfTalkerBeerBibleGridView.v1';
   const BEER_BIBLE_SORT_KEY = 'shelfTalkerBeerBibleSortKey.v1';
+  const BEER_BIBLE_GROUP_BY_KEY = 'shelfTalkerBeerBibleGroupBy.v1';
   function loadBeerBibleGridView() {
     try {
       return localStorage.getItem(BEER_BIBLE_GRID_VIEW_KEY) === 'list' ? 'list' : 'card';
@@ -8045,6 +8070,14 @@
       return BEER_SORTS_BY_KEY[saved] ? saved : 'name-asc';
     } catch {
       return 'name-asc';
+    }
+  }
+  function loadBeerBibleGroupBy() {
+    try {
+      const saved = localStorage.getItem(BEER_BIBLE_GROUP_BY_KEY);
+      return BEER_GROUP_BY_BY_KEY[saved] ? saved : 'none';
+    } catch {
+      return 'none';
     }
   }
 
@@ -8066,6 +8099,7 @@
   let beerBibleStyleFilter = 'all'; // 'all' or an exact beers.style value
   let beerBibleGridView = loadBeerBibleGridView();
   let beerBibleSortKey = loadBeerBibleSortKey();
+  let beerBibleGroupBy = loadBeerBibleGroupBy();
   // Select mode (grid view only - see toggleBeerBibleSelectMode below) and
   // which beers are currently picked while it's on. Holds group ids (see
   // buildBeerBibleGroups) - the same id beerCardHtml/beerRowHtml already
@@ -8537,6 +8571,68 @@
     `).join('');
   }
 
+  function beerGroupByDropdownHtml() {
+    return BEER_GROUP_BY_OPTIONS.map((g) => `
+      <button type="button" class="field-select__option" role="option" data-group-by="${g.key}" aria-selected="${g.key === beerBibleGroupBy}">
+        <span class="field-select__option-check" aria-hidden="true">&#10003;</span>
+        <span class="field-select__option-label">${escapeHtml(g.label)}</span>
+      </button>
+    `).join('');
+  }
+
+  // The section header text for `entry` under the current beerBibleGroupBy
+  // field - a blank/missing value on file always becomes its own "no value"
+  // section (e.g. "No style on file") rather than silently folding into
+  // whichever section happens to sort first, so a group-by section always
+  // accounts for every row the grid is showing.
+  function beerGroupSectionLabel(entry) {
+    switch (beerBibleGroupBy) {
+      case 'style':
+        return (entry.style || '').trim() || 'No style on file';
+      case 'brewery':
+        return (entry.brewery || '').trim() || 'No brewery on file';
+      case 'country':
+        return (entry.country || '').trim() || 'No country on file';
+      case 'status':
+        return beerIsResearched(entry) ? 'Researched' : 'Needs research';
+      case 'source':
+        return BEER_SOURCE_LABELS[entry.source] || (entry.source || '').trim() || 'Unknown source';
+      default:
+        return '';
+    }
+  }
+
+  // Splits `rows` (already filtered/sorted/package-grouped - see
+  // beerBibleFilteredSortedGroups) into headed sections by the current
+  // beerBibleGroupBy field. Each row lands in its section in the same
+  // relative order the active sort already put it in - grouping never
+  // reorders anything sort.cmp decided, it only draws boundaries between
+  // sections. Section order itself is alphabetical by label, with any
+  // "No X on file"/"Unknown source" bucket always last regardless of where
+  // that text would otherwise sort, so an incomplete record never
+  // interrupts the alphabetical run of real values above it. 'none' (the
+  // default) short-circuits to a single unheaded section, same shape as
+  // every other section so renderBeerBibleGrid doesn't need a separate code
+  // path for "no grouping".
+  function beerBibleGroupSections(rows) {
+    if (beerBibleGroupBy === 'none') return [{ label: null, rows }];
+    const buckets = new Map();
+    rows.forEach((row) => {
+      const label = beerGroupSectionLabel(row);
+      if (!buckets.has(label)) buckets.set(label, []);
+      buckets.get(label).push(row);
+    });
+    const isFallback = (label) => /^(No .+ on file|Unknown source)$/.test(label);
+    return Array.from(buckets.entries())
+      .sort(([a], [b]) => {
+        const aFallback = isFallback(a);
+        const bFallback = isFallback(b);
+        if (aFallback !== bFallback) return aFallback ? 1 : -1;
+        return a.localeCompare(b);
+      })
+      .map(([label, sectionRows]) => ({ label, rows: sectionRows }));
+  }
+
   // The flat, ungrouped list - one row per beers-table entry (one per SKU),
   // search/status/style/sort all applied. Used by exportBeerBibleCsv, which
   // is meant as a full backup/round-trip of the underlying table (every
@@ -8848,6 +8944,7 @@
     els.beerBibleBody.classList.toggle('is-selecting', beerBibleSelectMode);
 
     const styleLabel = beerBibleStyleFilter === 'all' ? 'All styles' : beerBibleStyleFilter;
+    const groupByLabel = BEER_GROUP_BY_BY_KEY[beerBibleGroupBy].label;
     const toolbarHtml = `
       <div class="results-toolbar">
         <span class="results-toolbar__count">${rows.length} beer${rows.length === 1 ? '' : 's'}</span>
@@ -8870,6 +8967,13 @@
             </button>
             <div class="field-select__dropdown" role="listbox">${beerSortDropdownHtml()}</div>
           </div>
+          <div class="field-select" id="beerBibleGroupBySelect">
+            <button type="button" class="field-select__trigger" id="beerBibleGroupByTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="field-select__value">Group by: ${escapeHtml(groupByLabel)}</span>
+              <svg class="field-select__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="field-select__dropdown" role="listbox">${beerGroupByDropdownHtml()}</div>
+          </div>
         </div>
       </div>
     `;
@@ -8879,9 +8983,23 @@
         ? `${toolbarHtml}<p class="empty-hint">No beers match this search/filter.</p>`
         : '<p class="empty-hint">No beers yet - click Add Beer to research your first one.</p>';
     } else {
-      const resultsHtml = beerBibleGridView === 'list'
-        ? `<div class="bourbon-list">${rows.map((e) => beerRowHtml(e, sort)).join('')}</div>`
-        : `<div class="bourbon-grid">${rows.map((e) => beerCardHtml(e, sort)).join('')}</div>`;
+      // Group By splits the same filtered/sorted/package-grouped rows into
+      // headed sections (see beerBibleGroupSections) - each section renders
+      // its own Card grid or List column, exactly like the single
+      // ungrouped section 'none' produces, just with a header on top and
+      // one section per distinct value instead of one for everything.
+      const sections = beerBibleGroupSections(rows);
+      const resultsHtml = sections.map((section) => {
+        const headerHtml = section.label == null ? '' : `
+          <div class="beer-bible-group-header">
+            <span class="beer-bible-group-header__label">${escapeHtml(section.label)}</span>
+            <span class="beer-bible-group-header__count">${section.rows.length} beer${section.rows.length === 1 ? '' : 's'}</span>
+          </div>`;
+        const sectionResultsHtml = beerBibleGridView === 'list'
+          ? `<div class="bourbon-list">${section.rows.map((e) => beerRowHtml(e, sort)).join('')}</div>`
+          : `<div class="bourbon-grid">${section.rows.map((e) => beerCardHtml(e, sort)).join('')}</div>`;
+        return headerHtml + sectionResultsHtml;
+      }).join('');
       els.beerBibleBody.innerHTML = toolbarHtml + resultsHtml;
     }
 
@@ -8957,6 +9075,21 @@
       btn.addEventListener('click', () => {
         beerBibleSortKey = btn.dataset.sort;
         try { localStorage.setItem(BEER_BIBLE_SORT_KEY, beerBibleSortKey); } catch { /* choice just won't survive a restart */ }
+        renderBeerBibleGrid();
+      });
+    });
+    const groupByTrigger = document.getElementById('beerBibleGroupByTrigger');
+    if (groupByTrigger) {
+      groupByTrigger.addEventListener('click', () => {
+        const wrap = document.getElementById('beerBibleGroupBySelect');
+        const isOpen = wrap.classList.toggle('is-open');
+        groupByTrigger.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+    els.beerBibleBody.querySelectorAll('.field-select__option[data-group-by]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleGroupBy = btn.dataset.groupBy;
+        try { localStorage.setItem(BEER_BIBLE_GROUP_BY_KEY, beerBibleGroupBy); } catch { /* choice just won't survive a restart */ }
         renderBeerBibleGrid();
       });
     });
@@ -10351,6 +10484,8 @@
     if (styleWrap && !e.target.closest('#beerBibleStyleSelect')) styleWrap.classList.remove('is-open');
     const sortWrap = document.getElementById('beerBibleSortSelect');
     if (sortWrap && !e.target.closest('#beerBibleSortSelect')) sortWrap.classList.remove('is-open');
+    const groupByWrap = document.getElementById('beerBibleGroupBySelect');
+    if (groupByWrap && !e.target.closest('#beerBibleGroupBySelect')) groupByWrap.classList.remove('is-open');
   });
 
   // Called every time the rail switches to Beer Bible (see setActiveView

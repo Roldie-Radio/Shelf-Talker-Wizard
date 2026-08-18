@@ -568,6 +568,24 @@ h1, h2, h3 { margin: 0; }
 }
 .field-select__group-label:first-child { margin-top: 0; }
 
+/* Beer Bible Group By section headers (see beerBibleGroupSections in
+   app.js) - one of these sits above each section's own .bourbon-grid/
+   .bourbon-list when a Group By field other than None is picked. Kept
+   plain/text-led rather than another card-like block so a section reads
+   as a divider between groups of cards, not a card of its own. */
+.beer-bible-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 1.4rem 0 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--ui-border);
+}
+.beer-bible-group-header:first-child { margin-top: 0; }
+.beer-bible-group-header__label { font-size: 0.92rem; font-weight: 800; }
+.beer-bible-group-header__count { font-size: 0.76rem; color: var(--ui-muted); white-space: nowrap; }
+
 /* The "sort focus" chip (see librarySortMetricHtml in app.js) - whichever
    field the active sort orders by, shown on every card/row in both views
    so the number behind the order is always visible, not just the order
