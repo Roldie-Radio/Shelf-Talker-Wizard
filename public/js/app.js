@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.16',
+      items: [
+        'Changed: trimmed two explanatory lines off the Beer Bible page - the description under Export File Sync, and the note above the search box about how beers get added. Both were leftover onboarding copy; the buttons/fields they were explaining are unchanged.',
+      ],
+    },
+    {
       version: '4.4.15',
       items: [
         'Fixed: country flags on the Beer Bible landing page\'s "Where it\'s from" section were showing as plain two-letter codes instead of an actual flag on a lot of store PCs - Windows doesn\'t reliably render flag emoji unless it has the newer color-flag update to Segoe UI Emoji. Flags are now drawn directly (a small built-in icon per country) instead of relying on the PC\'s own emoji font, so they look the same everywhere.',
