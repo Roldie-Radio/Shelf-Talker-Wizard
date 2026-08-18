@@ -216,24 +216,75 @@ function applyBeerColumns(db) {
   if (addingGeoColumns) backfillBeerGeoColumns(db);
 }
 
+// Countries whose name this can recognize inside a Location tail, longest
+// name first (so "united kingdom" is checked before a shorter name it might
+// otherwise be shadowed by) - same precedence trick, and much the same list,
+// as card.js's own COUNTRY_NAME_TO_CODE for the printed shelf talkers. Kept
+// as a separate list rather than shared with the browser bundle - this file
+// only runs server-side. Canonical values are Title Case and deliberately
+// match what public/js/app.js's BEER_LANDING_COUNTRY_DISPLAY_NAMES/
+// BEER_LANDING_COUNTRY_FLAG_SVGS expect (lowercased), so a country parsed
+// out here always resolves to a real flag on the Beer Bible landing page
+// instead of the plain-globe fallback.
+const KNOWN_LOCATION_COUNTRIES = [
+  ['united states of america', 'United States'], ['united states', 'United States'],
+  ['u.s.a.', 'United States'], ['usa', 'United States'], ['us', 'United States'],
+  ['united kingdom', 'United Kingdom'], ['great britain', 'United Kingdom'], ['u.k.', 'United Kingdom'], ['uk', 'United Kingdom'],
+  ['northern ireland', 'United Kingdom'], ['england', 'England'], ['scotland', 'Scotland'], ['wales', 'United Kingdom'],
+  ['ireland', 'Ireland'],
+  ['mexico', 'Mexico'], ['canada', 'Canada'],
+  ['germany', 'Germany'], ['netherlands', 'Netherlands'], ['holland', 'Netherlands'], ['belgium', 'Belgium'],
+  ['france', 'France'], ['italy', 'Italy'], ['spain', 'Spain'], ['portugal', 'Portugal'],
+  ['czech republic', 'Czech Republic'], ['czechia', 'Czechia'], ['poland', 'Poland'],
+  ['austria', 'Austria'], ['switzerland', 'Switzerland'],
+  ['denmark', 'Denmark'], ['sweden', 'Sweden'], ['norway', 'Norway'], ['finland', 'Finland'],
+  ['japan', 'Japan'], ['china', 'China'], ['australia', 'Australia'], ['new zealand', 'New Zealand'],
+  ['brazil', 'Brazil'], ['south africa', 'South Africa'],
+].sort((a, b) => b[0].length - a[0].length);
+
+// Word-boundary match, not plain substring search, so a short name like
+// "us" doesn't fire inside an unrelated word - see card.js's own
+// countryNameMatches, which this mirrors.
+function matchKnownLocationCountry(lowerText) {
+  return KNOWN_LOCATION_COUNTRIES.find(([name]) => {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`).test(lowerText);
+  });
+}
+
 // Best-effort split of the existing `location` text into region (state/
 // province) + country, for rows that already had a location before
 // region/country existed to type into directly. Untappd's own brewery
 // location strings are the main shape this is tuned for - "Morris Plains,
-// NJ United States" (city, then a two-letter state/province code, then the
+// NJ United States" (city, then a state/province code or name, then the
 // country with no comma before it) - and "Amsterdam, Netherlands" (city,
-// then just a country) for anything outside the US/Canada. Genuinely
-// ambiguous shapes (a bare "Portland" with no comma, or "Portland, OR"
-// with nothing after the state code to tell region from country) are left
-// blank rather than guessed wrong - staff can always fill region/country
+// then just a country) for anything outside the US/Canada. The country is
+// matched by name (see KNOWN_LOCATION_COUNTRIES above) rather than assumed
+// to be whatever follows a short state/province code, so a spelled-out
+// region like "County Dublin" (no comma, no 2-3 letter code) doesn't get
+// swallowed into the country value the way "County Dublin Ireland" once
+// parsed to a country of "County Dublin Ireland" instead of "Ireland".
+// Genuinely ambiguous shapes (a bare "Portland" with no comma, or a country
+// this doesn't recognize by name) fall back to the old code-or-bare-tail
+// guess rather than being left blank - staff can always fill region/country
 // in by hand afterward, same as any other optional field.
 function parseLocationForGeoColumns(location) {
   const parts = (location || '').split(',').map((p) => p.trim()).filter(Boolean);
   if (parts.length < 2) return { region: '', country: '' };
-  const tail = parts[parts.length - 1];
-  const stateAndCountry = tail.match(/^([A-Za-z]{2,3})\s+(.+)$/);
+  const tail = parts.slice(1).join(', ');
+  const match = matchKnownLocationCountry(tail.toLowerCase());
+  if (match) {
+    const [name, canonical] = match;
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const idx = tail.toLowerCase().search(new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`));
+    const prefixEnd = idx < 0 ? 0 : (tail[idx] && /[a-z]/i.test(tail[idx]) ? idx : idx + 1);
+    const region = tail.slice(0, prefixEnd).replace(/,\s*$/, '').trim();
+    return { region, country: canonical };
+  }
+  const lastPart = parts[parts.length - 1];
+  const stateAndCountry = lastPart.match(/^([A-Za-z]{2,3})\s+(.+)$/);
   if (stateAndCountry) return { region: stateAndCountry[1], country: stateAndCountry[2] };
-  return { region: '', country: tail };
+  return { region: '', country: lastPart };
 }
 
 function backfillBeerGeoColumns(db) {

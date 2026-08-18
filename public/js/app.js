@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.18',
+      items: [
+        'Fixed: a non-US country on the Beer Bible landing page\'s "Where it\'s from" section could show its full state/region text alongside the country name (e.g. "County Dublin Ireland" instead of just "Ireland") and go without a flag - both were the same underlying gap, a spelled-out region with no comma before the country wasn\'t being split off the way a US state code already was. Country now always shows as just the country name, with its flag matched to go with it.',
+      ],
+    },
+    {
       version: '4.4.17',
       items: [
         'Changed: Export CSV, Import CSV, and Export File Sync moved off the Beer Bible page\'s own toolbar into a new Beer Bible tab under Settings. Import CSV and Export File Sync still only show up on the Server PC; Export CSV now always downloads the whole library (it previously respected whatever was currently searched/filtered on the grid).',
@@ -9654,6 +9660,50 @@
     return `<svg class="flag-icon flag-icon--globe" viewBox="0 0 20 20" role="img" aria-hidden="true">${BEER_LANDING_GLOBE_SVG}</svg>`;
   }
 
+  // Canonical Title Case name for every country BEER_LANDING_COUNTRY_FLAG_SVGS
+  // knows a flag for, keyed the same lowercase way - a synonym key (usa/us/
+  // uk/czechia) collapses to the same spelled-out name its real entry uses.
+  const BEER_LANDING_COUNTRY_DISPLAY_NAMES = {
+    'united states': 'United States', usa: 'United States', us: 'United States',
+    mexico: 'Mexico', canada: 'Canada',
+    'united kingdom': 'United Kingdom', uk: 'United Kingdom',
+    england: 'England', scotland: 'Scotland', ireland: 'Ireland',
+    netherlands: 'Netherlands', germany: 'Germany', belgium: 'Belgium',
+    france: 'France', italy: 'Italy', spain: 'Spain', portugal: 'Portugal',
+    'czech republic': 'Czech Republic', czechia: 'Czechia', poland: 'Poland',
+    austria: 'Austria', switzerland: 'Switzerland', denmark: 'Denmark',
+    sweden: 'Sweden', norway: 'Norway', finland: 'Finland', japan: 'Japan',
+    china: 'China', australia: 'Australia', 'new zealand': 'New Zealand',
+    brazil: 'Brazil', 'south africa': 'South Africa',
+  };
+  // Longest-name-first, same precedence trick as card.js's own
+  // COUNTRY_NAMES_BY_LENGTH_DESC (so 'united kingdom' is checked before a
+  // shorter name it might otherwise be shadowed by).
+  const BEER_LANDING_COUNTRY_NAMES_BY_LENGTH_DESC = Object.keys(BEER_LANDING_COUNTRY_DISPLAY_NAMES).sort((a, b) => b.length - a.length);
+
+  // Boils a raw Country value down to just the country name - e.g. "County
+  // Dublin Ireland" (an Untappd brewery-location tail with no comma between
+  // region and country, the same shape a US location's tail has - "NJ
+  // United States" - see parseLocationForGeoColumns in server/db.js, which
+  // only strips a 2-3 letter state/province code before the country, not a
+  // spelled-out region like "County Dublin") collapses to "Ireland", same
+  // as a US location already collapses to "United States". Word-boundary
+  // matched (see the escaped RegExp below) rather than plain substring
+  // search, so a country name embedded in an unrelated word never fires -
+  // same approach as card.js's own countryNameMatches. A Country value that
+  // doesn't contain any name from the list above is shown as-is - still a
+  // real value, just not one this can confidently shorten.
+  function beerLandingCountryDisplayName(rawCountry) {
+    const text = (rawCountry || '').trim();
+    if (!text) return text;
+    const lower = text.toLowerCase();
+    const name = BEER_LANDING_COUNTRY_NAMES_BY_LENGTH_DESC.find((n) => {
+      const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`).test(lower);
+    });
+    return name ? BEER_LANDING_COUNTRY_DISPLAY_NAMES[name] : text;
+  }
+
   // Pack-size keyword pass over each beer's own title text, same idea as
   // BEER_STYLE_FAMILIES below but for "How it's packaged" - checked in
   // order (first match wins), same reasoning as that list's own ordering
@@ -10020,7 +10070,7 @@
     }
     const counts = new Map();
     withCountry.forEach((g) => {
-      const key = g.country.trim();
+      const key = beerLandingCountryDisplayName(g.country);
       counts.set(key, (counts.get(key) || 0) + 1);
     });
     const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
@@ -10064,7 +10114,7 @@
       </div>`;
 
     const subCounts = new Map();
-    withCountry.filter((g) => g.country.trim() === selected).forEach((g) => {
+    withCountry.filter((g) => beerLandingCountryDisplayName(g.country) === selected).forEach((g) => {
       const key = (g.region || '').trim().toUpperCase() || 'State/region not on file';
       subCounts.set(key, (subCounts.get(key) || 0) + 1);
     });

@@ -547,7 +547,8 @@ test('applyBeerColumns migrates a pre-existing beers table and backfills region/
       VALUES
         ('US Beer', 'Slack Tide Brewing Company', 'Morris Plains, NJ United States', 'Manual', '2025-01-01T00:00:00.000Z'),
         ('International Beer', 'Some Brewery', 'Amsterdam, Netherlands', 'Manual', '2025-01-01T00:00:00.000Z'),
-        ('No Location Beer', 'Another Brewery', '', 'Manual', '2025-01-01T00:00:00.000Z')
+        ('No Location Beer', 'Another Brewery', '', 'Manual', '2025-01-01T00:00:00.000Z'),
+        ('Irish Beer', 'Some Irish Brewery', 'Dublin, County Dublin Ireland', 'Manual', '2025-01-01T00:00:00.000Z')
     `).run();
     raw.close();
 
@@ -557,6 +558,7 @@ test('applyBeerColumns migrates a pre-existing beers table and backfills region/
     const usBeer = beers.find((b) => b.title === 'US Beer');
     const intlBeer = beers.find((b) => b.title === 'International Beer');
     const noLocationBeer = beers.find((b) => b.title === 'No Location Beer');
+    const irishBeer = beers.find((b) => b.title === 'Irish Beer');
 
     assert.ok(usBeer, 'the pre-existing row survived the migration');
     assert.equal(usBeer.region, 'NJ');
@@ -565,6 +567,12 @@ test('applyBeerColumns migrates a pre-existing beers table and backfills region/
     assert.equal(intlBeer.country, 'Netherlands');
     assert.equal(noLocationBeer.region, '');
     assert.equal(noLocationBeer.country, '');
+    // A spelled-out region with no comma before the country (the shape a
+    // "County Dublin" style Untappd location has, unlike a 2-3 letter US
+    // state code) used to swallow the whole tail into country - confirm it
+    // now splits the same way the US case above does.
+    assert.equal(irishBeer.region, 'County Dublin');
+    assert.equal(irishBeer.country, 'Ireland');
 
     // And the migrated table isn't just readable - it accepts writes to the
     // new columns like any fresh install's table would.
