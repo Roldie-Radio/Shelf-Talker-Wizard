@@ -914,7 +914,24 @@ function scoreCandidates(candidates, query) {
     .map((candidate) => {
       const candidateTokens = new Set(tokenize(candidate.title));
       const score = queryTokens.reduce((n, t) => n + (candidateTokens.has(t) ? 1 : 0), 0);
-      const threshold = Math.max(1, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
+      // Real miss confirmed against a real SKU: "Bud Lt" (buildUntappdSearchQuery's
+      // own query for "BUD LT 12PK CN", once the container/size words are
+      // stripped) is only 2 tokens, and min(queryTokens.length, candidateTokens.size)/2
+      // rounds *down* to a threshold of 1 for any query that short - meaning
+      // a single coincidental word match (here, "bud" - also the start of an
+      // entirely unrelated Korean soft drink, "Lotte Chilsung Beverage Pine
+      // Bud Drink") "confidently" won, with the query's own other token
+      // ("lt") never checked at all. A 1-in-2 coincidence is exactly the
+      // "confident-looking wrong answer" this scoring exists to rule out
+      // (see the module comment above) - it just couldn't, once the formula
+      // degenerated to needing only 1 for a short-enough query. Flooring the
+      // threshold at 2 (never letting a 2+-token query pass on a single
+      // matched word) closes that specific gap without tightening anything
+      // for a longer query, where ceil(N/2) already clears 2 on its own; a
+      // genuine 1-token query is untouched (there is nothing else it could
+      // possibly match, so 1 stays 1 - see the Cyrillic regression test).
+      const minRequired = Math.min(2, queryTokens.length);
+      const threshold = Math.max(minRequired, Math.ceil(Math.min(queryTokens.length, candidateTokens.size) / 2));
       return { candidate, score, passes: score >= threshold };
     })
     .sort((a, b) => b.score - a.score);

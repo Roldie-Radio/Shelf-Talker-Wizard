@@ -1106,6 +1106,28 @@ test('matchUntappdCandidates returns no match and no tie when nothing meaningful
   assert.deepEqual(result.tied, []);
 });
 
+// Real miss: SKU 05829 ("BUD LT 12PK CN") produced a "confident" match
+// against an entirely unrelated Korean soft drink ("Lotte Chilsung
+// Beverage Pine Bud Drink"). buildUntappdSearchQuery reduces that title to
+// just "BUD LT" (12PK/CN are container/size noise, stripped before this
+// ever runs) - a 2-token query, where the old
+// ceil(min(queryTokens.length, candidateTokens.size) / 2) formula rounds
+// down to a threshold of 1, so the single coincidental "bud" overlap alone
+// used to pass, with "lt" never factored in at all. See scoreCandidates'
+// own comment for the fix (never let a 2+-token query pass on a single
+// matched word).
+test('matchUntappdCandidates rejects a short 2-word query that only coincidentally shares one word with an unrelated candidate', () => {
+  const candidates = [{
+    url: 'https://untappd.com/b/lotte-chilsung-beverage-pine-bud-drink/1',
+    title: 'Lotte Chilsung Beverage Pine Bud Drink',
+    brewery: 'Lotte Chilsung Beverage',
+    beerName: 'Pine Bud Drink | 솔의 눈',
+  }];
+  const result = matchUntappdCandidates(candidates, 'BUD LT');
+  assert.equal(result.match, undefined, 'a single shared word out of two should not be a confident match');
+  assert.deepEqual(result.tied, []);
+});
+
 test('parseWineComSearchResults reads candidates from ItemList JSON-LD', () => {
   const html = page({
     head: `<script type="application/ld+json">${JSON.stringify({
