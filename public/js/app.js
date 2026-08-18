@@ -8991,12 +8991,23 @@
     const priceHtml = variant.sku
       ? `<div class="package-row__price help-text" id="beerBiblePriceValue-${variant.id}" role="status" aria-live="polite">Checking the WinePOS export&hellip;</div>`
       : '<div class="package-row__price help-text">No SKU on file for a price lookup.</div>';
+    // What this SKU's own row in the WinePOS export says its Category/
+    // Department/Class column is - see loadBeerBibleExportInfo below (same
+    // live lookup the price line above already runs, one fetch fills both).
+    // Only rendered when there's a SKU to look up in the first place, same
+    // guard the price line uses. Empty at first render - filled in async,
+    // same reason the price line starts as "Checking…" instead of blocking
+    // the whole profile page on this SKU's own export lookup.
+    const exportTagHtml = variant.sku
+      ? `<div class="package-row__export-tag" id="beerBibleExportTagValue-${variant.id}"></div>`
+      : '';
     return `
       <div class="package-row">
         <div class="package-row__main">
           <div class="package-row__label">${escapeHtml(label)}</div>
           <div class="package-row__meta">${metaBits.join(' &middot; ')}</div>
           ${priceHtml}
+          ${exportTagHtml}
         </div>
         <div class="package-row__actions">
           <button type="button" class="btn btn--ghost btn--small" data-package-edit="${variant.id}">Edit</button>
@@ -9117,7 +9128,7 @@
       renderBeerBibleChipsAndStats();
       renderBeerBibleProfile();
     });
-    group.variants.forEach((variant) => { if (variant.sku) loadBeerBiblePrice(variant); });
+    group.variants.forEach((variant) => { if (variant.sku) loadBeerBibleExportInfo(variant); });
   }
 
   // Formats /api/export-price's own fields into one line - the regular/
@@ -9134,43 +9145,99 @@
     return `${mainPrice} · ${formatMoney(data.packPrice)}${data.packQty ? ` (${data.packQty}-pack)` : ' (pack)'}`;
   }
 
-  // Fills in one package-size row's Price line (renderBeerBibleProfile
-  // leaves it as "Checking the WinePOS export...") - same live lookup
-  // (/api/export-price -> lookupSkuInExport in upcCatalog.js) against
-  // `entry`'s own sku as the Bourbon Library profile page's own Price row
-  // (loadBourbonLibraryPrice above), not a price stored on the entry
-  // itself, for the same reason: a beer's shelf price drifts, and this is
-  // meant to reflect today's, not whatever it was when the SKU was typed
-  // in (contrast with upc, which Export File Sync does store - a barcode
-  // doesn't go stale the way a price does).
+  // Loose "does this export row's own Category/Department/Class text
+  // actually sound like Beer" check, for the export-tag badge below - staff
+  // asked to see what a SKU's row in the WinePOS export originally said it
+  // was, specifically to catch a product that was tagged into the wrong
+  // department there (Wine/Spirits, say) and ended up in the Beer Bible
+  // anyway via a title match. Deliberately narrow and one-directional: it
+  // only flags an export category that explicitly names a *different*
+  // product type, never a blank/unrecognized one, and never demands the
+  // literal word "beer" be present - confirmed against a real WinePOS
+  // export (see FIELD_ALIASES' own comment in upcCatalog.js), a store's
+  // actual department text is as likely to be a in-house code as it is to
+  // spell out "Beer", so requiring an exact match here would flag most
+  // genuinely-fine beer rows as "wrong" and train staff to ignore the badge
+  // entirely. A category naming Wine/Spirits/a spirit category by name is a
+  // much higher-confidence signal something really is off.
+  function beerExportCategoryLooksOffBeer(category) {
+    const c = (category || '').toLowerCase();
+    if (!c) return false;
+    if (/\bbeer\b|\bale\b|\blager\b|cider|seltzer|\bmalt\b/.test(c)) return false;
+    return /\bwine\b|\bspirit|\bliquor\b|\bbourbon\b|\bwhisk(e)?y\b|\bvodka\b|\brum\b|\btequila\b|\bgin\b|\bbrandy\b/.test(c);
+  }
+
+  // The export-tag badge itself - what this SKU's own row in the WinePOS
+  // export says its Category/Department/Class column is (see the `category`
+  // field FIELD_ALIASES/buildIndex in upcCatalog.js already parse out of
+  // every export row, previously fetched here but never shown). Neutral
+  // styling normally (this is informational, not a verdict - see
+  // beerExportCategoryLooksOffBeer's own comment on why a plain "not the
+  // word beer" mismatch isn't reliable enough to warn on by itself); the
+  // warn styling only kicks in for that function's narrower, higher-
+  // confidence case. A blank category (many exports don't have this column
+  // at all, or leave it empty) says so plainly rather than rendering an
+  // empty badge.
+  function beerExportTagHtml(data) {
+    const category = (data.category || '').trim();
+    if (!category) {
+      return '<span class="package-row__meta">Export file has no Category/Department on file for this SKU.</span>';
+    }
+    const offBeer = beerExportCategoryLooksOffBeer(category);
+    const style = offBeer ? 'color:var(--ui-warn);background:var(--ui-warn-tint);' : 'color:var(--ui-muted);background:var(--ui-code-bg);';
+    const title = offBeer
+      ? "This SKU's own Category/Department/Class column in the WinePOS export doesn't read as Beer - double check this product before printing its talker."
+      : "This SKU's own Category/Department/Class column in the WinePOS export, for reference.";
+    return `<span class="conf-badge" style="${style}" title="${escapeHtml(title)}">Export category: ${escapeHtml(category)}</span>`;
+  }
+
+  // Fills in one package-size row's Price line and Export category badge
+  // (renderBeerBibleProfile leaves both blank/"Checking…" at first render) -
+  // one live lookup (/api/export-price -> lookupSkuInExport in
+  // upcCatalog.js) against `entry`'s own sku, same as the Bourbon Library
+  // profile page's own Price row (loadBourbonLibraryPrice above), not
+  // anything stored on the entry itself, for the same reason: a beer's
+  // shelf price (and how WinePOS itself has this SKU categorized today)
+  // both drift, and this is meant to reflect today's export, not whatever
+  // was true whenever the SKU was typed in (contrast with upc, which Export
+  // File Sync does store - a barcode doesn't go stale the way a price or a
+  // department tag can).
   //
-  // Guards on the target element still existing rather than on
+  // Guards on each target element still existing rather than on
   // beerBibleSelectedId (as this used to, back when a profile page could
   // only ever have the one SKU/one price element) - `entry` here is often
   // a sibling package size, not the group's own primary/selected id, so
-  // that comparison would always fail for one. Checking the element
+  // that comparison would always fail for one. Checking the elements
   // instead covers exactly the same case (staff navigated away before this
-  // resolved, so the whole profile's markup - this element included - was
+  // resolved, so the whole profile's markup - both elements included - was
   // already replaced) without needing to know which of a group's several
   // ids is "the" selected one.
-  async function loadBeerBiblePrice(entry) {
-    const elId = `beerBiblePriceValue-${entry.id}`;
+  async function loadBeerBibleExportInfo(entry) {
+    const priceElId = `beerBiblePriceValue-${entry.id}`;
+    const tagElId = `beerBibleExportTagValue-${entry.id}`;
     let data;
     try {
       const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
       data = await res.json();
       if (!res.ok) throw data;
     } catch (err) {
-      const el = document.getElementById(elId);
-      if (!el) return;
-      el.textContent = err && err.code === 'SKU_NOT_FOUND'
-        ? 'Not found in the current WinePOS export.'
-        : (err && err.error) || 'Could not check the WinePOS export.';
+      const priceEl = document.getElementById(priceElId);
+      if (priceEl) {
+        priceEl.textContent = err && err.code === 'SKU_NOT_FOUND'
+          ? 'Not found in the current WinePOS export.'
+          : (err && err.error) || 'Could not check the WinePOS export.';
+      }
+      // No category to show on a miss/error either - left blank rather than
+      // a placeholder, same as the price line's own error text already
+      // covers "nothing found here".
+      const tagEl = document.getElementById(tagElId);
+      if (tagEl) tagEl.innerHTML = '';
       return;
     }
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.textContent = formatBeerPriceLine(data);
+    const priceEl = document.getElementById(priceElId);
+    if (priceEl) priceEl.textContent = formatBeerPriceLine(data);
+    const tagEl = document.getElementById(tagElId);
+    if (tagEl) tagEl.innerHTML = beerExportTagHtml(data);
   }
 
   // ---------- Beer Bible landing/overview ----------

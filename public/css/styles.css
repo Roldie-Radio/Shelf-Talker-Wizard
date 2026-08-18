@@ -836,6 +836,15 @@ h1, h2, h3 { margin: 0; }
 .package-row__label { font-weight: 600; font-size: 0.87rem; }
 .package-row__meta { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.15rem; }
 .package-row__price { font-size: 0.78rem; color: var(--ui-ink-soft); margin-top: 0.15rem; }
+/* What this SKU's own row in the WinePOS export says its Category/
+   Department/Class is (see loadBeerBibleExportInfo/beerExportTagHtml in
+   app.js) - its own line under Price rather than folded into it, since
+   this is a from-the-export fact staff read separately, not part of the
+   price itself. Empty (no margin, no layout gap) until the same async
+   lookup that fills Price also fills this in - :empty avoids reserving
+   dead space for a beer with no SKU (this element never even renders,
+   see beerPackageSizeRowHtml) or while it's still blank. */
+.package-row__export-tag:not(:empty) { margin-top: 0.3rem; }
 .package-row__actions { display: flex; gap: 0.4rem; flex: 0 0 auto; }
 
 /* Unified "References & Sources" block (referencesSectionHtml in app.js) -
