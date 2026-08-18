@@ -25,13 +25,19 @@
 // config.json already live in), not held in memory only - otherwise every
 // server restart (a PC reboot, a Windows Update, the app just being closed
 // and reopened) would silently lose both loaded files and leave the screen
-// blank until someone re-picked them. Deliberately stateless at the module
-// level (no cached variable, no read-once-at-startup) - every read re-reads
-// the file and every write rewrites it whole, the same "just re-read the
-// small JSON file, don't bother caching it" convention upcCatalog.js's own
-// readConfig/writeConfig already use, which also means this doesn't need
-// its own load-on-launch wiring in index.js/start() the way db.js's
-// SQLite connection or the beer/bourbon GitHub auto-seeds do.
+// blank until someone re-picked them. This also means it needs no
+// load-on-launch wiring in index.js/start() the way db.js's SQLite
+// connection or the beer/bourbon GitHub auto-seeds do - the first read just
+// reads it off disk itself, whenever that first read happens to be.
+//
+// readState()/writeState() below cache that disk copy in memory for the
+// life of the process (see cachedState) rather than re-reading and
+// JSON-parsing the file on every single call - a real store's Export/HA
+// Details files can run to several thousand rows, and this is now read on
+// every Product Database screen visit *and* every Rum Repository visit (its
+// In-Stock Only toggle - see app.js). The cache still starts empty on every
+// fresh process, so a real restart correctly re-reads the disk copy; only
+// repeat reads within one running process skip the file entirely.
 const fs = require('fs');
 const path = require('path');
 const { getAppDataDir } = require('./appData');
@@ -211,7 +217,7 @@ function stateFilePath() {
 // individually rather than trusting the parsed JSON's shape wholesale, so a
 // hand-edited or partially-written file degrades gracefully field by field
 // instead of losing everything to one bad key.
-function readState() {
+function loadStateFromDisk() {
   try {
     const raw = fs.readFileSync(stateFilePath(), 'utf-8');
     const parsed = JSON.parse(raw);
@@ -230,9 +236,39 @@ function readState() {
   }
 }
 
+// In-memory cache over loadStateFromDisk, keyed by the resolved file path
+// rather than a single flag - at real store scale (a multi-thousand-row
+// Export File merged with a similarly large HA Details file) re-reading and
+// JSON-parsing the persisted copy on every single GET /api/product-database
+// call (the Product Database screen's own load, and now the Rum
+// Repository's In-Stock Only toggle fetching it on every visit - see
+// app.js) adds real, avoidable latency to something that's otherwise just
+// reading a value that hasn't changed. A real app restart still re-reads
+// the disk copy correctly (a fresh process starts with an empty cache), so
+// this doesn't undo the persistence guarantee just fixes the "process
+// re-reads the same unchanged file over and over" waste. Keyed by path
+// rather than a plain boolean so a changed SHELF_TALKER_CONFIG_DIR (the
+// test suite switches it per test; in production it's fixed for the life
+// of the process) naturally invalidates the cache instead of serving stale
+// data from a different directory.
+let cachedState = null;
+let cachedStatePath = null;
+
+function readState() {
+  const currentPath = stateFilePath();
+  if (!cachedState || cachedStatePath !== currentPath) {
+    cachedState = loadStateFromDisk();
+    cachedStatePath = currentPath;
+  }
+  return cachedState;
+}
+
 function writeState(state) {
+  const currentPath = stateFilePath();
   fs.mkdirSync(getAppDataDir(), { recursive: true });
-  fs.writeFileSync(stateFilePath(), JSON.stringify(state), 'utf-8');
+  fs.writeFileSync(currentPath, JSON.stringify(state), 'utf-8');
+  cachedState = state;
+  cachedStatePath = currentPath;
 }
 
 function publicState(state) {

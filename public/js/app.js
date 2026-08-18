@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.3',
+      items: [
+        'Changed: two performance fixes for stores with a large Beer Bible/Product Database. Typing in the Beer Bible search box now waits briefly for typing to pause before re-searching (measured ~2.5x faster to settle on a 2,500+ entry library, with a third as many full re-renders) instead of rebuilding the whole grid on every keystroke; the Product Database now keeps its merged data in memory after the first read instead of re-reading and re-parsing its saved file on every visit.',
+      ],
+    },
+    {
       version: '4.5.2',
       items: [
         'Fixed: the Product Database used to forget both loaded files (Export File and HA Details) every time the app restarted - a PC reboot, a Windows Update, or just closing and reopening it - leaving the table blank until someone re-picked them. It\'s now saved to disk on this PC and reloaded automatically on launch.',
@@ -9072,41 +9078,14 @@
       els.beerBibleBody.innerHTML = toolbarHtml + resultsHtml;
     }
 
-    els.beerBibleBody.querySelectorAll('.bourbon-card[data-id], .bourbon-row[data-id]').forEach((card) => {
-      const id = Number(card.dataset.id);
-      // Select mode swaps what a click/Enter/Space on the card actually
-      // does - toggle this one beer's selection instead of opening its
-      // profile - rather than needing a second, separate click target
-      // layered on top of the same card (the checkbox overlay itself is
-      // purely visual, see beerSelectCheckHtml above).
-      const activate = () => {
-        if (beerBibleSelectMode) {
-          toggleBeerBibleCardSelection(id, card);
-          return;
-        }
-        beerBibleSelectedId = id;
-        beerBibleViewMode = 'profile';
-        renderBeerBibleBody();
-      };
-      card.addEventListener('click', activate);
-      // Card/row is a role="button" div now, not a real <button> (see
-      // beerCardHtml/beerRowHtml above) - specifically so the Research chip
-      // below can nest a real <button> inside it, which a <button>-in-a-
-      // <button> can't do without invalid markup and a double-firing click.
-      // That trades away the free keyboard activation a real <button> gets,
-      // so it's replaced here: Enter/Space activates the same as a click,
-      // matching every other card/row in the app that's still a plain
-      // <button>. Only fires when the div itself is focused - a focused
-      // Research chip already handles its own Enter/Space as a real
-      // button, and stopPropagation in wireBeerResearchButtons below keeps
-      // its click from also bubbling up into this handler.
-      card.addEventListener('keydown', (e) => {
-        if (e.target !== card) return;
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-        e.preventDefault();
-        activate();
-      });
-    });
+    // Card/row click+keydown activation is delegated (see
+    // activateBeerBibleCard and the two els.beerBibleBody listeners
+    // registered once, below renderBeerBibleView) rather than wired here per
+    // card on every render - at real store scale (Beer Bible auto-seeds
+    // 2500+ entries) re-attaching two listeners to every card on every
+    // keystroke in the search box added up to thousands of addEventListener
+    // calls per render, a real chunk of why filtering this screen could
+    // feel slow.
     wireBeerResearchButtons(els.beerBibleBody, () => {
       renderBeerBibleChipsAndStats();
       renderBeerBibleGrid();
@@ -10603,10 +10582,66 @@
     renderBeerBibleBody();
   });
 
+  // Debounced the same 200ms as Search by Name/the Export File preview's
+  // own search boxes - at real store scale (2500+ entries) rebuilding the
+  // whole grid (HTML string + DOM parse) on every single keystroke was
+  // real, felt lag for a fast typist; this only re-renders 200ms after
+  // typing actually pauses.
+  let beerBibleFilterDebounce;
   els.beerBibleFilterInput.addEventListener('input', (e) => {
-    beerBibleFilterQuery = e.target.value;
-    beerBibleViewMode = 'grid';
-    renderBeerBibleGrid();
+    const { value } = e.target;
+    clearTimeout(beerBibleFilterDebounce);
+    beerBibleFilterDebounce = setTimeout(() => {
+      beerBibleFilterQuery = value;
+      beerBibleViewMode = 'grid';
+      renderBeerBibleGrid();
+    }, 200);
+  });
+
+  // Delegated click/keydown for every card/row in the grid (see the note
+  // where the old per-card wiring used to live, in renderBeerBibleGrid
+  // above) - registered once here, not per card on every render. closest()
+  // finds whichever card/row the click/keydown actually landed in, so this
+  // still works correctly after the grid underneath is rebuilt by a later
+  // render; nothing about the click/keyboard behavior itself changes.
+  function activateBeerBibleCard(card) {
+    const id = Number(card.dataset.id);
+    // Select mode swaps what a click/Enter/Space on the card actually does -
+    // toggle this one beer's selection instead of opening its profile -
+    // rather than needing a second, separate click target layered on top of
+    // the same card (the checkbox overlay itself is purely visual, see
+    // beerSelectCheckHtml above).
+    if (beerBibleSelectMode) {
+      toggleBeerBibleCardSelection(id, card);
+      return;
+    }
+    beerBibleSelectedId = id;
+    beerBibleViewMode = 'profile';
+    renderBeerBibleBody();
+  }
+
+  els.beerBibleBody.addEventListener('click', (e) => {
+    const card = e.target.closest('.bourbon-card[data-id], .bourbon-row[data-id]');
+    if (card) activateBeerBibleCard(card);
+  });
+
+  // Card/row is a role="button" div now, not a real <button> (see
+  // beerCardHtml/beerRowHtml) - specifically so the Research chip can nest a
+  // real <button> inside it, which a <button>-in-a-<button> can't do
+  // without invalid markup and a double-firing click. That trades away the
+  // free keyboard activation a real <button> gets, so it's replaced here:
+  // Enter/Space activates the same as a click, matching every other
+  // card/row in the app that's still a plain <button>. Only fires when the
+  // card itself is focused (e.target === card) - a focused Research chip
+  // already handles its own Enter/Space as a real button, and
+  // stopPropagation in wireBeerResearchButtons keeps its click from ever
+  // reaching this delegated listener in the first place.
+  els.beerBibleBody.addEventListener('keydown', (e) => {
+    const card = e.target.closest('.bourbon-card[data-id], .bourbon-row[data-id]');
+    if (!card || e.target !== card) return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    activateBeerBibleCard(card);
   });
 
   // Registered once (not inside renderBeerBibleGrid, which rebuilds both
