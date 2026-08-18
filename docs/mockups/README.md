@@ -553,9 +553,11 @@ browser.
   **landing page** in front of the Beer Bible's existing card grid, so
   opening the section shows the shape of the data before dropping into
   search or a `beer-profile-page.html` profile: a hero stat strip, a
-  style-mix donut chart, a **"Where it's from" origin bar chart**, a Top
+  style-mix donut chart, a **"Where it's from" origin section**, a Top
   Rated spotlight grid, a brewery grid, and a Recently Researched activity
-  feed. The catalog-scale numbers (2,539 total titles, the style-mix
+  feed. (An earlier ABV-distribution beeswarm panel was cut for being too
+  busy alongside everything else on the page.) The catalog-scale numbers
+  (2,539 total titles, the style-mix
   chart's nine buckets/counts, the "36 recognizable breweries" figure) are
   real, computed from a keyword pass over the actual
   `scripts/beer-bible-seed-data.json`; everything else (ratings, the
