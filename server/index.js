@@ -31,6 +31,9 @@ const {
   isEnriched: isBeerBibleEntryEnriched,
 } = require('./beerBibleImport');
 const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
+const {
+  getState: getProductDatabaseState, setExportFile: setProductDatabaseExportFile, setHaFile: setProductDatabaseHaFile,
+} = require('./productDatabase');
 const db = require('./db');
 const { version: APP_VERSION } = require('../package.json');
 
@@ -983,6 +986,35 @@ function createApp({
       res.json({ added, skipped, source, rums: listRums() });
     } catch (err) {
       res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
+  });
+
+  // Backs the Product Database (rail "Product Database" view, table icon
+  // above Settings) - see productDatabase.js's own header for the full
+  // picture. Deliberately not gated behind Server PC/forwardWrite the way
+  // the Beer Bible's bulk import routes are: this holds no sqlite state at
+  // all yet (see productDatabase.js's in-memory `state`), so there's
+  // nothing cross-register to protect - each PC just parses/merges
+  // whatever it was handed.
+  app.get('/api/product-database', (req, res) => {
+    res.json(getProductDatabaseState());
+  });
+
+  app.post('/api/product-database/export-file', (req, res) => {
+    try {
+      res.json(setProductDatabaseExportFile(req.body || {}));
+    } catch (err) {
+      const status = { NO_FILE: 400, NO_SKU_COLUMN: 400, NO_ROWS: 400 }[err.code] || 500;
+      res.status(status).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.post('/api/product-database/ha-file', (req, res) => {
+    try {
+      res.json(setProductDatabaseHaFile(req.body || {}));
+    } catch (err) {
+      const status = { NO_FILE: 400, NO_SKU_COLUMN: 400, NO_ROWS: 400 }[err.code] || 500;
+      res.status(status).json({ error: err.message, code: err.code });
     }
   });
 
