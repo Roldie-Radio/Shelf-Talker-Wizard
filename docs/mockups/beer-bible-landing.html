@@ -108,7 +108,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 /* ---------- hero ---------- */
 .hero {
   position: relative;
-  padding: 2.4rem 2rem 2.2rem;
+  padding: 1.5rem 1.8rem 1.4rem;
   background:
     radial-gradient(1200px 320px at 12% -20%, rgba(255,255,255,0.16), transparent 60%),
     linear-gradient(135deg, #4a2e10 0%, #8a5f27 55%, #c8722c 100%);
@@ -121,15 +121,16 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 34px);
   pointer-events: none;
 }
-.hero__inner { position: relative; display: flex; justify-content: space-between; gap: 2rem; flex-wrap: wrap; align-items: flex-end; }
+.hero__inner { position: relative; display: flex; justify-content: space-between; gap: 1.6rem; flex-wrap: wrap; align-items: center; }
 .hero__copy { max-width: 46ch; }
-.hero__eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffe6bd; margin-bottom: 0.6rem; }
-.hero h2 { font-size: 2.1rem; letter-spacing: -0.01em; margin-bottom: 0.6rem; }
-.hero p { margin: 0 0 1.2rem; font-size: 0.95rem; line-height: 1.6; color: #fce6c8; }
-.hero__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.hero__stats { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 0.7rem 1.4rem; min-width: 260px; }
-.hero__stat-num { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.hero__stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #ffe6bd; margin-top: 0.15rem; }
+.hero__eyebrow { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffe6bd; margin-bottom: 0.3rem; }
+.hero h2 { font-size: 1.5rem; letter-spacing: -0.01em; margin-bottom: 0.35rem; }
+.hero p { margin: 0 0 0.75rem; font-size: 0.84rem; line-height: 1.5; color: #fce6c8; }
+.hero__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.hero__actions .btn { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+.hero__stats { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); gap: 0.5rem 1.2rem; min-width: 230px; }
+.hero__stat-num { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.hero__stat-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #ffe6bd; margin-top: 0.1rem; }
 
 /* ---------- main content ---------- */
 .content { padding: 1.6rem 1.9rem 2.1rem; display: flex; flex-direction: column; gap: 1.6rem; }
@@ -141,22 +142,39 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.2rem 1.3rem; }
 
 /* two-column: style-mix donut + secondary stat rail */
-.mix-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.2rem; align-items: stretch; }
+.mix-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.2rem; align-items: stretch; }
 @media (max-width: 920px) { .mix-grid { grid-template-columns: 1fr; } }
 
-.donut-wrap { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-.donut { width: 168px; height: 168px; border-radius: 50%; flex-shrink: 0; position: relative; background: conic-gradient(var(--donut-stops)); }
-.donut::after { content: ""; position: absolute; inset: 20px; border-radius: 50%; background: var(--ui-panel); }
-.donut-center { position: absolute; inset: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.donut-center__num { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
-.donut-center__label { font-size: 0.62rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 8em; line-height: 1.2; }
+.donut-wrap { display: flex; gap: 1.8rem; align-items: center; flex-wrap: wrap; }
+.donut { width: 232px; height: 232px; flex-shrink: 0; position: relative; }
+.style-donut-svg { width: 100%; height: 100%; overflow: visible; }
+.style-arc { cursor: pointer; transition: opacity 0.15s ease; }
+.style-arc:hover { opacity: 0.82; }
+.style-arc--dim { opacity: 0.3; }
+.donut-center { position: absolute; inset: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.donut-center__num { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.01em; }
+.donut-center__label { font-size: 0.68rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 9em; line-height: 1.25; }
 
-.legend { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 210px; }
-.legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; }
+.legend { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 210px; }
+.legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; cursor: pointer; border: none; background: none; font-family: inherit; text-align: left; width: 100%; padding: 0.28rem 0.35rem; margin: 0; border-radius: 6px; color: inherit; }
+.legend-row:hover { background: var(--ui-hover); }
+.legend-row--active { background: var(--ui-code-bg); }
+.legend-row--active .legend-row__name { font-weight: 700; color: var(--ui-ink); }
+.legend-row--dim { opacity: 0.45; }
 .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 .legend-row__name { flex: 1; color: var(--ui-ink-soft); }
 .legend-row__pct { font-weight: 700; font-variant-numeric: tabular-nums; }
 .legend-row__count { font-size: 0.72rem; color: var(--ui-muted); min-width: 3.6em; text-align: right; }
+
+/* style drill-down (click a donut slice / legend row) */
+.drilldown { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px dashed var(--ui-border); }
+.drilldown__head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.7rem; }
+.drilldown__title { font-size: 0.86rem; font-weight: 700; }
+.drilldown__title span { font-weight: 500; color: var(--ui-muted); }
+.drilldown__back { font-size: 0.76rem; font-weight: 700; color: var(--ui-accent-ink); background: none; border: none; cursor: pointer; padding: 0.2rem 0.4rem; font-family: inherit; }
+.drilldown__back:hover { text-decoration: underline; }
+.drilldown__note { font-size: 0.82rem; color: var(--ui-muted); line-height: 1.5; }
+.drilldown__caveat { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.6rem; }
 
 .stat-rail { display: flex; flex-direction: column; gap: 0.7rem; justify-content: center; }
 .stat-tile { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
@@ -209,9 +227,59 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .panel-footer-cta p { margin: 0; font-size: 0.86rem; color: var(--ui-ink-soft); max-width: 56ch; line-height: 1.5; }
 .panel-footer-cta p strong { color: var(--ui-ink); }
 
+/* package-format bars (real data) */
+.format-grid { display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: center; }
+.format-bars { display: flex; flex-direction: column; gap: 0.55rem; }
+.format-row { display: grid; grid-template-columns: 150px 1fr 3.6em; align-items: center; gap: 0.7rem; font-size: 0.82rem; }
+.format-row__label { color: var(--ui-ink-soft); font-weight: 600; }
+.format-row__track { height: 14px; border-radius: 999px; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); overflow: hidden; }
+.format-row__fill { height: 100%; border-radius: 999px 0 0 999px; background: var(--chart-1); }
+.format-row__count { text-align: right; font-variant-numeric: tabular-nums; color: var(--ui-muted); font-weight: 700; font-size: 0.78rem; }
+
+/* research-progress ring (real data) */
+.progress-ring-wrap { display: flex; align-items: center; gap: 1.1rem; }
+.progress-ring { width: 92px; height: 92px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(var(--ui-accent) var(--progress-deg, 3deg), var(--ui-panel-sunken) 0); position: relative; border: 1px solid var(--ui-border); }
+.progress-ring::after { content: ""; position: absolute; inset: 10px; border-radius: 50%; background: var(--ui-panel); }
+.progress-ring__num { position: absolute; inset: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; }
+.progress-copy { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; max-width: 30ch; }
+.progress-copy strong { color: var(--ui-ink); }
+
+/* ABV mix: beeswarm dot strip - one dot per researched beer */
+.beeswarm { position: relative; height: 110px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel-sunken); margin-top: 0.4rem; }
+.beeswarm__dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--chart-4); border: 1px solid var(--ui-panel); transform: translate(-50%, 50%); cursor: default; }
+.beeswarm__dot--high { background: var(--chart-6); }
+.beeswarm__dot--low { background: var(--chart-3); }
+.beeswarm__axis { display: flex; justify-content: space-between; margin-top: 0.4rem; font-size: 0.68rem; color: var(--ui-muted); }
+.beeswarm__legend { display: flex; gap: 1rem; margin-top: 0.6rem; font-size: 0.72rem; color: var(--ui-muted); }
+.beeswarm__legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.beeswarm__legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+/* customize toolbar - a mockup-viewer control, sits outside the simulated device
+   frame so its popover isn't clipped by .device-frame's overflow:hidden */
+.mockup-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.mockup-toolbar__label { font-size: 0.78rem; color: var(--ui-muted); }
+.customize-wrap { position: relative; }
+.customize-btn { display: inline-flex; align-items: center; gap: 0.4rem; }
+.customize-popover { position: absolute; top: calc(100% + 8px); right: 0; width: 300px; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 10px; box-shadow: 0 14px 32px var(--ui-shadow); padding: 0.9rem 1rem 1rem; z-index: 30; }
+.customize-popover__head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.customize-popover__head strong { font-size: 0.86rem; }
+.customize-popover__close { background: none; border: none; font-size: 1.15rem; line-height: 1; cursor: pointer; color: var(--ui-muted); padding: 0.1rem 0.3rem; }
+.customize-popover__close:hover { color: var(--ui-ink); }
+.customize-popover__hint { font-size: 0.74rem; color: var(--ui-muted); margin: 0.25rem 0 0.7rem; line-height: 1.4; }
+.customize-list { display: flex; flex-direction: column; gap: 0.2rem; max-height: 300px; overflow-y: auto; }
+.customize-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0.35rem; border-radius: 6px; }
+.customize-row:hover { background: var(--ui-hover); }
+.customize-row__check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; flex: 1; min-width: 0; }
+.customize-row__check span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.customize-row__actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
+.customize-row__btn { width: 22px; height: 22px; border: 1px solid var(--ui-border); background: var(--ui-btn); border-radius: 5px; cursor: pointer; font-size: 0.7rem; line-height: 1; color: var(--ui-ink-soft); padding: 0; }
+.customize-row__btn:hover:not(:disabled) { background: var(--ui-btn-hover); }
+.customize-row__btn:disabled { opacity: 0.35; cursor: default; }
+.customize-popover__foot { margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid var(--ui-border); display: flex; justify-content: flex-end; }
+.btn--small { padding: 0.35rem 0.65rem; font-size: 0.76rem; }
+
 .panel.notes-panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
-.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.9rem; }
-@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 0.9rem; }
 .notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
 .notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
 .notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
@@ -237,6 +305,27 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       file ships with <code>brewery</code>/<code>style</code>/<code>abv</code>/etc. all blank until someone researches
       each entry.
     </p>
+  </div>
+
+  <div class="mockup-toolbar">
+    <div class="mockup-toolbar__label" id="customizeSummary">Interactive preview &mdash; showing 7 of 7 sections</div>
+    <div class="customize-wrap">
+      <button type="button" class="btn btn--ghost btn--small customize-btn" id="customizeBtn" aria-haspopup="true" aria-expanded="false">
+        &#9881;&#65039; Customize this page
+      </button>
+      <div class="customize-popover" id="customizePopover" hidden>
+        <div class="customize-popover__head">
+          <strong>Customize this page</strong>
+          <button type="button" class="customize-popover__close" id="customizeClose" aria-label="Close">&times;</button>
+        </div>
+        <p class="customize-popover__hint">Show, hide, and reorder sections below. Saved in this browser only, so
+        it's personal to you &mdash; it doesn't change what anyone else sees.</p>
+        <div class="customize-list" id="customizeList"></div>
+        <div class="customize-popover__foot">
+          <button type="button" class="btn btn--ghost btn--small" id="customizeReset">Reset to default</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="device-frame">
@@ -281,21 +370,23 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 
     <div class="content">
       <!-- ===== style mix ===== -->
-      <div class="panel">
+      <div class="panel" data-section="style" data-section-label="What's in the catalog">
         <div class="section-head">
           <div>
             <h3>What's in the catalog</h3>
             <p>Style guessed from each title's own text (e.g. "IPA", "STOUT", "SELTZER") &mdash; not the researched
             <code>style</code> field, which is still blank for nearly every title. It's a preview of what full
-            research would sort the shelf into.</p>
+            research would sort the shelf into. <strong>Click a slice or a legend row</strong> to drill into that
+            style's sub-styles.</p>
           </div>
         </div>
         <div class="mix-grid">
           <div class="donut-wrap">
-            <div class="donut" id="styleDonut">
+            <div class="donut">
+              <svg class="style-donut-svg" id="styleDonutSvg" viewBox="0 0 170 170"></svg>
               <div class="donut-center">
-                <div class="donut-center__num">1,683</div>
-                <div class="donut-center__label">titles not yet keyword-matched</div>
+                <div class="donut-center__num" id="donutCenterNum">1,683</div>
+                <div class="donut-center__label" id="donutCenterLabel">titles not yet keyword-matched</div>
               </div>
             </div>
             <div class="legend" id="styleLegend"></div>
@@ -307,6 +398,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             <div class="stat-tile"><span class="stat-tile__label">Distinct SKUs on file</span><span class="stat-tile__value">2,539</span></div>
           </div>
         </div>
+        <div class="drilldown" id="styleDrilldown" hidden></div>
         <div class="gap-note">
           <span class="gap-note__icon">&#128269;</span>
           <span><strong>The opportunity, in one number:</strong> 2,539 titles are already in the Beer Bible, but 0
@@ -315,8 +407,39 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         </div>
       </div>
 
+      <!-- ===== package format + research progress ===== -->
+      <div class="panel" data-section="format" data-section-label="How it's packaged">
+        <div class="section-head">
+          <div>
+            <h3>How it's packaged</h3>
+            <p>Pack size guessed from each title's own text (e.g. "4PK", "12PK", "VARIETY") the same way the style
+            chart is &mdash; real counts from the 2,539-title import file, not the researched data.</p>
+          </div>
+        </div>
+        <div class="format-grid">
+          <div class="format-bars" id="formatBars"></div>
+        </div>
+      </div>
+
+      <div class="panel" data-section="progress" data-section-label="Research progress">
+        <div class="section-head">
+          <div>
+            <h3>Research progress</h3>
+            <p>Share of the catalog with brewery/style/ABV actually filled in &mdash; the one number that's real
+            and updates as staff work through the backlog, rather than a sample.</p>
+          </div>
+        </div>
+        <div class="progress-ring-wrap">
+          <div class="progress-ring" id="progressRing" style="--progress-deg: 1deg;">
+            <div class="progress-ring__num" id="progressRingNum">0%</div>
+          </div>
+          <p class="progress-copy"><strong>0 of 2,539</strong> titles have been researched so far. Every entry added
+          here fills the ring &mdash; the "Add a Beer" and bulk-research flows both count toward it.</p>
+        </div>
+      </div>
+
       <!-- ===== spotlight ===== -->
-      <div class="panel">
+      <div class="panel" data-section="spotlight" data-section-label="Top rated in the library">
         <div class="section-head">
           <div>
             <h3>Top rated in the library</h3>
@@ -328,8 +451,27 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         <div class="spotlight-grid" id="spotlightGrid"></div>
       </div>
 
+      <!-- ===== ABV distribution ===== -->
+      <div class="panel" data-section="abv" data-section-label="ABV mix, once researched">
+        <div class="section-head">
+          <div>
+            <h3>ABV mix, once researched</h3>
+            <p>Each dot is one researched beer, positioned by its real ABV &mdash; shows the actual spread and
+            outliers instead of just bucket totals. Illustrative sample distribution, same convention as the
+            spotlight cards above.</p>
+          </div>
+        </div>
+        <div class="beeswarm" id="abvBeeswarm"></div>
+        <div class="beeswarm__axis"><span>0%</span><span>4%</span><span>8%</span><span>12%</span><span>16%</span></div>
+        <div class="beeswarm__legend">
+          <span><i style="background:var(--chart-3);"></i> Session (&lt;4.5%)</span>
+          <span><i style="background:var(--chart-4);"></i> Standard</span>
+          <span><i style="background:var(--chart-6);"></i> High ABV (9%+)</span>
+        </div>
+      </div>
+
       <!-- ===== breweries ===== -->
-      <div class="panel">
+      <div class="panel" data-section="breweries" data-section-label="Breweries on the shelf">
         <div class="section-head">
           <div>
             <h3>Breweries on the shelf</h3>
@@ -341,7 +483,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       </div>
 
       <!-- ===== activity ===== -->
-      <div class="panel">
+      <div class="panel" data-section="activity" data-section-label="Recently researched">
         <div class="section-head">
           <div>
             <h3>Recently researched</h3>
@@ -380,56 +522,308 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         cherry-picked sample cards) is what makes the "Add a Beer" CTA at the bottom feel earned instead of
         decorative.</p>
       </div>
+      <div class="notes-card">
+        <h3>The style donut is interactive, and colored like beer</h3>
+        <p>Clicking a slice or legend row drills into that style's sub-styles (e.g. IPA &rarr; Hazy/NEIPA, West
+        Coast, Session&hellip;) without leaving the page &mdash; built as clickable SVG arcs (stroke-dasharray per
+        segment) rather than the earlier CSS conic-gradient, since a conic-gradient disc has no per-slice hit
+        target to attach a click handler to. The slice colors were also swapped from an arbitrary categorical
+        palette to each style's actual beer color (pale straw &rarr; gold &rarr; amber &rarr; brown, roughly SRM
+        order), so the ring itself reads as "beer" at a glance. Seltzer/RTD is the deliberate exception &mdash;
+        it isn't beer-colored, so it gets a cool, near-clear tone instead of a spot on the amber scale.</p>
+      </div>
+      <div class="notes-card">
+        <h3>ABV settled on the beeswarm</h3>
+        <p>The earlier bar-histogram design was replaced with two options for feedback; the beeswarm won. Each dot
+        is one illustrative researched beer, positioned by its real ABV, with a simple greedy lane-packing
+        algorithm so close values stack into rows instead of overlapping &mdash; it shows the actual spread and
+        outliers (a 0.0% and a 13.5% both visible at a glance) rather than just five bucket totals.</p>
+      </div>
+      <div class="notes-card">
+        <h3>The page is viewer-customizable</h3>
+        <p>The "Customize this page" control (above the device frame, so its popover isn't clipped by the frame's
+        rounded-corner <code>overflow:hidden</code>) lets a viewer show/hide and reorder every data section below
+        the hero. Preferences save to <code>localStorage</code> per browser &mdash; nothing is sent anywhere, and
+        it's scoped to sections only: the hero stats and the "Add a Beer" CTA stay fixed, since those anchor the
+        page regardless of what a given viewer cares about most.</p>
+      </div>
     </div>
 
     <div class="notes-card">
       <h3>Where the numbers come from</h3>
       <p><strong>Real, computed from the repo's own data:</strong> 2,539 total titles, the style-mix chart's nine
-      buckets and counts (simple keyword match against each title, run over the actual bundled seed file), and the
+      buckets and counts (simple keyword match against each title, run over the actual bundled seed file), the
       "36 recognizable breweries" figure (a fixed list of well-known national/regional brand names checked against
-      the same titles).</p>
+      the same titles), the package-format bars (a second keyword pass looking for "4PK"/"12PK"/"VARIETY"/etc. in
+      each title), and the research-progress ring (currently 0 of 2,539, since <code>brewery</code>/<code>style</code>
+      are blank on every seeded row).</p>
       <p><strong>Illustrative sample data:</strong> the hero's "styles researched" and "avg. Untappd rating" tiles,
       every beer in the Top Rated spotlight grid (real beers with real public ABV/IBU/Untappd figures, chosen to
-      match titles already in the import file), the brewery bar-fill percentages, and the Recently Researched
-      feed. None of it is live &mdash; it's there to show what the page looks like with data in it, not what's on
-      file today.</p>
+      match titles already in the import file), the style donut's sub-style drill-down, the ABV beeswarm, the
+      brewery bar-fill percentages, and the Recently Researched feed. None of it is live &mdash; it's there to show
+      what the page looks like with data in it, not what's on file today.</p>
     </div>
   </div>
 </div>
 
 <script>
 // ---- style mix: real counts from a keyword pass over scripts/beer-bible-seed-data.json ----
+// Slice colors follow each style's actual beer color (roughly SRM order: pale straw ->
+// gold -> amber -> copper -> brown -> near-black), so the chart reads as beer, not an
+// arbitrary categorical palette. Seltzer/RTD is the one deliberate exception - it's not
+// beer-colored at all, so it gets a cool, near-clear tone instead of a spot on the amber
+// scale. Uncategorized stays neutral gray since it isn't a style.
 const styleMix = [
   { name: 'Uncategorized (not yet researched)', count: 1683, color: 'var(--chart-muted)' },
-  { name: 'IPA', count: 195, color: 'var(--chart-1)' },
-  { name: 'Lager & Pilsner', count: 172, color: 'var(--chart-2)' },
-  { name: 'Seltzer / RTD', count: 113, color: 'var(--chart-3)' },
-  { name: 'Cider', count: 93, color: 'var(--chart-4)' },
-  { name: 'Stout & Porter', count: 77, color: 'var(--chart-5)' },
-  { name: 'Non-Alcoholic', count: 68, color: 'var(--chart-6)' },
-  { name: 'Light Beer', count: 57, color: 'var(--chart-7)' },
-  { name: 'Wheat & Wit', count: 50, color: 'var(--chart-8)' },
-  { name: 'Sour', count: 31, color: '#5a8a6b' },
+  { name: 'Light Beer', count: 57, color: '#f3e7ac' },
+  { name: 'Lager & Pilsner', count: 172, color: '#eccf72' },
+  { name: 'Wheat & Wit', count: 50, color: '#e6bd5c' },
+  { name: 'Seltzer / RTD', count: 113, color: '#dbe4de' },
+  { name: 'Cider', count: 93, color: '#d99a3a' },
+  { name: 'IPA', count: 195, color: '#c8722c' },
+  { name: 'Sour', count: 31, color: '#b96a52' },
+  { name: 'Non-Alcoholic', count: 68, color: '#8f6a3e' },
+  { name: 'Stout & Porter', count: 77, color: '#3c2417' },
 ];
 const styleTotal = styleMix.reduce((s, x) => s + x.count, 0);
+const UNCATEGORIZED = 'Uncategorized (not yet researched)';
 
-(function renderDonut() {
+// Illustrative sub-style splits for the drill-down (style itself is blank on nearly
+// every real row today, so these can't be computed - each bucket's sub-counts sum
+// exactly to that bucket's real total so the drill-down still "adds up").
+const subStyles = {
+  'IPA': [
+    { name: 'Hazy / NEIPA', count: 74 },
+    { name: 'West Coast IPA', count: 58 },
+    { name: 'Session IPA', count: 31 },
+    { name: 'Double / Imperial IPA', count: 22 },
+    { name: 'Sour IPA', count: 10 },
+  ],
+  'Lager & Pilsner': [
+    { name: 'American Lager', count: 62 },
+    { name: 'German-style Pils', count: 40 },
+    { name: 'Mexican-style Lager', count: 35 },
+    { name: 'Vienna / Amber Lager', count: 20 },
+    { name: 'Dortmunder / Helles', count: 15 },
+  ],
+  'Seltzer / RTD': [
+    { name: 'Hard Seltzer', count: 55 },
+    { name: 'Canned Cocktail / RTD', count: 34 },
+    { name: 'Spiked Tea & Lemonade', count: 24 },
+  ],
+  'Cider': [
+    { name: 'Dry Apple Cider', count: 40 },
+    { name: 'Sweet Apple Cider', count: 28 },
+    { name: 'Flavored / Fruit Cider', count: 25 },
+  ],
+  'Stout & Porter': [
+    { name: 'Imperial Stout', count: 24 },
+    { name: 'Milk / Sweet Stout', count: 21 },
+    { name: 'Dry Irish Stout', count: 17 },
+    { name: 'Porter', count: 15 },
+  ],
+  'Non-Alcoholic': [
+    { name: 'NA Lager', count: 30 },
+    { name: 'NA IPA', count: 22 },
+    { name: 'NA Stout', count: 16 },
+  ],
+  'Light Beer': [
+    { name: 'American Light Lager', count: 41 },
+    { name: 'Light Wheat', count: 16 },
+  ],
+  'Wheat & Wit': [
+    { name: 'Belgian Witbier', count: 22 },
+    { name: 'American Wheat', count: 18 },
+    { name: 'Hefeweizen', count: 10 },
+  ],
+  'Sour': [
+    { name: 'Fruited Sour', count: 14 },
+    { name: 'Gose', count: 10 },
+    { name: 'Berliner Weisse', count: 7 },
+  ],
+};
+
+const donutState = { selected: null };
+
+function renderDonut() {
+  const svg = document.getElementById('styleDonutSvg');
+  const cx = 85, cy = 85, r = 68, strokeWidth = 26;
+  const circumference = 2 * Math.PI * r;
   let acc = 0;
-  const stops = styleMix.map((s) => {
-    const start = (acc / styleTotal) * 360;
+  svg.innerHTML = styleMix.map((s) => {
+    const arcLen = (s.count / styleTotal) * circumference;
+    const dashoffset = -(acc / styleTotal) * circumference;
     acc += s.count;
-    const end = (acc / styleTotal) * 360;
-    return `${s.color} ${start}deg ${end}deg`;
-  }).join(', ');
-  document.getElementById('styleDonut').style.setProperty('--donut-stops', stops);
+    const dimmed = donutState.selected && donutState.selected !== s.name;
+    return `<circle class="style-arc${dimmed ? ' style-arc--dim' : ''}" cx="${cx}" cy="${cy}" r="${r}"
+      fill="none" style="stroke:${s.color}" stroke-width="${strokeWidth}"
+      stroke-dasharray="${arcLen} ${circumference - arcLen}" stroke-dashoffset="${dashoffset}"
+      transform="rotate(-90 ${cx} ${cy})" pointer-events="stroke"
+      role="button" tabindex="0" aria-label="${s.name}, ${s.count.toLocaleString()} titles"
+      data-style="${s.name.replace(/"/g, '&quot;')}"></circle>`;
+  }).join('');
 
-  document.getElementById('styleLegend').innerHTML = styleMix.map((s) => `
-    <div class="legend-row">
+  svg.querySelectorAll('.style-arc').forEach((el) => {
+    el.addEventListener('click', () => selectStyle(el.dataset.style));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStyle(el.dataset.style); }
+    });
+  });
+
+  document.getElementById('styleLegend').innerHTML = styleMix.map((s) => {
+    const active = donutState.selected === s.name;
+    const dimmed = donutState.selected && !active;
+    return `
+    <button type="button" class="legend-row${active ? ' legend-row--active' : ''}${dimmed ? ' legend-row--dim' : ''}" data-style="${s.name.replace(/"/g, '&quot;')}">
       <span class="legend-swatch" style="background:${s.color};"></span>
       <span class="legend-row__name">${s.name}</span>
       <span class="legend-row__pct">${Math.round((s.count / styleTotal) * 100)}%</span>
       <span class="legend-row__count">${s.count.toLocaleString()}</span>
-    </div>
+    </button>
+  `;
+  }).join('');
+  document.querySelectorAll('#styleLegend .legend-row').forEach((el) => {
+    el.addEventListener('click', () => selectStyle(el.dataset.style));
+  });
+
+  renderDonutCenter();
+  renderDrilldown();
+}
+
+function renderDonutCenter() {
+  const numEl = document.getElementById('donutCenterNum');
+  const labelEl = document.getElementById('donutCenterLabel');
+  if (!donutState.selected) {
+    numEl.textContent = (styleTotal - styleMix.find((s) => s.name === UNCATEGORIZED).count).toLocaleString();
+    labelEl.textContent = 'titles keyword-matched to a style';
+    return;
+  }
+  const s = styleMix.find((x) => x.name === donutState.selected);
+  numEl.textContent = `${Math.round((s.count / styleTotal) * 100)}%`;
+  labelEl.textContent = s.name;
+}
+
+function selectStyle(name) {
+  donutState.selected = donutState.selected === name ? null : name;
+  renderDonut();
+}
+
+function renderDrilldown() {
+  const wrap = document.getElementById('styleDrilldown');
+  if (!donutState.selected) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+  wrap.hidden = false;
+  const style = donutState.selected;
+  const bucket = styleMix.find((s) => s.name === style);
+  const subs = subStyles[style];
+
+  if (style === UNCATEGORIZED) {
+    wrap.innerHTML = `
+      <div class="drilldown__head">
+        <div class="drilldown__title">${style} <span>&mdash; ${bucket.count.toLocaleString()} titles</span></div>
+        <button type="button" class="drilldown__back" id="drilldownBack">&times; Clear</button>
+      </div>
+      <p class="drilldown__note">Nothing to break down yet &mdash; these titles didn't match any style keyword, which
+      is exactly the backlog research would clear. They'll land in one of the other slices (or a new one) once
+      someone researches them.</p>`;
+  } else {
+    const maxSub = Math.max(...subs.map((x) => x.count));
+    wrap.innerHTML = `
+      <div class="drilldown__head">
+        <div class="drilldown__title">${style} <span>&mdash; ${bucket.count.toLocaleString()} titles, by sub-style</span></div>
+        <button type="button" class="drilldown__back" id="drilldownBack">&times; Clear</button>
+      </div>
+      <div class="format-bars">
+        ${subs.map((sub) => `
+          <div class="format-row">
+            <span class="format-row__label">${sub.name}</span>
+            <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((sub.count / maxSub) * 100)}%;"></span></span>
+            <span class="format-row__count">${sub.count.toLocaleString()}</span>
+          </div>
+        `).join('')}
+      </div>
+      <p class="drilldown__caveat">Sub-style split is illustrative &mdash; <code>style</code> is blank on nearly every
+      row today, so this previews what the drill-down would show once entries are researched, not a live count.</p>`;
+  }
+  document.getElementById('drilldownBack').addEventListener('click', () => selectStyle(style));
+}
+
+renderDonut();
+
+// ---- package format: real counts from a keyword pass over beer-bible-seed-data.json ----
+const formatMix = [
+  { name: '4-pack', count: 932 },
+  { name: '6-pack', count: 612 },
+  { name: 'Other / unmatched', count: 488 },
+  { name: '12-pack', count: 232 },
+  { name: 'Variety pack', count: 152 },
+  { name: '15/18/24-pack (case)', count: 71 },
+  { name: 'Keg / growler', count: 51 },
+  { name: 'Single can/bottle', count: 1 },
+];
+const formatMax = Math.max(...formatMix.map((f) => f.count));
+document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
+  <div class="format-row">
+    <span class="format-row__label">${f.name}</span>
+    <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((f.count / formatMax) * 100)}%;"></span></span>
+    <span class="format-row__count">${f.count.toLocaleString()}</span>
+  </div>
+`).join('');
+
+// ---- research progress ring: real (0 of 2,539 today) ----
+(function renderProgressRing() {
+  const researched = 0;
+  const total = 2539;
+  const pct = Math.max(1, Math.round((researched / total) * 100)); // floor of 1deg so the ring isn't invisible
+  document.getElementById('progressRing').style.setProperty('--progress-deg', `${(pct / 100) * 360}deg`);
+  document.getElementById('progressRingNum').textContent = `${Math.round((researched / total) * 100)}%`;
+})();
+
+// ---- ABV: beeswarm - illustrative individual researched beers, one dot each,
+// greedily stacked into lanes so close-ABV dots don't overlap ----
+const abvBeers = [
+  { title: 'Guinness Draught 0.0', abv: 0.0 },
+  { title: "Bell's Oberon Ale", abv: 5.8 },
+  { title: 'Allagash White', abv: 5.2 },
+  { title: 'Sierra Nevada Pale Ale', abv: 5.6 },
+  { title: 'Coors Light', abv: 4.2 },
+  { title: 'Michelob Ultra', abv: 4.2 },
+  { title: 'Corona Extra', abv: 4.6 },
+  { title: 'Heineken', abv: 5.0 },
+  { title: 'Sam Adams Boston Lager', abv: 5.0 },
+  { title: "Bell's Two Hearted Ale", abv: 7.0 },
+  { title: 'Lagunitas IPA', abv: 6.2 },
+  { title: 'Dogfish Head 60 Minute IPA', abv: 6.0 },
+  { title: 'New Belgium Fat Tire', abv: 5.2 },
+  { title: 'White Claw Black Cherry', abv: 5.0 },
+  { title: '1911 Cider Honeycrisp', abv: 6.9 },
+  { title: 'Guinness Draught', abv: 4.2 },
+  { title: 'Dogfish Head 90 Minute IPA', abv: 9.0 },
+  { title: 'Founders KBS', abv: 12.0 },
+  { title: 'Sierra Nevada Bigfoot', abv: 9.6 },
+  { title: 'Lagunitas Sucks', abv: 7.8 },
+  { title: 'Founders Backwoods Bastard', abv: 11.0 },
+  { title: 'Dogfish Head 120 Minute IPA', abv: 13.5 },
+];
+
+(function renderBeeswarm() {
+  const maxAbv = 14;
+  const minGapPct = 4.2; // percent-of-width gap before a dot needs a new lane
+  const lanes = []; // lanes[i] = x% of the last dot placed in that lane
+  const placed = abvBeers
+    .slice()
+    .sort((a, b) => a.abv - b.abv)
+    .map((beer) => {
+      const xPct = Math.min(100, (beer.abv / maxAbv) * 100);
+      let lane = lanes.findIndex((lastX) => xPct - lastX >= minGapPct);
+      if (lane === -1) { lane = lanes.length; lanes.push(xPct); }
+      else { lanes[lane] = xPct; }
+      return { ...beer, xPct, lane };
+    });
+
+  const colorClass = (abv) => (abv < 4.5 ? 'beeswarm__dot--low' : abv >= 9 ? 'beeswarm__dot--high' : '');
+  document.getElementById('abvBeeswarm').innerHTML = placed.map((b) => `
+    <div class="beeswarm__dot ${colorClass(b.abv)}" title="${b.title} — ${b.abv.toFixed(1)}% ABV"
+      style="left:${b.xPct}%; bottom:${8 + b.lane * 14}px;"></div>
   `).join('');
 })();
 
@@ -505,4 +899,119 @@ document.getElementById('activityFeed').innerHTML = activity.map((a) => `
     <span class="feed-when">${a.when}</span>
   </div>
 `).join('');
+
+// ---- "customize this page": show/hide + reorder sections, saved per-browser ----
+// The panel-footer-cta ("Add a Beer") is deliberately not in this list - it stays
+// pinned at the bottom regardless of what the viewer customizes.
+const CUSTOM_SECTIONS = [...document.querySelectorAll('.content [data-section]')].map((el) => ({
+  id: el.dataset.section,
+  label: el.dataset.sectionLabel,
+}));
+const CUSTOMIZE_STORAGE_KEY = 'beerBibleLanding.customize.v1';
+
+function defaultCustomizePrefs() {
+  return { order: CUSTOM_SECTIONS.map((s) => s.id), hidden: [] };
+}
+
+function loadCustomizePrefs() {
+  try {
+    const raw = localStorage.getItem(CUSTOMIZE_STORAGE_KEY);
+    const parsed = raw && JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.order) || !Array.isArray(parsed.hidden)) return defaultCustomizePrefs();
+    const knownIds = CUSTOM_SECTIONS.map((s) => s.id);
+    const order = parsed.order.filter((id) => knownIds.includes(id));
+    knownIds.forEach((id) => { if (!order.includes(id)) order.push(id); }); // pick up any new sections
+    return { order, hidden: parsed.hidden.filter((id) => knownIds.includes(id)) };
+  } catch {
+    return defaultCustomizePrefs();
+  }
+}
+
+let customizePrefs = loadCustomizePrefs();
+function saveCustomizePrefs() {
+  localStorage.setItem(CUSTOMIZE_STORAGE_KEY, JSON.stringify(customizePrefs));
+}
+
+function applyCustomizePrefs() {
+  const content = document.querySelector('.content');
+  customizePrefs.order.forEach((id) => {
+    const el = content.querySelector(`[data-section="${id}"]`);
+    if (el) content.appendChild(el);
+  });
+  const footer = content.querySelector('.panel-footer-cta');
+  if (footer) content.appendChild(footer); // keep the CTA pinned at the bottom
+  CUSTOM_SECTIONS.forEach((s) => {
+    const el = content.querySelector(`[data-section="${s.id}"]`);
+    if (el) el.hidden = customizePrefs.hidden.includes(s.id);
+  });
+  const shownCount = CUSTOM_SECTIONS.length - customizePrefs.hidden.length;
+  document.getElementById('customizeSummary').textContent =
+    `Interactive preview — showing ${shownCount} of ${CUSTOM_SECTIONS.length} sections`;
+  renderCustomizeList();
+}
+
+function renderCustomizeList() {
+  const list = document.getElementById('customizeList');
+  list.innerHTML = customizePrefs.order.map((id, i) => {
+    const meta = CUSTOM_SECTIONS.find((s) => s.id === id);
+    const hidden = customizePrefs.hidden.includes(id);
+    return `
+    <div class="customize-row">
+      <label class="customize-row__check">
+        <input type="checkbox" data-id="${id}" ${hidden ? '' : 'checked'}>
+        <span>${meta.label}</span>
+      </label>
+      <div class="customize-row__actions">
+        <button type="button" class="customize-row__btn" data-id="${id}" data-dir="up" ${i === 0 ? 'disabled' : ''} aria-label="Move ${meta.label} up">&uarr;</button>
+        <button type="button" class="customize-row__btn" data-id="${id}" data-dir="down" ${i === customizePrefs.order.length - 1 ? 'disabled' : ''} aria-label="Move ${meta.label} down">&darr;</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.id;
+      customizePrefs.hidden = cb.checked
+        ? customizePrefs.hidden.filter((x) => x !== id)
+        : [...customizePrefs.hidden, id];
+      saveCustomizePrefs();
+      applyCustomizePrefs();
+    });
+  });
+  list.querySelectorAll('.customize-row__btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const idx = customizePrefs.order.indexOf(id);
+      const swapWith = btn.dataset.dir === 'up' ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= customizePrefs.order.length) return;
+      [customizePrefs.order[idx], customizePrefs.order[swapWith]] = [customizePrefs.order[swapWith], customizePrefs.order[idx]];
+      saveCustomizePrefs();
+      applyCustomizePrefs();
+    });
+  });
+}
+
+const customizeBtn = document.getElementById('customizeBtn');
+const customizePopover = document.getElementById('customizePopover');
+customizeBtn.addEventListener('click', () => {
+  customizePopover.hidden = !customizePopover.hidden;
+  customizeBtn.setAttribute('aria-expanded', String(!customizePopover.hidden));
+});
+document.getElementById('customizeClose').addEventListener('click', () => {
+  customizePopover.hidden = true;
+  customizeBtn.setAttribute('aria-expanded', 'false');
+});
+document.getElementById('customizeReset').addEventListener('click', () => {
+  customizePrefs = defaultCustomizePrefs();
+  saveCustomizePrefs();
+  applyCustomizePrefs();
+});
+document.addEventListener('click', (e) => {
+  if (!customizePopover.hidden && !customizePopover.contains(e.target) && e.target !== customizeBtn && !customizeBtn.contains(e.target)) {
+    customizePopover.hidden = true;
+    customizeBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+applyCustomizePrefs();
 </script>
