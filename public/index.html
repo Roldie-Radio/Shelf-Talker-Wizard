@@ -1098,30 +1098,9 @@
             <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Select
           </button>
-          <!-- Downloads whatever the grid below currently shows (search box
-               + status/style chips + sort all applied) as a CSV file, for
-               backing the library up or opening it in a spreadsheet - see
-               exportBeerBibleCsv in app.js. Leave every filter at its
-               default to export the whole Beer Bible. -->
-          <button type="button" class="btn btn--small" id="beerBibleExportBtn">Export CSV&hellip;</button>
-          <!-- The round-trip counterpart to Export CSV above - reads a CSV
-               shaped like that one's own output (or a subset of its
-               columns) back in, upserting each row the same way Add
-               Beer/Edit would (SKU first, title second; a blank cell never
-               overwrites an already-fuller field) - see
-               server/beerBibleCsvImport.js. Not the same thing as Advanced
-               → Import Beer Bible from Export File… below: that one runs a
-               live Untappd search per row, this one expects every field
-               already filled in and just merges it in, synchronously, no
-               network calls. A plain hidden file input (#beerBibleImportCsvInput)
-               triggered by this button - works the same in the browser and
-               in Electron's webview, no native file dialog needed. -->
-          <button type="button" class="btn btn--small" id="beerBibleImportCsvBtn">Import CSV&hellip;</button>
-          <input type="file" id="beerBibleImportCsvInput" accept=".csv,text/csv" hidden />
           <button type="button" class="btn btn--small btn--primary" id="beerBibleAddBtn">Add Beer</button>
         </div>
       </div>
-      <p class="help-text" id="beerBibleImportCsvStatus" role="status" aria-live="polite"></p>
       <!-- Cross-register sync (see server/beerBibleSync.js) - same
            .library-sync band #libraryView's own Mash Bill Library screen
            uses, just pointed at /api/beers instead of /api/mashbills. The
@@ -1135,27 +1114,6 @@
         </div>
         <button type="button" class="btn btn--small" id="beerBibleSyncNowBtn">Sync Now</button>
       </div>
-      <!-- Export File Sync/Import CSV/Advanced menu's Import from Export
-           File below are all Server-PC-only writes now (see
-           server/index.js's POST /api/beers/sync-export and friends) -
-           every other register just picks the result up on its next sync,
-           same as the Mash Bill Library's own GitHub sync row above. Hidden
-           on any PC other than the Server PC (see updateBeerBibleSyncUI).
-
-           This replaces the old "Check GitHub for New Beers" button - see
-           server/beerBibleExportSync.js's own top-of-file comment for the
-           full reasoning, but in short: this fills in upc on a beer
-           already saved here (matched by its own sku against the same
-           local WinePOS export Scan UPC/SKU Lookup already read), it never
-           adds new entries the way the GitHub sync did. A brand-new, empty
-           Beer Bible still gets seeded from the curated GitHub list
-           automatically the first time the app launches (see
-           beerBibleSeed.js's maybeAutoSeedBeerBible) - there's just no
-           manual re-sync button for it here anymore. -->
-      <div class="library-sync" id="beerBibleExportSyncRow">
-        <button type="button" class="btn btn--small" id="beerBibleExportSyncBtn">Export File Sync</button>
-      </div>
-      <p class="help-text" id="beerBibleExportSyncStatus" role="status" aria-live="polite"></p>
       <div class="library-search">
         <input type="search" id="beerBibleFilterInput" aria-label="Search The Beer Bible" placeholder="Search by name, brewery, or style&hellip;" />
       </div>
@@ -2290,6 +2248,7 @@
       <div class="settings-body">
         <nav class="settings-sidebar" aria-label="Settings sections">
           <button type="button" class="settings-sidebar__item is-active" data-settings-panel="general" aria-current="true" id="settingsNavGeneralBtn">General</button>
+          <button type="button" class="settings-sidebar__item" data-settings-panel="beerBible" aria-current="false" id="settingsNavBeerBibleBtn">Beer Bible</button>
           <button type="button" class="settings-sidebar__item" data-settings-panel="experimental" aria-current="false" id="settingsNavExperimentalBtn">Experimental Features</button>
         </nav>
         <div class="settings-panels">
@@ -2313,6 +2272,45 @@
               </div>
             </label>
             <p class="help-text">Changes the size of the File / Tools / Help / Advanced menu bar at the top of the window - useful on a touchscreen register or a high-resolution display where the default can run small.</p>
+          </div>
+
+          <!-- Beer Bible's own file-based tools - moved here off the Beer
+               Bible page's own toolbar (see #beerBibleView above), which
+               was getting crowded between Select/Add Beer and the
+               cross-register Sync Now band. Opening this panel re-fetches
+               the Beer Bible (see activateSettingsPanel in app.js) so
+               #beerBibleServerToolsSection's Server-PC-only visibility (see
+               updateBeerBibleSyncUI) and Export CSV's own data are current
+               even if this PC never opened the Beer Bible screen this
+               session. -->
+          <div class="settings-panel" id="settingsPanelBeerBible" data-settings-panel-content="beerBible" hidden>
+            <div class="settings-section-title">Export CSV</div>
+            <p class="help-text">Downloads every beer in the Beer Bible as a CSV file - for backing the library up or opening it in a spreadsheet.</p>
+            <!-- see exportBeerBibleCsv in app.js - always the whole library,
+                 not whatever the grid happened to be filtered/searched to
+                 last, since there's no grid here to reflect that. -->
+            <button type="button" class="btn btn--small" id="beerBibleExportBtn">Export CSV&hellip;</button>
+
+            <!-- Import CSV/Export File Sync are both Server-PC-only writes
+                 (see server/beerBibleCsvImport.js and
+                 server/beerBibleExportSync.js) - hidden as one group,
+                 divider and all, rather than each button on its own, so a
+                 non-Server PC never sees a stray divider or help text with
+                 nothing under it (see updateBeerBibleSyncUI in app.js). -->
+            <div id="beerBibleServerToolsSection">
+              <hr class="settings-section-divider" />
+              <div class="settings-section-title">Import CSV</div>
+              <p class="help-text">The round-trip counterpart to Export CSV above - reads a CSV shaped like that one's own output (or a subset of its columns) back in, upserting each row the same way Add Beer/Edit would (SKU first, title second; a blank cell never overwrites an already-fuller field). Not the same thing as Advanced &rarr; Import Beer Bible from Export File&hellip;: that one runs a live Untappd search per row, this one expects every field already filled in and just merges it in, synchronously, no network calls.</p>
+              <button type="button" class="btn btn--small" id="beerBibleImportCsvBtn">Import CSV&hellip;</button>
+              <input type="file" id="beerBibleImportCsvInput" accept=".csv,text/csv" hidden />
+              <p class="help-text" id="beerBibleImportCsvStatus" role="status" aria-live="polite"></p>
+
+              <hr class="settings-section-divider" />
+              <div class="settings-section-title">Export File Sync</div>
+              <p class="help-text">Checks the configured WinePOS export for UPCs on beers already saved here, matched by SKU. Every other register picks the result up on its own next cross-register sync.</p>
+              <button type="button" class="btn btn--small" id="beerBibleExportSyncBtn">Export File Sync</button>
+              <p class="help-text" id="beerBibleExportSyncStatus" role="status" aria-live="polite"></p>
+            </div>
           </div>
 
           <div class="settings-panel" id="settingsPanelExperimental" data-settings-panel-content="experimental" hidden>
