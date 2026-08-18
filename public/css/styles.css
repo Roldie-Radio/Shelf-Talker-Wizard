@@ -1123,10 +1123,9 @@ button.beer-legend-row { border: none; background: none; font-family: inherit; t
 .drilldown__back:hover { text-decoration: underline; }
 .drilldown__note { font-size: 0.82rem; color: var(--ui-muted); line-height: 1.5; margin: 0; }
 
-/* Package-format bars ("How it's packaged") and the style drill-down above
-   both reuse this same row shape - a label, a proportional fill track, and
-   a count, same idea as .brewery-chip__bar but laid out as a list row
-   instead of a card. */
+/* The style and origin drill-downs above both reuse this same row shape -
+   a label, a proportional fill track, and a count, same idea as
+   .brewery-chip__bar but laid out as a list row instead of a card. */
 .format-bars { display: flex; flex-direction: column; gap: 0.5rem; }
 .format-row { display: grid; grid-template-columns: minmax(120px, 150px) 1fr 2.6em; align-items: center; gap: 0.65rem; font-size: 0.8rem; }
 .format-row__label { color: var(--ui-ink-soft); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

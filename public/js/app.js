@@ -55,6 +55,7 @@
       version: '4.4.18',
       items: [
         'Fixed: a non-US country on the Beer Bible landing page\'s "Where it\'s from" section could show its full state/region text alongside the country name (e.g. "County Dublin Ireland" instead of just "Ireland") and go without a flag - both were the same underlying gap, a spelled-out region with no comma before the country wasn\'t being split off the way a US state code already was. Country now always shows as just the country name, with its flag matched to go with it.',
+        'Removed: the "How it\'s packaged" section on the Beer Bible landing page.',
       ],
     },
     {
@@ -9704,28 +9705,6 @@
     return name ? BEER_LANDING_COUNTRY_DISPLAY_NAMES[name] : text;
   }
 
-  // Pack-size keyword pass over each beer's own title text, same idea as
-  // BEER_STYLE_FAMILIES below but for "How it's packaged" - checked in
-  // order (first match wins), same reasoning as that list's own ordering
-  // comment (Variety Pack before the plain pack-count rules, since a
-  // variety pack's title often also contains a pack count like "12PK").
-  // Runs over every beer regardless of research status, since pack size
-  // comes straight from the title text a product import already provides
-  // for 100% of rows, not anything that needs researching first.
-  const BEER_PACKAGE_FORMATS = [
-    { name: 'Variety pack', test: /variety/i },
-    { name: 'Keg / growler', test: /\bkeg\b|growler/i },
-    { name: '15/18/24-pack (case)', test: /\b(1[58]|2[04]|30)\s*pk\b/i },
-    { name: '12-pack', test: /\b12\s*pk\b/i },
-    { name: '6-pack', test: /\b6\s*pk\b/i },
-    { name: '4-pack', test: /\b4\s*pk\b/i },
-    { name: 'Single can/bottle', test: /\b(sgl|single|1\s*pk|ea)\b/i },
-  ];
-  function beerPackageFormat(title) {
-    const match = BEER_PACKAGE_FORMATS.find((f) => f.test.test(title || ''));
-    return match ? match.name : 'Other / unmatched';
-  }
-
   // "Customize this page" - which sections a viewer wants shown and in
   // what order, saved to this PC's own localStorage (same
   // shelfTalker*.v1 convention as BEER_BIBLE_SORT_KEY above) so it's
@@ -9736,7 +9715,6 @@
   const BEER_LANDING_CUSTOMIZE_KEY = 'shelfTalkerBeerLandingCustomize.v1';
   const BEER_LANDING_SECTIONS = [
     { id: 'style', label: "What's in the library" },
-    { id: 'format', label: "How it's packaged" },
     { id: 'origin', label: "Where it's from" },
     { id: 'progress', label: 'Research progress' },
     { id: 'spotlight', label: 'Top rated in the library' },
@@ -10009,28 +9987,6 @@
   function selectBeerLandingFamily(key) {
     beerLandingSelectedFamily = beerLandingSelectedFamily === key ? null : key;
     renderBeerBibleLanding();
-  }
-
-  // "How it's packaged" - real pack-size counts from a keyword pass over
-  // every beer's own title (see BEER_PACKAGE_FORMATS above), not just
-  // researched ones, since pack size comes straight from the title text a
-  // product import already provides for every row. Reuses the same
-  // .format-row markup the style drill-down above does.
-  function beerLandingFormatHtml(groups) {
-    const counts = new Map();
-    groups.forEach((g) => {
-      const key = beerPackageFormat(g.title);
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-    const max = sorted[0][1];
-    return `<div class="format-bars">${sorted.map(([name, count]) => `
-      <div class="format-row">
-        <span class="format-row__label">${escapeHtml(name)}</span>
-        <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((count / max) * 100)}%;"></span></span>
-        <span class="format-row__count">${count}</span>
-      </div>
-    `).join('')}</div>`;
   }
 
   // Research progress ring - the one number on this whole page that's
@@ -10343,13 +10299,6 @@
             </div>
           </div>
           ${beerLandingOriginHtml(researchedGroups)}
-        </div>`,
-      format: `
-        <div class="panel">
-          <div class="section-head">
-            <div><h3>How it's packaged</h3><p>Pack size read straight from each beer's own title - real for every beer on file, whether or not it's been researched yet.</p></div>
-          </div>
-          ${beerLandingFormatHtml(groups)}
         </div>`,
       progress: `
         <div class="panel">
