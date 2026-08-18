@@ -1156,6 +1156,15 @@
     rumRepositoryStats: document.getElementById('rumRepositoryStats'),
     rumRepositoryBody: document.getElementById('rumRepositoryBody'),
 
+    railProductDatabaseBtn: document.getElementById('railProductDatabaseBtn'),
+    productDatabaseView: document.getElementById('productDatabaseView'),
+    productDatabaseExportBtn: document.getElementById('productDatabaseExportBtn'),
+    productDatabaseExportInput: document.getElementById('productDatabaseExportInput'),
+    productDatabaseHaBtn: document.getElementById('productDatabaseHaBtn'),
+    productDatabaseHaInput: document.getElementById('productDatabaseHaInput'),
+    productDatabaseStatus: document.getElementById('productDatabaseStatus'),
+    productDatabaseTableWrap: document.getElementById('productDatabaseTableWrap'),
+
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
 
@@ -11990,6 +11999,95 @@
     `;
   }
 
+  // ---------- Product Database ----------
+  // Two file pickers (Export File, HA Details) merged by SKU into one
+  // read-only table below - see server/productDatabase.js's own header for
+  // the merge itself. Reads whichever file was picked client-side (same
+  // "no native path/Browse... dialog needed" reasoning as Beer Bible's own
+  // Import CSV... button - works identically in a plain browser tab and
+  // Electron's webview) and posts its raw bytes as base64 so the server
+  // can parse either a CSV/TSV export or a real .xlsx/.xlsm workbook, the
+  // same two formats beerBibleImport.js's path-based import already
+  // handles.
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    // Chunked rather than one big String.fromCharCode.apply(null, bytes) -
+    // that blows the call stack on a large real-world workbook.
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  function renderProductDatabaseStatus(data) {
+    const exportPart = data.exportFileName
+      ? `Export File: ${data.exportFileName} (${data.exportCount.toLocaleString('en-US')} item${data.exportCount === 1 ? '' : 's'})`
+      : 'Export File: not loaded yet';
+    const haPart = data.haFileName
+      ? `HA Details: ${data.haFileName} (${data.haCount.toLocaleString('en-US')} item${data.haCount === 1 ? '' : 's'})`
+      : 'HA Details: not loaded yet';
+    els.productDatabaseStatus.textContent = `${exportPart} — ${haPart} — ${data.products.length.toLocaleString('en-US')} merged row${data.products.length === 1 ? '' : 's'}.`;
+  }
+
+  function renderProductDatabaseTable(data) {
+    const headers = ['SKU', 'Title', 'UPC', 'Size', 'Price', 'Brand', 'Department', 'Sub Department'];
+    const rows = data.products.map((p) => [
+      p.sku, p.title, p.upc, p.size, p.price, p.brand, p.department, p.subDepartment,
+    ]);
+    renderPreviewTable(els.productDatabaseTableWrap, headers, rows);
+  }
+
+  // Called every time the rail switches to Product Database (see
+  // setActiveView) - re-fetches the merged state rather than caching it
+  // client-side, so two files loaded on separate visits still show up
+  // combined without needing a manual refresh.
+  async function loadProductDatabase() {
+    try {
+      const resp = await fetch('/api/product-database');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not load the product database.');
+      renderProductDatabaseStatus(data);
+      renderProductDatabaseTable(data);
+    } catch (err) {
+      els.productDatabaseStatus.textContent = err.message || 'Could not load the product database.';
+    }
+  }
+
+  async function uploadProductDatabaseFile(input, btn, route) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    btn.disabled = true;
+    els.productDatabaseStatus.textContent = `Loading ${file.name}…`;
+    try {
+      const contentBase64 = arrayBufferToBase64(await file.arrayBuffer());
+      const resp = await fetch(route, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentBase64 }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || `Could not load ${file.name}.`);
+      renderProductDatabaseStatus(data);
+      renderProductDatabaseTable(data);
+    } catch (err) {
+      els.productDatabaseStatus.textContent = err.message || `Could not load ${file.name}.`;
+    } finally {
+      btn.disabled = false;
+      input.value = ''; // lets picking the same file again (e.g. after fixing it) still fire 'change'
+    }
+  }
+
+  els.productDatabaseExportBtn.addEventListener('click', () => els.productDatabaseExportInput.click());
+  els.productDatabaseExportInput.addEventListener('change', () => uploadProductDatabaseFile(
+    els.productDatabaseExportInput, els.productDatabaseExportBtn, '/api/product-database/export-file',
+  ));
+  els.productDatabaseHaBtn.addEventListener('click', () => els.productDatabaseHaInput.click());
+  els.productDatabaseHaInput.addEventListener('change', () => uploadProductDatabaseFile(
+    els.productDatabaseHaInput, els.productDatabaseHaBtn, '/api/product-database/ha-file',
+  ));
+
   // Configures the WinePOS export file path the Scan UPC tab reads from -
   // previously an inline "Settings" box on that tab itself; moved here (see
   // main.js's Advanced menu) so the tab stays focused on scanning and setup
@@ -12538,16 +12636,18 @@
     els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
     els.railBeerBibleBtn.classList.toggle('is-active', view === 'beerBible');
     els.railRumRepositoryBtn.classList.toggle('is-active', view === 'rumRepository');
+    els.railProductDatabaseBtn.classList.toggle('is-active', view === 'productDatabase');
     els.shelfTalkerView.hidden = view !== 'shelfTalker';
     els.libraryView.hidden = view !== 'library';
     els.atlasView.hidden = view !== 'atlas';
     els.beerBibleView.hidden = view !== 'beerBible';
     els.rumRepositoryView.hidden = view !== 'rumRepository';
-    // The Library, Atlas, Beer Bible, and Rum Repository screens render
-    // their own header band (name, search, stats) the moment they're shown
-    // - the "Shelf Talker Wizard" app bar above it would just be a second,
-    // redundant header, so it only shows on the Shelf Talker screen that
-    // actually needs it.
+    els.productDatabaseView.hidden = view !== 'productDatabase';
+    // The Library, Atlas, Beer Bible, Rum Repository, and Product Database
+    // screens render their own header band (name, search, stats) the
+    // moment they're shown - the "Shelf Talker Wizard" app bar above it
+    // would just be a second, redundant header, so it only shows on the
+    // Shelf Talker screen that actually needs it.
     els.appBar.hidden = view !== 'shelfTalker';
     if (view === 'shelfTalker') {
       // The preview stage reads 0 for its own width while
@@ -12580,6 +12680,8 @@
       // Same reasoning as Beer Bible above - the Rum Repository has no
       // cross-register sync yet either.
       renderRumRepositoryView();
+    } else if (view === 'productDatabase') {
+      loadProductDatabase();
     }
   }
 
@@ -12588,6 +12690,7 @@
   els.railAtlasBtn.addEventListener('click', () => setActiveView('atlas'));
   els.railBeerBibleBtn.addEventListener('click', () => setActiveView('beerBible'));
   els.railRumRepositoryBtn.addEventListener('click', () => setActiveView('rumRepository'));
+  els.railProductDatabaseBtn.addEventListener('click', () => setActiveView('productDatabase'));
   els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
   // ---------- Menu bar ----------
