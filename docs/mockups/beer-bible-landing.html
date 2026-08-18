@@ -209,6 +209,30 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .panel-footer-cta p { margin: 0; font-size: 0.86rem; color: var(--ui-ink-soft); max-width: 56ch; line-height: 1.5; }
 .panel-footer-cta p strong { color: var(--ui-ink); }
 
+/* package-format bars (real data) */
+.format-grid { display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: center; }
+.format-bars { display: flex; flex-direction: column; gap: 0.55rem; }
+.format-row { display: grid; grid-template-columns: 150px 1fr 3.6em; align-items: center; gap: 0.7rem; font-size: 0.82rem; }
+.format-row__label { color: var(--ui-ink-soft); font-weight: 600; }
+.format-row__track { height: 14px; border-radius: 999px; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); overflow: hidden; }
+.format-row__fill { height: 100%; border-radius: 999px 0 0 999px; background: var(--chart-1); }
+.format-row__count { text-align: right; font-variant-numeric: tabular-nums; color: var(--ui-muted); font-weight: 700; font-size: 0.78rem; }
+
+/* research-progress ring (real data) */
+.progress-ring-wrap { display: flex; align-items: center; gap: 1.1rem; }
+.progress-ring { width: 92px; height: 92px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(var(--ui-accent) var(--progress-deg, 3deg), var(--ui-panel-sunken) 0); position: relative; border: 1px solid var(--ui-border); }
+.progress-ring::after { content: ""; position: absolute; inset: 10px; border-radius: 50%; background: var(--ui-panel); }
+.progress-ring__num { position: absolute; inset: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; }
+.progress-copy { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; max-width: 30ch; }
+.progress-copy strong { color: var(--ui-ink); }
+
+/* ABV histogram (illustrative) */
+.hist { display: flex; align-items: flex-end; gap: 0.5rem; height: 130px; padding-top: 0.5rem; }
+.hist-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.4rem; height: 100%; }
+.hist-col__bar { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; background: var(--chart-4); }
+.hist-col__count { font-size: 0.72rem; font-weight: 700; color: var(--ui-ink-soft); }
+.hist-col__label { font-size: 0.68rem; color: var(--ui-muted); text-align: center; line-height: 1.2; }
+
 .panel.notes-panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
 .notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.9rem; }
 @media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
@@ -315,6 +339,37 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         </div>
       </div>
 
+      <!-- ===== package format + research progress ===== -->
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>How it's packaged</h3>
+            <p>Pack size guessed from each title's own text (e.g. "4PK", "12PK", "VARIETY") the same way the style
+            chart is &mdash; real counts from the 2,539-title import file, not the researched data.</p>
+          </div>
+        </div>
+        <div class="format-grid">
+          <div class="format-bars" id="formatBars"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Research progress</h3>
+            <p>Share of the catalog with brewery/style/ABV actually filled in &mdash; the one number that's real
+            and updates as staff work through the backlog, rather than a sample.</p>
+          </div>
+        </div>
+        <div class="progress-ring-wrap">
+          <div class="progress-ring" id="progressRing" style="--progress-deg: 1deg;">
+            <div class="progress-ring__num" id="progressRingNum">0%</div>
+          </div>
+          <p class="progress-copy"><strong>0 of 2,539</strong> titles have been researched so far. Every entry added
+          here fills the ring &mdash; the "Add a Beer" and bulk-research flows both count toward it.</p>
+        </div>
+      </div>
+
       <!-- ===== spotlight ===== -->
       <div class="panel">
         <div class="section-head">
@@ -326,6 +381,19 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
           <button type="button" class="btn btn--small btn--ghost">See all rated &rarr;</button>
         </div>
         <div class="spotlight-grid" id="spotlightGrid"></div>
+      </div>
+
+      <!-- ===== ABV distribution ===== -->
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <h3>ABV mix, once researched</h3>
+            <p>What "low-ABV" vs. "standard" vs. "high-ABV" looks like across researched entries &mdash; helpful for
+            answering the question at the register. Illustrative sample distribution, same convention as the
+            spotlight cards above.</p>
+          </div>
+        </div>
+        <div class="hist" id="abvHist"></div>
       </div>
 
       <!-- ===== breweries ===== -->
@@ -385,14 +453,16 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     <div class="notes-card">
       <h3>Where the numbers come from</h3>
       <p><strong>Real, computed from the repo's own data:</strong> 2,539 total titles, the style-mix chart's nine
-      buckets and counts (simple keyword match against each title, run over the actual bundled seed file), and the
+      buckets and counts (simple keyword match against each title, run over the actual bundled seed file), the
       "36 recognizable breweries" figure (a fixed list of well-known national/regional brand names checked against
-      the same titles).</p>
+      the same titles), the package-format bars (a second keyword pass looking for "4PK"/"12PK"/"VARIETY"/etc. in
+      each title), and the research-progress ring (currently 0 of 2,539, since <code>brewery</code>/<code>style</code>
+      are blank on every seeded row).</p>
       <p><strong>Illustrative sample data:</strong> the hero's "styles researched" and "avg. Untappd rating" tiles,
       every beer in the Top Rated spotlight grid (real beers with real public ABV/IBU/Untappd figures, chosen to
-      match titles already in the import file), the brewery bar-fill percentages, and the Recently Researched
-      feed. None of it is live &mdash; it's there to show what the page looks like with data in it, not what's on
-      file today.</p>
+      match titles already in the import file), the ABV distribution histogram, the brewery bar-fill percentages,
+      and the Recently Researched feed. None of it is live &mdash; it's there to show what the page looks like with
+      data in it, not what's on file today.</p>
     </div>
   </div>
 </div>
@@ -432,6 +502,52 @@ const styleTotal = styleMix.reduce((s, x) => s + x.count, 0);
     </div>
   `).join('');
 })();
+
+// ---- package format: real counts from a keyword pass over beer-bible-seed-data.json ----
+const formatMix = [
+  { name: '4-pack', count: 932 },
+  { name: '6-pack', count: 612 },
+  { name: 'Other / unmatched', count: 488 },
+  { name: '12-pack', count: 232 },
+  { name: 'Variety pack', count: 152 },
+  { name: '15/18/24-pack (case)', count: 71 },
+  { name: 'Keg / growler', count: 51 },
+  { name: 'Single can/bottle', count: 1 },
+];
+const formatMax = Math.max(...formatMix.map((f) => f.count));
+document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
+  <div class="format-row">
+    <span class="format-row__label">${f.name}</span>
+    <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((f.count / formatMax) * 100)}%;"></span></span>
+    <span class="format-row__count">${f.count.toLocaleString()}</span>
+  </div>
+`).join('');
+
+// ---- research progress ring: real (0 of 2,539 today) ----
+(function renderProgressRing() {
+  const researched = 0;
+  const total = 2539;
+  const pct = Math.max(1, Math.round((researched / total) * 100)); // floor of 1deg so the ring isn't invisible
+  document.getElementById('progressRing').style.setProperty('--progress-deg', `${(pct / 100) * 360}deg`);
+  document.getElementById('progressRingNum').textContent = `${Math.round((researched / total) * 100)}%`;
+})();
+
+// ---- ABV histogram: illustrative sample distribution ----
+const abvHist = [
+  { label: '< 4.5% (session)', count: 8 },
+  { label: '4.5–5.5%', count: 22 },
+  { label: '5.5–7%', count: 31 },
+  { label: '7–9%', count: 19 },
+  { label: '9%+ (high ABV)', count: 11 },
+];
+const abvMax = Math.max(...abvHist.map((h) => h.count));
+document.getElementById('abvHist').innerHTML = abvHist.map((h) => `
+  <div class="hist-col">
+    <span class="hist-col__count">${h.count}</span>
+    <div class="hist-col__bar" style="height:${Math.round((h.count / abvMax) * 100)}%;"></div>
+    <span class="hist-col__label">${h.label}</span>
+  </div>
+`).join('');
 
 // ---- spotlight: sample researched beers (same convention as beer-profile-page.html) ----
 const spotlight = [
