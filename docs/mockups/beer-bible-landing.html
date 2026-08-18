@@ -308,7 +308,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   </div>
 
   <div class="mockup-toolbar">
-    <div class="mockup-toolbar__label" id="customizeSummary">Interactive preview &mdash; showing 7 of 7 sections</div>
+    <div class="mockup-toolbar__label" id="customizeSummary">Interactive preview &mdash; showing 8 of 8 sections</div>
     <div class="customize-wrap">
       <button type="button" class="btn btn--ghost btn--small customize-btn" id="customizeBtn" aria-haspopup="true" aria-expanded="false">
         &#9881;&#65039; Customize this page
@@ -404,6 +404,36 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
           <span><strong>The opportunity, in one number:</strong> 2,539 titles are already in the Beer Bible, but 0
           have brewery/style/ABV/tasting-notes filled in yet. Everything below this line shows what the page looks
           like <em>once</em> entries are researched &mdash; sample beers, not a live count.</span>
+        </div>
+      </div>
+
+      <!-- ===== where it's from ===== -->
+      <div class="panel" data-section="origin" data-section-label="Where it's from">
+        <div class="section-head">
+          <div>
+            <h3>Where it's from</h3>
+            <p>There's no researched "origin" field yet &mdash; <code>state</code>/<code>country</code> aren't
+            columns on the <code>beers</code> table today. This is the same 36-brewery keyword match that powers
+            "Breweries on the shelf" below, each of those recognized names mapped to its home state or country, so
+            it's real data about a small recognizable slice of the catalog, not a live geographic breakdown of all
+            2,539 titles.</p>
+          </div>
+        </div>
+        <div class="mix-grid">
+          <div class="format-bars" id="originBars"></div>
+          <div class="stat-rail">
+            <div class="stat-tile"><span class="stat-tile__label">Domestic titles</span><span class="stat-tile__value">221 <small>(84%)</small></span></div>
+            <div class="stat-tile"><span class="stat-tile__label">Imported titles</span><span class="stat-tile__value">42 <small>(16%)</small></span></div>
+            <div class="stat-tile"><span class="stat-tile__label">US states represented</span><span class="stat-tile__value">8</span></div>
+            <div class="stat-tile"><span class="stat-tile__label">Countries represented</span><span class="stat-tile__value">3 <small>incl. US</small></span></div>
+          </div>
+        </div>
+        <div class="gap-note">
+          <span class="gap-note__icon">&#127758;</span>
+          <span><strong>Small, recognizable slice only:</strong> these 263 titles are the ones a keyword match could
+          confidently pin to a brewery (and from there, a state or country) &mdash; the other 2,276 titles have no
+          origin info until <code>brewery</code> is actually researched and a real <code>state</code>/<code>country</code>
+          column exists to store it.</span>
         </div>
       </div>
 
@@ -766,6 +796,29 @@ document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
     <span class="format-row__label">${f.name}</span>
     <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((f.count / formatMax) * 100)}%;"></span></span>
     <span class="format-row__count">${f.count.toLocaleString()}</span>
+  </div>
+`).join('');
+
+// ---- origin: same 12 recognized breweries as the "Breweries on the shelf" list below,
+// each mapped to its real home state/country, counts aggregated from there ----
+const originMix = [
+  { name: 'California', count: 40 },
+  { name: 'Colorado', count: 39 },
+  { name: 'Illinois', count: 28 },
+  { name: 'Michigan', count: 26 },
+  { name: 'Wisconsin', count: 25 },
+  { name: 'Delaware', count: 23 },
+  { name: 'Mexico', count: 23, imported: true },
+  { name: 'Massachusetts', count: 22 },
+  { name: 'Netherlands', count: 19, imported: true },
+  { name: 'Missouri', count: 18 },
+];
+const originMax = Math.max(...originMix.map((o) => o.count));
+document.getElementById('originBars').innerHTML = originMix.map((o) => `
+  <div class="format-row">
+    <span class="format-row__label">${o.name}${o.imported ? ' <span class="tag" style="margin-left:0.3rem;">Imported</span>' : ''}</span>
+    <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((o.count / originMax) * 100)}%;"></span></span>
+    <span class="format-row__count">${o.count.toLocaleString()}</span>
   </div>
 `).join('');
 
