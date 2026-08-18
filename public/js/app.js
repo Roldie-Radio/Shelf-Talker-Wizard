@@ -52,6 +52,15 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.8',
+      items: [
+        'New: The Beer Bible now opens on an Overview page instead of dropping straight into the grid - a hero stat strip (beers on file, breweries, styles researched, avg. Untappd rating), a style-mix donut chart (grouped by style family - "American IPA"/"Session IPA"/"Double IPA" all count as one IPA slice, not three), a Top Rated spotlight, a Breweries grid (click one to filter the library), and a Recently Researched feed showing each beer\'s brewery, style, ABV, and rating, not just its name and a timestamp. A "Beer Bible Overview" link gets back to it from the grid or a profile page.',
+        'New: each package size on a Beer Bible profile page now shows what the WinePOS export\'s own Category/Department/Class column says for that SKU, flagged if it names a different product type (Wine/Spirits, say) - a way to catch a product that was tagged into the wrong department in WinePOS itself, not just a bad Untappd match.',
+        'Fixed: a confident Untappd match no longer backfills a field it doesn\'t have with whatever was already there - a stale value left over from a previous product in the Search tab form, a store page\'s generic blurb, or (re-Researching) whatever a Beer Bible entry already had on file. Blank now stays blank; applies to Search by Name, SKU Lookup, Scan UPC, and the Beer Bible\'s own Research button alike.',
+        'Fixed: Batch Research (Select mode → Research) no longer saves a confident single match automatically - it now shows the same Confirm Untappd Match review the per-beer Research button already requires, one beer at a time, before anything saves. A rejected match gets its own Rejected tally, distinct from a tie or a miss.',
+      ],
+    },
+    {
       version: '4.4.7',
       items: [
         'New: an "Or search Untappd yourself" box at the bottom of Pick the Right Beer - for when none of the suggested matches (or, now, a plain "no confident match" too) are actually the right beer, type in whatever you\'d search Untappd for and it looks again without leaving the dialog. Picking one of the new results works exactly like picking a suggested one; a Back to Untappd\'s own matches link returns to where you started.',
@@ -1076,6 +1085,7 @@
     beerBibleBulkResearchLive: document.getElementById('beerBibleBulkResearchLive'),
     beerBibleBulkResearchTallyMatched: document.getElementById('beerBibleBulkResearchTallyMatched'),
     beerBibleBulkResearchTallyTie: document.getElementById('beerBibleBulkResearchTallyTie'),
+    beerBibleBulkResearchTallyRejected: document.getElementById('beerBibleBulkResearchTallyRejected'),
     beerBibleBulkResearchTallyMiss: document.getElementById('beerBibleBulkResearchTallyMiss'),
     beerBibleBulkResearchCancelBtn: document.getElementById('beerBibleBulkResearchCancelBtn'),
     beerBibleBulkResearchSummary: document.getElementById('beerBibleBulkResearchSummary'),
@@ -8990,12 +9000,23 @@
     const priceHtml = variant.sku
       ? `<div class="package-row__price help-text" id="beerBiblePriceValue-${variant.id}" role="status" aria-live="polite">Checking the WinePOS export&hellip;</div>`
       : '<div class="package-row__price help-text">No SKU on file for a price lookup.</div>';
+    // What this SKU's own row in the WinePOS export says its Category/
+    // Department/Class column is - see loadBeerBibleExportInfo below (same
+    // live lookup the price line above already runs, one fetch fills both).
+    // Only rendered when there's a SKU to look up in the first place, same
+    // guard the price line uses. Empty at first render - filled in async,
+    // same reason the price line starts as "Checking…" instead of blocking
+    // the whole profile page on this SKU's own export lookup.
+    const exportTagHtml = variant.sku
+      ? `<div class="package-row__export-tag" id="beerBibleExportTagValue-${variant.id}"></div>`
+      : '';
     return `
       <div class="package-row">
         <div class="package-row__main">
           <div class="package-row__label">${escapeHtml(label)}</div>
           <div class="package-row__meta">${metaBits.join(' &middot; ')}</div>
           ${priceHtml}
+          ${exportTagHtml}
         </div>
         <div class="package-row__actions">
           <button type="button" class="btn btn--ghost btn--small" data-package-edit="${variant.id}">Edit</button>
@@ -9116,7 +9137,7 @@
       renderBeerBibleChipsAndStats();
       renderBeerBibleProfile();
     });
-    group.variants.forEach((variant) => { if (variant.sku) loadBeerBiblePrice(variant); });
+    group.variants.forEach((variant) => { if (variant.sku) loadBeerBibleExportInfo(variant); });
   }
 
   // Formats /api/export-price's own fields into one line - the regular/
@@ -9133,43 +9154,99 @@
     return `${mainPrice} · ${formatMoney(data.packPrice)}${data.packQty ? ` (${data.packQty}-pack)` : ' (pack)'}`;
   }
 
-  // Fills in one package-size row's Price line (renderBeerBibleProfile
-  // leaves it as "Checking the WinePOS export...") - same live lookup
-  // (/api/export-price -> lookupSkuInExport in upcCatalog.js) against
-  // `entry`'s own sku as the Bourbon Library profile page's own Price row
-  // (loadBourbonLibraryPrice above), not a price stored on the entry
-  // itself, for the same reason: a beer's shelf price drifts, and this is
-  // meant to reflect today's, not whatever it was when the SKU was typed
-  // in (contrast with upc, which Export File Sync does store - a barcode
-  // doesn't go stale the way a price does).
+  // Loose "does this export row's own Category/Department/Class text
+  // actually sound like Beer" check, for the export-tag badge below - staff
+  // asked to see what a SKU's row in the WinePOS export originally said it
+  // was, specifically to catch a product that was tagged into the wrong
+  // department there (Wine/Spirits, say) and ended up in the Beer Bible
+  // anyway via a title match. Deliberately narrow and one-directional: it
+  // only flags an export category that explicitly names a *different*
+  // product type, never a blank/unrecognized one, and never demands the
+  // literal word "beer" be present - confirmed against a real WinePOS
+  // export (see FIELD_ALIASES' own comment in upcCatalog.js), a store's
+  // actual department text is as likely to be a in-house code as it is to
+  // spell out "Beer", so requiring an exact match here would flag most
+  // genuinely-fine beer rows as "wrong" and train staff to ignore the badge
+  // entirely. A category naming Wine/Spirits/a spirit category by name is a
+  // much higher-confidence signal something really is off.
+  function beerExportCategoryLooksOffBeer(category) {
+    const c = (category || '').toLowerCase();
+    if (!c) return false;
+    if (/\bbeer\b|\bale\b|\blager\b|cider|seltzer|\bmalt\b/.test(c)) return false;
+    return /\bwine\b|\bspirit|\bliquor\b|\bbourbon\b|\bwhisk(e)?y\b|\bvodka\b|\brum\b|\btequila\b|\bgin\b|\bbrandy\b/.test(c);
+  }
+
+  // The export-tag badge itself - what this SKU's own row in the WinePOS
+  // export says its Category/Department/Class column is (see the `category`
+  // field FIELD_ALIASES/buildIndex in upcCatalog.js already parse out of
+  // every export row, previously fetched here but never shown). Neutral
+  // styling normally (this is informational, not a verdict - see
+  // beerExportCategoryLooksOffBeer's own comment on why a plain "not the
+  // word beer" mismatch isn't reliable enough to warn on by itself); the
+  // warn styling only kicks in for that function's narrower, higher-
+  // confidence case. A blank category (many exports don't have this column
+  // at all, or leave it empty) says so plainly rather than rendering an
+  // empty badge.
+  function beerExportTagHtml(data) {
+    const category = (data.category || '').trim();
+    if (!category) {
+      return '<span class="package-row__meta">Export file has no Category/Department on file for this SKU.</span>';
+    }
+    const offBeer = beerExportCategoryLooksOffBeer(category);
+    const style = offBeer ? 'color:var(--ui-warn);background:var(--ui-warn-tint);' : 'color:var(--ui-muted);background:var(--ui-code-bg);';
+    const title = offBeer
+      ? "This SKU's own Category/Department/Class column in the WinePOS export doesn't read as Beer - double check this product before printing its talker."
+      : "This SKU's own Category/Department/Class column in the WinePOS export, for reference.";
+    return `<span class="conf-badge" style="${style}" title="${escapeHtml(title)}">Export category: ${escapeHtml(category)}</span>`;
+  }
+
+  // Fills in one package-size row's Price line and Export category badge
+  // (renderBeerBibleProfile leaves both blank/"Checking…" at first render) -
+  // one live lookup (/api/export-price -> lookupSkuInExport in
+  // upcCatalog.js) against `entry`'s own sku, same as the Bourbon Library
+  // profile page's own Price row (loadBourbonLibraryPrice above), not
+  // anything stored on the entry itself, for the same reason: a beer's
+  // shelf price (and how WinePOS itself has this SKU categorized today)
+  // both drift, and this is meant to reflect today's export, not whatever
+  // was true whenever the SKU was typed in (contrast with upc, which Export
+  // File Sync does store - a barcode doesn't go stale the way a price or a
+  // department tag can).
   //
-  // Guards on the target element still existing rather than on
+  // Guards on each target element still existing rather than on
   // beerBibleSelectedId (as this used to, back when a profile page could
   // only ever have the one SKU/one price element) - `entry` here is often
   // a sibling package size, not the group's own primary/selected id, so
-  // that comparison would always fail for one. Checking the element
+  // that comparison would always fail for one. Checking the elements
   // instead covers exactly the same case (staff navigated away before this
-  // resolved, so the whole profile's markup - this element included - was
+  // resolved, so the whole profile's markup - both elements included - was
   // already replaced) without needing to know which of a group's several
   // ids is "the" selected one.
-  async function loadBeerBiblePrice(entry) {
-    const elId = `beerBiblePriceValue-${entry.id}`;
+  async function loadBeerBibleExportInfo(entry) {
+    const priceElId = `beerBiblePriceValue-${entry.id}`;
+    const tagElId = `beerBibleExportTagValue-${entry.id}`;
     let data;
     try {
       const res = await fetch(`/api/export-price?sku=${encodeURIComponent(entry.sku)}`);
       data = await res.json();
       if (!res.ok) throw data;
     } catch (err) {
-      const el = document.getElementById(elId);
-      if (!el) return;
-      el.textContent = err && err.code === 'SKU_NOT_FOUND'
-        ? 'Not found in the current WinePOS export.'
-        : (err && err.error) || 'Could not check the WinePOS export.';
+      const priceEl = document.getElementById(priceElId);
+      if (priceEl) {
+        priceEl.textContent = err && err.code === 'SKU_NOT_FOUND'
+          ? 'Not found in the current WinePOS export.'
+          : (err && err.error) || 'Could not check the WinePOS export.';
+      }
+      // No category to show on a miss/error either - left blank rather than
+      // a placeholder, same as the price line's own error text already
+      // covers "nothing found here".
+      const tagEl = document.getElementById(tagElId);
+      if (tagEl) tagEl.innerHTML = '';
       return;
     }
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.textContent = formatBeerPriceLine(data);
+    const priceEl = document.getElementById(priceElId);
+    if (priceEl) priceEl.textContent = formatBeerPriceLine(data);
+    const tagEl = document.getElementById(tagElId);
+    if (tagEl) tagEl.innerHTML = beerExportTagHtml(data);
   }
 
   // ---------- Beer Bible landing/overview ----------
@@ -9201,6 +9278,56 @@
     return rated.reduce((sum, g) => sum + Number(g.untappdRating), 0) / rated.length;
   }
 
+  // Style *families* the donut below buckets by, checked in order (first
+  // match wins) against each beer's own researched `style` text. Plain
+  // Untappd style strings are far more granular than a chart can usefully
+  // show - "American IPA", "New England IPA", "Double IPA", and "Session
+  // IPA" are four different exact strings that are all obviously "an IPA"
+  // to a person reading them. Bucketing raw strings instead of families
+  // used to mean any beer library with real variety in it collapsed to a
+  // handful of top individual styles plus one dominant, undifferentiated
+  // "Other styles" catch-all holding most of the rest - correct, but not
+  // informative. Grouping by family first means "Other" (see
+  // beerStyleFamily below) only ever holds genuinely one-off styles that
+  // don't fit a recognized family, not the bulk of the library.
+  //
+  // IPA is checked before the plain Pale Ale rule specifically because
+  // "India Pale Ale" itself contains the substring "Pale Ale" - reversing
+  // that order would put every IPA in the Pale Ale bucket instead. Stout &
+  // Porter is checked before Barleywine & Strong Ale for the same reason
+  // ("Imperial Stout" would otherwise match Imperial-flavored strong-ale
+  // wording first).
+  const BEER_STYLE_FAMILIES = [
+    { name: 'IPA', test: /\bipa\b|india pale ale/i },
+    { name: 'Stout & Porter', test: /stout|porter/i },
+    { name: 'Lager & Pilsner', test: /lager|pilsner|\bpils\b|helles|märzen|marzen|oktoberfest/i },
+    { name: 'Wheat & Wit', test: /wheat|hefe|witbier|\bwit\b/i },
+    { name: 'Sour & Wild', test: /sour|gose|lambic|wild ale|berliner/i },
+    { name: 'Belgian & Farmhouse', test: /belgian|saison|farmhouse|tripel|dubbel|quad(rupel)?/i },
+    { name: 'Pale Ale', test: /pale ale/i },
+    { name: 'Amber & Red Ale', test: /amber|red ale/i },
+    { name: 'Brown Ale', test: /brown ale/i },
+    { name: 'Golden & Blonde Ale', test: /golden ale|blonde ale/i },
+    { name: 'Barleywine & Strong Ale', test: /barleywine|barley wine|strong ale/i },
+    { name: 'Cider', test: /cider/i },
+    { name: 'Seltzer & RTD', test: /seltzer|hard tea|ready.to.drink|\brtd\b/i },
+    { name: 'Non-Alcoholic', test: /non.?alcoholic|\bn\/a\b|0\.0%?/i },
+  ];
+
+  // The family a researched beer's own `style` text falls under, or the
+  // raw style text itself when nothing in BEER_STYLE_FAMILIES matches -
+  // real but uncommon styles (a "Kolsch" or a "Braggot", say) keep their
+  // own name rather than being forced into an unrelated bucket, and still
+  // fold into the donut's own top-N-plus-"Other" cutoff below same as any
+  // other bucket would. `null` for no style at all - beerStyleMixHtml below
+  // maps that to its own "Style not on file" bucket instead.
+  function beerStyleFamily(rawStyle) {
+    const s = (rawStyle || '').trim();
+    if (!s) return null;
+    const family = BEER_STYLE_FAMILIES.find((f) => f.test.test(s));
+    return family ? family.name : s;
+  }
+
   // Style-mix donut + legend, conic-gradient built inline - same technique
   // docs/mockups/mash-bill-pie-chart.html and beer-bible-landing.html both
   // already use. Runs over researched beers only (an unresearched beer has
@@ -9213,7 +9340,7 @@
     }
     const counts = new Map();
     researchedGroups.forEach((g) => {
-      const key = (g.style || '').trim() || 'Style not on file';
+      const key = beerStyleFamily(g.style) || 'Style not on file';
       counts.set(key, (counts.get(key) || 0) + 1);
     });
     const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
@@ -9306,22 +9433,46 @@
     `).join('')}</div>`;
   }
 
+  // The feed row's own second line - everything a beer's grid card already
+  // surfaces (style tag, ABV, rating dots) plus brewery and a package-size
+  // count, so "recently researched" reads as an actual research summary
+  // instead of just a name and a timestamp. Pieces that don't apply to this
+  // beer (no rating yet, one package size, no style typed in) are just left
+  // out rather than shown blank - same "only render what's real" rule
+  // beerCardHtml's own metaBits/statBits already follow.
+  function beerLandingActivityDetailHtml(g) {
+    const styleTagHtml = g.style ? `<span class="tag">${escapeHtml(g.style)}</span>` : '';
+    const textBits = [];
+    if (g.brewery) textBits.push(escapeHtml(g.brewery));
+    if (g.abv) textBits.push(`${escapeHtml(g.abv)} ABV`);
+    if (g.groupCount > 1) textBits.push(`${g.groupCount} sizes`);
+    const textHtml = textBits.length ? `<span>${textBits.join(' &middot; ')}</span>` : '';
+    const ratingHtml = Number(g.untappdRating) > 0 ? ratingDotsHtml(g.untappdRating) : '';
+    return [styleTagHtml, textHtml, ratingHtml].filter(Boolean).join('');
+  }
+
   // Recently researched feed - researched beers only, newest updatedAt
   // first (same field beerResearchBadgeHtml's own hover tooltip reads),
   // clickable straight into that beer's own profile like the spotlight
-  // grid above.
+  // grid above. Shows more rows than the spotlight/brewery grids (8 vs 6) -
+  // this is the one section meant to read as a scrollable-feeling log of
+  // recent activity rather than a ranked top-N list, so it earns a little
+  // more room.
   function beerLandingActivityHtml(researchedGroups) {
     const recent = researchedGroups
       .slice()
       .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
-      .slice(0, 6);
+      .slice(0, 8);
     if (!recent.length) {
       return '<p class="empty-hint">Nothing researched yet - recently researched beers show up here.</p>';
     }
     return `<div class="feed">${recent.map((g) => `
       <div class="feed-row" role="button" tabindex="0" data-id="${g.id}">
         <span class="feed-dot ${g.source === 'Manual' ? 'feed-dot--manual' : ''}"></span>
-        <span class="feed-title">${escapeHtml(beerDisplayName(g))} <span>&mdash; ${escapeHtml(BEER_SOURCE_LABELS[g.source] || 'Researched')}</span></span>
+        <div class="feed-main">
+          <div class="feed-title">${escapeHtml(beerDisplayName(g))} <span>&mdash; ${escapeHtml(BEER_SOURCE_LABELS[g.source] || 'Researched')}</span></div>
+          <div class="feed-detail">${beerLandingActivityDetailHtml(g)}</div>
+        </div>
         <span class="feed-when">${g.updatedAt ? escapeHtml(formatHistoryTimestamp(g.updatedAt)) : ''}</span>
       </div>
     `).join('')}</div>`;
@@ -9396,7 +9547,10 @@
         </div>
 
         <div class="panel">
-          <div class="section-head"><div><h3>Recently researched</h3></div></div>
+          <div class="section-head">
+            <div><h3>Recently researched</h3><p>Newest first - brewery, style, ABV, and rating for each, wherever Untappd or a hand-typed edit found them.</p></div>
+            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeResearchedBtn">See all researched &rarr;</button>
+          </div>
           ${beerLandingActivityHtml(researchedGroups)}
         </div>
       </div>
@@ -9414,6 +9568,12 @@
     });
     els.beerBibleBody.querySelector('#beerLandingAddBtn')?.addEventListener('click', () => {
       els.beerBibleAddBtn.click();
+    });
+    els.beerBibleBody.querySelector('#beerLandingSeeResearchedBtn')?.addEventListener('click', () => {
+      beerBibleStatusFilter = 'researched';
+      beerBibleViewMode = 'grid';
+      renderBeerBibleChipsAndStats();
+      renderBeerBibleBody();
     });
     els.beerBibleBody.querySelectorAll('.beer-card[data-id], .feed-row[data-id]').forEach((node) => {
       const activate = () => {
@@ -9968,6 +10128,25 @@
         </div>
       `;
     }
+    // Untappd found a single confident match, but staff clicked Not the
+    // Right Beer on it during the batch (see runBeerBibleBulkResearch's own
+    // confirm branch) - distinct from 'miss' (Untappd found nothing at
+    // all), so the comparison toggle below has something real to show:
+    // r.rejectedData is exactly what was declined, not what's on file.
+    if (r.outcome === 'rejected') {
+      return `
+        <div class="rresult">
+          <span class="rresult__icon rresult__icon--warn">${BEER_RESULT_ICON_WARN}</span>
+          <div class="rresult__body">
+            <div class="rresult__title">${escapeHtml(b.title)}</div>
+            <div class="rresult__detail">Untappd found a match, but it wasn't confirmed - open this beer's own profile and click Research to review it again, or search Untappd yourself below.</div>
+            <button type="button" class="rcompare-toggle" data-toggle="${b.id}">Show comparison</button>
+            <button type="button" class="rcompare-toggle" data-manual-search="${b.id}">Search Untappd&hellip;</button>
+            <div class="rresult__compare" data-compare-slot="${b.id}" hidden>${beerCompareCardHtml(b, 'match', r.rejectedData)}</div>
+          </div>
+        </div>
+      `;
+    }
     return `
       <div class="rresult">
         <span class="rresult__icon rresult__icon--muted">${BEER_RESULT_ICON_MISS}</span>
@@ -10003,10 +10182,12 @@
 
     const matched = results.filter((r) => r.outcome === 'match').length;
     const tie = results.filter((r) => r.outcome === 'tie').length;
+    const rejected = results.filter((r) => r.outcome === 'rejected').length;
     const miss = results.filter((r) => r.outcome === 'miss').length;
     const parts = [];
     if (matched) parts.push(`${matched} matched and saved`);
     if (tie) parts.push(`${tie} left unresolved`);
+    if (rejected) parts.push(`${rejected} not confirmed`);
     if (miss) parts.push(`${miss} not found`);
     els.beerBibleBulkResearchSummaryLine.textContent = `Researched ${results.length} beer${results.length === 1 ? '' : 's'}: ${parts.join(', ')}.`;
     els.beerBibleBulkResearchSummaryNote.textContent = beerBulkResearchCancelled ? 'Cancelled - the rest of the selection was left untouched.' : '';
@@ -10044,6 +10225,12 @@
 
       let outcome;
       let freshBeer = beer;
+      // Only meaningful for outcome 'rejected' - the fields Untappd found
+      // that staff declined, kept so the result row's own "Show
+      // comparison" toggle can still show what was turned down (see
+      // beerBulkResearchResultRowHtml below), the same way a 'match' row
+      // shows what got saved.
+      let rejectedData = null;
       try {
         // eslint-disable-next-line no-await-in-loop -- deliberately
         // sequential and paced (see the sleep below), not a burst - same
@@ -10070,18 +10257,33 @@
           outcome = 'miss';
           els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'miss');
         } else {
+          // A single confident match - same Confirm Untappd Match review
+          // step runBeerResearch shows for the per-card Research button,
+          // one beer at a time here too (see this modal's own top comment
+          // in index.html for why bulk Research isn't an exemption from
+          // that). Nothing saves until staff actually clicks Use This
+          // Match.
+          els.beerBibleBulkResearchCurrent.innerHTML = `${BEER_RESEARCH_ICON}Confirm match for <b style="color:var(--ui-ink-soft)">${escapeHtml(beerDisplayName(beer) || beer.title)}</b>&hellip;`;
+          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'match', data);
           // eslint-disable-next-line no-await-in-loop
-          await saveBeerResearchFields(beer.id, data);
-          outcome = 'match';
-          freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
-          els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
+          const confirmed = await openUntappdConfirm(data);
+          if (confirmed) {
+            // eslint-disable-next-line no-await-in-loop
+            await saveBeerResearchFields(beer.id, data);
+            outcome = 'match';
+            freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
+            els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
+          } else {
+            outcome = 'rejected';
+            rejectedData = data;
+          }
         }
       } catch (err) {
         outcome = 'miss';
         els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'miss');
       }
 
-      results.push({ beer: freshBeer, outcome });
+      results.push({ beer: freshBeer, outcome, rejectedData });
       const done = i + 1;
       const pct = Math.round((done / queue.length) * 100);
       els.beerBibleBulkResearchDone.textContent = done;
@@ -10089,6 +10291,7 @@
       els.beerBibleBulkResearchBar.value = pct;
       els.beerBibleBulkResearchTallyMatched.textContent = results.filter((r) => r.outcome === 'match').length;
       els.beerBibleBulkResearchTallyTie.textContent = results.filter((r) => r.outcome === 'tie').length;
+      els.beerBibleBulkResearchTallyRejected.textContent = results.filter((r) => r.outcome === 'rejected').length;
       els.beerBibleBulkResearchTallyMiss.textContent = results.filter((r) => r.outcome === 'miss').length;
 
       if (i < queue.length - 1 && !beerBulkResearchCancelled) {
@@ -10113,12 +10316,13 @@
       return;
     }
 
-    // A miss's own "Search Untappd…" (see beerBulkResearchResultRowHtml
-    // above) - opens the same Pick the Right Beer dialog a live tie during
-    // the batch already reuses, just for this one beer after the fact
-    // rather than pausing the whole run for it (a miss mid-batch is left
-    // alone precisely so an unattended batch can finish - see
-    // runBeerBibleBulkResearch's own miss branch).
+    // A miss or rejected row's own "Search Untappd…" (see
+    // beerBulkResearchResultRowHtml above) - opens the same Pick the Right
+    // Beer dialog a live tie during the batch already reuses, just for this
+    // one beer after the fact rather than pausing the whole run for it (a
+    // miss/rejected match mid-batch is left alone precisely so an
+    // unattended batch can finish - see runBeerBibleBulkResearch's own miss
+    // and rejected branches).
     const searchBtn = e.target.closest('[data-manual-search]');
     if (!searchBtn) return;
     const id = Number(searchBtn.dataset.manualSearch);

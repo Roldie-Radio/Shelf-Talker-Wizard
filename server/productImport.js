@@ -1930,6 +1930,38 @@ function mergeUntappdBeer(current, beer) {
   };
 }
 
+// Straight copy of a parsed Untappd beer's own researched fields, blank
+// wherever Untappd's own page doesn't have one - no fallback to whatever
+// `current`/`product` already carried, unlike mergeUntappdBeer above.
+// Used only by enrichBeerFromUntappd's own confident-match branch below
+// (the automatic search step behind Search by Name, SKU Lookup, Scan UPC,
+// and the Beer Bible's own Research button, single or batch) so that
+// result is always exactly what Untappd found for THIS search, never a
+// stale value left over from a previous product in the form, a store
+// page's own generic blurb, or (for Research) whatever this Beer Bible
+// entry already had on file before the search ran - staff review and
+// confirm that blank-if-Untappd-has-nothing result (see
+// openUntappdConfirm/confirmBeerUntappdMatch in app.js), not a version
+// that's already been quietly backfilled with old data. mergeUntappdBeer
+// itself is untouched and still used exactly as before by every other
+// caller (the manual "paste the Untappd URL/HTML" fallback, and the
+// Beer-Bible-entry substitute in applyBeerBibleFallback), where keeping
+// `current`'s own values is still the right call - see each of those
+// functions' own comments.
+function untappdFieldsOnly(beer) {
+  return {
+    beerName: beer.title || beer.beerName || '',
+    description: beer.description || '',
+    brewery: beer.brewery || '',
+    location: beer.location || '',
+    style: beer.style || '',
+    abv: beer.abv || '',
+    ibu: beer.ibu || '',
+    untappdRating: beer.untappdRating || '',
+    untappdRatingCount: beer.untappdRatingCount || '',
+  };
+}
+
 async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
   const size = combineBeerSize(product.size, product.packSize);
@@ -1944,19 +1976,20 @@ async function enrichBeerFromUntappd(product) {
     // word ("Can") only gets dropped from the displayed title here, once
     // that confirmation exists, rather than unconditionally.
     const displayTitle = stripUnmatchedContainerWords(title, beer.title);
-    // mergeUntappdBeer's own description fallback (see its comment) is meant
-    // for the manual "paste the Untappd URL/HTML" path further down, where
-    // `current` is whatever staff already have in the form and is never
-    // supposed to be cleared. Here `current` is the store's own generic
-    // manufacturer blurb - once Untappd is found, its own (possibly blank)
-    // description is what staff want to see, not that blurb, so this
-    // overrides mergeUntappdBeer's fallback rather than reusing it.
+    // untappdFieldsOnly, not mergeUntappdBeer(product, beer) - a confident
+    // automatic match should never quietly backfill from `product` (the
+    // store's own generic manufacturer blurb, a previous product still
+    // sitting in the form, or - for the Beer Bible's own Research button -
+    // whatever this entry already had on file). Blank stays blank here;
+    // see untappdFieldsOnly's own comment for the full reasoning and why
+    // mergeUntappdBeer's current-preserving merge is still right for this
+    // function's other two exit paths below (a genuine tie/miss leaves
+    // `product` completely alone) and for its other callers elsewhere.
     return {
       ...product,
       title: displayTitle,
       size,
-      ...mergeUntappdBeer(product, beer),
-      description: beer.description || '',
+      ...untappdFieldsOnly(beer),
     };
   } catch (err) {
     // A genuine tie (see UntappdAmbiguousMatchError/matchUntappdCandidates

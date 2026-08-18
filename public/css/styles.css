@@ -836,6 +836,15 @@ h1, h2, h3 { margin: 0; }
 .package-row__label { font-weight: 600; font-size: 0.87rem; }
 .package-row__meta { font-size: 0.78rem; color: var(--ui-muted); margin-top: 0.15rem; }
 .package-row__price { font-size: 0.78rem; color: var(--ui-ink-soft); margin-top: 0.15rem; }
+/* What this SKU's own row in the WinePOS export says its Category/
+   Department/Class is (see loadBeerBibleExportInfo/beerExportTagHtml in
+   app.js) - its own line under Price rather than folded into it, since
+   this is a from-the-export fact staff read separately, not part of the
+   price itself. Empty (no margin, no layout gap) until the same async
+   lookup that fills Price also fills this in - :empty avoids reserving
+   dead space for a beer with no SKU (this element never even renders,
+   see beerPackageSizeRowHtml) or while it's still blank. */
+.package-row__export-tag:not(:empty) { margin-top: 0.3rem; }
 .package-row__actions { display: flex; gap: 0.4rem; flex: 0 0 auto; }
 
 /* Unified "References & Sources" block (referencesSectionHtml in app.js) -
@@ -1074,18 +1083,26 @@ h1, h2, h3 { margin: 0; }
 .brewery-chip__bar span { display: block; height: 100%; background: var(--ui-accent); }
 
 /* Recently Researched feed - a flat list, same "one dashed rule between
-   rows" shape as .history-list's own rows, just narrower content (a
-   name/source line and a timestamp) since there's no card/grid reason to
-   need one here. */
+   rows" shape as .history-list's own rows. Each row is two lines now (name
+   + a .feed-detail summary line - style tag, brewery, ABV, rating dots,
+   package-size count, see beerLandingActivityDetailHtml in app.js) rather
+   than a name/source line, so the row itself carries what actually changed,
+   not just that something did - align-items: flex-start (not center, the
+   single-line version's own alignment) so the leading dot and the trailing
+   timestamp both sit against the row's first line instead of the whole
+   two-line block's vertical center. */
 .feed { display: flex; flex-direction: column; }
-.feed-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px dashed var(--ui-border); font-size: 0.82rem; cursor: pointer; }
+.feed-row { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px dashed var(--ui-border); font-size: 0.82rem; cursor: pointer; }
 .feed-row:last-child { border-bottom: none; }
 .feed-row:hover .feed-title { color: var(--ui-accent-ink); }
-.feed-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--ui-good); }
+.feed-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; margin-top: 0.4rem; background: var(--ui-good); }
 .feed-dot--manual { background: var(--ui-accent-ink); }
-.feed-title { font-weight: 700; flex: 1; min-width: 0; }
+.feed-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.feed-title { font-weight: 700; }
 .feed-title span { font-weight: 500; color: var(--ui-muted); }
-.feed-when { font-size: 0.74rem; color: var(--ui-muted); white-space: nowrap; }
+.feed-detail { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; font-size: 0.76rem; color: var(--ui-muted); }
+.feed-detail .tag { font-size: 0.64rem; padding: 0.12rem 0.4rem; }
+.feed-when { font-size: 0.74rem; color: var(--ui-muted); white-space: nowrap; flex: 0 0 auto; margin-top: 0.05rem; }
 
 /* ---------- The Beer Bible - Select mode / bulk actions ----------
    Select mode (toggleBeerBibleSelectMode in app.js) adds a checkbox to
