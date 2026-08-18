@@ -1053,17 +1053,15 @@
 
   <!-- The Beer Bible - a browse screen over a shared, store-wide record of
        researched beers (see the `beers` table in server/db.js), mirroring
-       the Bourbon Library above but for Beer instead of Bourbon. This is a
-       bare-scaffold first cut: browse, search, and its own Add/Edit/Delete
-       form (#beerBibleOverlay below), same as the Bourbon Library's own
-       add/edit form owns adding/editing/deleting mash bills directly - but
-       no cross-register sync yet (no Server PC / Sync Now row here, unlike
-       #libraryView's own library-sync band - see the `beers` table comment
-       in server/db.js) and nothing on Edit Talker recalls from this table
-       yet either (contrast with #mashBillRecallBanner above). Both are
-       natural next steps once this is in real use, not ruled out by
-       anything here. Rendered by renderBeerBibleView in app.js. Hidden by
-       default; the rail toggles it with .layout/#libraryView/#atlasView. -->
+       the Bourbon Library above but for Beer instead of Bourbon: browse,
+       search, its own Add/Edit/Delete form (#beerBibleOverlay below), and
+       the same cross-register sync as the Mash Bill Library (Server PC /
+       Sync Now band, see server/beerBibleSync.js and updateBeerBibleSyncUI
+       in app.js). Nothing on Edit Talker recalls from this table yet
+       (contrast with #mashBillRecallBanner above) - a natural next step
+       once this is in real use, not ruled out by anything here. Rendered
+       by renderBeerBibleView in app.js. Hidden by default; the rail
+       toggles it with .layout/#libraryView/#atlasView. -->
   <section class="library-view no-print" id="beerBibleView" hidden>
     <div class="library-band">
       <div class="library-band__top">
@@ -1124,13 +1122,25 @@
         </div>
       </div>
       <p class="help-text" id="beerBibleImportCsvStatus" role="status" aria-live="polite"></p>
-      <!-- No Server PC / Sync Now status row yet (contrast with
-           #libraryView's .library-sync above) - this PC's own data.db is
-           the only copy for now, so there's nothing to show sync status
-           for. Export File Sync below still applies on its own, same
-           reasoning: not gated behind Server PC, since there's no PC-to-PC
-           role to be "the" copy of yet - see server/index.js's POST
-           /api/beers/sync-export.
+      <!-- Cross-register sync (see server/beerBibleSync.js) - same
+           .library-sync band #libraryView's own Mash Bill Library screen
+           uses, just pointed at /api/beers instead of /api/mashbills. The
+           Server PC itself has nothing to pull, so it gets the dot but no
+           Sync Now button, same as #librarySyncNowBtn's own hiding - see
+           updateBeerBibleSyncUI in app.js. -->
+      <div class="library-sync">
+        <div class="library-sync__status">
+          <span class="library-sync__dot" id="beerBibleSyncDot" aria-hidden="true"></span>
+          <span id="beerBibleSyncStatus" role="status" aria-live="polite"></span>
+        </div>
+        <button type="button" class="btn btn--small" id="beerBibleSyncNowBtn">Sync Now</button>
+      </div>
+      <!-- Export File Sync/Import CSV/Advanced menu's Import from Export
+           File below are all Server-PC-only writes now (see
+           server/index.js's POST /api/beers/sync-export and friends) -
+           every other register just picks the result up on its next sync,
+           same as the Mash Bill Library's own GitHub sync row above. Hidden
+           on any PC other than the Server PC (see updateBeerBibleSyncUI).
 
            This replaces the old "Check GitHub for New Beers" button - see
            server/beerBibleExportSync.js's own top-of-file comment for the

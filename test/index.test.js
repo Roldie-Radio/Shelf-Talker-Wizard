@@ -124,9 +124,11 @@ function withServer(run) {
 // own behavior is covered by discovery.test.js and exportSync.test.js.
 function withServerAndFakes({
   beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+  beerBibleServeServer, beerBiblePuller,
 } = {}, run) {
   const app = createApp({
     beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+    beerBibleServeServer, beerBiblePuller,
   });
   return new Promise((resolve, reject) => {
     const server = app.listen(0, '127.0.0.1', async () => {
@@ -290,6 +292,7 @@ test('switching a looked-up SKU to Beer re-runs the lookup and actually runs the
 // same (case-insensitive) title the store page resolved to.
 test('a beer SKU lookup that misses on Untappd falls back to a matching Beer Bible entry', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const created = await postJson(port, '/api/beers', {
       title: 'michelob ultra',
       brewery: 'Anheuser-Busch',
@@ -328,6 +331,7 @@ test('a beer SKU lookup that misses on Untappd falls back to a matching Beer Bib
 // beerDisplayName in app.js draws on the Beer Bible screen itself.
 test('a beer SKU lookup falling back to a Beer Bible entry surfaces that entry\'s own beerName, not its title', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     await postJson(port, '/api/beers', {
       title: 'michelob ultra', beerName: 'Michelob ULTRA Light Lager', brewery: 'Anheuser-Busch',
     });
@@ -356,6 +360,7 @@ test('a beer SKU lookup falling back to a Beer Bible entry surfaces that entry\'
 // still blank.
 test('a bare-stub Beer Bible entry does not mask a real Untappd miss', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     await postJson(port, '/api/beers', { title: 'Michelob ULTRA' });
 
     await withMockFetch(
@@ -1298,23 +1303,57 @@ test('POST /api/mashbills/sync-library adds only new titles on the Server PC, le
   }));
 });
 
-// /api/beers - the Beer Bible (rail "Beer Bible" view), a bare-scaffold
-// first cut of the same idea as /api/mashbills above, for Beer instead of
-// Bourbon. Unlike those routes, there's no isServer/mashBillPuller
-// branching to cover here - every route always reads/writes this PC's own
-// data.db directly (see the beers table comment in db.js), so plain
-// withServer (no injected fakes) is enough for every test below.
+// /api/beers - the Beer Bible (rail "Beer Bible" view), the same idea as
+// /api/mashbills above, for Beer instead of Bourbon, and now with the same
+// isServer/beerBiblePuller branching (see the comment above the routes in
+// server/index.js) - db.test.js already covers the underlying upsert/
+// update/delete logic in full; these confirm the HTTP layer's isServer
+// branch and status codes, same split as the /api/mashbills tests above.
 
-test('GET /api/beers returns an empty list on a fresh database', async () => {
+function fakeBeerBiblePuller({ cached = [], status = { lastSyncedAt: null, lastError: null, syncedFrom: null }, forwardWrite } = {}) {
+  return {
+    getCached: () => cached,
+    getStatus: () => status,
+    syncOnce: async () => {},
+    forwardWrite: forwardWrite || (async () => { throw new Error('forwardWrite not stubbed for this test'); }),
+  };
+}
+
+test('GET /api/beers reads this PC\'s own data.db directly once marked isServer', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    const { status, body } = await getJson(port, '/api/beers');
+    assert.equal(status, 200);
+    assert.deepEqual(body.beers, []);
+    assert.deepEqual(body.sync, { isServer: true });
+  }));
+});
+
+test('GET /api/beers falls back to an empty cached list with no puller wired in (createApp() alone)', async () => {
   await withTempDb(() => withServer(async (port) => {
     const { status, body } = await getJson(port, '/api/beers');
     assert.equal(status, 200);
     assert.deepEqual(body.beers, []);
+    assert.equal(body.sync.isServer, false);
   }));
 });
 
-test('POST /api/beers creates an entry and requires a title', async () => {
+test('GET /api/beers reports the injected beerBiblePuller\'s cached list and status when not isServer', async () => {
+  const puller = fakeBeerBiblePuller({
+    cached: [{ id: 1, title: 'Fat Tire' }],
+    status: { lastSyncedAt: '2026-08-13T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' },
+  });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    const { body } = await getJson(port, '/api/beers');
+    assert.deepEqual(body.beers, [{ id: 1, title: 'Fat Tire' }]);
+    assert.equal(body.sync.isServer, false);
+    assert.equal(body.sync.syncedFrom, 'SERVER-PC');
+  }));
+});
+
+test('POST /api/beers creates an entry directly once isServer, requires a title', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const missingTitle = await postJson(port, '/api/beers', { brewery: 'Anheuser-Busch' });
     assert.equal(missingTitle.status, 400);
 
@@ -1338,8 +1377,46 @@ test('POST /api/beers creates an entry and requires a title', async () => {
   }));
 });
 
+test('POST /api/beers forwards to the injected beerBiblePuller when not isServer', async () => {
+  let forwarded = null;
+  const puller = fakeBeerBiblePuller({
+    forwardWrite: async (method, path, body) => {
+      forwarded = { method, path, body };
+      return { status: 201, data: { id: 1, ...body } };
+    },
+  });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/beers', { title: 'Fat Tire', style: 'Amber Ale' });
+    assert.equal(status, 201);
+    assert.equal(body.title, 'Fat Tire');
+    assert.equal(forwarded.method, 'POST');
+    assert.equal(forwarded.path, '/beers');
+    assert.equal(forwarded.body.title, 'Fat Tire');
+    assert.equal(forwarded.body.style, 'Amber Ale');
+  }));
+});
+
+test('POST /api/beers reports 503 with no beerBiblePuller wired in and not isServer (createApp() alone)', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const { status } = await postJson(port, '/api/beers', { title: 'Fat Tire' });
+    assert.equal(status, 503);
+  }));
+});
+
+test('POST /api/beers surfaces a Server PC unreachable error from forwardWrite as a 502', async () => {
+  const puller = fakeBeerBiblePuller({
+    forwardWrite: async () => { throw new Error('No Server PC found on this network yet.'); },
+  });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/beers', { title: 'Fat Tire' });
+    assert.equal(status, 502);
+    assert.match(body.error, /No Server PC found/);
+  }));
+});
+
 test('PUT /api/beers/:id updates fields (preserving an omitted one), 404s for an unknown id, 409s on a title collision', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const a = await postJson(port, '/api/beers', { title: 'Sam Adams Boston Lager', brewery: 'Boston Beer Company' });
     const b = await postJson(port, '/api/beers', { title: 'Dogfish Head 60 Minute IPA' });
 
@@ -1357,8 +1434,25 @@ test('PUT /api/beers/:id updates fields (preserving an omitted one), 404s for an
   }));
 });
 
-test('DELETE /api/beers/:id deletes and 404s for an unknown id', async () => {
+test('PUT /api/beers/:id forwards to the injected beerBiblePuller when not isServer', async () => {
+  let forwarded = null;
+  const puller = fakeBeerBiblePuller({
+    forwardWrite: async (method, path, body) => {
+      forwarded = { method, path, body };
+      return { status: 200, data: { id: 7, ...body } };
+    },
+  });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    const { status, body } = await requestJson(port, 'PUT', '/api/beers/7', { title: 'Fat Tire' });
+    assert.equal(status, 200);
+    assert.equal(body.id, 7);
+    assert.equal(forwarded.path, '/beers/7');
+  }));
+});
+
+test('DELETE /api/beers/:id deletes directly once isServer, and 404s for an unknown id', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const created = await postJson(port, '/api/beers', { title: 'Founders All Day IPA' });
     const deleted = await requestJson(port, 'DELETE', `/api/beers/${created.body.id}`);
     assert.equal(deleted.status, 200);
@@ -1366,6 +1460,50 @@ test('DELETE /api/beers/:id deletes and 404s for an unknown id', async () => {
 
     const missing = await requestJson(port, 'DELETE', `/api/beers/${created.body.id}`);
     assert.equal(missing.status, 404);
+  }));
+});
+
+test('DELETE /api/beers/:id forwards to the injected beerBiblePuller when not isServer', async () => {
+  let forwarded = null;
+  const puller = fakeBeerBiblePuller({
+    forwardWrite: async (method, path) => {
+      forwarded = { method, path };
+      return { status: 200, data: { success: true } };
+    },
+  });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    const { status, body } = await requestJson(port, 'DELETE', '/api/beers/7');
+    assert.equal(status, 200);
+    assert.deepEqual(body, { success: true });
+    assert.deepEqual(forwarded, { method: 'DELETE', path: '/beers/7' });
+  }));
+});
+
+test('POST /api/beers/sync-now calls the injected beerBiblePuller\'s syncOnce, then reports isServer:false status', async () => {
+  let syncOnceCalls = 0;
+  const puller = fakeBeerBiblePuller({
+    cached: [{ id: 1, title: 'Fat Tire' }],
+    status: { lastSyncedAt: '2026-08-13T12:00:00.000Z', lastError: null, syncedFrom: 'SERVER-PC' },
+  });
+  puller.syncOnce = async () => { syncOnceCalls += 1; };
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    const { status, body } = await postJson(port, '/api/beers/sync-now', {});
+    assert.equal(status, 200);
+    assert.equal(syncOnceCalls, 1);
+    assert.deepEqual(body.beers, [{ id: 1, title: 'Fat Tire' }]);
+  }));
+});
+
+test('POST /api/beers/sync-now reports this PC\'s own data.db once isServer, ignoring any cached puller list', async () => {
+  const puller = fakeBeerBiblePuller({ cached: [{ id: 999, title: 'Should not appear' }] });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
+    await postJson(port, '/api/beers', { title: 'Founders All Day IPA' });
+
+    const { body } = await postJson(port, '/api/beers/sync-now', {});
+    assert.equal(body.sync.isServer, true);
+    assert.equal(body.beers.length, 1);
+    assert.equal(body.beers[0].title, 'Founders All Day IPA');
   }));
 });
 
@@ -1377,6 +1515,7 @@ test('DELETE /api/beers/:id deletes and 404s for an unknown id', async () => {
 // tie, via the existing PUT /api/beers/:id (see app.js).
 test('POST /api/beers/:id/research runs a live Untappd search off the entry\'s own title and returns the match, unsaved', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const created = await postJson(port, '/api/beers', { title: 'LANCASTER MILK STOUT CAN' });
     const algoliaBody = algoliaHitsResponse([
       { beer_slug: 'lancaster-milk-stout', bid: 9001, beer_name: 'Milk Stout', brewery_name: 'Lancaster Brewing Company' },
@@ -1405,6 +1544,7 @@ test('POST /api/beers/:id/research runs a live Untappd search off the entry\'s o
 
 test('POST /api/beers/:id/research surfaces untappdCandidates for a tie, and untappdError for no match, without failing the request', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const tied = await postJson(port, '/api/beers', { title: 'Daylily' });
     const algoliaBody = algoliaHitsResponse([
       { beer_slug: 'autodidact-beer-daylily', bid: 1, beer_name: 'Daylily', brewery_name: 'Autodidact Beer' },
@@ -1475,6 +1615,33 @@ test('POST /api/beers/:id/research 404s for an unknown id', async () => {
   }));
 });
 
+// Not isServer: the entry to research has to come off beerBiblePuller's
+// synced cache, not this PC's own (possibly empty, possibly differently-
+// id'd) data.db - see the route's own comment in server/index.js.
+test('POST /api/beers/:id/research reads the entry from the injected beerBiblePuller\'s cache when not isServer', async () => {
+  const puller = fakeBeerBiblePuller({ cached: [{ id: 42, title: 'LANCASTER MILK STOUT CAN', varietyPack: false }] });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'lancaster-milk-stout', bid: 9001, beer_name: 'Milk Stout', brewery_name: 'Lancaster Brewing Company' },
+  ]);
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Milk Stout by Lancaster Brewing Company | Untappd" />',
+    body: '<p class="brewery"><a href="#">Lancaster Brewing Company</a></p><p class="style">Milk / Sweet Stout</p>'
+      + '<div class="details"><p class="abv">5.50% ABV</p></div>',
+  });
+  await withTempDb(() => withServerAndFakes({ beerBiblePuller: puller }, async (port) => {
+    await withMockFetch(
+      async (url) => (url.includes('algolia.net') ? mockResponse({ body: algoliaBody }) : mockResponse({ body: untappdBeerHtml })),
+      async () => {
+        const result = await postJson(port, '/api/beers/42/research', {});
+        assert.equal(result.status, 200);
+        assert.equal(result.body.brewery, 'Lancaster Brewing Company');
+      }
+    );
+    const missing = await postJson(port, '/api/beers/999999/research', {});
+    assert.equal(missing.status, 404);
+  }));
+});
+
 // A variety pack (several different beers under one SKU) has no Untappd
 // page of its own - see the beers table's variety_pack comment in db.js.
 // The Beer Bible UI already hides the Research button for one of these;
@@ -1484,6 +1651,7 @@ test('POST /api/beers/:id/research 404s for an unknown id', async () => {
 // instead of the request ever reaching this 400.
 test('POST /api/beers/:id/research 400s for an entry marked Variety Pack, without making an Untappd request', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const created = await postJson(port, '/api/beers', { title: '2ND FAVOR HEAVY SPECTRUM 4PK', varietyPack: true });
     const result = await postJson(port, `/api/beers/${created.body.id}/research`, {});
     assert.equal(result.status, 400);
@@ -1494,9 +1662,21 @@ test('POST /api/beers/:id/research 400s for an entry marked Variety Pack, withou
 // POST /api/beers/sync-export - the "Export File Sync" button (replaces
 // the old "Check GitHub for New Beers" - see beerBibleExportSync.js for the
 // full reasoning). Fills in upc on an already-saved entry whose sku
-// matches a row in the configured export; never adds new entries.
+// matches a row in the configured export; never adds new entries. Server-PC
+// only, now that the Beer Bible has real cross-register sync (see
+// beerBibleSync.js) - it writes straight to the local data.db.
+
+test('POST /api/beers/sync-export is rejected on a non-Server PC', async () => {
+  await withTempDb(() => withServerAndFakes({}, async (port) => {
+    const { status, body } = await postJson(port, '/api/beers/sync-export', {});
+    assert.equal(status, 400);
+    assert.match(body.error, /Server PC/);
+  }));
+});
+
 test('POST /api/beers/sync-export fills in upc for a SKU-matched entry, leaves an unmatched one alone, and skips entries with no SKU', async () => {
   await withTempDb((dir) => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     setUpcSettings(writeUpcExport(dir, [
       '085000010652,Josh Cellars Cabernet Sauvignon,55555,',
     ]));
@@ -1524,6 +1704,7 @@ test('POST /api/beers/sync-export fills in upc for a SKU-matched entry, leaves a
 
 test('POST /api/beers/sync-export leaves an already-matching upc alone (reports it as matched, not updated)', async () => {
   await withTempDb((dir) => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     setUpcSettings(writeUpcExport(dir, [
       '085000010652,Josh Cellars Cabernet Sauvignon,55555,',
     ]));
@@ -1537,6 +1718,7 @@ test('POST /api/beers/sync-export leaves an already-matching upc alone (reports 
 
 test('POST /api/beers/sync-export 404s with NO_EXPORT_PATH when nothing is configured yet', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     await postJson(port, '/api/beers', { title: 'Slack Tide Flounder Pounder', sku: '55555' });
     const { status, body } = await postJson(port, '/api/beers/sync-export', {});
     assert.equal(status, 404);
@@ -1548,9 +1730,19 @@ test('POST /api/beers/sync-export 404s with NO_EXPORT_PATH when nothing is confi
 // counterpart to Export CSV. Column-matching/merge-semantics are already
 // covered in depth in test/beerBibleCsvImport.test.js against
 // importBeerBibleCsv directly - these just confirm the HTTP layer wraps it
-// correctly.
+// correctly. Server-PC only, same reasoning as sync-export above.
+
+test('POST /api/beers/import-csv is rejected on a non-Server PC', async () => {
+  await withTempDb(() => withServerAndFakes({}, async (port) => {
+    const { status, body } = await postJson(port, '/api/beers/import-csv', { csv: 'Title\nFat Tire' });
+    assert.equal(status, 400);
+    assert.match(body.error, /Server PC/);
+  }));
+});
+
 test('POST /api/beers/import-csv imports rows and reports a summary', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const csv = [
       'Title,Brewery,SKU,UPC',
       'Slack Tide Flounder Pounder,Slack Tide Brewing Company,55555,085000010652',
@@ -1566,6 +1758,7 @@ test('POST /api/beers/import-csv imports rows and reports a summary', async () =
 
 test('POST /api/beers/import-csv requires csv content and a recognizable Title column', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const empty = await postJson(port, '/api/beers/import-csv', {});
     assert.equal(empty.status, 400);
 
@@ -1589,6 +1782,7 @@ test('POST /api/beers/import-csv requires csv content and a recognizable Title c
 // limit comment) rather than needing thousands of literal rows here.
 test('POST /api/beers/import-csv accepts a CSV well over Express\'s default 100kb JSON body limit', async () => {
   await withTempDb(() => withServer(async (port) => {
+    await postJson(port, '/api/server-status', { isServer: true });
     const longNote = 'A hazy, tropical IPA with notes of mango and passionfruit. '.repeat(2500); // ~150kb alone
     const csv = ['Title,Brewery,Tasting Notes', `Slack Tide Flounder Pounder,Slack Tide Brewing Company,"${longNote}"`].join('\n');
     assert.ok(Buffer.byteLength(JSON.stringify({ csv })) > 100 * 1024, 'test setup should actually exceed the old 100kb limit');
