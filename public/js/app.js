@@ -52,7 +52,7 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
-      version: '4.4.12',
+      version: '4.4.13',
       items: [
         'New: a Group By dropdown next to Card/List on the Beer Bible grid - split the results into headed sections by Style, Brewery, Country, Research Status, or Source, on top of whatever sort order is already picked. Off (None) by default; the choice persists per PC, same as Card/List and Sort already do.',
       ],
