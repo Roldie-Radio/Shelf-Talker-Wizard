@@ -1170,6 +1170,7 @@
     productDatabaseHaInput: document.getElementById('productDatabaseHaInput'),
     productDatabaseStatus: document.getElementById('productDatabaseStatus'),
     productDatabaseTableWrap: document.getElementById('productDatabaseTableWrap'),
+    productDatabaseFilterInput: document.getElementById('productDatabaseFilterInput'),
 
     tabs: document.querySelectorAll('.tab'),
     panels: document.querySelectorAll('.tab-panel'),
@@ -12037,25 +12038,118 @@
     els.productDatabaseStatus.textContent = `${exportPart} — ${haPart} — ${data.products.length.toLocaleString('en-US')} merged row${data.products.length === 1 ? '' : 's'}.`;
   }
 
-  function renderProductDatabaseTable(data) {
-    const headers = ['SKU', 'Title', 'UPC', 'Size', 'Price', 'Brand', 'Department', 'Sub Department'];
-    const rows = data.products.map((p) => [
-      p.sku, p.title, p.upc, p.size, p.price, p.brand, p.department, p.subDepartment,
-    ]);
-    renderPreviewTable(els.productDatabaseTableWrap, headers, rows);
+  // One column per merged field, in display order - also what
+  // renderProductDatabaseTable's header row and each sort click are keyed
+  // off of.
+  const PRODUCT_DATABASE_COLUMNS = [
+    { key: 'sku', label: 'SKU' },
+    { key: 'title', label: 'Title' },
+    { key: 'upc', label: 'UPC' },
+    { key: 'size', label: 'Size' },
+    { key: 'price', label: 'Price' },
+    { key: 'onHand', label: 'On Hand' },
+    { key: 'brand', label: 'Brand' },
+    { key: 'department', label: 'Department' },
+    { key: 'subDepartment', label: 'Sub Department' },
+  ];
+
+  // The full merged list from the last load/upload, kept client-side so
+  // clicking a column header re-sorts in place instead of re-fetching -
+  // sort state (productDatabaseSort below) never touches the server, since
+  // there's nothing here that needs to survive a reload anyway.
+  let productDatabaseProducts = [];
+  let productDatabaseSort = { key: 'sku', dir: 'asc' };
+  // Search box above the table (see #productDatabaseFilterInput) - matched
+  // against every column's value, not just Title/SKU, so a search for a
+  // department or brand name works too.
+  let productDatabaseFilterQuery = '';
+
+  function filterProductDatabaseProducts(products) {
+    const q = productDatabaseFilterQuery.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => PRODUCT_DATABASE_COLUMNS.some((col) => String(p[col.key] || '').toLowerCase().includes(q)));
+  }
+
+  // Numeric-aware compare, same reasoning as SKU Lookup/export preview
+  // sorting elsewhere - a plain string compare would put SKU "10" before
+  // "2". Only treated as numeric when both sides are entirely digits (plus
+  // a leading -, ., or currency symbol), so a mixed alphanumeric SKU or a
+  // Title column still falls back to a normal (still digit-aware, via
+  // {numeric: true}) locale compare rather than silently reading as 0.
+  function compareProductDatabaseCells(a, b) {
+    const aTrim = String(a).trim();
+    const bTrim = String(b).trim();
+    const isNumericLike = (s) => /^[$-]?[\d,]*\.?\d+$/.test(s);
+    if (isNumericLike(aTrim) && isNumericLike(bTrim)) {
+      return parseFloat(aTrim.replace(/[$,]/g, '')) - parseFloat(bTrim.replace(/[$,]/g, ''));
+    }
+    return aTrim.localeCompare(bTrim, undefined, { numeric: true, sensitivity: 'base' });
+  }
+
+  // A blank cell always sorts to the end, in either direction - otherwise a
+  // descending sort on Department would put every export-only row (blank
+  // Department, see mergeProducts in productDatabase.js) at the very top,
+  // ahead of every row that actually has a department.
+  function sortProductDatabaseProducts(products) {
+    const { key, dir } = productDatabaseSort;
+    return [...products].sort((a, b) => {
+      const aBlank = !a[key];
+      const bBlank = !b[key];
+      if (aBlank && bBlank) return 0;
+      if (aBlank) return 1;
+      if (bBlank) return -1;
+      const cmp = compareProductDatabaseCells(a[key], b[key]);
+      return dir === 'desc' ? -cmp : cmp;
+    });
+  }
+
+  // Rebuilds the table from productDatabaseProducts/productDatabaseSort -
+  // called after a fresh load/upload and again on every header click, never
+  // needs a server round-trip since sorting is purely client-side. Each
+  // header is a real <button> (see .preview-table__sort-btn in styles.css)
+  // carrying its column's key in data-sort-key; the ▲/▼ marks whichever
+  // column is currently active, and clicking the active one again flips
+  // direction instead of resetting to ascending.
+  function renderProductDatabaseTable() {
+    if (!productDatabaseProducts.length) {
+      els.productDatabaseTableWrap.innerHTML = '<p class="empty-hint">Nothing to show yet - choose the Export File and the HA Details file above.</p>';
+      return;
+    }
+    const filtered = filterProductDatabaseProducts(productDatabaseProducts);
+    if (!filtered.length) {
+      els.productDatabaseTableWrap.innerHTML = `<p class="empty-hint">No rows match “${escapeHtml(productDatabaseFilterQuery.trim())}”.</p>`;
+      return;
+    }
+    const rows = sortProductDatabaseProducts(filtered);
+    const headHtml = PRODUCT_DATABASE_COLUMNS.map((col) => {
+      const isActive = productDatabaseSort.key === col.key;
+      const arrow = isActive ? (productDatabaseSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+      return `<th><button type="button" class="preview-table__sort-btn${isActive ? ' is-active' : ''}" data-sort-key="${col.key}">${escapeHtml(col.label)}${arrow}</button></th>`;
+    }).join('');
+    const bodyHtml = rows.map((p) => `<tr>${PRODUCT_DATABASE_COLUMNS.map((col) => `<td>${escapeHtml(p[col.key])}</td>`).join('')}</tr>`).join('');
+    els.productDatabaseTableWrap.innerHTML = `
+      <table class="preview-table">
+        <thead><tr>${headHtml}</tr></thead>
+        <tbody>${bodyHtml}</tbody>
+      </table>
+    `;
   }
 
   // Called every time the rail switches to Product Database (see
   // setActiveView) - re-fetches the merged state rather than caching it
   // client-side, so two files loaded on separate visits still show up
-  // combined without needing a manual refresh.
+  // combined without needing a manual refresh. Sort selection itself
+  // (productDatabaseSort) deliberately survives across this - reopening the
+  // screen keeps whatever column/direction was last picked instead of
+  // resetting to SKU ascending every time.
   async function loadProductDatabase() {
     try {
       const resp = await fetch('/api/product-database');
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Could not load the product database.');
       renderProductDatabaseStatus(data);
-      renderProductDatabaseTable(data);
+      productDatabaseProducts = data.products;
+      renderProductDatabaseTable();
     } catch (err) {
       els.productDatabaseStatus.textContent = err.message || 'Could not load the product database.';
     }
@@ -12076,7 +12170,8 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || `Could not load ${file.name}.`);
       renderProductDatabaseStatus(data);
-      renderProductDatabaseTable(data);
+      productDatabaseProducts = data.products;
+      renderProductDatabaseTable();
     } catch (err) {
       els.productDatabaseStatus.textContent = err.message || `Could not load ${file.name}.`;
     } finally {
@@ -12093,6 +12188,25 @@
   els.productDatabaseHaInput.addEventListener('change', () => uploadProductDatabaseFile(
     els.productDatabaseHaInput, els.productDatabaseHaBtn, '/api/product-database/ha-file',
   ));
+
+  // Delegated rather than one listener per header (the table's own
+  // innerHTML gets rebuilt on every sort/reload - see renderProductDatabaseTable) -
+  // one listener on the wrapper survives that regardless of how many times
+  // the table underneath it is replaced.
+  els.productDatabaseTableWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-sort-key]');
+    if (!btn) return;
+    const { sortKey } = btn.dataset;
+    productDatabaseSort = productDatabaseSort.key === sortKey
+      ? { key: sortKey, dir: productDatabaseSort.dir === 'asc' ? 'desc' : 'asc' }
+      : { key: sortKey, dir: 'asc' };
+    renderProductDatabaseTable();
+  });
+
+  els.productDatabaseFilterInput.addEventListener('input', (e) => {
+    productDatabaseFilterQuery = e.target.value;
+    renderProductDatabaseTable();
+  });
 
   // Configures the WinePOS export file path the Scan UPC tab reads from -
   // previously an inline "Settings" box on that tab itself; moved here (see

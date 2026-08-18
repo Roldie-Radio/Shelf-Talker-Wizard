@@ -3179,6 +3179,25 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 }
 .preview-table tbody tr:hover { background: var(--ui-hover); }
 
+/* Product Database's own sortable column headers (see
+   renderProductDatabaseTable in app.js) - a plain <button> per <th> rather
+   than a click handler on the <th> itself, so it's keyboard-reachable
+   (Tab + Enter/Space) the same as every other button in the app, not just
+   mouse-clickable. */
+.preview-table__sort-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.preview-table__sort-btn:hover { text-decoration: underline; }
+.preview-table__sort-btn.is-active { color: var(--ui-accent); }
+
 /* ---------- Server PC (Advanced menu) ---------- */
 
 .server-pc-body {

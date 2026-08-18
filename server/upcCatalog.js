@@ -208,6 +208,12 @@ const FIELD_ALIASES = {
   packQty: ['pack qty', 'pack quantity', 'pack count', 'units per pack', 'case qty', 'case quantity', 'case count', 'units per case'],
   description: ['tasting notes', 'notes', 'long description', 'web description'],
   category: ['category', 'department', 'class', 'dept'],
+  // 'current inv' confirmed against a real WinePOS export
+  // (wine-pos-inventory-demo.csv) - the on-hand quantity for that SKU at
+  // the time the file was exported, not a live count (see
+  // productDatabase.js's Product Database table, the one place this is
+  // surfaced so far).
+  onHand: ['current inv', 'on hand', 'qty on hand', 'quantity on hand', 'on-hand', 'onhand', 'inventory', 'inventory qty', 'inv qty', 'stock', 'stock on hand', 'units on hand'],
 };
 
 // Maps each field to the header index that matched one of its aliases (the
