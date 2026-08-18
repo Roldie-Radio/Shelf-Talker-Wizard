@@ -1153,18 +1153,9 @@
            beerBibleSeed.js's maybeAutoSeedBeerBible) - there's just no
            manual re-sync button for it here anymore. -->
       <div class="library-sync" id="beerBibleExportSyncRow">
-        <div class="library-sync__status">
-          <span>It can check the configured WinePOS export for UPCs on beers already saved here, matched by SKU.</span>
-        </div>
         <button type="button" class="btn btn--small" id="beerBibleExportSyncBtn">Export File Sync</button>
       </div>
       <p class="help-text" id="beerBibleExportSyncStatus" role="status" aria-live="polite"></p>
-      <!-- Beer talkers already save here automatically as they're added to
-           the queue (see els.form's submit handler in app.js) - this points
-           at the other two ways entries get here: a bulk import from a
-           product export (Advanced menu), or typing one in by hand (Add
-           Beer above). -->
-      <p class="help-text">Beer talkers you add to the queue are saved here automatically. Have a product export to bulk-import instead? <strong>Advanced &rarr; Import Beer Bible from Export File&hellip;</strong></p>
       <div class="library-search">
         <input type="search" id="beerBibleFilterInput" aria-label="Search The Beer Bible" placeholder="Search by name, brewery, or style&hellip;" />
       </div>
