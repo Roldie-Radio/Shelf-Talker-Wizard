@@ -9373,19 +9373,19 @@
   // The screen renderBeerBibleView opens on - a third view mode alongside
   // the grid and a beer's own profile page (see beerBibleViewMode above),
   // built as a dashboard over buildBeerBibleGroups: a hero stat strip, an
-  // interactive style-mix donut, a package-format breakdown, a
-  // research-progress ring, a Top Rated spotlight, an ABV beeswarm, a
-  // breweries grid, and a Recently Researched feed - reorderable/hideable
-  // via the "Customize this page" control (see BEER_LANDING_SECTIONS
-  // below). See docs/mockups/beer-bible-landing.html for the mockup this
-  // was built from.
+  // interactive style-mix donut, a "Where it's from" country/state
+  // breakdown, a package-format breakdown, a research-progress ring, a Top
+  // Rated spotlight, a breweries grid, and a Recently Researched feed -
+  // reorderable/hideable via the "Customize this page" control (see
+  // BEER_LANDING_SECTIONS below). See docs/mockups/beer-bible-landing.html
+  // for the mockup this was built from.
   //
   // Every number here is real, computed live off beerBibleCache - unlike
   // the mockup, which leaned on illustrative sample beers because the real
   // table ships with almost nothing researched at first. Each section
   // falls back to plain empty-hint copy instead (see
-  // beerStyleMixHtml/beerLandingSpotlightHtml/beerLandingBreweryGridHtml/
-  // beerLandingActivityHtml/beerLandingAbvHtml below) rather than
+  // beerStyleMixHtml/beerLandingOriginHtml/beerLandingSpotlightHtml/
+  // beerLandingBreweryGridHtml/beerLandingActivityHtml below) rather than
   // rendering a chart with nothing real behind it, so a freshly-imported,
   // unresearched library reads as exactly that instead of looking more
   // finished than it is.
@@ -9422,12 +9422,47 @@
     'Seltzer & RTD': '#dbe4de',
   };
 
-  // ABV beeswarm dot colors (see beerLandingAbvHtml below) - same
-  // session/standard/high-ABV three-way split the legend under the chart
-  // spells out.
-  const BEER_ABV_LOW_COLOR = '#d9a441';
-  const BEER_ABV_MID_COLOR = '#6b8f47';
-  const BEER_ABV_HIGH_COLOR = '#a1493f';
+  // Country -> flag emoji for the "Where it's from" origin cards below.
+  // Keyed by lowercased country name rather than an ISO code, since that's
+  // the shape `country` actually holds on file (see
+  // parseLocationForGeoColumns in server/db.js - Untappd's own brewery
+  // location strings, e.g. "United States" or "Netherlands", not "US"/
+  // "NL"). Covers the countries that actually show up on beer packaging;
+  // anything not in this list still gets its own card, just with a plain
+  // globe instead of a specific flag - no country is ever hidden for
+  // lacking an entry here.
+  const BEER_LANDING_COUNTRY_FLAGS = {
+    'united states': '\u{1F1FA}\u{1F1F8}', 'usa': '\u{1F1FA}\u{1F1F8}', 'us': '\u{1F1FA}\u{1F1F8}',
+    'mexico': '\u{1F1F2}\u{1F1FD}',
+    'canada': '\u{1F1E8}\u{1F1E6}',
+    'united kingdom': '\u{1F1EC}\u{1F1E7}', 'uk': '\u{1F1EC}\u{1F1E7}', 'england': '\u{1F1EC}\u{1F1E7}',
+    'scotland': '\u{1F1EC}\u{1F1E7}',
+    'ireland': '\u{1F1EE}\u{1F1EA}',
+    'netherlands': '\u{1F1F3}\u{1F1F1}',
+    'germany': '\u{1F1E9}\u{1F1EA}',
+    'belgium': '\u{1F1E7}\u{1F1EA}',
+    'france': '\u{1F1EB}\u{1F1F7}',
+    'italy': '\u{1F1EE}\u{1F1F9}',
+    'spain': '\u{1F1EA}\u{1F1F8}',
+    'portugal': '\u{1F1F5}\u{1F1F9}',
+    'czech republic': '\u{1F1E8}\u{1F1FF}', 'czechia': '\u{1F1E8}\u{1F1FF}',
+    'poland': '\u{1F1F5}\u{1F1F1}',
+    'austria': '\u{1F1E6}\u{1F1F9}',
+    'switzerland': '\u{1F1E8}\u{1F1ED}',
+    'denmark': '\u{1F1E9}\u{1F1F0}',
+    'sweden': '\u{1F1F8}\u{1F1EA}',
+    'norway': '\u{1F1F3}\u{1F1F4}',
+    'finland': '\u{1F1EB}\u{1F1EE}',
+    'japan': '\u{1F1EF}\u{1F1F5}',
+    'china': '\u{1F1E8}\u{1F1F3}',
+    'australia': '\u{1F1E6}\u{1F1FA}',
+    'new zealand': '\u{1F1F3}\u{1F1FF}',
+    'brazil': '\u{1F1E7}\u{1F1F7}',
+    'south africa': '\u{1F1FF}\u{1F1E6}',
+  };
+  function beerLandingCountryFlag(name) {
+    return BEER_LANDING_COUNTRY_FLAGS[(name || '').trim().toLowerCase()] || '\u{1F30E}';
+  }
 
   // Pack-size keyword pass over each beer's own title text, same idea as
   // BEER_STYLE_FAMILIES below but for "How it's packaged" - checked in
@@ -9461,10 +9496,10 @@
   const BEER_LANDING_CUSTOMIZE_KEY = 'shelfTalkerBeerLandingCustomize.v1';
   const BEER_LANDING_SECTIONS = [
     { id: 'style', label: "What's in the library" },
+    { id: 'origin', label: "Where it's from" },
     { id: 'format', label: "How it's packaged" },
     { id: 'progress', label: 'Research progress' },
     { id: 'spotlight', label: 'Top rated in the library' },
-    { id: 'abv', label: 'ABV mix' },
     { id: 'breweries', label: 'Breweries on the shelf' },
     { id: 'activity', label: 'Recently researched' },
   ];
@@ -9506,6 +9541,12 @@
   // renderBeerBibleView), not on every render, so picking a slice and then
   // toggling a "Customize this page" checkbox doesn't lose the drill-down.
   let beerLandingSelectedFamily = null;
+  // Same idea as beerLandingSelectedFamily above, for the "Where it's
+  // from" origin cards' own country -> state/region drill-down (see
+  // beerLandingOriginHtml/selectBeerLandingOrigin below) - a separate var
+  // so drilling into a country doesn't clear a style drill-down already
+  // open in the section above it, or vice versa.
+  let beerLandingSelectedOrigin = null;
   // Whether the "Customize this page" popover is open - a plain var rather
   // than reading the DOM's own hidden attribute back, since
   // renderBeerBibleLanding rebuilds that DOM from scratch on every call
@@ -9773,47 +9814,97 @@
       </div>`;
   }
 
-  // ABV mix beeswarm - one dot per researched beer with a numeric ABV on
-  // file (see beerAbvNum above), positioned by its real value with a
-  // simple greedy lane-packing algorithm so close ABVs stack into rows
-  // instead of overlapping, rather than the mockup's fabricated sample
-  // beers. Needs a handful of real values before it's worth showing at
-  // all - four or fewer dots wouldn't read as a distribution, just a
-  // handful of unrelated points.
-  function beerLandingAbvHtml(researchedGroups) {
-    const beers = researchedGroups
-      .map((g) => ({ title: beerDisplayName(g), abv: beerAbvNum(g) }))
-      .filter((b) => b.abv >= 0);
-    if (beers.length < 5) {
-      return '<p class="empty-hint">Not enough researched ABVs yet - this fills in once a handful of beers have an ABV on file.</p>';
+  // "Where it's from" - real country counts among researched beers with a
+  // Country on file (see the beers table's own region/country columns,
+  // server/db.js), rendered as clickable flag cards rather than the style
+  // section's donut - a geographic spread reads better as "which places,
+  // how many" than as slices of a circle, and it sidesteps needing a
+  // color per country the way the style donut needs one per style family.
+  // Clicking a card drills into that country's own real states/provinces
+  // (the `region` column), reusing the style drill-down's .format-bars/
+  // .drilldown markup - see beerLandingOriginDrilldownHtml below.
+  function beerLandingOriginHtml(researchedGroups) {
+    const withCountry = researchedGroups.filter((g) => (g.country || '').trim());
+    if (!withCountry.length) {
+      return '<p class="empty-hint">No countries on file yet - Country fills in as beers get researched (Edit &rarr; Country), whether by hand or pulled in from Untappd.</p>';
     }
-    const maxAbv = Math.max(14, Math.ceil(Math.max(...beers.map((b) => b.abv)) / 2) * 2);
-    const minGapPct = 4.2; // percent-of-width gap before a dot needs a new lane
-    const lanes = []; // lanes[i] = x% of the last dot placed in that lane
-    const placed = beers
-      .slice()
-      .sort((a, b) => a.abv - b.abv)
-      .map((b) => {
-        const xPct = Math.min(100, (b.abv / maxAbv) * 100);
-        let lane = lanes.findIndex((lastX) => xPct - lastX >= minGapPct);
-        if (lane === -1) { lane = lanes.length; lanes.push(xPct); } else { lanes[lane] = xPct; }
-        return { ...b, xPct, lane };
-      });
-    const dotColor = (abv) => (abv < 4.5 ? BEER_ABV_LOW_COLOR : abv >= 9 ? BEER_ABV_HIGH_COLOR : BEER_ABV_MID_COLOR);
-    const dotsHtml = placed.map((b) => `
-      <div class="beeswarm__dot" style="left:${b.xPct}%; bottom:${8 + b.lane * 14}px; background:${dotColor(b.abv)};"
-        title="${escapeHtml(b.title)} — ${b.abv.toFixed(1)}% ABV"></div>
-    `).join('');
-    const axisSteps = 4;
-    const axisHtml = Array.from({ length: axisSteps + 1 }, (_, i) => `<span>${Math.round((maxAbv / axisSteps) * i)}%</span>`).join('');
+    const counts = new Map();
+    withCountry.forEach((g) => {
+      const key = g.country.trim();
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    const total = withCountry.length;
+    const selected = beerLandingSelectedOrigin;
+
+    const cardsHtml = sorted.map(([name, count]) => {
+      const active = selected === name;
+      const pct = Math.round((count / total) * 100);
+      return `
+      <button type="button" class="origin-card${active ? ' origin-card--active' : ''}" data-origin-key="${escapeHtml(name)}" aria-expanded="${active}">
+        <div class="origin-card__top">
+          <span class="origin-card__flag">${beerLandingCountryFlag(name)}</span>
+          <span class="origin-card__chevron">&#9660;</span>
+        </div>
+        <div class="origin-card__name">${escapeHtml(name)}</div>
+        <div class="origin-card__count">${count} beer${count === 1 ? '' : 's'} &middot; ${pct}%</div>
+        <div class="origin-card__bar"><span style="width:${pct}%;"></span></div>
+      </button>`;
+    }).join('');
+
     return `
-      <div class="beeswarm">${dotsHtml}</div>
-      <div class="beeswarm__axis">${axisHtml}</div>
-      <div class="beeswarm__legend">
-        <span><i style="background:${BEER_ABV_LOW_COLOR};"></i> Session (&lt;4.5%)</span>
-        <span><i style="background:${BEER_ABV_MID_COLOR};"></i> Standard</span>
-        <span><i style="background:${BEER_ABV_HIGH_COLOR};"></i> High ABV (9%+)</span>
+      <div class="origin-grid">${cardsHtml}</div>
+      ${selected ? beerLandingOriginDrilldownHtml(selected, withCountry, counts) : ''}
+    `;
+  }
+
+  // The state/province breakdown a flag card click reveals - real `region`
+  // values (see the beers table's own column, populated by hand or split
+  // out of an Untappd brewery-location string), not a fabricated split the
+  // way the mockup this was built from had to fake it. A beer researched
+  // with a country but no region on file still counts, under its own
+  // "State/region not on file" bucket, rather than silently vanishing from
+  // the total.
+  function beerLandingOriginDrilldownHtml(selected, withCountry, counts) {
+    const bucketTotal = counts.get(selected) || 0;
+    const headHtml = `
+      <div class="drilldown__head">
+        <div class="drilldown__title">${beerLandingCountryFlag(selected)} ${escapeHtml(selected)} <span>&mdash; ${bucketTotal} beer${bucketTotal === 1 ? '' : 's'}</span></div>
+        <button type="button" class="drilldown__back" data-origin-key="${escapeHtml(selected)}">&times; Clear</button>
       </div>`;
+
+    const subCounts = new Map();
+    withCountry.filter((g) => g.country.trim() === selected).forEach((g) => {
+      const key = (g.region || '').trim().toUpperCase() || 'State/region not on file';
+      subCounts.set(key, (subCounts.get(key) || 0) + 1);
+    });
+    const subEntries = Array.from(subCounts.entries()).sort((a, b) => b[1] - a[1]);
+
+    if (subEntries.length <= 1) {
+      const onlyName = subEntries[0] ? subEntries[0][0] : null;
+      const note = !onlyName || onlyName === 'State/region not on file'
+        ? 'No state/region on file yet for any researched beer from here - add one on each (Edit &rarr; State/Region) to break this down further.'
+        : `Every researched beer from ${escapeHtml(selected)} on file already shares the same state/region, &ldquo;${escapeHtml(onlyName)}&rdquo;.`;
+      return `<div class="drilldown">${headHtml}<p class="drilldown__note">${note}</p></div>`;
+    }
+
+    const subMax = Math.max(...subEntries.map(([, n]) => n));
+    return `<div class="drilldown">${headHtml}
+      <div class="format-bars">
+        ${subEntries.map(([name, count]) => `
+          <div class="format-row">
+            <span class="format-row__label">${escapeHtml(name)}</span>
+            <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((count / subMax) * 100)}%;"></span></span>
+            <span class="format-row__count">${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  function selectBeerLandingOrigin(key) {
+    beerLandingSelectedOrigin = beerLandingSelectedOrigin === key ? null : key;
+    renderBeerBibleLanding();
   }
 
   // "Customize this page" popover contents - see BEER_LANDING_SECTIONS/
@@ -10002,6 +10093,17 @@
             </div>
           </div>
         </div>`,
+      origin: `
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Where it's from</h3>
+              <p>Country breakdown of every researched beer with one on file. Click a flag to see that country's
+              own state/region breakdown.</p>
+            </div>
+          </div>
+          ${beerLandingOriginHtml(researchedGroups)}
+        </div>`,
       format: `
         <div class="panel">
           <div class="section-head">
@@ -10023,13 +10125,6 @@
             <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeRatedBtn">See all rated &rarr;</button>
           </div>
           ${beerLandingSpotlightHtml(groups)}
-        </div>`,
-      abv: `
-        <div class="panel">
-          <div class="section-head">
-            <div><h3>ABV mix</h3><p>Each dot is one researched beer, positioned by its real ABV - shows the actual spread and outliers, not just a few bucket totals.</p></div>
-          </div>
-          ${beerLandingAbvHtml(researchedGroups)}
         </div>`,
       breweries: `
         <div class="panel">
@@ -10126,6 +10221,21 @@
     });
     els.beerBibleBody.querySelector('.drilldown__back[data-key]')?.addEventListener('click', (e) => {
       selectBeerLandingFamily(e.currentTarget.dataset.key);
+    });
+
+    // "Where it's from" flag cards + that drill-down's own Clear button -
+    // see selectBeerLandingOrigin above. Own `data-origin-key` attribute
+    // (rather than reusing the style donut's `data-key`) so the two
+    // sections' click bindings never collide.
+    els.beerBibleBody.querySelectorAll('.origin-card[data-origin-key]').forEach((node) => {
+      const activate = () => selectBeerLandingOrigin(node.dataset.originKey);
+      node.addEventListener('click', activate);
+      node.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+      });
+    });
+    els.beerBibleBody.querySelector('.drilldown__back[data-origin-key]')?.addEventListener('click', (e) => {
+      selectBeerLandingOrigin(e.currentTarget.dataset.originKey);
     });
 
     // "Customize this page" - open/close, show/hide, and reorder each call
@@ -10259,6 +10369,7 @@
       // close the customize popover rather than carrying them over from
       // last time (see renderBeerBibleLanding above).
       beerLandingSelectedFamily = null;
+      beerLandingSelectedOrigin = null;
       beerLandingCustomizePopoverOpen = false;
       els.beerBibleSelectToggleBtn.classList.remove('btn--primary');
       els.beerBibleSelectToggleBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Select';

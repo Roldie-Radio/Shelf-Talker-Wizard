@@ -1127,16 +1127,23 @@ button.beer-legend-row { border: none; background: none; font-family: inherit; t
 .progress-copy { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; max-width: 34ch; margin: 0; }
 .progress-copy strong { color: var(--ui-ink); }
 
-/* ABV mix beeswarm - one dot per researched beer with an ABV on file,
-   positioned by its real value with a simple greedy lane-packing algorithm
-   (see beerLandingAbvHtml in app.js) so close ABVs stack into rows instead
-   of overlapping. */
-.beeswarm { position: relative; height: 104px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel-sunken); }
-.beeswarm__dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--ui-panel); transform: translate(-50%, 50%); cursor: default; }
-.beeswarm__axis { display: flex; justify-content: space-between; margin-top: 0.4rem; font-size: 0.68rem; color: var(--ui-muted); }
-.beeswarm__legend { display: flex; gap: 1rem; margin-top: 0.55rem; font-size: 0.72rem; color: var(--ui-muted); flex-wrap: wrap; }
-.beeswarm__legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
-.beeswarm__legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+/* "Where it's from" origin cards - one clickable flag card per country on
+   file (see beerLandingOriginHtml in app.js), reusing the style
+   drill-down's .drilldown/.format-bars markup for the state/region
+   breakdown a click reveals rather than inventing a second drill-down
+   shape. */
+.origin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.7rem; }
+.origin-card { border: 1px solid var(--ui-border); border-radius: var(--radius); background: var(--ui-panel); padding: 0.85rem 0.95rem; display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; text-align: left; font-family: inherit; color: inherit; }
+.origin-card:hover { background: var(--ui-hover); }
+.origin-card--active { border-color: var(--ui-accent); background: var(--ui-panel-alt); }
+.origin-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.origin-card__flag { font-size: 1.8rem; line-height: 1; }
+.origin-card__chevron { font-size: 0.66rem; color: var(--ui-muted); transition: transform 0.15s ease; }
+.origin-card--active .origin-card__chevron { transform: rotate(180deg); color: var(--ui-accent-ink); }
+.origin-card__name { font-weight: 700; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.origin-card__count { font-size: 0.76rem; color: var(--ui-muted); }
+.origin-card__bar { height: 6px; border-radius: 999px; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); overflow: hidden; margin-top: 0.05rem; }
+.origin-card__bar span { display: block; height: 100%; background: var(--ui-accent); }
 
 /* "Customize this page" - show/hide + reorder the landing sections below
    the hero (see BEER_LANDING_SECTIONS in app.js), saved to this PC's own
