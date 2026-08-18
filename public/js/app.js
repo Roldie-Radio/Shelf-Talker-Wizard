@@ -52,6 +52,14 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.4',
+      items: [
+        'Fixed: Super Sale shelf talkers showed an oversized gap between the "Super Sale Price!!!" callout and the price underneath it - the line-height it used was adding empty space below the text on top of the margin already there. Tightened twice this release (first to a more normal line-height, then further still) until the two read as one callout with no leftover daylight between them.',
+        'Changed: the "Super Sale Price!!!" callout now prints in Impact (a bolder, more condensed "shouty" face than the plain bold sans it used to inherit), with its own stroke outline and letter-spacing tuned to match.',
+        'Changed: on Super Sale shelf talkers, the "Super Sale Price!!!" callout now prints right after the product description, above the item\'s Size and any Rating - it used to sit at the very bottom of the card, below both, despite being the whole point of the talker. Every other Talker Style (Standard/Closeout) is unaffected.',
+      ],
+    },
+    {
       version: '4.5.3',
       items: [
         'Changed: two performance fixes for stores with a large Beer Bible/Product Database. Typing in the Beer Bible search box now waits briefly for typing to pause before re-searching (measured ~2.5x faster to settle on a 2,500+ entry library, with a third as many full re-renders) instead of rebuilding the whole grid on every keystroke; the Product Database now keeps its merged data in memory after the first read instead of re-reading and re-parsing its saved file on every visit.',

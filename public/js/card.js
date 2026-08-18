@@ -1852,6 +1852,16 @@ function buildCardElement(talker) {
   const titleHtml = `<div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>`;
   const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '';
 
+  // Super Sale is meant to grab the eye before the shopper ever gets to the
+  // Size or the Rating - both of those used to out-rank it just by sitting
+  // above it in source order (.card__body has no explicit CSS `order`, so
+  // this template's own order is the render order). Computed once so both
+  // branches below - insert it early for Super Sale, leave it at the foot
+  // with Size for every other Talker Style - can share the same call rather
+  // than rendering the pricing block twice.
+  const isSuperSale = (talker.talkerType || 'standard') === 'supersale';
+  const pricingHtml = buildPricingHtml(talker);
+
   const bodyHtml = isQuarter ? `
       ${titleHtml}
       <div class="card__spacer"></div>
@@ -1866,6 +1876,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
+      ${isSuperSale ? pricingHtml : ''}
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
@@ -1874,7 +1885,7 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
       ${sizeHtml}
-      ${buildPricingHtml(talker)}
+      ${isSuperSale ? '' : pricingHtml}
   `;
 
   // Store SKU: Beer only, and not on Quarter (which only ever shows Title/
