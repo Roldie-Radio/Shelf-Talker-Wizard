@@ -145,18 +145,35 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 @media (max-width: 920px) { .mix-grid { grid-template-columns: 1fr; } }
 
 .donut-wrap { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-.donut { width: 168px; height: 168px; border-radius: 50%; flex-shrink: 0; position: relative; background: conic-gradient(var(--donut-stops)); }
-.donut::after { content: ""; position: absolute; inset: 20px; border-radius: 50%; background: var(--ui-panel); }
-.donut-center { position: absolute; inset: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.donut { width: 168px; height: 168px; flex-shrink: 0; position: relative; }
+.style-donut-svg { width: 100%; height: 100%; overflow: visible; }
+.style-arc { cursor: pointer; transition: opacity 0.15s ease; }
+.style-arc:hover { opacity: 0.82; }
+.style-arc--dim { opacity: 0.3; }
+.donut-center { position: absolute; inset: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
 .donut-center__num { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
 .donut-center__label { font-size: 0.62rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 8em; line-height: 1.2; }
 
-.legend { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 210px; }
-.legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; }
+.legend { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 210px; }
+.legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; cursor: pointer; border: none; background: none; font-family: inherit; text-align: left; width: 100%; padding: 0.28rem 0.35rem; margin: 0; border-radius: 6px; color: inherit; }
+.legend-row:hover { background: var(--ui-hover); }
+.legend-row--active { background: var(--ui-code-bg); }
+.legend-row--active .legend-row__name { font-weight: 700; color: var(--ui-ink); }
+.legend-row--dim { opacity: 0.45; }
 .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 .legend-row__name { flex: 1; color: var(--ui-ink-soft); }
 .legend-row__pct { font-weight: 700; font-variant-numeric: tabular-nums; }
 .legend-row__count { font-size: 0.72rem; color: var(--ui-muted); min-width: 3.6em; text-align: right; }
+
+/* style drill-down (click a donut slice / legend row) */
+.drilldown { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px dashed var(--ui-border); }
+.drilldown__head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.7rem; }
+.drilldown__title { font-size: 0.86rem; font-weight: 700; }
+.drilldown__title span { font-weight: 500; color: var(--ui-muted); }
+.drilldown__back { font-size: 0.76rem; font-weight: 700; color: var(--ui-accent-ink); background: none; border: none; cursor: pointer; padding: 0.2rem 0.4rem; font-family: inherit; }
+.drilldown__back:hover { text-decoration: underline; }
+.drilldown__note { font-size: 0.82rem; color: var(--ui-muted); line-height: 1.5; }
+.drilldown__caveat { font-size: 0.72rem; color: var(--ui-muted); margin-top: 0.6rem; }
 
 .stat-rail { display: flex; flex-direction: column; gap: 0.7rem; justify-content: center; }
 .stat-tile { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.7rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
@@ -226,16 +243,33 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .progress-copy { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; max-width: 30ch; }
 .progress-copy strong { color: var(--ui-ink); }
 
-/* ABV histogram (illustrative) */
-.hist { display: flex; align-items: flex-end; gap: 0.5rem; height: 130px; padding-top: 0.5rem; }
-.hist-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.4rem; height: 100%; }
-.hist-col__bar { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; background: var(--chart-4); }
-.hist-col__count { font-size: 0.72rem; font-weight: 700; color: var(--ui-ink-soft); }
-.hist-col__label { font-size: 0.68rem; color: var(--ui-muted); text-align: center; line-height: 1.2; }
+/* ABV design exploration: two alternatives shown side by side for comparison */
+.design-options { display: flex; flex-direction: column; gap: 1.3rem; }
+.design-option__label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ui-accent-ink); margin-bottom: 0.75rem; }
+.design-option__label small { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ui-muted); font-size: 0.92em; }
+.design-option { border: 1px dashed var(--ui-border); border-radius: var(--radius); padding: 1.1rem 1.2rem 1.3rem; background: var(--ui-panel-sunken); }
+
+/* option A: gradient spectrum band */
+.abv-spectrum__callouts { display: flex; position: relative; height: 2.1rem; }
+.abv-spectrum__callout { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; }
+.abv-spectrum__callout-num { font-size: 0.86rem; font-weight: 800; }
+.abv-spectrum__callout-name { font-size: 0.64rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.abv-spectrum__bar { position: relative; height: 30px; border-radius: 8px; background: linear-gradient(90deg, var(--chart-3), var(--chart-1) 55%, var(--chart-6)); border: 1px solid var(--ui-border); }
+.abv-spectrum__tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ui-panel-sunken); box-shadow: 0 0 0 1px var(--ui-border); }
+.abv-spectrum__axis { display: flex; justify-content: space-between; margin-top: 0.4rem; font-size: 0.68rem; color: var(--ui-muted); }
+
+/* option B: beeswarm dot strip */
+.beeswarm { position: relative; height: 96px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel); margin-top: 0.4rem; }
+.beeswarm__dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--chart-4); border: 1px solid var(--ui-panel); transform: translate(-50%, 50%); cursor: default; }
+.beeswarm__dot--high { background: var(--chart-6); }
+.beeswarm__dot--low { background: var(--chart-3); }
+.beeswarm__axis { display: flex; justify-content: space-between; margin-top: 0.4rem; font-size: 0.68rem; color: var(--ui-muted); }
+.beeswarm__legend { display: flex; gap: 1rem; margin-top: 0.6rem; font-size: 0.72rem; color: var(--ui-muted); }
+.beeswarm__legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.beeswarm__legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
 .panel.notes-panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
-.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.9rem; }
-@media (max-width: 900px) { .notes-grid { grid-template-columns: 1fr; } }
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 0.9rem; }
 .notes-card { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.8rem 0.9rem; background: var(--ui-panel-sunken); }
 .notes-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
 .notes-card p, .notes-card li { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.55; }
@@ -311,15 +345,17 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             <h3>What's in the catalog</h3>
             <p>Style guessed from each title's own text (e.g. "IPA", "STOUT", "SELTZER") &mdash; not the researched
             <code>style</code> field, which is still blank for nearly every title. It's a preview of what full
-            research would sort the shelf into.</p>
+            research would sort the shelf into. <strong>Click a slice or a legend row</strong> to drill into that
+            style's sub-styles.</p>
           </div>
         </div>
         <div class="mix-grid">
           <div class="donut-wrap">
-            <div class="donut" id="styleDonut">
+            <div class="donut">
+              <svg class="style-donut-svg" id="styleDonutSvg" viewBox="0 0 170 170"></svg>
               <div class="donut-center">
-                <div class="donut-center__num">1,683</div>
-                <div class="donut-center__label">titles not yet keyword-matched</div>
+                <div class="donut-center__num" id="donutCenterNum">1,683</div>
+                <div class="donut-center__label" id="donutCenterLabel">titles not yet keyword-matched</div>
               </div>
             </div>
             <div class="legend" id="styleLegend"></div>
@@ -331,6 +367,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             <div class="stat-tile"><span class="stat-tile__label">Distinct SKUs on file</span><span class="stat-tile__value">2,539</span></div>
           </div>
         </div>
+        <div class="drilldown" id="styleDrilldown" hidden></div>
         <div class="gap-note">
           <span class="gap-note__icon">&#128269;</span>
           <span><strong>The opportunity, in one number:</strong> 2,539 titles are already in the Beer Bible, but 0
@@ -390,10 +427,30 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             <h3>ABV mix, once researched</h3>
             <p>What "low-ABV" vs. "standard" vs. "high-ABV" looks like across researched entries &mdash; helpful for
             answering the question at the register. Illustrative sample distribution, same convention as the
-            spotlight cards above.</p>
+            spotlight cards above. <strong>Two layout options below for feedback</strong> &mdash; only one would
+            ship.</p>
           </div>
         </div>
-        <div class="hist" id="abvHist"></div>
+        <div class="design-options">
+          <div class="design-option">
+            <div class="design-option__label">Option A &middot; gradient spectrum <small>bands read as a low&rarr;high ABV range, counts called out per band</small></div>
+            <div class="abv-spectrum">
+              <div class="abv-spectrum__callouts" id="abvSpectrumCallouts"></div>
+              <div class="abv-spectrum__bar" id="abvSpectrumBar"></div>
+              <div class="abv-spectrum__axis"><span>0%</span><span>14%+</span></div>
+            </div>
+          </div>
+          <div class="design-option">
+            <div class="design-option__label">Option B &middot; beeswarm strip <small>each dot is one researched beer &mdash; shows real spread &amp; outliers, not just bucket totals</small></div>
+            <div class="beeswarm" id="abvBeeswarm"></div>
+            <div class="beeswarm__axis"><span>0%</span><span>4%</span><span>8%</span><span>12%</span><span>16%</span></div>
+            <div class="beeswarm__legend">
+              <span><i style="background:var(--chart-3);"></i> Session (&lt;4.5%)</span>
+              <span><i style="background:var(--chart-4);"></i> Standard</span>
+              <span><i style="background:var(--chart-6);"></i> High ABV (9%+)</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ===== breweries ===== -->
@@ -448,6 +505,22 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         cherry-picked sample cards) is what makes the "Add a Beer" CTA at the bottom feel earned instead of
         decorative.</p>
       </div>
+      <div class="notes-card">
+        <h3>The style donut is now interactive</h3>
+        <p>Clicking a slice or legend row drills into that style's sub-styles (e.g. IPA &rarr; Hazy/NEIPA, West
+        Coast, Session&hellip;) without leaving the page. It's built as clickable SVG arcs (stroke-dasharray per
+        segment) rather than the earlier CSS conic-gradient, since a conic-gradient disc has no per-slice hit
+        targets to attach a click handler to. Sub-style counts are illustrative &mdash; see the caveat under the
+        drill-down itself.</p>
+      </div>
+      <div class="notes-card">
+        <h3>ABV: two options, not a decision yet</h3>
+        <p>The original bar-histogram design for ABV mix felt like the weakest chart on the page, so it's replaced
+        here with two alternatives shown side by side for feedback rather than a single pick: a gradient
+        spectrum band (Option A) and a beeswarm dot strip (Option B, one dot per researched beer, positioned by
+        real ABV with a simple greedy lane-packing algorithm so close values don't overlap). Only one would ship
+        in a real implementation.</p>
+      </div>
     </div>
 
     <div class="notes-card">
@@ -460,9 +533,9 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       are blank on every seeded row).</p>
       <p><strong>Illustrative sample data:</strong> the hero's "styles researched" and "avg. Untappd rating" tiles,
       every beer in the Top Rated spotlight grid (real beers with real public ABV/IBU/Untappd figures, chosen to
-      match titles already in the import file), the ABV distribution histogram, the brewery bar-fill percentages,
-      and the Recently Researched feed. None of it is live &mdash; it's there to show what the page looks like with
-      data in it, not what's on file today.</p>
+      match titles already in the import file), the style donut's sub-style drill-down, both ABV mix options, the
+      brewery bar-fill percentages, and the Recently Researched feed. None of it is live &mdash; it's there to show
+      what the page looks like with data in it, not what's on file today.</p>
     </div>
   </div>
 </div>
@@ -482,26 +555,168 @@ const styleMix = [
   { name: 'Sour', count: 31, color: '#5a8a6b' },
 ];
 const styleTotal = styleMix.reduce((s, x) => s + x.count, 0);
+const UNCATEGORIZED = 'Uncategorized (not yet researched)';
 
-(function renderDonut() {
+// Illustrative sub-style splits for the drill-down (style itself is blank on nearly
+// every real row today, so these can't be computed - each bucket's sub-counts sum
+// exactly to that bucket's real total so the drill-down still "adds up").
+const subStyles = {
+  'IPA': [
+    { name: 'Hazy / NEIPA', count: 74 },
+    { name: 'West Coast IPA', count: 58 },
+    { name: 'Session IPA', count: 31 },
+    { name: 'Double / Imperial IPA', count: 22 },
+    { name: 'Sour IPA', count: 10 },
+  ],
+  'Lager & Pilsner': [
+    { name: 'American Lager', count: 62 },
+    { name: 'German-style Pils', count: 40 },
+    { name: 'Mexican-style Lager', count: 35 },
+    { name: 'Vienna / Amber Lager', count: 20 },
+    { name: 'Dortmunder / Helles', count: 15 },
+  ],
+  'Seltzer / RTD': [
+    { name: 'Hard Seltzer', count: 55 },
+    { name: 'Canned Cocktail / RTD', count: 34 },
+    { name: 'Spiked Tea & Lemonade', count: 24 },
+  ],
+  'Cider': [
+    { name: 'Dry Apple Cider', count: 40 },
+    { name: 'Sweet Apple Cider', count: 28 },
+    { name: 'Flavored / Fruit Cider', count: 25 },
+  ],
+  'Stout & Porter': [
+    { name: 'Imperial Stout', count: 24 },
+    { name: 'Milk / Sweet Stout', count: 21 },
+    { name: 'Dry Irish Stout', count: 17 },
+    { name: 'Porter', count: 15 },
+  ],
+  'Non-Alcoholic': [
+    { name: 'NA Lager', count: 30 },
+    { name: 'NA IPA', count: 22 },
+    { name: 'NA Stout', count: 16 },
+  ],
+  'Light Beer': [
+    { name: 'American Light Lager', count: 41 },
+    { name: 'Light Wheat', count: 16 },
+  ],
+  'Wheat & Wit': [
+    { name: 'Belgian Witbier', count: 22 },
+    { name: 'American Wheat', count: 18 },
+    { name: 'Hefeweizen', count: 10 },
+  ],
+  'Sour': [
+    { name: 'Fruited Sour', count: 14 },
+    { name: 'Gose', count: 10 },
+    { name: 'Berliner Weisse', count: 7 },
+  ],
+};
+
+const donutState = { selected: null };
+
+function renderDonut() {
+  const svg = document.getElementById('styleDonutSvg');
+  const cx = 85, cy = 85, r = 68, strokeWidth = 26;
+  const circumference = 2 * Math.PI * r;
   let acc = 0;
-  const stops = styleMix.map((s) => {
-    const start = (acc / styleTotal) * 360;
+  svg.innerHTML = styleMix.map((s) => {
+    const arcLen = (s.count / styleTotal) * circumference;
+    const dashoffset = -(acc / styleTotal) * circumference;
     acc += s.count;
-    const end = (acc / styleTotal) * 360;
-    return `${s.color} ${start}deg ${end}deg`;
-  }).join(', ');
-  document.getElementById('styleDonut').style.setProperty('--donut-stops', stops);
+    const dimmed = donutState.selected && donutState.selected !== s.name;
+    return `<circle class="style-arc${dimmed ? ' style-arc--dim' : ''}" cx="${cx}" cy="${cy}" r="${r}"
+      fill="none" style="stroke:${s.color}" stroke-width="${strokeWidth}"
+      stroke-dasharray="${arcLen} ${circumference - arcLen}" stroke-dashoffset="${dashoffset}"
+      transform="rotate(-90 ${cx} ${cy})" pointer-events="stroke"
+      role="button" tabindex="0" aria-label="${s.name}, ${s.count.toLocaleString()} titles"
+      data-style="${s.name.replace(/"/g, '&quot;')}"></circle>`;
+  }).join('');
 
-  document.getElementById('styleLegend').innerHTML = styleMix.map((s) => `
-    <div class="legend-row">
+  svg.querySelectorAll('.style-arc').forEach((el) => {
+    el.addEventListener('click', () => selectStyle(el.dataset.style));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStyle(el.dataset.style); }
+    });
+  });
+
+  document.getElementById('styleLegend').innerHTML = styleMix.map((s) => {
+    const active = donutState.selected === s.name;
+    const dimmed = donutState.selected && !active;
+    return `
+    <button type="button" class="legend-row${active ? ' legend-row--active' : ''}${dimmed ? ' legend-row--dim' : ''}" data-style="${s.name.replace(/"/g, '&quot;')}">
       <span class="legend-swatch" style="background:${s.color};"></span>
       <span class="legend-row__name">${s.name}</span>
       <span class="legend-row__pct">${Math.round((s.count / styleTotal) * 100)}%</span>
       <span class="legend-row__count">${s.count.toLocaleString()}</span>
-    </div>
-  `).join('');
-})();
+    </button>
+  `;
+  }).join('');
+  document.querySelectorAll('#styleLegend .legend-row').forEach((el) => {
+    el.addEventListener('click', () => selectStyle(el.dataset.style));
+  });
+
+  renderDonutCenter();
+  renderDrilldown();
+}
+
+function renderDonutCenter() {
+  const numEl = document.getElementById('donutCenterNum');
+  const labelEl = document.getElementById('donutCenterLabel');
+  if (!donutState.selected) {
+    numEl.textContent = (styleTotal - styleMix.find((s) => s.name === UNCATEGORIZED).count).toLocaleString();
+    labelEl.textContent = 'titles keyword-matched to a style';
+    return;
+  }
+  const s = styleMix.find((x) => x.name === donutState.selected);
+  numEl.textContent = `${Math.round((s.count / styleTotal) * 100)}%`;
+  labelEl.textContent = s.name;
+}
+
+function selectStyle(name) {
+  donutState.selected = donutState.selected === name ? null : name;
+  renderDonut();
+}
+
+function renderDrilldown() {
+  const wrap = document.getElementById('styleDrilldown');
+  if (!donutState.selected) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+  wrap.hidden = false;
+  const style = donutState.selected;
+  const bucket = styleMix.find((s) => s.name === style);
+  const subs = subStyles[style];
+
+  if (style === UNCATEGORIZED) {
+    wrap.innerHTML = `
+      <div class="drilldown__head">
+        <div class="drilldown__title">${style} <span>&mdash; ${bucket.count.toLocaleString()} titles</span></div>
+        <button type="button" class="drilldown__back" id="drilldownBack">&times; Clear</button>
+      </div>
+      <p class="drilldown__note">Nothing to break down yet &mdash; these titles didn't match any style keyword, which
+      is exactly the backlog research would clear. They'll land in one of the other slices (or a new one) once
+      someone researches them.</p>`;
+  } else {
+    const maxSub = Math.max(...subs.map((x) => x.count));
+    wrap.innerHTML = `
+      <div class="drilldown__head">
+        <div class="drilldown__title">${style} <span>&mdash; ${bucket.count.toLocaleString()} titles, by sub-style</span></div>
+        <button type="button" class="drilldown__back" id="drilldownBack">&times; Clear</button>
+      </div>
+      <div class="format-bars">
+        ${subs.map((sub) => `
+          <div class="format-row">
+            <span class="format-row__label">${sub.name}</span>
+            <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((sub.count / maxSub) * 100)}%;"></span></span>
+            <span class="format-row__count">${sub.count.toLocaleString()}</span>
+          </div>
+        `).join('')}
+      </div>
+      <p class="drilldown__caveat">Sub-style split is illustrative &mdash; <code>style</code> is blank on nearly every
+      row today, so this previews what the drill-down would show once entries are researched, not a live count.</p>`;
+  }
+  document.getElementById('drilldownBack').addEventListener('click', () => selectStyle(style));
+}
+
+renderDonut();
 
 // ---- package format: real counts from a keyword pass over beer-bible-seed-data.json ----
 const formatMix = [
@@ -532,22 +747,84 @@ document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
   document.getElementById('progressRingNum').textContent = `${Math.round((researched / total) * 100)}%`;
 })();
 
-// ---- ABV histogram: illustrative sample distribution ----
-const abvHist = [
-  { label: '< 4.5% (session)', count: 8 },
-  { label: '4.5–5.5%', count: 22 },
-  { label: '5.5–7%', count: 31 },
-  { label: '7–9%', count: 19 },
-  { label: '9%+ (high ABV)', count: 11 },
+// ---- ABV: two design options over the same illustrative sample distribution ----
+const abvBands = [
+  { label: 'Session', range: '< 4.5%', count: 8 },
+  { label: 'Standard', range: '4.5–5.5%', count: 22 },
+  { label: 'Standard+', range: '5.5–7%', count: 31 },
+  { label: 'Strong', range: '7–9%', count: 19 },
+  { label: 'High ABV', range: '9%+', count: 11 },
 ];
-const abvMax = Math.max(...abvHist.map((h) => h.count));
-document.getElementById('abvHist').innerHTML = abvHist.map((h) => `
-  <div class="hist-col">
-    <span class="hist-col__count">${h.count}</span>
-    <div class="hist-col__bar" style="height:${Math.round((h.count / abvMax) * 100)}%;"></div>
-    <span class="hist-col__label">${h.label}</span>
-  </div>
-`).join('');
+const abvBandTotal = abvBands.reduce((s, b) => s + b.count, 0);
+
+// Option A: gradient spectrum band, with count callouts positioned at each band's midpoint
+(function renderAbvSpectrum() {
+  let acc = 0;
+  const ticks = [];
+  const callouts = abvBands.map((b) => {
+    const startPct = (acc / abvBandTotal) * 100;
+    acc += b.count;
+    const endPct = (acc / abvBandTotal) * 100;
+    if (startPct > 0) ticks.push(startPct);
+    return `<div class="abv-spectrum__callout" style="left:${(startPct + endPct) / 2}%;">
+      <div class="abv-spectrum__callout-num">${b.count}</div>
+      <div class="abv-spectrum__callout-name">${b.label}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('abvSpectrumCallouts').innerHTML = callouts;
+  document.getElementById('abvSpectrumBar').innerHTML = ticks
+    .map((pct) => `<div class="abv-spectrum__tick" style="left:${pct}%;"></div>`)
+    .join('');
+})();
+
+// Option B: beeswarm - illustrative individual researched beers, one dot each,
+// greedily stacked into lanes so close-ABV dots don't overlap
+const abvBeers = [
+  { title: 'Guinness Draught 0.0', abv: 0.0 },
+  { title: "Bell's Oberon Ale", abv: 5.8 },
+  { title: 'Allagash White', abv: 5.2 },
+  { title: 'Sierra Nevada Pale Ale', abv: 5.6 },
+  { title: 'Coors Light', abv: 4.2 },
+  { title: 'Michelob Ultra', abv: 4.2 },
+  { title: 'Corona Extra', abv: 4.6 },
+  { title: 'Heineken', abv: 5.0 },
+  { title: 'Sam Adams Boston Lager', abv: 5.0 },
+  { title: "Bell's Two Hearted Ale", abv: 7.0 },
+  { title: 'Lagunitas IPA', abv: 6.2 },
+  { title: 'Dogfish Head 60 Minute IPA', abv: 6.0 },
+  { title: 'New Belgium Fat Tire', abv: 5.2 },
+  { title: 'White Claw Black Cherry', abv: 5.0 },
+  { title: '1911 Cider Honeycrisp', abv: 6.9 },
+  { title: 'Guinness Draught', abv: 4.2 },
+  { title: 'Dogfish Head 90 Minute IPA', abv: 9.0 },
+  { title: 'Founders KBS', abv: 12.0 },
+  { title: 'Sierra Nevada Bigfoot', abv: 9.6 },
+  { title: 'Lagunitas Sucks', abv: 7.8 },
+  { title: 'Founders Backwoods Bastard', abv: 11.0 },
+  { title: 'Dogfish Head 120 Minute IPA', abv: 13.5 },
+];
+
+(function renderBeeswarm() {
+  const maxAbv = 14;
+  const minGapPct = 4.2; // percent-of-width gap before a dot needs a new lane
+  const lanes = []; // lanes[i] = x% of the last dot placed in that lane
+  const placed = abvBeers
+    .slice()
+    .sort((a, b) => a.abv - b.abv)
+    .map((beer) => {
+      const xPct = Math.min(100, (beer.abv / maxAbv) * 100);
+      let lane = lanes.findIndex((lastX) => xPct - lastX >= minGapPct);
+      if (lane === -1) { lane = lanes.length; lanes.push(xPct); }
+      else { lanes[lane] = xPct; }
+      return { ...beer, xPct, lane };
+    });
+
+  const colorClass = (abv) => (abv < 4.5 ? 'beeswarm__dot--low' : abv >= 9 ? 'beeswarm__dot--high' : '');
+  document.getElementById('abvBeeswarm').innerHTML = placed.map((b) => `
+    <div class="beeswarm__dot ${colorClass(b.abv)}" title="${b.title} — ${b.abv.toFixed(1)}% ABV"
+      style="left:${b.xPct}%; bottom:${8 + b.lane * 14}px;"></div>
+  `).join('');
+})();
 
 // ---- spotlight: sample researched beers (same convention as beer-profile-page.html) ----
 const spotlight = [
