@@ -602,6 +602,12 @@ h1, h2, h3 { margin: 0; }
 .bourbon-card__title { font-size: 0.98rem; font-weight: 700; }
 .bourbon-card__sub { font-size: 0.78rem; color: var(--ui-muted); }
 .bourbon-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.1rem; }
+/* Groups a researched entry's sort metric with its .research-reicon (see
+   beerCardHtml/beerRowHtml's own reResearchHtml in app.js) so adding that
+   icon doesn't turn .bourbon-card__footer/.bourbon-row into a 3-4-way
+   space-between split - the pair stays put as one flex item next to
+   whatever else already sits in that slot. */
+.bourbon-card__metric-group, .bourbon-row__metric-group { display: inline-flex; align-items: center; gap: 0.35rem; }
 
 /* One-click Research button (see beerResearchButtonHtml/runBeerResearch in
    app.js) - the Beer Bible grid card/row's footer slot for any entry that
@@ -622,9 +628,26 @@ h1, h2, h3 { margin: 0; }
 
 /* Bigger, .btn-shaped copy for the profile header's primary action slot
    (see beerResearchButtonHtmlLarge/renderBeerBibleProfile in app.js) - same
-   idle/loading/error text runBeerResearch swaps in, just .btn--primary
-   sized instead of a footer pill. */
+   idle/loading/error text runBeerResearch swaps in, just .btn--primary (or,
+   re-researching an already-researched entry, .btn--ghost - see that
+   function's own reResearching branch) sized instead of a footer pill. */
 .research-btn:disabled { cursor: default; opacity: 0.85; }
+
+/* Icon-only "search again" affordance for an already-researched grid card/
+   list row (see beerReResearchButtonHtml in app.js) - deliberately muted
+   next to the accent-outlined .research-chip an unresearched entry gets,
+   since this is a corrective, occasional action (fixing a wrong Untappd
+   match) rather than the primary "this still needs doing" prompt that chip
+   is. Same round footprint either way so it drops into the metric-group
+   slot without changing the row's height. */
+.research-reicon {
+  display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+  border-radius: 999px; cursor: pointer; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted);
+  flex: none;
+}
+.research-reicon:hover:not(:disabled) { border-color: var(--ui-accent-ink); color: var(--ui-accent-ink); background: var(--ui-hover); }
+.research-reicon:disabled { cursor: default; opacity: 0.85; }
+.research-reicon:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
 
 .research-spin { animation: research-spin 0.8s linear infinite; }
 @keyframes research-spin { to { transform: rotate(360deg); } }

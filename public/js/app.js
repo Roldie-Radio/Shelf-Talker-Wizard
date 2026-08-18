@@ -8353,6 +8353,10 @@
   // pick up whichever text colour the button/chip is currently drawn in.
   const BEER_RESEARCH_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" width="11" height="11"><circle cx="8.3" cy="8.3" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="13" y1="13" x2="17.5" y2="17.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   const BEER_RESEARCH_SPIN_ICON = '<svg class="research-spin" viewBox="0 0 20 20" aria-hidden="true" width="11" height="11"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="26 12" stroke-linecap="round"/></svg>';
+  // Redo-arrow glyph for the Re-research affordance below - deliberately
+  // not the same magnifying glass BEER_RESEARCH_ICON uses, so a researched
+  // card's icon reads as "search again", not "needs its first search".
+  const BEER_RERESEARCH_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" width="12" height="12"><path d="M15.7 5.3A7 7 0 1 0 17 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.2 2.5v3.6h-3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   // One-click Research chip for an unresearched card/row's footer (see
   // beerCardHtml/beerRowHtml below) - runs the same live Untappd search
@@ -8374,7 +8378,28 @@
   // pair as the grid's own chip, just styled as a primary action next to
   // Edit instead of a footer pill.
   function beerResearchButtonHtmlLarge(entry) {
-    return `<button type="button" class="btn btn--small btn--primary research-btn" data-beer-research="${entry.id}" title="Search Untappd for this beer">${BEER_RESEARCH_ICON}Research on Untappd</button>`;
+    const reResearching = beerIsResearched(entry);
+    const label = reResearching ? 'Re-research on Untappd' : 'Research on Untappd';
+    const title = reResearching
+      ? 'Search Untappd again for this beer - use this if it was matched to the wrong beer or style'
+      : 'Search Untappd for this beer';
+    const icon = reResearching ? BEER_RERESEARCH_ICON : BEER_RESEARCH_ICON;
+    const cls = reResearching ? 'btn btn--small btn--ghost research-btn' : 'btn btn--small btn--primary research-btn';
+    return `<button type="button" class="${cls}" data-beer-research="${entry.id}" title="${title}">${icon}${label}</button>`;
+  }
+
+  // Small icon-only counterpart of the button above, for the grid card/list
+  // row footer - beerResearchButtonHtml above only ever shows for an
+  // unresearched entry (see beerCardHtml/beerRowHtml's own metricHtml), so
+  // an already-researched one otherwise has no way, short of opening its
+  // profile page, to correct a wrong Untappd match (wrong brewery, wrong
+  // style, a same-named beer from a different brewery, etc.). Same
+  // `[data-beer-research]` hook as every other Research button - runs
+  // through the exact same wireBeerResearchButtons/runBeerResearch pair,
+  // ties/misses/rejections included, just started from a card that's
+  // already "Researched" instead of one that isn't.
+  function beerReResearchButtonHtml(entry) {
+    return `<button type="button" class="research-reicon" data-beer-research="${entry.id}" title="Re-research on Untappd - use this if it was matched to the wrong beer or style" aria-label="Re-research on Untappd">${BEER_RERESEARCH_ICON}</button>`;
   }
 
   // The little checkmark overlay beerCardHtml/beerRowHtml below render in
@@ -8420,6 +8445,12 @@
     // entry - there's nothing on Untappd for it to look up (see
     // beerResearchBadgeHtml above).
     const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
+    // A researched entry's footer already shows the active sort's own
+    // metric above (rating/ABV/SKU/badge) - this adds a small "search
+    // again" icon alongside it so a wrong Untappd match doesn't require
+    // opening the profile page just to fix it (see beerReResearchButtonHtml
+    // above). Variety packs still have no Untappd page to re-search.
+    const reResearchHtml = (!entry.varietyPack && beerIsResearched(entry)) ? beerReResearchButtonHtml(entry) : '';
     // Select mode (see toggleBeerBibleSelectMode) - the checkbox overlay
     // and its .bourbon-card--checkable indent only render at all while
     // selecting, rather than a CSS show/hide toggle, so there's nothing
@@ -8436,7 +8467,7 @@
         <div class="bourbon-card__sub">${metaBits || 'Brewery unknown'}</div>
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${statBits.join(' &middot; ')}</span>
-          ${metricHtml}
+          <span class="bourbon-card__metric-group">${metricHtml}${reResearchHtml}</span>
         </div>
       </div>
     `;
@@ -8447,6 +8478,9 @@
   // beerCardHtml above, same reason.
   function beerRowHtml(entry, sort) {
     const metricHtml = (entry.varietyPack || beerIsResearched(entry)) ? beerSortMetricHtml(entry, sort) : beerResearchButtonHtml(entry);
+    // Same "search again" icon beerCardHtml's own reResearchHtml adds - see
+    // beerReResearchButtonHtml above.
+    const reResearchHtml = (!entry.varietyPack && beerIsResearched(entry)) ? beerReResearchButtonHtml(entry) : '';
     const sizesHint = entry.groupCount > 1 ? ` &middot; ${entry.groupCount} sizes` : '';
     const checkHtml = beerBibleSelectMode ? beerSelectCheckHtml('bourbon-row__check') : '';
     const rowClasses = ['bourbon-row'];
@@ -8458,7 +8492,7 @@
           <div class="bourbon-row__title">${escapeHtml(beerDisplayName(entry))}</div>
           <div class="bourbon-row__sub">${escapeHtml(entry.brewery || 'Brewery unknown')}${entry.style ? ` &middot; ${escapeHtml(entry.style)}` : ''}${sizesHint}</div>
         </div>
-        ${metricHtml}
+        <span class="bourbon-row__metric-group">${metricHtml}${reResearchHtml}</span>
         <span class="bourbon-row__chevron" aria-hidden="true">&rsaquo;</span>
       </div>
     `;
@@ -8589,15 +8623,19 @@
     return data;
   }
 
-  // Puts a Research button back to its plain idle label/tooltip - shared by
+  // Puts a Research button back to its own idle label/tooltip - shared by
   // every "nothing was saved" exit out of runBeerResearch below (staff
   // rejected a confident match, backed out of a tie without picking, or the
   // lookup itself failed outright) so none of them can leave the button
-  // stuck showing "Researching…" forever.
-  function resetBeerResearchButton(btn) {
+  // stuck showing "Researching…" forever. Restores whatever `idleHtml`/
+  // `idleTitle` runBeerResearch snapshotted before it started, rather than
+  // a single hardcoded "Research" label, since this now backs three
+  // different idle states (the footer chip, the icon-only re-research
+  // button, and the profile page's Research/Re-research button).
+  function resetBeerResearchButton(btn, idleHtml, idleTitle) {
     btn.disabled = false;
-    btn.title = 'Search Untappd for this beer';
-    btn.innerHTML = `${BEER_RESEARCH_ICON}Research`;
+    btn.title = idleTitle;
+    btn.innerHTML = idleHtml;
   }
 
   // Runs the actual lookup for one entry and resolves it all the way
@@ -8613,9 +8651,17 @@
   async function runBeerResearch(entryId, btn) {
     const entry = beerBibleCache.find((b) => b.id === entryId);
     if (!entry) return false;
+    // Snapshotted so resetBeerResearchButton can restore whichever idle
+    // state this particular button started from - the footer chip's
+    // "Research", the icon-only re-research button's bare icon, or the
+    // profile button's "Research"/"Re-research on Untappd" - rather than
+    // every reset assuming the same one.
+    const idleHtml = btn.innerHTML;
+    const idleTitle = btn.title;
+    const iconOnly = btn.classList.contains('research-reicon');
     btn.disabled = true;
     btn.title = 'Searching Untappd…';
-    btn.innerHTML = `${BEER_RESEARCH_SPIN_ICON}Researching&hellip;`;
+    btn.innerHTML = iconOnly ? BEER_RESEARCH_SPIN_ICON : `${BEER_RESEARCH_SPIN_ICON}Researching&hellip;`;
     try {
       const resp = await fetch(`/api/beers/${entryId}/research`, { method: 'POST' });
       const data = await resp.json();
@@ -8632,7 +8678,7 @@
           getCurrent: () => beerResearchCurrentFields(entry),
           applyFn: (fields) => saveBeerResearchFields(entryId, fields),
         });
-        if (!picked) resetBeerResearchButton(btn);
+        if (!picked) resetBeerResearchButton(btn, idleHtml, idleTitle);
         return picked;
       }
 
@@ -8647,7 +8693,7 @@
           getCurrent: () => beerResearchCurrentFields(entry),
           applyFn: (fields) => saveBeerResearchFields(entryId, fields),
         });
-        if (!picked) resetBeerResearchButton(btn);
+        if (!picked) resetBeerResearchButton(btn, idleHtml, idleTitle);
         return picked;
       }
 
@@ -8668,7 +8714,7 @@
           getCurrent: () => beerResearchCurrentFields(entry),
           applyFn: (fields) => saveBeerResearchFields(entryId, fields),
         });
-        if (!picked) resetBeerResearchButton(btn);
+        if (!picked) resetBeerResearchButton(btn, idleHtml, idleTitle);
         return picked;
       }
       await saveBeerResearchFields(entryId, data);
@@ -8676,7 +8722,7 @@
     } catch (err) {
       btn.disabled = false;
       btn.title = err.message || 'Could not search Untappd for that beer.';
-      btn.innerHTML = `${BEER_RESEARCH_ICON}Research`;
+      btn.innerHTML = idleHtml;
       return false;
     }
   }
@@ -9128,7 +9174,7 @@
           ${beerResearchedTimestampHtml(entry)}
         </div>
         <div class="profile-head__actions">
-          ${(entry.varietyPack || beerIsResearched(entry)) ? '' : beerResearchButtonHtmlLarge(entry)}
+          ${entry.varietyPack ? '' : beerResearchButtonHtmlLarge(entry)}
           <button type="button" class="btn btn--small" id="beerBibleEditBtn">Edit</button>
         </div>
       </div>
