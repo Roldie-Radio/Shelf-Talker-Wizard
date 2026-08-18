@@ -8595,8 +8595,19 @@
       // confident-but-wrong match here same as anywhere else.
       const confirmed = await openUntappdConfirm(data);
       if (!confirmed) {
-        resetBeerResearchButton(btn);
-        return false;
+        // Not the Right Beer used to just reset the button and stop there -
+        // a dead end with no way to actually finish researching this beer
+        // short of clicking Research again and hoping for a better match.
+        // Same fallback the tie/miss branches above already give: the Pick
+        // the Right Beer dialog with an empty candidate list, landing
+        // directly on its "Or search Untappd yourself" box so staff can
+        // type in a better query right away instead of starting over blind.
+        const picked = await openUntappdPicker([], beerDisplayName(entry) || entry.title, {
+          getCurrent: () => beerResearchCurrentFields(entry),
+          applyFn: (fields) => saveBeerResearchFields(entryId, fields),
+        });
+        if (!picked) resetBeerResearchButton(btn);
+        return picked;
       }
       await saveBeerResearchFields(entryId, data);
       return true;
