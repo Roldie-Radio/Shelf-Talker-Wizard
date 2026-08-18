@@ -971,6 +971,122 @@ h1, h2, h3 { margin: 0; }
 .desc-block p.help-text { margin: 0; }
 .desc-source { font-size: 0.76rem; color: var(--ui-muted); margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px dashed var(--ui-border); }
 
+/* ---------- The Beer Bible - landing/overview ----------
+   The screen renderBeerBibleLanding builds (see app.js) - a dashboard
+   sitting in front of the grid/profile, reusing .panel/.tag/.empty-hint/
+   .rating-dots as-is (see the comments above) rather than inventing
+   parallel versions of any of them. Only what's genuinely new to this
+   screen (the hero band, the style-mix donut, the spotlight/brewery
+   grids, the activity feed) gets its own rules here. Amber/copper accent
+   set for the donut lives inline per-slice in app.js
+   (BEER_LANDING_CHART_COLORS), not as CSS custom properties - the number
+   of slices varies with how many styles are actually on file, so there's
+   no fixed set of swatch variables to declare up front the way the
+   Bourbon Library's grain-color palette can. */
+.beer-landing { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.beer-landing__hero {
+  position: relative;
+  border-radius: var(--radius);
+  padding: 1.6rem 1.7rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  overflow: hidden;
+  color: #fff8ec;
+  background:
+    radial-gradient(900px 240px at 12% -20%, rgba(255, 255, 255, 0.14), transparent 60%),
+    linear-gradient(135deg, #4a2e10 0%, #8a5f27 55%, #c8722c 100%);
+}
+.beer-landing__hero-copy { max-width: 46ch; }
+.beer-landing__hero h2 { margin: 0 0 0.5rem; font-size: 1.5rem; letter-spacing: -0.01em; }
+.beer-landing__hero-copy p { margin: 0 0 1rem; font-size: 0.9rem; line-height: 1.55; color: #fce6c8; }
+.beer-landing__hero-actions { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+.beer-landing__hero-actions .btn:not(.btn--primary) { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.4); color: #fff8ec; }
+.beer-landing__hero-actions .btn:not(.btn--primary):hover { background: rgba(255, 255, 255, 0.24); }
+.beer-landing__hero-actions .btn--primary { background: #fff8ec; border-color: #fff8ec; color: #5a3d16; }
+.beer-landing__hero-actions .btn--primary:hover { background: #ffffff; }
+.beer-landing__hero-stats { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); gap: 0.6rem 1.3rem; }
+.beer-landing__hero-num { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.beer-landing__hero-num small { font-size: 0.55em; font-weight: 600; color: #fce6c8; }
+.beer-landing__hero-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: #ffe6bd; margin-top: 0.1rem; }
+
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.section-head h3 { font-size: 1rem; margin: 0; }
+.section-head p { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--ui-muted); max-width: 60ch; line-height: 1.45; }
+
+/* Style-mix donut - a plain conic-gradient circle (see the .beer-donut
+   style attribute app.js's beerStyleMixHtml builds inline), not the
+   Mash Bill donut's SVG-slice approach (.donut-wrap/.donut-center/
+   .grain-legend2 above) - deliberately not reused here since this one has
+   no per-slice hover-highlight behaviour to justify real SVG elements, one
+   gradient does the whole thing. Own `beer-` prefixed class names
+   throughout this block specifically so nothing here collides with that
+   unrelated donut/legend pair. */
+.mix-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.1rem; align-items: stretch; }
+@media (max-width: 820px) { .mix-grid { grid-template-columns: 1fr; } }
+.beer-donut-wrap { display: flex; gap: 1.4rem; align-items: center; flex-wrap: wrap; }
+.beer-donut { width: 152px; height: 152px; border-radius: 50%; flex: 0 0 auto; position: relative; }
+.beer-donut-center { position: absolute; inset: 18px; border-radius: 50%; background: var(--ui-panel); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.beer-donut-center__num { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; }
+.beer-donut-center__label { font-size: 0.6rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 7.5em; line-height: 1.2; margin-top: 0.1rem; }
+.beer-legend { display: flex; flex-direction: column; gap: 0.45rem; flex: 1; min-width: 190px; }
+.beer-legend-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
+.beer-legend-swatch { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; }
+.beer-legend-row__name { flex: 1; color: var(--ui-ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.beer-legend-row__pct { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.78rem; }
+.beer-legend-row__count { font-size: 0.7rem; color: var(--ui-muted); min-width: 2.2em; text-align: right; }
+
+.stat-rail { display: flex; flex-direction: column; gap: 0.6rem; justify-content: center; }
+.stat-tile { background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.6rem 0.8rem; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.stat-tile__label { font-size: 0.78rem; color: var(--ui-ink-soft); font-weight: 600; }
+.stat-tile__value { font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat-tile__value small { font-size: 0.62em; font-weight: 600; color: var(--ui-muted); }
+
+/* Top Rated spotlight - a smaller, read-only cousin of .bourbon-card
+   scoped to its own class rather than reusing .bourbon-card directly,
+   since this card has no Select-mode checkbox/research-chip footer to
+   accommodate, just a rank badge and the rating/ABV line. */
+.beer-spotlight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+@media (max-width: 900px) { .beer-spotlight-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .beer-spotlight-grid { grid-template-columns: 1fr; } }
+.beer-card { border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel); padding: 0.85rem 0.9rem; display: flex; flex-direction: column; gap: 0.45rem; cursor: pointer; }
+.beer-card:hover { border-color: var(--ui-accent-ink); background: var(--ui-hover); }
+.beer-card__top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+.beer-card__title { font-size: 0.88rem; font-weight: 700; line-height: 1.3; }
+.beer-card__brewery { font-size: 0.74rem; color: var(--ui-muted); margin-top: 0.1rem; }
+.rank-badge { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--ui-accent); color: var(--ui-on-accent); font-size: 0.72rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.beer-card__tags { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.beer-card__meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.76rem; margin-top: 0.1rem; }
+.beer-card__abv { color: var(--ui-muted); font-weight: 600; }
+
+/* Breweries grid - same ranked-tile idea as .company-tile--standard above,
+   just simpler (no tier system - Beer only has the one distinction, see
+   beerIsResearched's own comment in app.js). */
+.brewery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+.brewery-chip { text-align: left; font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.55rem 0.7rem; background: var(--ui-panel-sunken); display: flex; flex-direction: column; gap: 0.15rem; }
+.brewery-chip:hover { border-color: var(--ui-accent-ink); background: var(--ui-hover); }
+.brewery-chip__name { font-size: 0.8rem; font-weight: 700; }
+.brewery-chip__count { font-size: 0.7rem; color: var(--ui-muted); }
+.brewery-chip__bar { height: 4px; border-radius: 999px; background: var(--ui-code-bg); margin-top: 0.35rem; overflow: hidden; }
+.brewery-chip__bar span { display: block; height: 100%; background: var(--ui-accent); }
+
+/* Recently Researched feed - a flat list, same "one dashed rule between
+   rows" shape as .history-list's own rows, just narrower content (a
+   name/source line and a timestamp) since there's no card/grid reason to
+   need one here. */
+.feed { display: flex; flex-direction: column; }
+.feed-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px dashed var(--ui-border); font-size: 0.82rem; cursor: pointer; }
+.feed-row:last-child { border-bottom: none; }
+.feed-row:hover .feed-title { color: var(--ui-accent-ink); }
+.feed-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--ui-good); }
+.feed-dot--manual { background: var(--ui-accent-ink); }
+.feed-title { font-weight: 700; flex: 1; min-width: 0; }
+.feed-title span { font-weight: 500; color: var(--ui-muted); }
+.feed-when { font-size: 0.74rem; color: var(--ui-muted); white-space: nowrap; }
+
 /* ---------- The Beer Bible - Select mode / bulk actions ----------
    Select mode (toggleBeerBibleSelectMode in app.js) adds a checkbox to
    every .bourbon-card/.bourbon-row in the grid - beerCardHtml/beerRowHtml

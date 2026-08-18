@@ -1081,6 +1081,14 @@
           </div>
         </div>
         <div class="library-band__actions">
+          <!-- Landing page's own back-out link (see renderBeerBibleBody in
+               app.js) - same .library-back pattern as #atlasBackLink, just
+               going back to the overview screen instead of a browse list.
+               Hidden while already on the overview; shown in both the grid
+               and profile modes so there's always a one-click way back to
+               it, not just re-clicking the rail icon (which also
+               re-fetches - see renderBeerBibleView). -->
+          <a href="#" class="library-back" id="beerBibleBackLink" hidden>&larr; Beer Bible Overview</a>
           <!-- Select mode - see toggleBeerBibleSelectMode in app.js. Turns
                every card/row in the grid below into a checkbox target and
                shows the bulk-action bar (#beerBibleBulkBar) once anything's
