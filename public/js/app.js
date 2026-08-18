@@ -9269,6 +9269,56 @@
     return rated.reduce((sum, g) => sum + Number(g.untappdRating), 0) / rated.length;
   }
 
+  // Style *families* the donut below buckets by, checked in order (first
+  // match wins) against each beer's own researched `style` text. Plain
+  // Untappd style strings are far more granular than a chart can usefully
+  // show - "American IPA", "New England IPA", "Double IPA", and "Session
+  // IPA" are four different exact strings that are all obviously "an IPA"
+  // to a person reading them. Bucketing raw strings instead of families
+  // used to mean any beer library with real variety in it collapsed to a
+  // handful of top individual styles plus one dominant, undifferentiated
+  // "Other styles" catch-all holding most of the rest - correct, but not
+  // informative. Grouping by family first means "Other" (see
+  // beerStyleFamily below) only ever holds genuinely one-off styles that
+  // don't fit a recognized family, not the bulk of the library.
+  //
+  // IPA is checked before the plain Pale Ale rule specifically because
+  // "India Pale Ale" itself contains the substring "Pale Ale" - reversing
+  // that order would put every IPA in the Pale Ale bucket instead. Stout &
+  // Porter is checked before Barleywine & Strong Ale for the same reason
+  // ("Imperial Stout" would otherwise match Imperial-flavored strong-ale
+  // wording first).
+  const BEER_STYLE_FAMILIES = [
+    { name: 'IPA', test: /\bipa\b|india pale ale/i },
+    { name: 'Stout & Porter', test: /stout|porter/i },
+    { name: 'Lager & Pilsner', test: /lager|pilsner|\bpils\b|helles|märzen|marzen|oktoberfest/i },
+    { name: 'Wheat & Wit', test: /wheat|hefe|witbier|\bwit\b/i },
+    { name: 'Sour & Wild', test: /sour|gose|lambic|wild ale|berliner/i },
+    { name: 'Belgian & Farmhouse', test: /belgian|saison|farmhouse|tripel|dubbel|quad(rupel)?/i },
+    { name: 'Pale Ale', test: /pale ale/i },
+    { name: 'Amber & Red Ale', test: /amber|red ale/i },
+    { name: 'Brown Ale', test: /brown ale/i },
+    { name: 'Golden & Blonde Ale', test: /golden ale|blonde ale/i },
+    { name: 'Barleywine & Strong Ale', test: /barleywine|barley wine|strong ale/i },
+    { name: 'Cider', test: /cider/i },
+    { name: 'Seltzer & RTD', test: /seltzer|hard tea|ready.to.drink|\brtd\b/i },
+    { name: 'Non-Alcoholic', test: /non.?alcoholic|\bn\/a\b|0\.0%?/i },
+  ];
+
+  // The family a researched beer's own `style` text falls under, or the
+  // raw style text itself when nothing in BEER_STYLE_FAMILIES matches -
+  // real but uncommon styles (a "Kolsch" or a "Braggot", say) keep their
+  // own name rather than being forced into an unrelated bucket, and still
+  // fold into the donut's own top-N-plus-"Other" cutoff below same as any
+  // other bucket would. `null` for no style at all - beerStyleMixHtml below
+  // maps that to its own "Style not on file" bucket instead.
+  function beerStyleFamily(rawStyle) {
+    const s = (rawStyle || '').trim();
+    if (!s) return null;
+    const family = BEER_STYLE_FAMILIES.find((f) => f.test.test(s));
+    return family ? family.name : s;
+  }
+
   // Style-mix donut + legend, conic-gradient built inline - same technique
   // docs/mockups/mash-bill-pie-chart.html and beer-bible-landing.html both
   // already use. Runs over researched beers only (an unresearched beer has
@@ -9281,7 +9331,7 @@
     }
     const counts = new Map();
     researchedGroups.forEach((g) => {
-      const key = (g.style || '').trim() || 'Style not on file';
+      const key = beerStyleFamily(g.style) || 'Style not on file';
       counts.set(key, (counts.get(key) || 0) + 1);
     });
     const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
@@ -9374,22 +9424,46 @@
     `).join('')}</div>`;
   }
 
+  // The feed row's own second line - everything a beer's grid card already
+  // surfaces (style tag, ABV, rating dots) plus brewery and a package-size
+  // count, so "recently researched" reads as an actual research summary
+  // instead of just a name and a timestamp. Pieces that don't apply to this
+  // beer (no rating yet, one package size, no style typed in) are just left
+  // out rather than shown blank - same "only render what's real" rule
+  // beerCardHtml's own metaBits/statBits already follow.
+  function beerLandingActivityDetailHtml(g) {
+    const styleTagHtml = g.style ? `<span class="tag">${escapeHtml(g.style)}</span>` : '';
+    const textBits = [];
+    if (g.brewery) textBits.push(escapeHtml(g.brewery));
+    if (g.abv) textBits.push(`${escapeHtml(g.abv)} ABV`);
+    if (g.groupCount > 1) textBits.push(`${g.groupCount} sizes`);
+    const textHtml = textBits.length ? `<span>${textBits.join(' &middot; ')}</span>` : '';
+    const ratingHtml = Number(g.untappdRating) > 0 ? ratingDotsHtml(g.untappdRating) : '';
+    return [styleTagHtml, textHtml, ratingHtml].filter(Boolean).join('');
+  }
+
   // Recently researched feed - researched beers only, newest updatedAt
   // first (same field beerResearchBadgeHtml's own hover tooltip reads),
   // clickable straight into that beer's own profile like the spotlight
-  // grid above.
+  // grid above. Shows more rows than the spotlight/brewery grids (8 vs 6) -
+  // this is the one section meant to read as a scrollable-feeling log of
+  // recent activity rather than a ranked top-N list, so it earns a little
+  // more room.
   function beerLandingActivityHtml(researchedGroups) {
     const recent = researchedGroups
       .slice()
       .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
-      .slice(0, 6);
+      .slice(0, 8);
     if (!recent.length) {
       return '<p class="empty-hint">Nothing researched yet - recently researched beers show up here.</p>';
     }
     return `<div class="feed">${recent.map((g) => `
       <div class="feed-row" role="button" tabindex="0" data-id="${g.id}">
         <span class="feed-dot ${g.source === 'Manual' ? 'feed-dot--manual' : ''}"></span>
-        <span class="feed-title">${escapeHtml(beerDisplayName(g))} <span>&mdash; ${escapeHtml(BEER_SOURCE_LABELS[g.source] || 'Researched')}</span></span>
+        <div class="feed-main">
+          <div class="feed-title">${escapeHtml(beerDisplayName(g))} <span>&mdash; ${escapeHtml(BEER_SOURCE_LABELS[g.source] || 'Researched')}</span></div>
+          <div class="feed-detail">${beerLandingActivityDetailHtml(g)}</div>
+        </div>
         <span class="feed-when">${g.updatedAt ? escapeHtml(formatHistoryTimestamp(g.updatedAt)) : ''}</span>
       </div>
     `).join('')}</div>`;
@@ -9464,7 +9538,10 @@
         </div>
 
         <div class="panel">
-          <div class="section-head"><div><h3>Recently researched</h3></div></div>
+          <div class="section-head">
+            <div><h3>Recently researched</h3><p>Newest first - brewery, style, ABV, and rating for each, wherever Untappd or a hand-typed edit found them.</p></div>
+            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeResearchedBtn">See all researched &rarr;</button>
+          </div>
           ${beerLandingActivityHtml(researchedGroups)}
         </div>
       </div>
@@ -9482,6 +9559,12 @@
     });
     els.beerBibleBody.querySelector('#beerLandingAddBtn')?.addEventListener('click', () => {
       els.beerBibleAddBtn.click();
+    });
+    els.beerBibleBody.querySelector('#beerLandingSeeResearchedBtn')?.addEventListener('click', () => {
+      beerBibleStatusFilter = 'researched';
+      beerBibleViewMode = 'grid';
+      renderBeerBibleChipsAndStats();
+      renderBeerBibleBody();
     });
     els.beerBibleBody.querySelectorAll('.beer-card[data-id], .feed-row[data-id]').forEach((node) => {
       const activate = () => {
