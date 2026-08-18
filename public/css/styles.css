@@ -2697,6 +2697,11 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .untappd-confirm-card__title { font-size: 1rem; font-weight: 700; color: var(--ui-ink); }
 .untappd-confirm-card__brewery { font-size: 0.86rem; color: var(--ui-muted); margin-top: 0.1rem; }
 .untappd-confirm-card__meta { font-size: 0.82rem; color: var(--ui-muted); margin-top: 0.2rem; }
+/* Sits below the card itself, not inside it - pricing never comes from
+   Untappd or the Beer Bible fallback above it (see openUntappdConfirm's own
+   comment in app.js), so it reads as a separate fact rather than one more
+   field of the match. */
+.untappd-confirm-price-note { margin: 0.6rem 0 0; }
 .untappd-confirm-card__description {
   font-size: 0.82rem;
   color: var(--ui-ink-soft);

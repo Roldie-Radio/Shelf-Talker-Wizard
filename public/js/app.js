@@ -1167,6 +1167,7 @@
     untappdConfirmBrewery: document.getElementById('untappdConfirmBrewery'),
     untappdConfirmMeta: document.getElementById('untappdConfirmMeta'),
     untappdConfirmDescription: document.getElementById('untappdConfirmDescription'),
+    untappdConfirmPriceNote: document.getElementById('untappdConfirmPriceNote'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
@@ -5267,6 +5268,18 @@
       els.untappdConfirmMeta.textContent = metaParts.join(' · ');
       els.untappdConfirmDescription.textContent = data.description || '';
       els.untappdConfirmDescription.hidden = !data.description;
+      // Pricing is never part of the match above (mergeUntappdBeer never
+      // touches price/salePrice - see applyBeerBibleFallback's own comment
+      // in index.js) - it's always whatever liquoroutletwinecellars.com's
+      // product page already had before this dialog opened, live or Beer
+      // Bible fallback alike. Said explicitly here so staff don't read the
+      // "Confirm Beer Bible Match" heading as meaning the price is stale
+      // too.
+      els.untappdConfirmPriceNote.textContent = data.salePrice && Number(data.salePrice) > 0
+        ? `Pricing: ${formatMoney(data.salePrice)} (was ${formatMoney(data.price)}) - liquoroutletwinecellars.com`
+        : data.price
+          ? `Pricing: ${formatMoney(data.price)} - liquoroutletwinecellars.com`
+          : 'Pricing: not found on liquoroutletwinecellars.com';
       untappdConfirmModal.open();
     });
   }
