@@ -52,6 +52,15 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.8',
+      items: [
+        'New: The Beer Bible now opens on an Overview page instead of dropping straight into the grid - a hero stat strip (beers on file, breweries, styles researched, avg. Untappd rating), a style-mix donut chart (grouped by style family - "American IPA"/"Session IPA"/"Double IPA" all count as one IPA slice, not three), a Top Rated spotlight, a Breweries grid (click one to filter the library), and a Recently Researched feed showing each beer\'s brewery, style, ABV, and rating, not just its name and a timestamp. A "Beer Bible Overview" link gets back to it from the grid or a profile page.',
+        'New: each package size on a Beer Bible profile page now shows what the WinePOS export\'s own Category/Department/Class column says for that SKU, flagged if it names a different product type (Wine/Spirits, say) - a way to catch a product that was tagged into the wrong department in WinePOS itself, not just a bad Untappd match.',
+        'Fixed: a confident Untappd match no longer backfills a field it doesn\'t have with whatever was already there - a stale value left over from a previous product in the Search tab form, a store page\'s generic blurb, or (re-Researching) whatever a Beer Bible entry already had on file. Blank now stays blank; applies to Search by Name, SKU Lookup, Scan UPC, and the Beer Bible\'s own Research button alike.',
+        'Fixed: Batch Research (Select mode → Research) no longer saves a confident single match automatically - it now shows the same Confirm Untappd Match review the per-beer Research button already requires, one beer at a time, before anything saves. A rejected match gets its own Rejected tally, distinct from a tie or a miss.',
+      ],
+    },
+    {
       version: '4.4.7',
       items: [
         'New: an "Or search Untappd yourself" box at the bottom of Pick the Right Beer - for when none of the suggested matches (or, now, a plain "no confident match" too) are actually the right beer, type in whatever you\'d search Untappd for and it looks again without leaving the dialog. Picking one of the new results works exactly like picking a suggested one; a Back to Untappd\'s own matches link returns to where you started.',
