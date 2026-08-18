@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.17',
+      items: [
+        'Changed: Export CSV, Import CSV, and Export File Sync moved off the Beer Bible page\'s own toolbar into a new Beer Bible tab under Settings. Import CSV and Export File Sync still only show up on the Server PC; Export CSV now always downloads the whole library (it previously respected whatever was currently searched/filtered on the grid).',
+      ],
+    },
+    {
       version: '4.4.16',
       items: [
         'Changed: trimmed two explanatory lines off the Beer Bible page - the description under Export File Sync, and the note above the search box about how beers get added. Both were leftover onboarding copy; the buttons/fields they were explaining are unchanged.',
@@ -1076,7 +1082,7 @@
     beerBibleSyncDot: document.getElementById('beerBibleSyncDot'),
     beerBibleSyncStatus: document.getElementById('beerBibleSyncStatus'),
     beerBibleSyncNowBtn: document.getElementById('beerBibleSyncNowBtn'),
-    beerBibleExportSyncRow: document.getElementById('beerBibleExportSyncRow'),
+    beerBibleServerToolsSection: document.getElementById('beerBibleServerToolsSection'),
     beerBibleExportSyncStatus: document.getElementById('beerBibleExportSyncStatus'),
     beerBibleExportSyncBtn: document.getElementById('beerBibleExportSyncBtn'),
     beerBibleFilterInput: document.getElementById('beerBibleFilterInput'),
@@ -8649,12 +8655,11 @@
   }
 
   // The flat, ungrouped list - one row per beers-table entry (one per SKU),
-  // search/status/style/sort all applied. Used by exportBeerBibleCsv, which
-  // is meant as a full backup/round-trip of the underlying table (every
-  // SKU's own row, not one row per distinct beer), and by
-  // beerBibleFilteredSortedGroups below, which is what renderBeerBibleGrid
-  // actually shows. Leaving every filter at its default returns the whole
-  // Beer Bible.
+  // search/status/style/sort all applied. Feeds beerBibleFilteredSortedGroups
+  // below, which is what renderBeerBibleGrid actually shows - not used by
+  // exportBeerBibleCsv (Settings -> Beer Bible), which exports the whole
+  // beerBibleCache regardless of whatever's currently searched/filtered
+  // here, since there's no grid in Settings for a filter to apply to.
   function beerBibleFilteredSortedRows() {
     const rows = beerBibleCache.filter((b) => beerMatchesSearch(b) && beerMatchesStatus(b) && beerMatchesStyle(b));
     const sort = BEER_SORTS_BY_KEY[beerBibleSortKey];
@@ -9157,8 +9162,12 @@
     URL.revokeObjectURL(url);
   }
 
+  // Lives in Settings -> Beer Bible (see index.html), not the grid toolbar -
+  // always the whole library (every SKU's own row), not whatever search/
+  // filter happens to be set from a previous visit to the grid, since
+  // Settings has no grid of its own for that state to describe.
   function exportBeerBibleCsv() {
-    downloadBeerBibleCsv(beerBibleFilteredSortedRows(), 'export');
+    downloadBeerBibleCsv(beerBibleCache, 'export');
   }
 
   els.beerBibleExportBtn.addEventListener('click', exportBeerBibleCsv);
@@ -11394,15 +11403,15 @@
       + `${data.matched} matched a SKU in the export, ${data.noMatch} didn't.`;
   }
 
-  // Backs the Beer Bible page's "Export File Sync" button - fills in upc on
-  // any already-saved entry whose sku matches a row in the same local
+  // Backs Settings -> Beer Bible's "Export File Sync" button - fills in upc
+  // on any already-saved entry whose sku matches a row in the same local
   // WinePOS export Scan UPC/SKU Lookup already read (see
   // server/beerBibleExportSync.js). Never adds new entries (see that
   // module's own comment for why) or touches any other field - Price is a
   // live per-view lookup instead (see loadBeerBiblePrice above), not
   // something this button syncs. Server-PC only now (see
-  // updateBeerBibleSyncUI, which hides #beerBibleExportSyncRow on any other
-  // PC) - every other register picks the result up on its next sync.
+  // updateBeerBibleSyncUI, which hides #beerBibleServerToolsSection on any
+  // other PC) - every other register picks the result up on its next sync.
   els.beerBibleExportSyncBtn.addEventListener('click', async () => {
     els.beerBibleExportSyncBtn.disabled = true;
     els.beerBibleExportSyncStatus.textContent = 'Checking the WinePOS export...';
@@ -11429,11 +11438,14 @@
   // header band - same dot/status/Sync Now pattern as updateLibrarySyncUI
   // above, just driven off beerBibleSync (see fetchBeerBible) instead of
   // the Mash Bill Library's own `sync` object. The Server PC itself has
-  // nothing to pull, so it gets the dot but no Sync Now button; the three
-  // Server-PC-only write routes (Export File Sync, Import CSV, and the
-  // Advanced menu's Import Beer Bible from Export File... - see
-  // server/index.js) are hidden/disabled everywhere else, same reasoning
-  // as #libraryGithubSyncRow's own isServer gating.
+  // nothing to pull, so it gets the dot but no Sync Now button; the two
+  // Server-PC-only write routes (Export File Sync and Import CSV - see
+  // server/index.js), plus the Advanced menu's own Import Beer Bible from
+  // Export File... item, are hidden/disabled everywhere else, same
+  // reasoning as #libraryGithubSyncRow's own isServer gating. Import CSV
+  // and Export File Sync live in Settings -> Beer Bible now (see
+  // index.html), not on this screen - #beerBibleServerToolsSection hides
+  // both as one group there.
   function updateBeerBibleSyncUI() {
     if (!els.beerBibleSyncStatus) return;
     els.beerBibleSyncStatus.textContent = describeMashBillSyncStatus(beerBibleSync);
@@ -11441,8 +11453,7 @@
     const isCurrent = !isServer && beerBibleSync && beerBibleSync.lastSyncedAt && !beerBibleSync.lastError;
     els.beerBibleSyncDot.classList.toggle('is-stale', !isServer && !isCurrent);
     els.beerBibleSyncNowBtn.hidden = isServer;
-    els.beerBibleExportSyncRow.hidden = !isServer;
-    if (els.beerBibleImportCsvBtn) els.beerBibleImportCsvBtn.hidden = !isServer;
+    if (els.beerBibleServerToolsSection) els.beerBibleServerToolsSection.hidden = !isServer;
   }
 
   // Forces an immediate pull instead of waiting up to ~30s for the puller's
@@ -12480,6 +12491,11 @@
     els.settingsPanels.forEach((panel) => {
       panel.hidden = panel.dataset.settingsPanelContent !== name;
     });
+    // Beer Bible's panel needs beerBibleCache (for Export CSV) and a fresh
+    // isServer flag (for #beerBibleServerToolsSection's own visibility, see
+    // updateBeerBibleSyncUI) even on a PC that hasn't opened the actual
+    // Beer Bible screen this session - fetchBeerBible refreshes both.
+    if (name === 'beerBible') fetchBeerBible();
   }
   els.settingsNavButtons.forEach((btn) => {
     btn.addEventListener('click', () => activateSettingsPanel(btn.dataset.settingsPanel));
