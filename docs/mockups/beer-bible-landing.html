@@ -108,7 +108,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 /* ---------- hero ---------- */
 .hero {
   position: relative;
-  padding: 2.4rem 2rem 2.2rem;
+  padding: 1.5rem 1.8rem 1.4rem;
   background:
     radial-gradient(1200px 320px at 12% -20%, rgba(255,255,255,0.16), transparent 60%),
     linear-gradient(135deg, #4a2e10 0%, #8a5f27 55%, #c8722c 100%);
@@ -121,15 +121,16 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
   background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 34px);
   pointer-events: none;
 }
-.hero__inner { position: relative; display: flex; justify-content: space-between; gap: 2rem; flex-wrap: wrap; align-items: flex-end; }
+.hero__inner { position: relative; display: flex; justify-content: space-between; gap: 1.6rem; flex-wrap: wrap; align-items: center; }
 .hero__copy { max-width: 46ch; }
-.hero__eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffe6bd; margin-bottom: 0.6rem; }
-.hero h2 { font-size: 2.1rem; letter-spacing: -0.01em; margin-bottom: 0.6rem; }
-.hero p { margin: 0 0 1.2rem; font-size: 0.95rem; line-height: 1.6; color: #fce6c8; }
-.hero__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.hero__stats { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 0.7rem 1.4rem; min-width: 260px; }
-.hero__stat-num { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.hero__stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #ffe6bd; margin-top: 0.15rem; }
+.hero__eyebrow { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffe6bd; margin-bottom: 0.3rem; }
+.hero h2 { font-size: 1.5rem; letter-spacing: -0.01em; margin-bottom: 0.35rem; }
+.hero p { margin: 0 0 0.75rem; font-size: 0.84rem; line-height: 1.5; color: #fce6c8; }
+.hero__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.hero__actions .btn { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+.hero__stats { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); gap: 0.5rem 1.2rem; min-width: 230px; }
+.hero__stat-num { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.hero__stat-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #ffe6bd; margin-top: 0.1rem; }
 
 /* ---------- main content ---------- */
 .content { padding: 1.6rem 1.9rem 2.1rem; display: flex; flex-direction: column; gap: 1.6rem; }
@@ -141,18 +142,18 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: var(--radius); padding: 1.2rem 1.3rem; }
 
 /* two-column: style-mix donut + secondary stat rail */
-.mix-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.2rem; align-items: stretch; }
+.mix-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.2rem; align-items: stretch; }
 @media (max-width: 920px) { .mix-grid { grid-template-columns: 1fr; } }
 
-.donut-wrap { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-.donut { width: 168px; height: 168px; flex-shrink: 0; position: relative; }
+.donut-wrap { display: flex; gap: 1.8rem; align-items: center; flex-wrap: wrap; }
+.donut { width: 232px; height: 232px; flex-shrink: 0; position: relative; }
 .style-donut-svg { width: 100%; height: 100%; overflow: visible; }
 .style-arc { cursor: pointer; transition: opacity 0.15s ease; }
 .style-arc:hover { opacity: 0.82; }
 .style-arc--dim { opacity: 0.3; }
-.donut-center { position: absolute; inset: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
-.donut-center__num { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
-.donut-center__label { font-size: 0.62rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 8em; line-height: 1.2; }
+.donut-center { position: absolute; inset: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.donut-center__num { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.01em; }
+.donut-center__label { font-size: 0.68rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.04em; max-width: 9em; line-height: 1.25; }
 
 .legend { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 210px; }
 .legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; cursor: pointer; border: none; background: none; font-family: inherit; text-align: left; width: 100%; padding: 0.28rem 0.35rem; margin: 0; border-radius: 6px; color: inherit; }
@@ -243,23 +244,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .progress-copy { font-size: 0.82rem; color: var(--ui-ink-soft); line-height: 1.5; max-width: 30ch; }
 .progress-copy strong { color: var(--ui-ink); }
 
-/* ABV design exploration: two alternatives shown side by side for comparison */
-.design-options { display: flex; flex-direction: column; gap: 1.3rem; }
-.design-option__label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ui-accent-ink); margin-bottom: 0.75rem; }
-.design-option__label small { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ui-muted); font-size: 0.92em; }
-.design-option { border: 1px dashed var(--ui-border); border-radius: var(--radius); padding: 1.1rem 1.2rem 1.3rem; background: var(--ui-panel-sunken); }
-
-/* option A: gradient spectrum band */
-.abv-spectrum__callouts { display: flex; position: relative; height: 2.1rem; }
-.abv-spectrum__callout { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; }
-.abv-spectrum__callout-num { font-size: 0.86rem; font-weight: 800; }
-.abv-spectrum__callout-name { font-size: 0.64rem; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.03em; }
-.abv-spectrum__bar { position: relative; height: 30px; border-radius: 8px; background: linear-gradient(90deg, var(--chart-3), var(--chart-1) 55%, var(--chart-6)); border: 1px solid var(--ui-border); }
-.abv-spectrum__tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ui-panel-sunken); box-shadow: 0 0 0 1px var(--ui-border); }
-.abv-spectrum__axis { display: flex; justify-content: space-between; margin-top: 0.4rem; font-size: 0.68rem; color: var(--ui-muted); }
-
-/* option B: beeswarm dot strip */
-.beeswarm { position: relative; height: 96px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel); margin-top: 0.4rem; }
+/* ABV mix: beeswarm dot strip - one dot per researched beer */
+.beeswarm { position: relative; height: 110px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-panel-sunken); margin-top: 0.4rem; }
 .beeswarm__dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--chart-4); border: 1px solid var(--ui-panel); transform: translate(-50%, 50%); cursor: default; }
 .beeswarm__dot--high { background: var(--chart-6); }
 .beeswarm__dot--low { background: var(--chart-3); }
@@ -267,6 +253,30 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .beeswarm__legend { display: flex; gap: 1rem; margin-top: 0.6rem; font-size: 0.72rem; color: var(--ui-muted); }
 .beeswarm__legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
 .beeswarm__legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+/* customize toolbar - a mockup-viewer control, sits outside the simulated device
+   frame so its popover isn't clipped by .device-frame's overflow:hidden */
+.mockup-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.mockup-toolbar__label { font-size: 0.78rem; color: var(--ui-muted); }
+.customize-wrap { position: relative; }
+.customize-btn { display: inline-flex; align-items: center; gap: 0.4rem; }
+.customize-popover { position: absolute; top: calc(100% + 8px); right: 0; width: 300px; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 10px; box-shadow: 0 14px 32px var(--ui-shadow); padding: 0.9rem 1rem 1rem; z-index: 30; }
+.customize-popover__head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.customize-popover__head strong { font-size: 0.86rem; }
+.customize-popover__close { background: none; border: none; font-size: 1.15rem; line-height: 1; cursor: pointer; color: var(--ui-muted); padding: 0.1rem 0.3rem; }
+.customize-popover__close:hover { color: var(--ui-ink); }
+.customize-popover__hint { font-size: 0.74rem; color: var(--ui-muted); margin: 0.25rem 0 0.7rem; line-height: 1.4; }
+.customize-list { display: flex; flex-direction: column; gap: 0.2rem; max-height: 300px; overflow-y: auto; }
+.customize-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0.35rem; border-radius: 6px; }
+.customize-row:hover { background: var(--ui-hover); }
+.customize-row__check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; flex: 1; min-width: 0; }
+.customize-row__check span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.customize-row__actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
+.customize-row__btn { width: 22px; height: 22px; border: 1px solid var(--ui-border); background: var(--ui-btn); border-radius: 5px; cursor: pointer; font-size: 0.7rem; line-height: 1; color: var(--ui-ink-soft); padding: 0; }
+.customize-row__btn:hover:not(:disabled) { background: var(--ui-btn-hover); }
+.customize-row__btn:disabled { opacity: 0.35; cursor: default; }
+.customize-popover__foot { margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid var(--ui-border); display: flex; justify-content: flex-end; }
+.btn--small { padding: 0.35rem 0.65rem; font-size: 0.76rem; }
 
 .panel.notes-panel h2 { font-size: 0.95rem; margin-bottom: 0.15rem; }
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 0.9rem; }
@@ -295,6 +305,27 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       file ships with <code>brewery</code>/<code>style</code>/<code>abv</code>/etc. all blank until someone researches
       each entry.
     </p>
+  </div>
+
+  <div class="mockup-toolbar">
+    <div class="mockup-toolbar__label" id="customizeSummary">Interactive preview &mdash; showing 7 of 7 sections</div>
+    <div class="customize-wrap">
+      <button type="button" class="btn btn--ghost btn--small customize-btn" id="customizeBtn" aria-haspopup="true" aria-expanded="false">
+        &#9881;&#65039; Customize this page
+      </button>
+      <div class="customize-popover" id="customizePopover" hidden>
+        <div class="customize-popover__head">
+          <strong>Customize this page</strong>
+          <button type="button" class="customize-popover__close" id="customizeClose" aria-label="Close">&times;</button>
+        </div>
+        <p class="customize-popover__hint">Show, hide, and reorder sections below. Saved in this browser only, so
+        it's personal to you &mdash; it doesn't change what anyone else sees.</p>
+        <div class="customize-list" id="customizeList"></div>
+        <div class="customize-popover__foot">
+          <button type="button" class="btn btn--ghost btn--small" id="customizeReset">Reset to default</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="device-frame">
@@ -339,7 +370,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 
     <div class="content">
       <!-- ===== style mix ===== -->
-      <div class="panel">
+      <div class="panel" data-section="style" data-section-label="What's in the catalog">
         <div class="section-head">
           <div>
             <h3>What's in the catalog</h3>
@@ -377,7 +408,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       </div>
 
       <!-- ===== package format + research progress ===== -->
-      <div class="panel">
+      <div class="panel" data-section="format" data-section-label="How it's packaged">
         <div class="section-head">
           <div>
             <h3>How it's packaged</h3>
@@ -390,7 +421,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-section="progress" data-section-label="Research progress">
         <div class="section-head">
           <div>
             <h3>Research progress</h3>
@@ -408,7 +439,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       </div>
 
       <!-- ===== spotlight ===== -->
-      <div class="panel">
+      <div class="panel" data-section="spotlight" data-section-label="Top rated in the library">
         <div class="section-head">
           <div>
             <h3>Top rated in the library</h3>
@@ -421,40 +452,26 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       </div>
 
       <!-- ===== ABV distribution ===== -->
-      <div class="panel">
+      <div class="panel" data-section="abv" data-section-label="ABV mix, once researched">
         <div class="section-head">
           <div>
             <h3>ABV mix, once researched</h3>
-            <p>What "low-ABV" vs. "standard" vs. "high-ABV" looks like across researched entries &mdash; helpful for
-            answering the question at the register. Illustrative sample distribution, same convention as the
-            spotlight cards above. <strong>Two layout options below for feedback</strong> &mdash; only one would
-            ship.</p>
+            <p>Each dot is one researched beer, positioned by its real ABV &mdash; shows the actual spread and
+            outliers instead of just bucket totals. Illustrative sample distribution, same convention as the
+            spotlight cards above.</p>
           </div>
         </div>
-        <div class="design-options">
-          <div class="design-option">
-            <div class="design-option__label">Option A &middot; gradient spectrum <small>bands read as a low&rarr;high ABV range, counts called out per band</small></div>
-            <div class="abv-spectrum">
-              <div class="abv-spectrum__callouts" id="abvSpectrumCallouts"></div>
-              <div class="abv-spectrum__bar" id="abvSpectrumBar"></div>
-              <div class="abv-spectrum__axis"><span>0%</span><span>14%+</span></div>
-            </div>
-          </div>
-          <div class="design-option">
-            <div class="design-option__label">Option B &middot; beeswarm strip <small>each dot is one researched beer &mdash; shows real spread &amp; outliers, not just bucket totals</small></div>
-            <div class="beeswarm" id="abvBeeswarm"></div>
-            <div class="beeswarm__axis"><span>0%</span><span>4%</span><span>8%</span><span>12%</span><span>16%</span></div>
-            <div class="beeswarm__legend">
-              <span><i style="background:var(--chart-3);"></i> Session (&lt;4.5%)</span>
-              <span><i style="background:var(--chart-4);"></i> Standard</span>
-              <span><i style="background:var(--chart-6);"></i> High ABV (9%+)</span>
-            </div>
-          </div>
+        <div class="beeswarm" id="abvBeeswarm"></div>
+        <div class="beeswarm__axis"><span>0%</span><span>4%</span><span>8%</span><span>12%</span><span>16%</span></div>
+        <div class="beeswarm__legend">
+          <span><i style="background:var(--chart-3);"></i> Session (&lt;4.5%)</span>
+          <span><i style="background:var(--chart-4);"></i> Standard</span>
+          <span><i style="background:var(--chart-6);"></i> High ABV (9%+)</span>
         </div>
       </div>
 
       <!-- ===== breweries ===== -->
-      <div class="panel">
+      <div class="panel" data-section="breweries" data-section-label="Breweries on the shelf">
         <div class="section-head">
           <div>
             <h3>Breweries on the shelf</h3>
@@ -466,7 +483,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       </div>
 
       <!-- ===== activity ===== -->
-      <div class="panel">
+      <div class="panel" data-section="activity" data-section-label="Recently researched">
         <div class="section-head">
           <div>
             <h3>Recently researched</h3>
@@ -506,20 +523,29 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
         decorative.</p>
       </div>
       <div class="notes-card">
-        <h3>The style donut is now interactive</h3>
+        <h3>The style donut is interactive, and colored like beer</h3>
         <p>Clicking a slice or legend row drills into that style's sub-styles (e.g. IPA &rarr; Hazy/NEIPA, West
-        Coast, Session&hellip;) without leaving the page. It's built as clickable SVG arcs (stroke-dasharray per
+        Coast, Session&hellip;) without leaving the page &mdash; built as clickable SVG arcs (stroke-dasharray per
         segment) rather than the earlier CSS conic-gradient, since a conic-gradient disc has no per-slice hit
-        targets to attach a click handler to. Sub-style counts are illustrative &mdash; see the caveat under the
-        drill-down itself.</p>
+        target to attach a click handler to. The slice colors were also swapped from an arbitrary categorical
+        palette to each style's actual beer color (pale straw &rarr; gold &rarr; amber &rarr; brown, roughly SRM
+        order), so the ring itself reads as "beer" at a glance. Seltzer/RTD is the deliberate exception &mdash;
+        it isn't beer-colored, so it gets a cool, near-clear tone instead of a spot on the amber scale.</p>
       </div>
       <div class="notes-card">
-        <h3>ABV: two options, not a decision yet</h3>
-        <p>The original bar-histogram design for ABV mix felt like the weakest chart on the page, so it's replaced
-        here with two alternatives shown side by side for feedback rather than a single pick: a gradient
-        spectrum band (Option A) and a beeswarm dot strip (Option B, one dot per researched beer, positioned by
-        real ABV with a simple greedy lane-packing algorithm so close values don't overlap). Only one would ship
-        in a real implementation.</p>
+        <h3>ABV settled on the beeswarm</h3>
+        <p>The earlier bar-histogram design was replaced with two options for feedback; the beeswarm won. Each dot
+        is one illustrative researched beer, positioned by its real ABV, with a simple greedy lane-packing
+        algorithm so close values stack into rows instead of overlapping &mdash; it shows the actual spread and
+        outliers (a 0.0% and a 13.5% both visible at a glance) rather than just five bucket totals.</p>
+      </div>
+      <div class="notes-card">
+        <h3>The page is viewer-customizable</h3>
+        <p>The "Customize this page" control (above the device frame, so its popover isn't clipped by the frame's
+        rounded-corner <code>overflow:hidden</code>) lets a viewer show/hide and reorder every data section below
+        the hero. Preferences save to <code>localStorage</code> per browser &mdash; nothing is sent anywhere, and
+        it's scoped to sections only: the hero stats and the "Add a Beer" CTA stay fixed, since those anchor the
+        page regardless of what a given viewer cares about most.</p>
       </div>
     </div>
 
@@ -533,7 +559,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
       are blank on every seeded row).</p>
       <p><strong>Illustrative sample data:</strong> the hero's "styles researched" and "avg. Untappd rating" tiles,
       every beer in the Top Rated spotlight grid (real beers with real public ABV/IBU/Untappd figures, chosen to
-      match titles already in the import file), the style donut's sub-style drill-down, both ABV mix options, the
+      match titles already in the import file), the style donut's sub-style drill-down, the ABV beeswarm, the
       brewery bar-fill percentages, and the Recently Researched feed. None of it is live &mdash; it's there to show
       what the page looks like with data in it, not what's on file today.</p>
     </div>
@@ -542,17 +568,22 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 
 <script>
 // ---- style mix: real counts from a keyword pass over scripts/beer-bible-seed-data.json ----
+// Slice colors follow each style's actual beer color (roughly SRM order: pale straw ->
+// gold -> amber -> copper -> brown -> near-black), so the chart reads as beer, not an
+// arbitrary categorical palette. Seltzer/RTD is the one deliberate exception - it's not
+// beer-colored at all, so it gets a cool, near-clear tone instead of a spot on the amber
+// scale. Uncategorized stays neutral gray since it isn't a style.
 const styleMix = [
   { name: 'Uncategorized (not yet researched)', count: 1683, color: 'var(--chart-muted)' },
-  { name: 'IPA', count: 195, color: 'var(--chart-1)' },
-  { name: 'Lager & Pilsner', count: 172, color: 'var(--chart-2)' },
-  { name: 'Seltzer / RTD', count: 113, color: 'var(--chart-3)' },
-  { name: 'Cider', count: 93, color: 'var(--chart-4)' },
-  { name: 'Stout & Porter', count: 77, color: 'var(--chart-5)' },
-  { name: 'Non-Alcoholic', count: 68, color: 'var(--chart-6)' },
-  { name: 'Light Beer', count: 57, color: 'var(--chart-7)' },
-  { name: 'Wheat & Wit', count: 50, color: 'var(--chart-8)' },
-  { name: 'Sour', count: 31, color: '#5a8a6b' },
+  { name: 'Light Beer', count: 57, color: '#f3e7ac' },
+  { name: 'Lager & Pilsner', count: 172, color: '#eccf72' },
+  { name: 'Wheat & Wit', count: 50, color: '#e6bd5c' },
+  { name: 'Seltzer / RTD', count: 113, color: '#dbe4de' },
+  { name: 'Cider', count: 93, color: '#d99a3a' },
+  { name: 'IPA', count: 195, color: '#c8722c' },
+  { name: 'Sour', count: 31, color: '#b96a52' },
+  { name: 'Non-Alcoholic', count: 68, color: '#8f6a3e' },
+  { name: 'Stout & Porter', count: 77, color: '#3c2417' },
 ];
 const styleTotal = styleMix.reduce((s, x) => s + x.count, 0);
 const UNCATEGORIZED = 'Uncategorized (not yet researched)';
@@ -747,38 +778,8 @@ document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
   document.getElementById('progressRingNum').textContent = `${Math.round((researched / total) * 100)}%`;
 })();
 
-// ---- ABV: two design options over the same illustrative sample distribution ----
-const abvBands = [
-  { label: 'Session', range: '< 4.5%', count: 8 },
-  { label: 'Standard', range: '4.5–5.5%', count: 22 },
-  { label: 'Standard+', range: '5.5–7%', count: 31 },
-  { label: 'Strong', range: '7–9%', count: 19 },
-  { label: 'High ABV', range: '9%+', count: 11 },
-];
-const abvBandTotal = abvBands.reduce((s, b) => s + b.count, 0);
-
-// Option A: gradient spectrum band, with count callouts positioned at each band's midpoint
-(function renderAbvSpectrum() {
-  let acc = 0;
-  const ticks = [];
-  const callouts = abvBands.map((b) => {
-    const startPct = (acc / abvBandTotal) * 100;
-    acc += b.count;
-    const endPct = (acc / abvBandTotal) * 100;
-    if (startPct > 0) ticks.push(startPct);
-    return `<div class="abv-spectrum__callout" style="left:${(startPct + endPct) / 2}%;">
-      <div class="abv-spectrum__callout-num">${b.count}</div>
-      <div class="abv-spectrum__callout-name">${b.label}</div>
-    </div>`;
-  }).join('');
-  document.getElementById('abvSpectrumCallouts').innerHTML = callouts;
-  document.getElementById('abvSpectrumBar').innerHTML = ticks
-    .map((pct) => `<div class="abv-spectrum__tick" style="left:${pct}%;"></div>`)
-    .join('');
-})();
-
-// Option B: beeswarm - illustrative individual researched beers, one dot each,
-// greedily stacked into lanes so close-ABV dots don't overlap
+// ---- ABV: beeswarm - illustrative individual researched beers, one dot each,
+// greedily stacked into lanes so close-ABV dots don't overlap ----
 const abvBeers = [
   { title: 'Guinness Draught 0.0', abv: 0.0 },
   { title: "Bell's Oberon Ale", abv: 5.8 },
@@ -898,4 +899,119 @@ document.getElementById('activityFeed').innerHTML = activity.map((a) => `
     <span class="feed-when">${a.when}</span>
   </div>
 `).join('');
+
+// ---- "customize this page": show/hide + reorder sections, saved per-browser ----
+// The panel-footer-cta ("Add a Beer") is deliberately not in this list - it stays
+// pinned at the bottom regardless of what the viewer customizes.
+const CUSTOM_SECTIONS = [...document.querySelectorAll('.content [data-section]')].map((el) => ({
+  id: el.dataset.section,
+  label: el.dataset.sectionLabel,
+}));
+const CUSTOMIZE_STORAGE_KEY = 'beerBibleLanding.customize.v1';
+
+function defaultCustomizePrefs() {
+  return { order: CUSTOM_SECTIONS.map((s) => s.id), hidden: [] };
+}
+
+function loadCustomizePrefs() {
+  try {
+    const raw = localStorage.getItem(CUSTOMIZE_STORAGE_KEY);
+    const parsed = raw && JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.order) || !Array.isArray(parsed.hidden)) return defaultCustomizePrefs();
+    const knownIds = CUSTOM_SECTIONS.map((s) => s.id);
+    const order = parsed.order.filter((id) => knownIds.includes(id));
+    knownIds.forEach((id) => { if (!order.includes(id)) order.push(id); }); // pick up any new sections
+    return { order, hidden: parsed.hidden.filter((id) => knownIds.includes(id)) };
+  } catch {
+    return defaultCustomizePrefs();
+  }
+}
+
+let customizePrefs = loadCustomizePrefs();
+function saveCustomizePrefs() {
+  localStorage.setItem(CUSTOMIZE_STORAGE_KEY, JSON.stringify(customizePrefs));
+}
+
+function applyCustomizePrefs() {
+  const content = document.querySelector('.content');
+  customizePrefs.order.forEach((id) => {
+    const el = content.querySelector(`[data-section="${id}"]`);
+    if (el) content.appendChild(el);
+  });
+  const footer = content.querySelector('.panel-footer-cta');
+  if (footer) content.appendChild(footer); // keep the CTA pinned at the bottom
+  CUSTOM_SECTIONS.forEach((s) => {
+    const el = content.querySelector(`[data-section="${s.id}"]`);
+    if (el) el.hidden = customizePrefs.hidden.includes(s.id);
+  });
+  const shownCount = CUSTOM_SECTIONS.length - customizePrefs.hidden.length;
+  document.getElementById('customizeSummary').textContent =
+    `Interactive preview — showing ${shownCount} of ${CUSTOM_SECTIONS.length} sections`;
+  renderCustomizeList();
+}
+
+function renderCustomizeList() {
+  const list = document.getElementById('customizeList');
+  list.innerHTML = customizePrefs.order.map((id, i) => {
+    const meta = CUSTOM_SECTIONS.find((s) => s.id === id);
+    const hidden = customizePrefs.hidden.includes(id);
+    return `
+    <div class="customize-row">
+      <label class="customize-row__check">
+        <input type="checkbox" data-id="${id}" ${hidden ? '' : 'checked'}>
+        <span>${meta.label}</span>
+      </label>
+      <div class="customize-row__actions">
+        <button type="button" class="customize-row__btn" data-id="${id}" data-dir="up" ${i === 0 ? 'disabled' : ''} aria-label="Move ${meta.label} up">&uarr;</button>
+        <button type="button" class="customize-row__btn" data-id="${id}" data-dir="down" ${i === customizePrefs.order.length - 1 ? 'disabled' : ''} aria-label="Move ${meta.label} down">&darr;</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.id;
+      customizePrefs.hidden = cb.checked
+        ? customizePrefs.hidden.filter((x) => x !== id)
+        : [...customizePrefs.hidden, id];
+      saveCustomizePrefs();
+      applyCustomizePrefs();
+    });
+  });
+  list.querySelectorAll('.customize-row__btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const idx = customizePrefs.order.indexOf(id);
+      const swapWith = btn.dataset.dir === 'up' ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= customizePrefs.order.length) return;
+      [customizePrefs.order[idx], customizePrefs.order[swapWith]] = [customizePrefs.order[swapWith], customizePrefs.order[idx]];
+      saveCustomizePrefs();
+      applyCustomizePrefs();
+    });
+  });
+}
+
+const customizeBtn = document.getElementById('customizeBtn');
+const customizePopover = document.getElementById('customizePopover');
+customizeBtn.addEventListener('click', () => {
+  customizePopover.hidden = !customizePopover.hidden;
+  customizeBtn.setAttribute('aria-expanded', String(!customizePopover.hidden));
+});
+document.getElementById('customizeClose').addEventListener('click', () => {
+  customizePopover.hidden = true;
+  customizeBtn.setAttribute('aria-expanded', 'false');
+});
+document.getElementById('customizeReset').addEventListener('click', () => {
+  customizePrefs = defaultCustomizePrefs();
+  saveCustomizePrefs();
+  applyCustomizePrefs();
+});
+document.addEventListener('click', (e) => {
+  if (!customizePopover.hidden && !customizePopover.contains(e.target) && e.target !== customizeBtn && !customizeBtn.contains(e.target)) {
+    customizePopover.hidden = true;
+    customizeBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+applyCustomizePrefs();
 </script>
