@@ -52,7 +52,7 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
-      version: '4.4.20',
+      version: '4.5.0',
       items: [
         'New: Rum Repository entries can now carry a Country of Origin - the Rum Details form has a new field for it, and a "Where it\'s from" section (flag cards, click one to filter/search by country) now leads the Rum Repository screen. Seeded with a curated title + country list built from a real store\'s Rum department export.',
         'New: the Rum Repository\'s "Add from Product Database" button pulls in any Product Database row whose Department/Sub Department names Rum as a new stub entry - additive only, same as "Check GitHub for New Rums" beside it.',
