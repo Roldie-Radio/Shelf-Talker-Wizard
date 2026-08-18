@@ -205,6 +205,22 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .rating-num { font-weight: 700; font-size: 0.76rem; color: var(--ui-ink-soft); }
 .beer-card__abv { font-size: 0.76rem; color: var(--ui-muted); font-weight: 600; }
 
+/* origin: flag cards + drilldown */
+.origin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.8rem; }
+.origin-card { border: 1px solid var(--ui-border); border-radius: var(--radius); background: var(--ui-panel); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.45rem; cursor: pointer; text-align: left; font-family: inherit; color: inherit; }
+.origin-card:hover { background: var(--ui-hover); }
+.origin-card--active { border-color: var(--ui-accent); background: var(--ui-panel-alt); }
+.origin-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.origin-card__flag { font-size: 1.9rem; line-height: 1; }
+.origin-card__chevron { font-size: 0.68rem; color: var(--ui-muted); transition: transform 0.15s ease; }
+.origin-card--active .origin-card__chevron { transform: rotate(180deg); color: var(--ui-accent-ink); }
+.origin-card__name { font-weight: 700; font-size: 0.92rem; }
+.origin-card__count { font-size: 0.78rem; color: var(--ui-muted); }
+.origin-card__bar { height: 6px; border-radius: 999px; background: var(--ui-panel-sunken); border: 1px solid var(--ui-border); overflow: hidden; margin-top: 0.05rem; }
+.origin-card__bar span { display: block; height: 100%; background: var(--ui-accent); }
+.stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.1rem; }
+.stat-row .stat-tile { flex: 1 1 170px; }
+
 /* brewery chip grid */
 .brewery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
 .brewery-chip { border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--ui-panel-sunken); display: flex; flex-direction: column; gap: 0.15rem; }
@@ -419,21 +435,19 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
             2,539 titles.</p>
           </div>
         </div>
-        <div class="mix-grid">
-          <div class="format-bars" id="originBars"></div>
-          <div class="stat-rail">
-            <div class="stat-tile"><span class="stat-tile__label">Domestic titles</span><span class="stat-tile__value">221 <small>(84%)</small></span></div>
-            <div class="stat-tile"><span class="stat-tile__label">Imported titles</span><span class="stat-tile__value">42 <small>(16%)</small></span></div>
-            <div class="stat-tile"><span class="stat-tile__label">US states represented</span><span class="stat-tile__value">8</span></div>
-            <div class="stat-tile"><span class="stat-tile__label">Countries represented</span><span class="stat-tile__value">3 <small>incl. US</small></span></div>
-          </div>
+        <div class="origin-grid" id="originGrid"></div>
+        <div class="drilldown" id="originDrilldown" hidden></div>
+        <div class="stat-row">
+          <div class="stat-tile"><span class="stat-tile__label">Domestic titles</span><span class="stat-tile__value">221 <small>(84%)</small></span></div>
+          <div class="stat-tile"><span class="stat-tile__label">Imported titles</span><span class="stat-tile__value">42 <small>(16%)</small></span></div>
+          <div class="stat-tile"><span class="stat-tile__label">US states represented</span><span class="stat-tile__value">8</span></div>
         </div>
         <div class="gap-note">
           <span class="gap-note__icon">&#127758;</span>
           <span><strong>Small, recognizable slice only:</strong> these 263 titles are the ones a keyword match could
           confidently pin to a brewery (and from there, a state or country) &mdash; the other 2,276 titles have no
           origin info until <code>brewery</code> is actually researched and a real <code>state</code>/<code>country</code>
-          column exists to store it.</span>
+          column exists to store it. <strong>Click a flag</strong> to break it down further.</span>
         </div>
       </div>
 
@@ -800,27 +814,90 @@ document.getElementById('formatBars').innerHTML = formatMix.map((f) => `
 `).join('');
 
 // ---- origin: same 12 recognized breweries as the "Breweries on the shelf" list below,
-// each mapped to its real home state/country, counts aggregated from there ----
-const originMix = [
-  { name: 'California', count: 40 },
-  { name: 'Colorado', count: 39 },
-  { name: 'Illinois', count: 28 },
-  { name: 'Michigan', count: 26 },
-  { name: 'Wisconsin', count: 25 },
-  { name: 'Delaware', count: 23 },
-  { name: 'Mexico', count: 23, imported: true },
-  { name: 'Massachusetts', count: 22 },
-  { name: 'Netherlands', count: 19, imported: true },
-  { name: 'Missouri', count: 18 },
+// grouped by country (flag cards); the United States card drills into the state
+// breakdown, the other two drill into the single recognized brewery behind their count ----
+const originCountries = [
+  {
+    name: 'United States', flag: '\u{1F1FA}\u{1F1F8}', count: 221, breakdownType: 'state',
+    breakdown: [
+      { name: 'California', count: 40 },
+      { name: 'Colorado', count: 39 },
+      { name: 'Illinois', count: 28 },
+      { name: 'Michigan', count: 26 },
+      { name: 'Wisconsin', count: 25 },
+      { name: 'Delaware', count: 23 },
+      { name: 'Massachusetts', count: 22 },
+      { name: 'Missouri', count: 18 },
+    ],
+  },
+  {
+    name: 'Mexico', flag: '\u{1F1F2}\u{1F1FD}', count: 23, breakdownType: 'brewery',
+    breakdown: [{ name: 'Corona', count: 23 }],
+  },
+  {
+    name: 'Netherlands', flag: '\u{1F1F3}\u{1F1F1}', count: 19, breakdownType: 'brewery',
+    breakdown: [{ name: 'Heineken', count: 19 }],
+  },
 ];
-const originMax = Math.max(...originMix.map((o) => o.count));
-document.getElementById('originBars').innerHTML = originMix.map((o) => `
-  <div class="format-row">
-    <span class="format-row__label">${o.name}${o.imported ? ' <span class="tag" style="margin-left:0.3rem;">Imported</span>' : ''}</span>
-    <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((o.count / originMax) * 100)}%;"></span></span>
-    <span class="format-row__count">${o.count.toLocaleString()}</span>
-  </div>
-`).join('');
+const originTotal = originCountries.reduce((sum, c) => sum + c.count, 0);
+const originState = { selected: null };
+
+function renderOriginGrid() {
+  const grid = document.getElementById('originGrid');
+  grid.innerHTML = originCountries.map((c) => {
+    const active = originState.selected === c.name;
+    const pct = Math.round((c.count / originTotal) * 100);
+    return `
+    <button type="button" class="origin-card${active ? ' origin-card--active' : ''}" data-country="${c.name}" aria-expanded="${active}">
+      <div class="origin-card__top">
+        <span class="origin-card__flag">${c.flag}</span>
+        <span class="origin-card__chevron">&#9660;</span>
+      </div>
+      <div class="origin-card__name">${c.name}</div>
+      <div class="origin-card__count">${c.count.toLocaleString()} titles &middot; ${pct}%</div>
+      <div class="origin-card__bar"><span style="width:${pct}%;"></span></div>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('.origin-card').forEach((el) => {
+    el.addEventListener('click', () => selectOrigin(el.dataset.country));
+  });
+  renderOriginDrilldown();
+}
+
+function selectOrigin(name) {
+  originState.selected = originState.selected === name ? null : name;
+  renderOriginGrid();
+}
+
+function renderOriginDrilldown() {
+  const wrap = document.getElementById('originDrilldown');
+  if (!originState.selected) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+  wrap.hidden = false;
+  const c = originCountries.find((x) => x.name === originState.selected);
+  const maxSub = Math.max(...c.breakdown.map((b) => b.count));
+  const label = c.breakdownType === 'state' ? 'by state' : 'by recognized brewery';
+  const caveat = c.breakdownType === 'state'
+    ? 'State is each recognized brewery’s own headquarters, not a researched field on the title itself.'
+    : 'Only one recognized brewery name in the current keyword list maps to this country, so it’s a single row today — more would show up here as the brewery list grows.';
+  wrap.innerHTML = `
+    <div class="drilldown__head">
+      <div class="drilldown__title">${c.flag} ${c.name} <span>&mdash; ${c.count.toLocaleString()} titles, ${label}</span></div>
+      <button type="button" class="drilldown__back" id="originDrilldownBack">&times; Clear</button>
+    </div>
+    <div class="format-bars">
+      ${c.breakdown.map((b) => `
+        <div class="format-row">
+          <span class="format-row__label">${b.name}</span>
+          <span class="format-row__track"><span class="format-row__fill" style="width:${Math.round((b.count / maxSub) * 100)}%;"></span></span>
+          <span class="format-row__count">${b.count.toLocaleString()}</span>
+        </div>
+      `).join('')}
+    </div>
+    <p class="drilldown__caveat">${caveat}</p>`;
+  document.getElementById('originDrilldownBack').addEventListener('click', () => selectOrigin(c.name));
+}
+
+renderOriginGrid();
 
 // ---- research progress ring: real (0 of 2,539 today) ----
 (function renderProgressRing() {
