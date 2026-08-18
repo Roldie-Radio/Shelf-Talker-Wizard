@@ -510,6 +510,75 @@ test('applyMashBillColumns migrates a pre-existing 6-column mash_bills table cle
   });
 });
 
+// The beers table's own migration: simulate a pre-existing install whose
+// beers table predates the region/country columns (see applyBeerColumns's
+// own comment in db.js), confirm opening it through db.js adds them without
+// losing the existing row, and that the location text on file gets
+// best-effort split into region/country as part of that same migration.
+test('applyBeerColumns migrates a pre-existing beers table and backfills region/country from location', () => {
+  withTempDb((dir) => {
+    const Database = require('better-sqlite3');
+    const filePath = path.join(dir, 'data.db');
+    const raw = new Database(filePath);
+    raw.exec(`
+      CREATE TABLE beers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        beer_name TEXT,
+        brewery TEXT,
+        location TEXT,
+        style TEXT,
+        size TEXT,
+        abv TEXT,
+        ibu TEXT,
+        untappd_rating TEXT,
+        untappd_rating_count TEXT,
+        description TEXT,
+        sku TEXT,
+        upc TEXT,
+        variety_pack INTEGER NOT NULL DEFAULT 0,
+        source TEXT NOT NULL DEFAULT 'Manual',
+        updated_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX idx_beers_title_unique ON beers (title COLLATE NOCASE);
+    `);
+    raw.prepare(`
+      INSERT INTO beers (title, brewery, location, source, updated_at)
+      VALUES
+        ('US Beer', 'Slack Tide Brewing Company', 'Morris Plains, NJ United States', 'Manual', '2025-01-01T00:00:00.000Z'),
+        ('International Beer', 'Some Brewery', 'Amsterdam, Netherlands', 'Manual', '2025-01-01T00:00:00.000Z'),
+        ('No Location Beer', 'Another Brewery', '', 'Manual', '2025-01-01T00:00:00.000Z')
+    `).run();
+    raw.close();
+
+    // Opening through db.js (any call reaches getDb() -> applySchema()) is
+    // what a real app launch against an old data.db would do.
+    const beers = db.listBeers();
+    const usBeer = beers.find((b) => b.title === 'US Beer');
+    const intlBeer = beers.find((b) => b.title === 'International Beer');
+    const noLocationBeer = beers.find((b) => b.title === 'No Location Beer');
+
+    assert.ok(usBeer, 'the pre-existing row survived the migration');
+    assert.equal(usBeer.region, 'NJ');
+    assert.equal(usBeer.country, 'United States');
+    assert.equal(intlBeer.region, '');
+    assert.equal(intlBeer.country, 'Netherlands');
+    assert.equal(noLocationBeer.region, '');
+    assert.equal(noLocationBeer.country, '');
+
+    // And the migrated table isn't just readable - it accepts writes to the
+    // new columns like any fresh install's table would.
+    const updated = db.updateBeerById(usBeer.id, { region: 'NY' });
+    assert.equal(updated.region, 'NY');
+
+    // Re-running the migration (a second launch against the same file) is a
+    // no-op, not a duplicate-column error, and doesn't clobber the hand
+    // edit above back to the parsed-from-location value.
+    assert.doesNotThrow(() => db.getDb());
+    assert.equal(db.getBeer(usBeer.id).region, 'NY');
+  });
+});
+
 // ---------- The Beer Bible ----------
 
 test('upsertBeer creates a new entry with the given fields', () => {
@@ -620,6 +689,8 @@ test('a new beer entry defaults every optional field to an empty string, not nul
       beerName: '',
       brewery: '',
       location: '',
+      region: '',
+      country: '',
       style: '',
       size: '',
       abv: '',

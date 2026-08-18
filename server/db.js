@@ -142,6 +142,8 @@ function applySchema(db) {
       beer_name TEXT,
       brewery TEXT,
       location TEXT,
+      region TEXT,
+      country TEXT,
       style TEXT,
       size TEXT,
       abv TEXT,
@@ -200,6 +202,50 @@ function applyBeerColumns(db) {
   if (!existing.has('upc')) db.exec('ALTER TABLE beers ADD COLUMN upc TEXT');
   if (!existing.has('variety_pack')) db.exec('ALTER TABLE beers ADD COLUMN variety_pack INTEGER NOT NULL DEFAULT 0');
   if (!existing.has('size')) db.exec('ALTER TABLE beers ADD COLUMN size TEXT');
+  // region/country back the Beer Bible's geography sort/filter options (see
+  // BEER_SORTS in app.js) - split out from the single free-text `location`
+  // field (which stays as-is, still shown/edited on its own) so sorting by
+  // state/province or country doesn't have to re-parse that string on every
+  // render. Added together, and only backfilled here - the one time each
+  // column is actually created on an install that predates it - so a later
+  // manual edit that clears region/country back to blank never gets
+  // silently re-filled by this running again on the next launch.
+  const addingGeoColumns = !existing.has('region') || !existing.has('country');
+  if (!existing.has('region')) db.exec('ALTER TABLE beers ADD COLUMN region TEXT');
+  if (!existing.has('country')) db.exec('ALTER TABLE beers ADD COLUMN country TEXT');
+  if (addingGeoColumns) backfillBeerGeoColumns(db);
+}
+
+// Best-effort split of the existing `location` text into region (state/
+// province) + country, for rows that already had a location before
+// region/country existed to type into directly. Untappd's own brewery
+// location strings are the main shape this is tuned for - "Morris Plains,
+// NJ United States" (city, then a two-letter state/province code, then the
+// country with no comma before it) - and "Amsterdam, Netherlands" (city,
+// then just a country) for anything outside the US/Canada. Genuinely
+// ambiguous shapes (a bare "Portland" with no comma, or "Portland, OR"
+// with nothing after the state code to tell region from country) are left
+// blank rather than guessed wrong - staff can always fill region/country
+// in by hand afterward, same as any other optional field.
+function parseLocationForGeoColumns(location) {
+  const parts = (location || '').split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return { region: '', country: '' };
+  const tail = parts[parts.length - 1];
+  const stateAndCountry = tail.match(/^([A-Za-z]{2,3})\s+(.+)$/);
+  if (stateAndCountry) return { region: stateAndCountry[1], country: stateAndCountry[2] };
+  return { region: '', country: tail };
+}
+
+function backfillBeerGeoColumns(db) {
+  const rows = db.prepare("SELECT id, location FROM beers WHERE location IS NOT NULL AND location != ''").all();
+  const update = db.prepare('UPDATE beers SET region = @region, country = @country WHERE id = @id');
+  const runAll = db.transaction((entries) => {
+    for (const row of entries) {
+      const { region, country } = parseLocationForGeoColumns(row.location);
+      if (region || country) update.run({ id: row.id, region, country });
+    }
+  });
+  runAll(rows);
 }
 
 // mash_bills shipped with just id/title/distillery/grains/source/updated_at
@@ -609,6 +655,8 @@ function rowToBeer(row) {
     beerName: row.beer_name || '',
     brewery: row.brewery || '',
     location: row.location || '',
+    region: row.region || '',
+    country: row.country || '',
     style: row.style || '',
     size: row.size || '',
     abv: row.abv || '',
@@ -673,15 +721,17 @@ function validateBeerInput({ title }) {
 // mashBillOptionalFieldParams above - every field here beyond title/source
 // is optional, and `existing` is a rowToBeer()-shaped object or null.
 function beerOptionalFieldParams({
-  beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+  beerName, brewery, location, region, country, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
 }, existing) {
   const prev = existing || {
-    beerName: '', brewery: '', location: '', style: '', size: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '', varietyPack: false,
+    beerName: '', brewery: '', location: '', region: '', country: '', style: '', size: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '', varietyPack: false,
   };
   return {
     beerName: normalizeOptionalText(beerName !== undefined ? beerName : prev.beerName),
     brewery: normalizeOptionalText(brewery !== undefined ? brewery : prev.brewery),
     location: normalizeOptionalText(location !== undefined ? location : prev.location),
+    region: normalizeOptionalText(region !== undefined ? region : prev.region),
+    country: normalizeOptionalText(country !== undefined ? country : prev.country),
     style: normalizeOptionalText(style !== undefined ? style : prev.style),
     size: normalizeOptionalText(size !== undefined ? size : prev.size),
     abv: normalizeOptionalText(abv !== undefined ? abv : prev.abv),
@@ -700,7 +750,7 @@ function beerOptionalFieldParams({
 }
 
 const BEER_OPTIONAL_COLUMNS_SET = `
-  beer_name = @beerName, brewery = @brewery, location = @location, style = @style, size = @size, abv = @abv, ibu = @ibu,
+  beer_name = @beerName, brewery = @brewery, location = @location, region = @region, country = @country, style = @style, size = @size, abv = @abv, ibu = @ibu,
   untappd_rating = @untappdRating, untappd_rating_count = @untappdRatingCount,
   description = @description, sku = @sku, upc = @upc, variety_pack = @varietyPack
 `;
@@ -712,7 +762,7 @@ const BEER_OPTIONAL_COLUMNS_SET = `
 // saving again for a beer already on file updates that same entry instead
 // of erroring or duplicating it.
 function upsertBeer({
-  title, source, beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+  title, source, beerName, brewery, location, region, country, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
 }) {
   const db = getDb();
   const { cleanTitle } = validateBeerInput({ title });
@@ -748,7 +798,7 @@ function upsertBeer({
     source: source || 'Manual',
     updatedAt: now,
     ...beerOptionalFieldParams({
-      beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+      beerName, brewery, location, region, country, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
     }, existing),
   };
 
@@ -762,10 +812,10 @@ function upsertBeer({
   }
   const info = db.prepare(`
     INSERT INTO beers (
-      title, source, updated_at, beer_name, brewery, location, style, size, abv, ibu, untappd_rating, untappd_rating_count, description, sku, upc, variety_pack
+      title, source, updated_at, beer_name, brewery, location, region, country, style, size, abv, ibu, untappd_rating, untappd_rating_count, description, sku, upc, variety_pack
     )
     VALUES (
-      @title, @source, @updatedAt, @beerName, @brewery, @location, @style, @size, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku, @upc, @varietyPack
+      @title, @source, @updatedAt, @beerName, @brewery, @location, @region, @country, @style, @size, @abv, @ibu, @untappdRating, @untappdRatingCount, @description, @sku, @upc, @varietyPack
     )
   `).run(params);
   return getBeer(info.lastInsertRowid);
@@ -777,7 +827,7 @@ function upsertBeer({
 // real conflict here, not a merge - same DUPLICATE_TITLE handling as
 // updateMashBillById.
 function updateBeerById(id, {
-  title, source, beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+  title, source, beerName, brewery, location, region, country, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
 }) {
   const db = getDb();
   const existing = getBeer(id);
@@ -795,7 +845,7 @@ function updateBeerById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...beerOptionalFieldParams({
-        beerName, brewery, location, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
+        beerName, brewery, location, region, country, style, size, abv, ibu, untappdRating, untappdRatingCount, description, sku, upc, varietyPack,
       }, existing),
     });
   } catch (err) {
