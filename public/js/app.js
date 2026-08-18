@@ -1019,6 +1019,7 @@
     atlasStats: document.getElementById('atlasStats'),
     atlasBody: document.getElementById('atlasBody'),
     beerBibleView: document.getElementById('beerBibleView'),
+    beerBibleBackLink: document.getElementById('beerBibleBackLink'),
     beerBibleAddBtn: document.getElementById('beerBibleAddBtn'),
     beerBibleSelectToggleBtn: document.getElementById('beerBibleSelectToggleBtn'),
     beerBibleExportBtn: document.getElementById('beerBibleExportBtn'),
@@ -7989,10 +7990,13 @@
 
   let beerBibleCache = [];
   let beerBibleFilterQuery = '';
-  // 'grid' (search + card grid) or 'profile' (one beer's own page) - same
-  // two-mode shape as libraryViewMode/atlasViewMode above. beerBibleSelectedId
-  // is only meaningful while in 'profile'.
-  let beerBibleViewMode = 'grid';
+  // 'landing' (the overview dashboard - see renderBeerBibleLanding),
+  // 'grid' (search + card grid), or 'profile' (one beer's own page) -
+  // renderBeerBibleView always resets to 'landing' when the rail switches
+  // here; search, a chip/style/sort pick, or opening a card all jump
+  // straight to 'grid' from any of the three. beerBibleSelectedId is only
+  // meaningful while in 'profile'.
+  let beerBibleViewMode = 'landing';
   let beerBibleSelectedId = null;
   // Research-status/style filters - reset on a fresh page load but, same as
   // libraryTierFilter above, deliberately left alone by renderBeerBibleView
@@ -9168,7 +9172,271 @@
     el.textContent = formatBeerPriceLine(data);
   }
 
-  // Dispatcher - grid vs profile, same shape as renderLibraryBody/
+  // ---------- Beer Bible landing/overview ----------
+  //
+  // The screen renderBeerBibleView opens on - a third view mode alongside
+  // the grid and a beer's own profile page (see beerBibleViewMode above),
+  // built as a straight dashboard over buildBeerBibleGroups: a hero stat
+  // strip, a style-mix donut, a Top Rated spotlight, a breweries grid, and
+  // a Recently Researched feed. See docs/mockups/beer-bible-landing.html
+  // for the mockup this was built from.
+  //
+  // Every number here is real, computed live off beerBibleCache - unlike
+  // the mockup, which leaned on illustrative sample beers because the real
+  // table ships with almost nothing researched at first. Each section
+  // falls back to plain empty-hint copy instead (see
+  // beerStyleMixHtml/beerLandingSpotlightHtml/beerLandingBreweryGridHtml/
+  // beerLandingActivityHtml below) rather than rendering a chart with
+  // nothing real behind it, so a freshly-imported, unresearched library
+  // reads as exactly that instead of looking more finished than it is.
+
+  // Fixed amber/copper accent set for the style-mix donut below - not
+  // generated per render, so a given slot's color doesn't shift between
+  // renders while the set of styles on file is still small and changing.
+  const BEER_LANDING_CHART_COLORS = ['#c8722c', '#8a5f27', '#d9a441', '#6b8f47', '#4a7c8c', '#a1493f', '#7d5a8a', '#5a8a6b'];
+
+  function beerLandingAvgRating(groups) {
+    const rated = groups.filter((g) => Number(g.untappdRating) > 0);
+    if (!rated.length) return null;
+    return rated.reduce((sum, g) => sum + Number(g.untappdRating), 0) / rated.length;
+  }
+
+  // Style-mix donut + legend, conic-gradient built inline - same technique
+  // docs/mockups/mash-bill-pie-chart.html and beer-bible-landing.html both
+  // already use. Runs over researched beers only (an unresearched beer has
+  // no style worth charting); a researched beer with no style typed in
+  // still counts, in its own "Style not on file" bucket, rather than
+  // silently vanishing from the total the donut adds up to.
+  function beerStyleMixHtml(researchedGroups) {
+    if (!researchedGroups.length) {
+      return '<p class="empty-hint">No beers researched yet - the style breakdown fills in as entries get researched.</p>';
+    }
+    const counts = new Map();
+    researchedGroups.forEach((g) => {
+      const key = (g.style || '').trim() || 'Style not on file';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    const top = sorted.slice(0, 7);
+    const restTotal = sorted.slice(7).reduce((sum, [, n]) => sum + n, 0);
+    const slices = restTotal ? [...top, ['Other styles', restTotal]] : top;
+    const total = researchedGroups.length;
+    let acc = 0;
+    const stops = slices.map(([name, count], i) => {
+      const color = name === 'Style not on file' ? 'var(--ui-border)' : BEER_LANDING_CHART_COLORS[i % BEER_LANDING_CHART_COLORS.length];
+      const start = (acc / total) * 360;
+      acc += count;
+      return { name, count, color, start, end: (acc / total) * 360 };
+    });
+    const donutStops = stops.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(', ');
+    // `beer-` prefixed class names throughout - see the CSS block's own
+    // comment in styles.css for why this doesn't reuse .donut-wrap/
+    // .donut-center/.legend-* from the unrelated Mash Bill donut chart.
+    const legendHtml = stops.map((s) => `
+      <div class="beer-legend-row">
+        <span class="beer-legend-swatch" style="background:${s.color};"></span>
+        <span class="beer-legend-row__name">${escapeHtml(s.name)}</span>
+        <span class="beer-legend-row__pct">${Math.round((s.count / total) * 100)}%</span>
+        <span class="beer-legend-row__count">${s.count}</span>
+      </div>
+    `).join('');
+    return `
+      <div class="beer-donut-wrap">
+        <div class="beer-donut" style="background: conic-gradient(${donutStops});">
+          <div class="beer-donut-center">
+            <div class="beer-donut-center__num">${total}</div>
+            <div class="beer-donut-center__label">researched ${total === 1 ? 'beer' : 'beers'}</div>
+          </div>
+        </div>
+        <div class="beer-legend">${legendHtml}</div>
+      </div>
+    `;
+  }
+
+  // Top Rated spotlight - reuses ratingDotsHtml/beerDisplayName as-is, same
+  // fields the grid card/profile page already show, just ranked and
+  // clickable straight into that beer's own profile.
+  function beerLandingSpotlightHtml(groups) {
+    const ranked = groups
+      .filter((g) => Number(g.untappdRating) > 0)
+      .sort((a, b) => Number(b.untappdRating) - Number(a.untappdRating))
+      .slice(0, 6);
+    if (!ranked.length) {
+      return '<p class="empty-hint">No Untappd ratings on file yet - Research a beer to pull one in.</p>';
+    }
+    return `<div class="beer-spotlight-grid">${ranked.map((g, i) => `
+      <div class="beer-card" role="button" tabindex="0" data-id="${g.id}">
+        <div class="beer-card__top">
+          <div>
+            <div class="beer-card__title">${escapeHtml(beerDisplayName(g))}</div>
+            <div class="beer-card__brewery">${escapeHtml(g.brewery || 'Brewery unknown')}</div>
+          </div>
+          <span class="rank-badge">${i + 1}</span>
+        </div>
+        ${g.style ? `<div class="beer-card__tags"><span class="tag">${escapeHtml(g.style)}</span></div>` : ''}
+        <div class="beer-card__meta">
+          ${ratingDotsHtml(g.untappdRating)}
+          <span class="beer-card__abv">${g.abv ? `${escapeHtml(g.abv)} ABV` : ''}</span>
+        </div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // Breweries grid, ranked by beer count - each tile is a shortcut into the
+  // grid, filtered by that brewery's own name (reuses the plain text search
+  // rather than a dedicated brewery filter, same as typing it in by hand
+  // would do).
+  function beerLandingBreweryGridHtml(groups) {
+    const counts = new Map();
+    groups.forEach((g) => {
+      const brewery = (g.brewery || '').trim();
+      if (brewery) counts.set(brewery, (counts.get(brewery) || 0) + 1);
+    });
+    if (!counts.size) {
+      return '<p class="empty-hint">No breweries on file yet - they show up here once entries are researched.</p>';
+    }
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const max = sorted[0][1];
+    return `<div class="brewery-grid">${sorted.map(([name, count]) => `
+      <button type="button" class="brewery-chip" data-brewery="${escapeHtml(name)}">
+        <span class="brewery-chip__name">${escapeHtml(name)}</span>
+        <span class="brewery-chip__count">${count} beer${count === 1 ? '' : 's'}</span>
+        <div class="brewery-chip__bar"><span style="width:${Math.round((count / max) * 100)}%;"></span></div>
+      </button>
+    `).join('')}</div>`;
+  }
+
+  // Recently researched feed - researched beers only, newest updatedAt
+  // first (same field beerResearchBadgeHtml's own hover tooltip reads),
+  // clickable straight into that beer's own profile like the spotlight
+  // grid above.
+  function beerLandingActivityHtml(researchedGroups) {
+    const recent = researchedGroups
+      .slice()
+      .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+      .slice(0, 6);
+    if (!recent.length) {
+      return '<p class="empty-hint">Nothing researched yet - recently researched beers show up here.</p>';
+    }
+    return `<div class="feed">${recent.map((g) => `
+      <div class="feed-row" role="button" tabindex="0" data-id="${g.id}">
+        <span class="feed-dot ${g.source === 'Manual' ? 'feed-dot--manual' : ''}"></span>
+        <span class="feed-title">${escapeHtml(beerDisplayName(g))} <span>&mdash; ${escapeHtml(BEER_SOURCE_LABELS[g.source] || 'Researched')}</span></span>
+        <span class="feed-when">${g.updatedAt ? escapeHtml(formatHistoryTimestamp(g.updatedAt)) : ''}</span>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  function renderBeerBibleLanding() {
+    const groups = buildBeerBibleGroups(beerBibleCache);
+    if (!groups.length) {
+      els.beerBibleBody.innerHTML = `
+        <div class="beer-landing">
+          <div class="panel">
+            <p class="empty-hint">No beers in the Beer Bible yet - click Add Beer above, or Advanced &rarr; Import Beer Bible from Export File&hellip; to bulk-import from a product export.</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    const researchedGroups = groups.filter(beerIsResearched);
+    const breweries = new Set(groups.map((g) => g.brewery).filter(Boolean)).size;
+    const styles = new Set(groups.map((g) => g.style).filter(Boolean)).size;
+    const needsResearch = groups.filter((g) => !beerIsResearched(g) && !g.varietyPack).length;
+    const varietyPacks = groups.filter((g) => g.varietyPack).length;
+    const avgRating = beerLandingAvgRating(groups);
+
+    els.beerBibleBody.innerHTML = `
+      <div class="beer-landing">
+        <div class="beer-landing__hero">
+          <div class="beer-landing__hero-copy">
+            <h2>Every beer in the store, one page.</h2>
+            <p>Brewery, style, ABV/IBU, and Untappd rating for every title you carry &mdash; researched once, reused on every shelf talker from here on.</p>
+            <div class="beer-landing__hero-actions">
+              <button type="button" class="btn btn--primary" id="beerLandingBrowseBtn">Browse the Library</button>
+              <button type="button" class="btn" id="beerLandingAddBtn">+ Add a Beer</button>
+            </div>
+          </div>
+          <div class="beer-landing__hero-stats">
+            <div><div class="beer-landing__hero-num">${groups.length}</div><div class="beer-landing__hero-label">Beers on file</div></div>
+            <div><div class="beer-landing__hero-num">${breweries}</div><div class="beer-landing__hero-label">Breweries</div></div>
+            <div><div class="beer-landing__hero-num">${styles}</div><div class="beer-landing__hero-label">Styles researched</div></div>
+            <div><div class="beer-landing__hero-num">${avgRating ? avgRating.toFixed(1) : '&ndash;'}${avgRating ? '<small>/5</small>' : ''}</div><div class="beer-landing__hero-label">Avg. Untappd rating</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>What's in the library</h3>
+              <p>Style breakdown of every researched beer on file.</p>
+            </div>
+          </div>
+          <div class="mix-grid">
+            ${beerStyleMixHtml(researchedGroups)}
+            <div class="stat-rail">
+              <div class="stat-tile"><span class="stat-tile__label">Researched</span><span class="stat-tile__value">${researchedGroups.length} <small>of ${groups.length}</small></span></div>
+              <div class="stat-tile"><span class="stat-tile__label">Needs research</span><span class="stat-tile__value">${needsResearch}</span></div>
+              <div class="stat-tile"><span class="stat-tile__label">Variety packs</span><span class="stat-tile__value">${varietyPacks}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <div><h3>Top rated in the library</h3><p>Highest Untappd rating among researched beers.</p></div>
+            <button type="button" class="btn btn--small btn--ghost" id="beerLandingSeeRatedBtn">See all rated &rarr;</button>
+          </div>
+          ${beerLandingSpotlightHtml(groups)}
+        </div>
+
+        <div class="panel">
+          <div class="section-head"><div><h3>Breweries on the shelf</h3><p>Ranked by how many beers are on file for each. Click one to filter the library.</p></div></div>
+          ${beerLandingBreweryGridHtml(groups)}
+        </div>
+
+        <div class="panel">
+          <div class="section-head"><div><h3>Recently researched</h3></div></div>
+          ${beerLandingActivityHtml(researchedGroups)}
+        </div>
+      </div>
+    `;
+
+    els.beerBibleBody.querySelector('#beerLandingBrowseBtn')?.addEventListener('click', () => {
+      beerBibleViewMode = 'grid';
+      renderBeerBibleBody();
+    });
+    els.beerBibleBody.querySelector('#beerLandingSeeRatedBtn')?.addEventListener('click', () => {
+      beerBibleSortKey = 'rating-best';
+      try { localStorage.setItem(BEER_BIBLE_SORT_KEY, beerBibleSortKey); } catch { /* choice just won't survive a restart */ }
+      beerBibleViewMode = 'grid';
+      renderBeerBibleBody();
+    });
+    els.beerBibleBody.querySelector('#beerLandingAddBtn')?.addEventListener('click', () => {
+      els.beerBibleAddBtn.click();
+    });
+    els.beerBibleBody.querySelectorAll('.beer-card[data-id], .feed-row[data-id]').forEach((node) => {
+      const activate = () => {
+        beerBibleSelectedId = Number(node.dataset.id);
+        beerBibleViewMode = 'profile';
+        renderBeerBibleBody();
+      };
+      node.addEventListener('click', activate);
+      node.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+      });
+    });
+    els.beerBibleBody.querySelectorAll('.brewery-chip[data-brewery]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        beerBibleFilterQuery = btn.dataset.brewery;
+        els.beerBibleFilterInput.value = btn.dataset.brewery;
+        beerBibleViewMode = 'grid';
+        renderBeerBibleBody();
+      });
+    });
+  }
+
+  // Dispatcher - landing vs grid vs profile, same shape as renderLibraryBody/
   // renderAtlasBody above. Every place that used to call renderBeerBibleGrid
   // directly after a save/delete/GitHub sync now calls this instead, so
   // saving from the profile's own Edit button re-renders that same profile
@@ -9178,25 +9446,37 @@
   // beerBibleSelectedId no longer matches anything in beerBibleCache.
   function renderBeerBibleBody() {
     const inProfile = beerBibleViewMode === 'profile';
+    const inLanding = beerBibleViewMode === 'landing';
     // Select mode/the bulk bar only mean anything against the grid - a
-    // single beer's own profile page has nothing to bulk-act on. Backing
-    // out of Select mode here (rather than just hiding the button) matches
-    // toggleBeerBibleSelectMode's own "turning it off always clears
-    // whatever was selected" rule, so re-opening the grid later never
-    // shows a stale selection nobody meant to keep.
-    els.beerBibleSelectToggleBtn.hidden = inProfile;
-    if (inProfile) {
+    // single beer's own profile page (or the landing overview) has nothing
+    // to bulk-act on. Backing out of Select mode here (rather than just
+    // hiding the button) matches toggleBeerBibleSelectMode's own "turning
+    // it off always clears whatever was selected" rule, so re-opening the
+    // grid later never shows a stale selection nobody meant to keep.
+    els.beerBibleSelectToggleBtn.hidden = inProfile || inLanding;
+    // The back-out link is the mirror image of that: hidden only on the
+    // overview itself, since that's the one screen it wouldn't go anywhere
+    // useful from (see #beerBibleBackLink's own click handler below).
+    els.beerBibleBackLink.hidden = inLanding;
+    if (inProfile || inLanding) {
       if (beerBibleSelectMode) {
         beerBibleSelectMode = false;
         beerBibleSelectedIds.clear();
         els.beerBibleSelectToggleBtn.classList.remove('btn--primary');
       }
       els.beerBibleBulkBar.hidden = true;
-      renderBeerBibleProfile();
-    } else {
-      renderBeerBibleGrid();
     }
+    if (inProfile) renderBeerBibleProfile();
+    else if (inLanding) renderBeerBibleLanding();
+    else renderBeerBibleGrid();
   }
+
+  els.beerBibleBackLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    beerBibleViewMode = 'landing';
+    beerBibleSelectedId = null;
+    renderBeerBibleBody();
+  });
 
   els.beerBibleFilterInput.addEventListener('input', (e) => {
     beerBibleFilterQuery = e.target.value;
@@ -9224,7 +9504,7 @@
     fetchBeerBible().then(() => {
       els.beerBibleFilterInput.value = '';
       beerBibleFilterQuery = '';
-      beerBibleViewMode = 'grid';
+      beerBibleViewMode = 'landing';
       beerBibleSelectedId = null;
       beerBibleSelectMode = false;
       beerBibleSelectedIds.clear();

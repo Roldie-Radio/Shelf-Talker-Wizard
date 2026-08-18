@@ -548,3 +548,19 @@ browser.
   weren't needed to satisfy this - the existing search box and result-list
   pattern already covered it once SKU became a second match key instead of
   only title.
+
+- **beer-bible-landing.html** &mdash; a visual, infographic-style
+  **landing page** in front of the Beer Bible's existing card grid, so
+  opening the section shows the shape of the data before dropping into
+  search or a `beer-profile-page.html` profile: a hero stat strip, a
+  style-mix donut chart, a Top Rated spotlight grid, a brewery grid, and a
+  Recently Researched activity feed. The catalog-scale numbers (2,539
+  total titles, the style-mix chart's nine buckets/counts, the "36
+  recognizable breweries" figure) are real, computed from a keyword pass
+  over the actual `scripts/beer-bible-seed-data.json`; everything else
+  (ratings, the spotlight cards, the activity feed) is illustrative sample
+  data, same convention as `beer-profile-page.html`, since every
+  `beers` row in that file ships with `brewery`/`style`/`abv`/etc. blank
+  until someone researches it. A "gap note" callout says so explicitly
+  (0 of 2,539 titles researched today) rather than letting the sample
+  cards imply the library is further along than it is.
