@@ -21,6 +21,7 @@ const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
 const { createExportServeServer, createExportPuller } = require('./exportSync');
 const { createMashBillServeServer, createMashBillPuller } = require('./mashBillSync');
+const { createBeerBibleServeServer, createBeerBiblePuller } = require('./beerBibleSync');
 const { maybeAutoSeedBourbonLibrary, syncNewBourbonLibraryEntries } = require('./bourbonLibrarySeed');
 const { maybeAutoSeedBeerBible } = require('./beerBibleSeed');
 const { syncBeerBibleFromExport } = require('./beerBibleExportSync');
@@ -44,6 +45,7 @@ const { version: APP_VERSION } = require('../package.json');
 // status, rather than crashing.
 function createApp({
   beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+  beerBibleServeServer, beerBiblePuller,
 } = {}) {
   const app = express();
 
@@ -652,18 +654,35 @@ function createApp({
     }
   });
 
-  // Backs the Beer Bible (rail "Beer Bible" view) - a bare-scaffold first
-  // cut of the same idea as the Mash Bill Library above (a shared record of
-  // researched products, so the same lookup doesn't need doing twice), for
-  // Beer instead of Bourbon. Unlike /api/mashbills, there's no cross-
-  // register sync yet, so every route below just reads/writes this PC's own
-  // data.db directly - no Server PC branching, no forwardWrite. Nothing on
-  // Edit Talker recalls from this yet either; it's reachable only from the
-  // rail's own Beer Bible screen (browse/add/edit/delete), same as the
-  // Bourbon Library page owns for mash bills. See the beers table comment
-  // in db.js for the fuller picture of what's scaffolded here vs. not.
+  // Backs the Beer Bible (rail "Beer Bible" view) - the same idea as the
+  // Mash Bill Library above (a shared record of researched products, so the
+  // same lookup doesn't need doing twice), for Beer instead of Bourbon, and
+  // now with the same cross-register sync: every route below branches on
+  // whether *this* PC is currently marked Server PC (see serverConfig.js),
+  // exactly like /api/mashbills above -
+  //  - isServer: this PC's own data.db is the source of truth - read/write
+  //    it directly, exactly what beerBibleSync.js's serve-side HTTP server
+  //    does for every *other* PC's requests.
+  //  - not isServer: reads come back from beerBiblePuller's last
+  //    successfully synced cache (never blocking on a live round trip), and
+  //    writes are forwarded over the network to whichever PC currently
+  //    holds the role (see beerBibleSync.js's forwardWrite) and its
+  //    response relayed back as-is.
+  // A PC that never had a puller wired in (createApp() alone, see the note
+  // above) just reports an empty list with isServer: false and no sync
+  // status, and every write 503s, rather than crashing. Nothing on Edit
+  // Talker recalls from this yet; it's reachable only from the rail's own
+  // Beer Bible screen (browse/add/edit/delete), same as the Bourbon Library
+  // page owns for mash bills. See the beers table comment in db.js for the
+  // fuller picture of what's scaffolded here vs. not.
   app.get('/api/beers', (req, res) => {
-    res.json({ beers: listBeers() });
+    if (getServerConfig().isServer) {
+      return res.json({ beers: listBeers(), sync: { isServer: true } });
+    }
+    res.json({
+      beers: beerBiblePuller ? beerBiblePuller.getCached() : [],
+      sync: { isServer: false, ...(beerBiblePuller ? beerBiblePuller.getStatus() : {}) },
+    });
   });
 
   // Beer Bible fields beyond title/source - see beerOptionalFieldParams in
@@ -678,35 +697,76 @@ function createApp({
     };
   }
 
-  app.post('/api/beers', (req, res) => {
+  app.post('/api/beers', async (req, res) => {
     const { title, source } = req.body || {};
     const optional = beerOptionalFields(req.body);
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'A beer name is required.' });
     }
+    if (getServerConfig().isServer) {
+      try {
+        return res.status(201).json(upsertBeer({ title, source, ...optional }));
+      } catch (err) {
+        return res.status(err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+      }
+    }
+    if (!beerBiblePuller) return res.status(503).json({ error: 'Beer Bible syncing is not set up on this PC.' });
     try {
-      res.status(201).json(upsertBeer({ title, source, ...optional }));
+      const result = await beerBiblePuller.forwardWrite('POST', '/beers', { title, source, ...optional });
+      res.status(result.status).json(result.data);
     } catch (err) {
-      res.status(err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+      res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
     }
   });
 
-  app.put('/api/beers/:id', (req, res) => {
+  app.put('/api/beers/:id', async (req, res) => {
     const { title, source } = req.body || {};
     const optional = beerOptionalFields(req.body);
+    if (getServerConfig().isServer) {
+      try {
+        const updated = updateBeerById(Number(req.params.id), { title, source, ...optional });
+        if (!updated) return res.status(404).json({ error: 'No beer entry with that id.' });
+        return res.json(updated);
+      } catch (err) {
+        return res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+      }
+    }
+    if (!beerBiblePuller) return res.status(503).json({ error: 'Beer Bible syncing is not set up on this PC.' });
     try {
-      const updated = updateBeerById(Number(req.params.id), { title, source, ...optional });
-      if (!updated) return res.status(404).json({ error: 'No beer entry with that id.' });
-      res.json(updated);
+      const result = await beerBiblePuller.forwardWrite('PUT', `/beers/${Number(req.params.id)}`, { title, source, ...optional });
+      res.status(result.status).json(result.data);
     } catch (err) {
-      res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+      res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
     }
   });
 
-  app.delete('/api/beers/:id', (req, res) => {
-    const deleted = deleteBeer(Number(req.params.id));
-    if (!deleted) return res.status(404).json({ error: 'No beer entry with that id.' });
-    res.json({ success: true });
+  app.delete('/api/beers/:id', async (req, res) => {
+    if (getServerConfig().isServer) {
+      const deleted = deleteBeer(Number(req.params.id));
+      if (!deleted) return res.status(404).json({ error: 'No beer entry with that id.' });
+      return res.json({ success: true });
+    }
+    if (!beerBiblePuller) return res.status(503).json({ error: 'Beer Bible syncing is not set up on this PC.' });
+    try {
+      const result = await beerBiblePuller.forwardWrite('DELETE', `/beers/${Number(req.params.id)}`);
+      res.status(result.status).json(result.data);
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach the Server PC.' });
+    }
+  });
+
+  // Backs the Beer Bible page's "Sync Now" button - forces an immediate
+  // pull from the Server PC rather than waiting up to ~30s for the puller's
+  // own interval, same pattern as /api/mashbills/sync-now.
+  app.post('/api/beers/sync-now', async (req, res) => {
+    if (beerBiblePuller) await beerBiblePuller.syncOnce();
+    if (getServerConfig().isServer) {
+      return res.json({ beers: listBeers(), sync: { isServer: true } });
+    }
+    res.json({
+      beers: beerBiblePuller ? beerBiblePuller.getCached() : [],
+      sync: { isServer: false, ...(beerBiblePuller ? beerBiblePuller.getStatus() : {}) },
+    });
   });
 
   // Backs the Beer Bible's one-click "Research" button (grid card + profile
@@ -727,8 +787,18 @@ function createApp({
   // response the client ends up saving (see saveBeerResearchFields in
   // app.js) so a research run can never rename the entry the way a SKU-
   // matched auto-save already refuses to.
+  //
+  // Reads off whichever copy is authoritative for *this* PC, same
+  // isServer branching as every other Beer Bible route above: this PC's
+  // own data.db when it's the Server PC, otherwise beerBiblePuller's last
+  // synced cache - a non-Server PC's local data.db doesn't necessarily have
+  // a row under this same id (or any row at all) once entries are coming
+  // from the Server PC's own table instead.
   app.post('/api/beers/:id/research', async (req, res) => {
-    const beer = getBeer(Number(req.params.id));
+    const id = Number(req.params.id);
+    const beer = getServerConfig().isServer
+      ? getBeer(id)
+      : (beerBiblePuller ? beerBiblePuller.getCached().find((b) => b.id === id) : null);
     if (!beer) return res.status(404).json({ error: 'No beer entry with that id.' });
     // A variety pack is several different beers under one SKU - Untappd has
     // no page for the pack itself, so a search here can never find a real
@@ -763,12 +833,19 @@ function createApp({
   // upc on any already-saved entry whose sku matches a row in the same
   // local WinePOS export Scan UPC reads (see upcCatalog.js); never adds new
   // entries, unlike the old GitHub sync (see that module's own comment for
-  // why). Not gated behind Server PC - this PC's own data.db is always the
-  // one being updated, same reasoning as every other Beer Bible route.
-  // NO_EXPORT_PATH/EXPORT_NOT_FOUND/EXPORT_UNREADABLE are the same three
-  // codes /api/export-price and friends already use for "no export file to
-  // read at all", so this maps them to HTTP status the same way.
+  // why). Server-PC only, now that the Beer Bible has real cross-register
+  // sync (see beerBibleSync.js): this writes straight to the local data.db
+  // via `db`, bypassing forwardWrite, so it only makes sense to run against
+  // whichever PC's copy is actually the source of truth - every other PC
+  // picks the result up on its next beerBiblePuller cycle, same as
+  // /api/mashbills/sync-library. NO_EXPORT_PATH/EXPORT_NOT_FOUND/
+  // EXPORT_UNREADABLE are the same three codes /api/export-price and
+  // friends already use for "no export file to read at all", so this maps
+  // them to HTTP status the same way.
   app.post('/api/beers/sync-export', (req, res) => {
+    if (!getServerConfig().isServer) {
+      return res.status(400).json({ error: 'Only the Server PC can run Export File Sync - mark this PC as the Server PC first (Advanced → Server PC…).' });
+    }
     try {
       const result = syncBeerBibleFromExport(db);
       res.json({ ...result, beers: listBeers() });
@@ -786,8 +863,13 @@ function createApp({
   // in and just upserts, synchronously, no network calls). The client
   // reads the file itself (a plain <input type="file">, works the same in
   // the browser and in Electron's webview) and posts the raw text here -
-  // no server-side file path needed, unlike import/start below.
+  // no server-side file path needed, unlike import/start below. Server-PC
+  // only, same reasoning as /api/beers/sync-export above - this upserts
+  // straight into the local data.db via `db`, bypassing forwardWrite.
   app.post('/api/beers/import-csv', (req, res) => {
+    if (!getServerConfig().isServer) {
+      return res.status(400).json({ error: 'Only the Server PC can import a CSV - mark this PC as the Server PC first (Advanced → Server PC…).' });
+    }
     const { csv } = req.body || {};
     if (!csv || typeof csv !== 'string' || !csv.trim()) {
       return res.status(400).json({ error: 'No CSV content to import.' });
@@ -805,10 +887,13 @@ function createApp({
   // dialog - the in-app equivalent of scripts/populate-beer-bible-from-
   // export.js, for a store PC that has the packaged app but no system-wide
   // Node install of its own to run that script with (see
-  // beerBibleImport.js's own header for the full story). Runs directly
-  // against this PC's own data.db, same as every other /api/beers route -
-  // no Server PC gating, same reasoning as /api/beers/sync-export above.
+  // beerBibleImport.js's own header for the full story). Server-PC only,
+  // same reasoning as /api/beers/sync-export above - this runs directly
+  // against the local data.db via `db`, bypassing forwardWrite.
   app.post('/api/beers/import/start', (req, res) => {
+    if (!getServerConfig().isServer) {
+      return res.status(400).json({ error: 'Only the Server PC can import from an export file - mark this PC as the Server PC first (Advanced → Server PC…).' });
+    }
     const { filePath } = req.body || {};
     try {
       res.status(202).json(startBeerBibleImport({ filePath, db }));
@@ -948,6 +1033,13 @@ function createApp({
       if (config.isServer) mashBillServeServer.start();
       else mashBillServeServer.stop();
     }
+    // Same gating for the Beer Bible's serve port (see beerBibleSync.js) -
+    // only the PC currently marked isServer answers GET/POST/PUT/DELETE
+    // /beers for everyone else's pull/forwardWrite.
+    if (beerBibleServeServer) {
+      if (config.isServer) beerBibleServeServer.start();
+      else beerBibleServeServer.stop();
+    }
     res.json(config);
   });
 
@@ -1041,6 +1133,9 @@ function createApp({
  *    the same interval, always (not opt-in like export auto-sync - see that
  *    file's own header comment for why). Same isServer boot check starts
  *    its own serve port immediately when this PC is already marked.
+ *  - the Beer Bible puller (see beerBibleSync.js): same always-on polling
+ *    and isServer boot check as the Mash Bill Library puller above, just
+ *    for /beers instead of /mashbills.
  */
 function start(port) {
   const resolvedPort = port || process.env.PORT || 3000;
@@ -1049,19 +1144,24 @@ function start(port) {
   const exportPuller = createExportPuller({ beacon });
   const mashBillServeServer = createMashBillServeServer();
   const mashBillPuller = createMashBillPuller({ beacon });
+  const beerBibleServeServer = createBeerBibleServeServer();
+  const beerBiblePuller = createBeerBiblePuller({ beacon });
   const app = createApp({
     beacon, exportServeServer, exportPuller, mashBillServeServer, mashBillPuller,
+    beerBibleServeServer, beerBiblePuller,
   });
   return new Promise((resolve, reject) => {
     const server = app.listen(resolvedPort, '127.0.0.1', () => {
       beacon.startListening();
       exportPuller.start();
       mashBillPuller.start();
+      beerBiblePuller.start();
       const config = getServerConfig();
       if (config.isServer) {
         beacon.startAnnouncing({ confirmedAt: config.confirmedAt });
         exportServeServer.start();
         mashBillServeServer.start();
+        beerBibleServeServer.start();
       }
       console.log(`Shelf Talker Wizard running at http://localhost:${resolvedPort}`);
       // Fire-and-forget: never delays the server coming up, and a PC with
@@ -1083,6 +1183,8 @@ function start(port) {
       exportServeServer.stop();
       mashBillPuller.stop();
       mashBillServeServer.stop();
+      beerBiblePuller.stop();
+      beerBibleServeServer.stop();
     });
   });
 }

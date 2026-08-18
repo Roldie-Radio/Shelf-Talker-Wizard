@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.10',
+      items: [
+        'New: The Beer Bible now has cross-register sync, the same as the Bourbon Library\'s Mash Bill Library - research a beer (or edit/delete one) at any register and it shows up everywhere else within moments, instead of staying stuck on that one PC\'s own copy. Needs the same one-time setup, even for a single-PC store: mark a PC as the Server PC (Advanced → Server PC…). A Sync Now button and status dot on the Beer Bible page mirror the Bourbon Library\'s own. Export File Sync, Import CSV…, and Advanced → Import Beer Bible from Export File… are now Server-PC-only, since they write straight to the shared copy - every other register just picks the result up on its next sync.',
+      ],
+    },
+    {
       version: '4.4.9',
       items: [
         'Fixed: an Untappd search for a short, common title (e.g. "BUD LT 12PK CN", reduced to just "BUD LT" once container/pack words are stripped) could confidently match a completely unrelated product on a single coincidental word - the scoring threshold used to round down to 1 for any 2-word query, so one shared word alone was enough. A 2+ word query now always needs at least 2 words to actually overlap.',
@@ -1042,6 +1048,9 @@
     beerBibleImportCsvBtn: document.getElementById('beerBibleImportCsvBtn'),
     beerBibleImportCsvInput: document.getElementById('beerBibleImportCsvInput'),
     beerBibleImportCsvStatus: document.getElementById('beerBibleImportCsvStatus'),
+    beerBibleSyncDot: document.getElementById('beerBibleSyncDot'),
+    beerBibleSyncStatus: document.getElementById('beerBibleSyncStatus'),
+    beerBibleSyncNowBtn: document.getElementById('beerBibleSyncNowBtn'),
     beerBibleExportSyncRow: document.getElementById('beerBibleExportSyncRow'),
     beerBibleExportSyncStatus: document.getElementById('beerBibleExportSyncStatus'),
     beerBibleExportSyncBtn: document.getElementById('beerBibleExportSyncBtn'),
@@ -8046,15 +8055,22 @@
   // rail, or after any bulk action actually runs.
   let beerBibleSelectMode = false;
   let beerBibleSelectedIds = new Set();
+  // This client's own copy of the last GET /api/beers `sync` object (see
+  // server/beerBibleSync.js) - drives updateBeerBibleSyncUI's dot/status
+  // text and which of the Server-PC-only rows (Export File Sync, Import
+  // CSV, Advanced > Import Beer Bible from Export File...) are shown.
+  let beerBibleSync = { isServer: false, lastSyncedAt: null, lastError: null, syncedFrom: null };
 
   async function fetchBeerBible() {
     try {
       const resp = await fetch('/api/beers');
       const data = await resp.json();
       beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
+      if (data.sync) beerBibleSync = data.sync;
     } catch {
       beerBibleCache = [];
     }
+    updateBeerBibleSyncUI();
     return beerBibleCache;
   }
 
@@ -10353,7 +10369,7 @@
       }
       renderBeerBibleBody();
     } catch (err) {
-      els.beerBibleFormStatus.textContent = err.message || 'Could not delete that entry.';
+      els.beerBibleFormStatus.textContent = withServerPcHint(err.message) || 'Could not delete that entry.';
     }
   }
 
@@ -10977,7 +10993,7 @@
       // the grid same as before.
       renderBeerBibleBody();
     } catch (err) {
-      els.beerBibleFormStatus.textContent = err.message || 'Could not save that entry.';
+      els.beerBibleFormStatus.textContent = withServerPcHint(err.message) || 'Could not save that entry.';
     } finally {
       els.beerBibleFormSaveBtn.disabled = false;
     }
@@ -11008,9 +11024,9 @@
   // server/beerBibleExportSync.js). Never adds new entries (see that
   // module's own comment for why) or touches any other field - Price is a
   // live per-view lookup instead (see loadBeerBiblePrice above), not
-  // something this button syncs. Not gated behind Server PC, same
-  // reasoning as the old GitHub sync button this replaces - see the
-  // #beerBibleExportSyncRow comment in index.html.
+  // something this button syncs. Server-PC only now (see
+  // updateBeerBibleSyncUI, which hides #beerBibleExportSyncRow on any other
+  // PC) - every other register picks the result up on its next sync.
   els.beerBibleExportSyncBtn.addEventListener('click', async () => {
     els.beerBibleExportSyncBtn.disabled = true;
     els.beerBibleExportSyncStatus.textContent = 'Checking the WinePOS export...';
@@ -11027,9 +11043,52 @@
       renderBeerBibleBody();
       els.beerBibleExportSyncStatus.textContent = describeBeerBibleExportSyncResult(data);
     } catch (err) {
-      els.beerBibleExportSyncStatus.textContent = err.message || 'Could not check the WinePOS export right now.';
+      els.beerBibleExportSyncStatus.textContent = withServerPcHint(err.message) || 'Could not check the WinePOS export right now.';
     } finally {
       els.beerBibleExportSyncBtn.disabled = false;
+    }
+  });
+
+  // Reflects beerBibleSync.js's own status on the Beer Bible screen's
+  // header band - same dot/status/Sync Now pattern as updateLibrarySyncUI
+  // above, just driven off beerBibleSync (see fetchBeerBible) instead of
+  // the Mash Bill Library's own `sync` object. The Server PC itself has
+  // nothing to pull, so it gets the dot but no Sync Now button; the three
+  // Server-PC-only write routes (Export File Sync, Import CSV, and the
+  // Advanced menu's Import Beer Bible from Export File... - see
+  // server/index.js) are hidden/disabled everywhere else, same reasoning
+  // as #libraryGithubSyncRow's own isServer gating.
+  function updateBeerBibleSyncUI() {
+    if (!els.beerBibleSyncStatus) return;
+    els.beerBibleSyncStatus.textContent = describeMashBillSyncStatus(beerBibleSync);
+    const isServer = !!(beerBibleSync && beerBibleSync.isServer);
+    const isCurrent = !isServer && beerBibleSync && beerBibleSync.lastSyncedAt && !beerBibleSync.lastError;
+    els.beerBibleSyncDot.classList.toggle('is-stale', !isServer && !isCurrent);
+    els.beerBibleSyncNowBtn.hidden = isServer;
+    els.beerBibleExportSyncRow.hidden = !isServer;
+    if (els.beerBibleImportCsvBtn) els.beerBibleImportCsvBtn.hidden = !isServer;
+  }
+
+  // Forces an immediate pull instead of waiting up to ~30s for the puller's
+  // own interval - same pattern as #librarySyncNowBtn above.
+  els.beerBibleSyncNowBtn.addEventListener('click', async () => {
+    els.beerBibleSyncNowBtn.disabled = true;
+    els.beerBibleSyncDot.classList.add('is-syncing');
+    els.beerBibleSyncStatus.textContent = 'Syncing...';
+    try {
+      const resp = await fetch('/api/beers/sync-now', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not sync right now.');
+      beerBibleCache = Array.isArray(data.beers) ? data.beers : [];
+      if (data.sync) beerBibleSync = data.sync;
+      renderBeerBibleChipsAndStats();
+      renderBeerBibleBody();
+      updateBeerBibleSyncUI();
+    } catch (err) {
+      els.beerBibleSyncStatus.textContent = withServerPcHint(err.message) || 'Could not sync right now.';
+    } finally {
+      els.beerBibleSyncDot.classList.remove('is-syncing');
+      els.beerBibleSyncNowBtn.disabled = false;
     }
   });
 
