@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.4.9',
+      items: [
+        'Fixed: an Untappd search for a short, common title (e.g. "BUD LT 12PK CN", reduced to just "BUD LT" once container/pack words are stripped) could confidently match a completely unrelated product on a single coincidental word - the scoring threshold used to round down to 1 for any 2-word query, so one shared word alone was enough. A 2+ word query now always needs at least 2 words to actually overlap.',
+        'Fixed: clicking "Not the Right Beer" on the Beer Bible\'s one-click Research button used to just reset the button with no way forward - it now falls through to the same "Pick the Right Beer" dialog and its blank "Or search Untappd yourself" box a tie or a miss already offer, so staff can search again right away instead of starting over.',
+      ],
+    },
+    {
       version: '4.4.8',
       items: [
         'New: The Beer Bible now opens on an Overview page instead of dropping straight into the grid - a hero stat strip (beers on file, breweries, styles researched, avg. Untappd rating), a style-mix donut chart (grouped by style family - "American IPA"/"Session IPA"/"Double IPA" all count as one IPA slice, not three), a Top Rated spotlight, a Breweries grid (click one to filter the library), and a Recently Researched feed showing each beer\'s brewery, style, ABV, and rating, not just its name and a timestamp. A "Beer Bible Overview" link gets back to it from the grid or a profile page.',
