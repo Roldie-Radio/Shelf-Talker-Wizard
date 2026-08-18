@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.1',
+      items: [
+        'New: an In-Stock Only switch on the Rum Repository, next to Add Rum - cross-references each rum\'s SKU against the Product Database\'s own On Hand column to hide anything not currently in stock. Needs an Export File loaded on the Product Database screen first; each in-stock rum also gets an "In Stock" badge on its card.',
+      ],
+    },
+    {
       version: '4.5.0',
       items: [
         'New: Rum Repository entries can now carry a Country of Origin - the Rum Details form has a new field for it, and a "Where it\'s from" section (flag cards, click one to filter/search by country) now leads the Rum Repository screen. Seeded with a curated title + country list built from a real store\'s Rum department export.',
@@ -1164,6 +1170,7 @@
     beerBibleBulkResearchDoneBtn: document.getElementById('beerBibleBulkResearchDoneBtn'),
     rumRepositoryView: document.getElementById('rumRepositoryView'),
     rumRepositoryAddBtn: document.getElementById('rumRepositoryAddBtn'),
+    rumRepositoryInStockToggle: document.getElementById('rumRepositoryInStockToggle'),
     rumRepositoryGithubSyncRow: document.getElementById('rumRepositoryGithubSyncRow'),
     rumRepositoryGithubSyncStatus: document.getElementById('rumRepositoryGithubSyncStatus'),
     rumRepositoryGithubSyncBtn: document.getElementById('rumRepositoryGithubSyncBtn'),
@@ -11563,6 +11570,18 @@
 
   let rumRepositoryCache = [];
   let rumRepositoryFilterQuery = '';
+  // In-Stock Only switch (see #rumRepositoryInStockToggle) - off by default
+  // every time the screen is (re)opened, same reset-on-entry convention as
+  // rumRepositoryFilterQuery above.
+  let rumRepositoryInStockOnly = false;
+  // SKU -> On Hand quantity, built from the Product Database's own merged
+  // state (see server/productDatabase.js) - the Rum Repository has no stock
+  // data of its own, so "in stock" only ever means "this SKU's On Hand
+  // column, from whichever Export File is currently loaded on the Product
+  // Database screen, is greater than zero". Empty until that's fetched;
+  // a rum whose SKU isn't a key here is treated as not-confirmed-in-stock,
+  // not silently assumed either way.
+  let rumProductDatabaseOnHandBySku = new Map();
 
   async function fetchRumRepository() {
     try {
@@ -11573,6 +11592,38 @@
       rumRepositoryCache = [];
     }
     return rumRepositoryCache;
+  }
+
+  // Same trailing-".0" float-artifact cleanup upcCatalog.js's own
+  // normalizeSkuKey does server-side (a SKU column stored as a number in
+  // Excel/a POS export can pick up a spurious ".0") - kept in sync by hand
+  // since this runs client-side and that one doesn't ship to the browser.
+  function normalizeSkuForMatch(raw) {
+    return String(raw || '').replace(/\.0+$/, '').trim().toLowerCase();
+  }
+
+  async function fetchRumProductDatabaseOnHand() {
+    try {
+      const resp = await fetch('/api/product-database');
+      const data = await resp.json();
+      const bySku = new Map();
+      (data.products || []).forEach((p) => {
+        const key = normalizeSkuForMatch(p.sku);
+        if (!key) return;
+        const qty = parseFloat(String(p.onHand).replace(/[^0-9.-]/g, ''));
+        if (Number.isFinite(qty)) bySku.set(key, qty);
+      });
+      rumProductDatabaseOnHandBySku = bySku;
+    } catch {
+      rumProductDatabaseOnHandBySku = new Map();
+    }
+  }
+
+  function rumIsInStock(entry) {
+    const key = normalizeSkuForMatch(entry.sku);
+    if (!key) return false;
+    const qty = rumProductDatabaseOnHandBySku.get(key);
+    return typeof qty === 'number' && qty > 0;
   }
 
   function rumMatchesSearch(entry) {
@@ -11669,6 +11720,10 @@
     const statBits = [];
     if (entry.style) statBits.push(escapeHtml(entry.style));
     if (entry.abv) statBits.push(`${escapeHtml(entry.abv)} ABV`);
+    // Only ever added, never a "Out of Stock" negative - a SKU the Product
+    // Database hasn't loaded yet says nothing either way (see rumIsInStock),
+    // so there's nothing honest to print in that case.
+    if (rumIsInStock(entry)) statBits.push('In Stock');
     return `
       <button type="button" class="bourbon-card" data-id="${entry.id}">
         <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
@@ -11682,11 +11737,21 @@
   }
 
   function renderRumRepositoryGrid() {
-    const rows = rumRepositoryCache.filter(rumMatchesSearch).slice().sort((a, b) => a.title.localeCompare(b.title));
+    const rows = rumRepositoryCache
+      .filter(rumMatchesSearch)
+      .filter((entry) => !rumRepositoryInStockOnly || rumIsInStock(entry))
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title));
     if (!rows.length) {
-      els.rumRepositoryBody.innerHTML = rumRepositoryCache.length
-        ? '<p class="empty-hint">No rums match this search.</p>'
-        : '<p class="empty-hint">No rums yet - click Add Rum to research your first one.</p>';
+      if (!rumRepositoryCache.length) {
+        els.rumRepositoryBody.innerHTML = '<p class="empty-hint">No rums yet - click Add Rum to research your first one.</p>';
+      } else if (rumRepositoryInStockOnly && !rumProductDatabaseOnHandBySku.size) {
+        els.rumRepositoryBody.innerHTML = '<p class="empty-hint">In-Stock Only needs an Export File loaded on the Product Database screen first, so a rum\'s SKU has an On Hand quantity to check against.</p>';
+      } else if (rumRepositoryInStockOnly) {
+        els.rumRepositoryBody.innerHTML = '<p class="empty-hint">Nothing in stock matches - try turning off In-Stock Only, or double-check the Product Database\'s Export File is current.</p>';
+      } else {
+        els.rumRepositoryBody.innerHTML = '<p class="empty-hint">No rums match this search.</p>';
+      }
       return;
     }
     els.rumRepositoryBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => rumCardHtml(entry)).join('')}</div>`;
@@ -11705,14 +11770,25 @@
     renderRumRepositoryGrid();
   });
 
+  els.rumRepositoryInStockToggle.addEventListener('change', (e) => {
+    rumRepositoryInStockOnly = e.target.checked;
+    renderRumRepositoryGrid();
+  });
+
   // Called every time the rail switches to Rum Repository (see
   // setActiveView below) - re-fetches so the screen reflects the table's
   // actual current state rather than whatever this client happened to have
-  // cached from earlier in the session.
+  // cached from earlier in the session. Also re-fetches the Product
+  // Database's own On Hand data every time, same reasoning - the Export
+  // File loaded there can change independently of anything on this screen,
+  // so In-Stock Only needs a fresh read, not a stale one from whenever this
+  // screen was last open.
   function renderRumRepositoryView() {
-    fetchRumRepository().then(() => {
+    Promise.all([fetchRumRepository(), fetchRumProductDatabaseOnHand()]).then(() => {
       els.rumRepositoryFilterInput.value = '';
       rumRepositoryFilterQuery = '';
+      els.rumRepositoryInStockToggle.checked = false;
+      rumRepositoryInStockOnly = false;
       renderRumRepositoryStats();
       renderRumRepositoryOrigin();
       renderRumRepositoryGrid();

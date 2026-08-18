@@ -3254,6 +3254,13 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    .chilled-toggle-row - same shape, different field. */
 .store-pick-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .store-pick-toggle-row__label { font-size: 0.9rem; }
+
+/* Rum Repository's In-Stock Only switch (see #rumRepositoryInStockToggle) -
+   sits inline next to Add Rum in .library-band__actions rather than a
+   full-width row like the two above, so no justify-content: space-between
+   here (that would stretch it across the whole header). */
+.rum-instock-toggle { display: flex; align-items: center; gap: 0.5rem; }
+.rum-instock-toggle__label { font-size: 0.85rem; color: var(--ui-ink-soft); white-space: nowrap; }
 .switch { position: relative; display: inline-flex; align-items: center; flex: none; }
 /* The [type="checkbox"] in this selector isn't for matching - it's always
    a checkbox here - it's extra specificity (class + type + attribute) to

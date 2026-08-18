@@ -1201,7 +1201,23 @@
             <div class="library-brand__tag">Part of Shelf Talker Wizard</div>
           </div>
         </div>
-        <button type="button" class="btn btn--small btn--primary" id="rumRepositoryAddBtn">Add Rum</button>
+        <div class="library-band__actions">
+          <!-- Cross-references each rum's SKU against the Product Database's
+               own On Hand column (see rumIsInStock in app.js) - "in stock"
+               isn't something the Rum Repository tracks itself, so this is
+               only ever as accurate as whatever Export File is currently
+               loaded on that screen. A rum with no SKU, or one the Product
+               Database hasn't loaded, is treated as not-confirmed-in-stock
+               (hidden while this is on) rather than assumed either way. -->
+          <div class="rum-instock-toggle">
+            <span class="rum-instock-toggle__label" id="rumRepositoryInStockLabel">In-Stock Only</span>
+            <label class="switch">
+              <input type="checkbox" id="rumRepositoryInStockToggle" aria-labelledby="rumRepositoryInStockLabel" />
+              <span class="switch__track"><span class="switch__thumb"></span></span>
+            </label>
+          </div>
+          <button type="button" class="btn btn--small btn--primary" id="rumRepositoryAddBtn">Add Rum</button>
+        </div>
       </div>
       <!-- No Server PC / Sync Now status row yet (contrast with
            #libraryView's .library-sync above) - this PC's own data.db is
