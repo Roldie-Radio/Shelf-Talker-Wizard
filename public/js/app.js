@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.6',
+      items: [
+        'Changed: on Closeout shelf talkers, Size now prints directly under the CLOSEOUT!! badge instead of above it - both still sit in their usual spot near the foot of the card, above Sale Price/Regular Price. Standard talkers are unaffected.',
+        'Changed: on Super Sale shelf talkers, the "Super Sale Price!!!" callout is now locked at the foot of the card instead of printing above Description - in order, Super Sale Price!!!, then Rating, then Size, then Regular Price. Rating is pulled down out of its usual mid-card spot to sit right under the callout; every other Talker Style keeps Rating where it\'s always been.',
+      ],
+    },
+    {
       version: '4.5.5',
       items: [
         'Fixed: 4.5.4\'s Super Sale shelf talker reorder (moving the "Super Sale Price!!!" callout above Size/Rating) took the Regular Price comparison line along with it, so it no longer sat at the bottom of the card - Regular Price is now locked back at the foot of the card next to Size on Super Sale talkers, same as every other Talker Style. Only the callout itself moves up.',
