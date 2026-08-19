@@ -1895,17 +1895,19 @@ function buildCardElement(talker) {
   const supersaleCalloutHtml = isSuperSale ? buildPricingHtml(talker, false, 'callout') : '';
   const supersaleRegularPriceHtml = isSuperSale ? buildPricingHtml(talker, false, 'regular') : '';
   // Computed once so it can be slotted into its usual mid-card spot for
-  // every other Talker Style, or pulled down next to Super Sale's own
-  // locked-bottom group instead - see the isSuperSale ternaries below.
+  // Standard talkers, or pulled down next to Super Sale's/Closeout's own
+  // locked-bottom group instead - see the isSuperSale/isCloseout ternaries
+  // below.
   const ratingsHtml = isBeer ? '' : buildRatingsHtml(talker, ratingsStyle);
-  // Closeout's own badge prints directly above Size (a follow-up request
-  // after Size used to sit above CLOSEOUT!! instead) - same "only the
-  // attention-grabber moves, Sale/Regular Price stay locked at the foot of
-  // the card" split Super Sale already gets above, just swapping Size in
-  // for Super Sale's big price as the thing that follows the badge. Both
-  // stay right where they've always been in source order (right before the
-  // price rows, after Ratings/Awards/Pairings) - unlike Super Sale's own
-  // callout, nothing here jumps all the way up past Ratings.
+  // Closeout's own badge prints directly above Rating and Size (both follow-
+  // up requests - Size used to sit above CLOSEOUT!! instead, then Rating
+  // stayed behind in its usual mid-card spot after Size moved) - same "only
+  // the attention-grabber moves, Sale/Regular Price stay locked at the foot
+  // of the card" split Super Sale already gets above, and the same badge ->
+  // Rating -> Size order Super Sale's own callout landed on too. Unlike
+  // Super Sale's callout, none of this jumps all the way up past
+  // Description/Wine Profile/Mash Bill - it's still the same bottom group,
+  // just with Rating folded into it.
   const isCloseout = (talker.talkerType || 'standard') === 'closeout';
   const closeoutBadgeHtml = isCloseout ? buildPricingHtml(talker, false, 'both', 'badge') : '';
   const closeoutRestHtml = isCloseout ? buildPricingHtml(talker, false, 'both', 'rest') : '';
@@ -1928,13 +1930,13 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
-      ${isSuperSale ? '' : ratingsHtml}
+      ${(isSuperSale || isCloseout) ? '' : ratingsHtml}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
       ${isCloseout ? closeoutBadgeHtml : ''}
       ${isSuperSale ? supersaleCalloutHtml : ''}
-      ${isSuperSale ? ratingsHtml : ''}
+      ${(isSuperSale || isCloseout) ? ratingsHtml : ''}
       ${sizeHtml}
       ${isSuperSale ? supersaleRegularPriceHtml : (isCloseout ? closeoutRestHtml : pricingHtml)}
   `;

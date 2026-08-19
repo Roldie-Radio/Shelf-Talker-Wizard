@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.7',
+      items: [
+        'Changed: on Closeout shelf talkers, Rating now prints directly under the CLOSEOUT!! badge (right above Size) instead of in its usual mid-card spot - same "grouped with the badge at the foot of the card" treatment Super Sale\'s own Rating already got. Standard and Super Sale talkers are unaffected.',
+      ],
+    },
+    {
       version: '4.5.6',
       items: [
         'Changed: on Closeout shelf talkers, Size now prints directly under the CLOSEOUT!! badge instead of above it - both still sit in their usual spot near the foot of the card, above Sale Price/Regular Price. Standard talkers are unaffected.',
