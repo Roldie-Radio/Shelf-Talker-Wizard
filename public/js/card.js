@@ -1472,7 +1472,16 @@ function isChilledTalker(talker) {
 // about that path changes. Regular Price is deliberately kept locked at the
 // foot of the card next to Size on every Talker Style, Super Sale included
 // - only the callout above it moves.
-function buildPricingHtml(talker, plain = false, supersalePart = 'both') {
+//
+// closeoutPart is the same idea for Closeout's own badge: 'badge' is just
+// the CLOSEOUT!! badge, 'rest' is the Chilled callout + Sale/Regular Price
+// rows underneath it. 'both' (the default) is the old combined behavior.
+// Per a follow-up request, Size now prints directly under CLOSEOUT!! (see
+// buildCardElement) rather than above it, so the badge has to come out of
+// this block on its own - but only the badge moves, same "only the
+// attention-grabber moves, the price stays locked at the foot of the card"
+// rule Super Sale's own split above already established.
+function buildPricingHtml(talker, plain = false, supersalePart = 'both', closeoutPart = 'both') {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   // Also Available Chilled (talker.isChilled, see #fChilled in index.html)
@@ -1525,13 +1534,18 @@ function buildPricingHtml(talker, plain = false, supersalePart = 'both') {
     closeoutBadge = `<div class="card__closeout-badge"${closeoutStyle}>CLOSEOUT!!</div>`;
   }
   const regular = formatMoney(talker.price);
-  return `
-    ${closeoutBadge}
+  const restHtml = `
     ${chilledBadge}
     <div class="card__prices">
       ${hasSale ? `<div class="card__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>` : ''}
       ${regular ? `<div class="card__regular-price">Regular Price ${regular}</div>` : ''}
     </div>
+  `;
+  if (closeoutPart === 'badge') return closeoutBadge;
+  if (closeoutPart === 'rest') return restHtml;
+  return `
+    ${closeoutBadge}
+    ${restHtml}
   `;
 }
 
@@ -1879,6 +1893,17 @@ function buildCardElement(talker) {
   const isSuperSale = (talker.talkerType || 'standard') === 'supersale';
   const supersaleCalloutHtml = isSuperSale ? buildPricingHtml(talker, false, 'callout') : '';
   const supersaleRegularPriceHtml = isSuperSale ? buildPricingHtml(talker, false, 'regular') : '';
+  // Closeout's own badge prints directly above Size (a follow-up request
+  // after Size used to sit above CLOSEOUT!! instead) - same "only the
+  // attention-grabber moves, Sale/Regular Price stay locked at the foot of
+  // the card" split Super Sale already gets above, just swapping Size in
+  // for Super Sale's big price as the thing that follows the badge. Both
+  // stay right where they've always been in source order (right before the
+  // price rows, after Ratings/Awards/Pairings) - unlike Super Sale's own
+  // callout, nothing here jumps all the way up past Ratings.
+  const isCloseout = (talker.talkerType || 'standard') === 'closeout';
+  const closeoutBadgeHtml = isCloseout ? buildPricingHtml(talker, false, 'both', 'badge') : '';
+  const closeoutRestHtml = isCloseout ? buildPricingHtml(talker, false, 'both', 'rest') : '';
   const pricingHtml = buildPricingHtml(talker);
 
   const bodyHtml = isQuarter ? `
@@ -1903,8 +1928,9 @@ function buildCardElement(talker) {
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
+      ${isCloseout ? closeoutBadgeHtml : ''}
       ${sizeHtml}
-      ${isSuperSale ? supersaleRegularPriceHtml : pricingHtml}
+      ${isSuperSale ? supersaleRegularPriceHtml : (isCloseout ? closeoutRestHtml : pricingHtml)}
   `;
 
   // Store SKU: Beer only, and not on Quarter (which only ever shows Title/
