@@ -1461,7 +1461,18 @@ function isChilledTalker(talker) {
 // buildCardElement's isQuarter branch below), which only ever show Product
 // Title/Size/Regular Price/Sale Price, no matter what Talker Style is
 // selected or whether Also Available Chilled is checked.
-function buildPricingHtml(talker, plain = false) {
+// supersalePart splits the Super Sale branch's own two halves apart so
+// buildCardElement can place them in different spots on the card: 'callout'
+// is just the shouty "Super Sale Price!!!" + its big price (the part meant
+// to grab the eye before Size/Rating do - see buildCardElement's own
+// isSuperSale reordering), 'regular' is just the Regular Price comparison
+// line underneath it. 'both' (the default) keeps the old combined behavior,
+// which is still what every other Talker Style gets, and is also what a
+// plain-Regular/Sale-Price talker's own return below always was - nothing
+// about that path changes. Regular Price is deliberately kept locked at the
+// foot of the card next to Size on every Talker Style, Super Sale included
+// - only the callout above it moves.
+function buildPricingHtml(talker, plain = false, supersalePart = 'both') {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   // Also Available Chilled (talker.isChilled, see #fChilled in index.html)
@@ -1490,12 +1501,15 @@ function buildPricingHtml(talker, plain = false) {
     // one callout at one size, not a smaller number under bigger lettering.
     const bigPrice = hasSale ? talker.salePrice : talker.price;
     const superSaleStyle = fontSizeOverrideAttr(talker.superSaleFontSize, SIGN_LAYOUTS.talker.printWidth, true);
-    return `
+    const calloutHtml = `
       ${chilledBadge}
       <div class="card__supersale-text"${superSaleStyle}>Super Sale Price!!!</div>
       <div class="card__supersale-price"${superSaleStyle}>${formatMoney(bigPrice)}</div>
-      ${hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : ''}
     `;
+    const regularPriceHtml = hasSale ? `<div class="card__regular-price">Regular Price ${formatMoney(talker.price)}</div>` : '';
+    if (supersalePart === 'callout') return calloutHtml;
+    if (supersalePart === 'regular') return regularPriceHtml;
+    return calloutHtml + regularPriceHtml;
   }
 
   // "closeout" and "standard" both show the same regular/sale price layout;
@@ -1852,14 +1866,19 @@ function buildCardElement(talker) {
   const titleHtml = `<div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Title'))}</div>`;
   const sizeHtml = talker.size ? `<div class="card__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '';
 
-  // Super Sale is meant to grab the eye before the shopper ever gets to the
-  // Size or the Rating - both of those used to out-rank it just by sitting
-  // above it in source order (.card__body has no explicit CSS `order`, so
-  // this template's own order is the render order). Computed once so both
-  // branches below - insert it early for Super Sale, leave it at the foot
-  // with Size for every other Talker Style - can share the same call rather
-  // than rendering the pricing block twice.
+  // Super Sale's callout ("Super Sale Price!!!" + its big price) is meant to
+  // grab the eye before the shopper ever gets to the Size or the Rating -
+  // both of those used to out-rank it just by sitting above it in source
+  // order (.card__body has no explicit CSS `order`, so this template's own
+  // order is the render order). Regular Price stays put at the foot of the
+  // card next to Size, same as every other Talker Style - moving the
+  // callout up is not the same thing as moving the whole price block up,
+  // and a follow-up report caught this rendering the Regular Price line up
+  // top too, which was never the ask. buildPricingHtml's supersalePart
+  // param (see its own comment) is what lets these two halves split apart.
   const isSuperSale = (talker.talkerType || 'standard') === 'supersale';
+  const supersaleCalloutHtml = isSuperSale ? buildPricingHtml(talker, false, 'callout') : '';
+  const supersaleRegularPriceHtml = isSuperSale ? buildPricingHtml(talker, false, 'regular') : '';
   const pricingHtml = buildPricingHtml(talker);
 
   const bodyHtml = isQuarter ? `
@@ -1876,7 +1895,7 @@ function buildCardElement(talker) {
       ${isBeer ? buildBeerRatingHtml(talker, { includeStyle: true }) : ''}
       ${isBeer ? buildBeerTableHtml(talker) : ''}
       <div class="card__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
-      ${isSuperSale ? pricingHtml : ''}
+      ${isSuperSale ? supersaleCalloutHtml : ''}
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
@@ -1885,7 +1904,7 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
       ${sizeHtml}
-      ${isSuperSale ? '' : pricingHtml}
+      ${isSuperSale ? supersaleRegularPriceHtml : pricingHtml}
   `;
 
   // Store SKU: Beer only, and not on Quarter (which only ever shows Title/

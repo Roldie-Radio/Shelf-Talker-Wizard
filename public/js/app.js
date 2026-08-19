@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.5',
+      items: [
+        'Fixed: 4.5.4\'s Super Sale shelf talker reorder (moving the "Super Sale Price!!!" callout above Size/Rating) took the Regular Price comparison line along with it, so it no longer sat at the bottom of the card - Regular Price is now locked back at the foot of the card next to Size on Super Sale talkers, same as every other Talker Style. Only the callout itself moves up.',
+      ],
+    },
+    {
       version: '4.5.4',
       items: [
         'Fixed: Super Sale shelf talkers showed an oversized gap between the "Super Sale Price!!!" callout and the price underneath it - the line-height it used was adding empty space below the text on top of the margin already there. Tightened twice this release (first to a more normal line-height, then further still) until the two read as one callout with no leftover daylight between them.',
