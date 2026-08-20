@@ -1928,15 +1928,17 @@
   }
 
   // Scan UPC is meant for walking up and scanning immediately - put the
-  // cursor in the UPC field whenever it's the active method and Search is
-  // the visible tab (switching methods, and switching to the Search tab
-  // while Scan UPC is already picked, both funnel through here) so the very
-  // first scan lands in the field with no extra click. No other method
-  // needs this: a scanner is the only "device" that starts typing without
-  // clicking anything first.
+  // cursor in the smart search field whenever it's the active method and
+  // Search is the visible tab (switching methods, and switching to the
+  // Search tab while Scan UPC is already picked, both funnel through here)
+  // so the very first scan lands in the field with no extra click. No other
+  // method needs this: a scanner is the only "device" that starts typing
+  // without clicking anything first. Targets smartSearchInput rather than
+  // the panel's own (hidden) scanUpcInput, since that's the only visible UPC
+  // entry point now.
   function focusScanIfActive() {
     const searchTabActive = document.querySelector('.tab[data-tab="search"]').classList.contains('is-active');
-    if (searchTabActive && activeSearchMethod === 'scan') els.scanUpcInput.focus();
+    if (searchTabActive && activeSearchMethod === 'scan') els.smartSearchInput.focus();
   }
 
   // ---------- Smart search (routes to the panel above automatically) ----------
@@ -1970,7 +1972,7 @@
   const SCANNER_PREFIXED_UPC_RE = /^A(\d{12,13})$/i;
   const SMART_SEARCH_HINTS = {
     name: 'Searching by name…',
-    sku: 'Looks like a SKU. Press Enter, or Look Up SKU below, to search it.',
+    sku: 'Looks like a SKU. Press Enter to search it.',
     upc: 'Looks like a UPC. Press Enter, or scan again, to look it up.',
   };
 
@@ -1988,7 +1990,7 @@
     const mode = detectSmartSearchMode(rawValue);
     if (mode === 'internalUpc') {
       const itemNumber = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
-      els.smartSearchHint.textContent = `Internal UPC for item ${itemNumber}. Press Enter, or Look Up SKU below, to search it.`;
+      els.smartSearchHint.textContent = `Internal UPC for item ${itemNumber}. Press Enter to search it.`;
     } else {
       els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
     }
@@ -2214,8 +2216,8 @@
   function applySkuMode() {
     const isBeer = currentCategory === 'beer';
     els.skuHelpText.textContent = isBeer
-      ? 'Enter the store SKU number. We\'ll look it up on liquoroutletwinecellars.com for the title, size, and pricing, then search Untappd using that title for the description, brewery, style, ABV, IBU, and rating.'
-      : 'Enter the store SKU number. We\'ll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically - review the fields before adding it to your queue.';
+      ? 'Type the store SKU number into Search above. We\'ll look it up on liquoroutletwinecellars.com for the title, size, and pricing, then search Untappd using that title for the description, brewery, style, ABV, IBU, and rating.'
+      : 'Type the store SKU number into Search above. We\'ll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically - review the fields before adding it to your queue.';
   }
 
   // The Import tab's copy - what it asks for and what it promises to fill
@@ -4101,8 +4103,12 @@
   // reads a product file WinePOS exports locally on this PC, configured via
   // the desktop app's Advanced -> Export File Settings... menu (see that
   // section further down) rather than anything on this tab itself.
+  //
+  // No wireEnterTriggersClick(els.scanUpcInput, ...) here - that field is
+  // hidden now (see the note on it in index.html) and never takes focus, so
+  // Enter can only reach the lookup through the smartSearchInput keydown
+  // handler above.
 
-  wireEnterTriggersClick(els.scanUpcInput, els.scanUpcLookupBtn);
   wireUntappdSearch(els.scanUpcUntappdSearchInput, els.scanUpcUntappdSearchBtn);
 
   // Fills the same fields applySkuLookupProduct does. Wine/Spirits gets
@@ -4250,10 +4256,12 @@
     // Same stale-leftover risk addSkuLookupToQueue's own reset guards
     // against - a scan reaching here can just as easily have come in
     // through the shared smart search field (see runSmartSearch) as through
-    // this tab's own scanUpcInput above, so that field needs clearing too or
-    // a later scan into it would land after whatever it still shows.
+    // this tab's own (now hidden) scanUpcInput, so that field needs clearing
+    // too or a later scan into it would land after whatever it still shows.
+    // scanUpcInput itself is hidden and can't take focus, so the next scan
+    // goes back into the visible smart search field instead.
     els.smartSearchInput.value = '';
-    els.scanUpcInput.focus();
+    els.smartSearchInput.focus();
     return true;
   }
 
@@ -4832,7 +4840,10 @@
 
   // ---------- SKU lookup ----------
 
-  wireEnterTriggersClick(els.skuInput, els.skuLookupBtn);
+  // No wireEnterTriggersClick(els.skuInput, ...) here - that field is hidden
+  // now (see the note on it in index.html) and never takes focus, so Enter
+  // can only reach the lookup through the smartSearchInput keydown handler
+  // above, same as Scan UPC.
   wireUntappdSearch(els.skuUntappdSearchInput, els.skuUntappdSearchBtn);
 
   // Fills the same fields the Import tab's applyImportedProduct fills, plus
