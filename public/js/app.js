@@ -1972,7 +1972,7 @@
   const SCANNER_PREFIXED_UPC_RE = /^A(\d{12,13})$/i;
   const SMART_SEARCH_HINTS = {
     name: 'Searching by name…',
-    sku: 'Looks like a SKU. Press Enter, or Look Up SKU below, to search it.',
+    sku: 'Looks like a SKU. Press Enter to search it.',
     upc: 'Looks like a UPC. Press Enter, or scan again, to look it up.',
   };
 
@@ -1990,7 +1990,7 @@
     const mode = detectSmartSearchMode(rawValue);
     if (mode === 'internalUpc') {
       const itemNumber = String(parseInt(rawValue.trim().match(INTERNAL_UPC_RE)[1], 10));
-      els.smartSearchHint.textContent = `Internal UPC for item ${itemNumber}. Press Enter, or Look Up SKU below, to search it.`;
+      els.smartSearchHint.textContent = `Internal UPC for item ${itemNumber}. Press Enter to search it.`;
     } else {
       els.smartSearchHint.textContent = mode ? SMART_SEARCH_HINTS[mode] : ' ';
     }
@@ -2216,8 +2216,8 @@
   function applySkuMode() {
     const isBeer = currentCategory === 'beer';
     els.skuHelpText.textContent = isBeer
-      ? 'Enter the store SKU number. We\'ll look it up on liquoroutletwinecellars.com for the title, size, and pricing, then search Untappd using that title for the description, brewery, style, ABV, IBU, and rating.'
-      : 'Enter the store SKU number. We\'ll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically - review the fields before adding it to your queue.';
+      ? 'Type the store SKU number into Search above. We\'ll look it up on liquoroutletwinecellars.com for the title, size, and pricing, then search Untappd using that title for the description, brewery, style, ABV, IBU, and rating.'
+      : 'Type the store SKU number into Search above. We\'ll look it up on liquoroutletwinecellars.com and pull the title, size, and pricing automatically - review the fields before adding it to your queue.';
   }
 
   // The Import tab's copy - what it asks for and what it promises to fill
@@ -4840,7 +4840,10 @@
 
   // ---------- SKU lookup ----------
 
-  wireEnterTriggersClick(els.skuInput, els.skuLookupBtn);
+  // No wireEnterTriggersClick(els.skuInput, ...) here - that field is hidden
+  // now (see the note on it in index.html) and never takes focus, so Enter
+  // can only reach the lookup through the smartSearchInput keydown handler
+  // above, same as Scan UPC.
   wireUntappdSearch(els.skuUntappdSearchInput, els.skuUntappdSearchBtn);
 
   // Fills the same fields the Import tab's applyImportedProduct fills, plus
