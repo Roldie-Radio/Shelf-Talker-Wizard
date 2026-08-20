@@ -879,20 +879,29 @@
              above searches liquoroutletwinecellars.com for. This never
              makes a network request: it reads a product file exported
              locally by WinePOS on this PC (see server/upcCatalog.js), so it
-             works offline once Settings below points at that file. -->
+             works offline once Settings below points at that file.
+
+             #scanUpcInput/#scanUpcLookupBtn stay in the DOM but hidden: the
+             smart search field above is the only visible way to enter a UPC
+             now (a second visible "UPC" box + "Look Up UPC" button here just
+             duplicated it), but runSmartSearch/the smartSearchInput Enter
+             handler in app.js still drive the lookup through these same two
+             elements, and the rest of this panel's code (focus, value reads,
+             clearing) still expects them to exist. -->
         <div class="method-panel" data-method-panel="scan" id="methodPanelScan">
-          <p class="help-text">Scan a bottle's UPC (or type it in) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
-          <label class="field">
+          <p class="help-text">Scan a bottle's UPC (or type it in above) to look it up in the product file WinePOS exports on this PC &mdash; no internet connection needed. Nothing set up yet? Use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu.</p>
+          <label class="field" hidden>
             <span>UPC</span>
             <input type="text" id="scanUpcInput" inputmode="numeric" autocomplete="off" placeholder="Scan or type a UPC..." />
           </label>
           <div class="form-actions">
-            <button type="button" class="btn btn--primary" id="scanUpcLookupBtn">Look Up UPC</button>
+            <button type="button" class="btn" id="scanUpcLookupBtn" hidden>Look Up UPC</button>
             <!-- Same "Add to Queue" pattern as SKU Lookup's own skuSaveBtn - see
                  its note above; reuses the Manual Entry form's real submit
                  handler via requestSubmit() rather than a second copy of
-                 validate/save. -->
-            <button type="button" class="btn" id="scanUpcSaveBtn">Add to Queue</button>
+                 validate/save. Primary now that Look Up UPC above is hidden,
+                 since this is the only visible button left in the panel. -->
+            <button type="button" class="btn btn--primary" id="scanUpcSaveBtn">Add to Queue</button>
           </div>
           <p class="help-text" id="scanUpcStatus" role="status" aria-live="polite"></p>
 
@@ -1626,10 +1635,10 @@
         <p>On the <strong>SKU Lookup</strong> method, set <strong>Product Type</strong> above to match the product, type in the store's SKU number, and click <strong>Look Up SKU</strong>. It searches liquoroutletwinecellars.com for that SKU, opens the matching product page, and pulls the title, size, and pricing straight from it. For <strong>Beer</strong>, it also searches Untappd using the title it just found and fills in the description, brewery, style, ABV, IBU, and rating from there &mdash; the store page's own description is only used if that Untappd search doesn't turn up a match. Review the fields before adding to the queue, same as any other import. If the store site blocks the lookup, use <strong>Site blocking the lookup? Paste the product page's HTML instead</strong>: search the SKU yourself on the store's website, open the matching product page, copy its HTML source, and paste it in &mdash; this works even when the site blocks the app's own request, since your browser already got past it.</p>
 
         <h3>Scanning a UPC</h3>
-        <p>The <strong>Scan UPC</strong> method looks products up by the manufacturer UPC printed on the bottle &mdash; a different number from the store's own SKU that SKU Lookup searches the website for. The core lookup itself never goes out to the internet: it reads a product file that WinePOS exports locally on this PC. A USB/Bluetooth scanner needs no setup &mdash; it types the code and an Enter keystroke automatically, which triggers the lookup by itself, same as clicking <strong>Look Up UPC</strong>. The first time, use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu and point it at the file WinePOS writes (ask WinePOS support how to set up that export if it isn't running yet); after that it's saved on this PC and re-read automatically whenever the file changes. If a scanned UPC isn't in the file, add that item manually instead.</p>
+        <p>The <strong>Scan UPC</strong> method looks products up by the manufacturer UPC printed on the bottle &mdash; a different number from the store's own SKU that SKU Lookup searches the website for. The core lookup itself never goes out to the internet: it reads a product file that WinePOS exports locally on this PC. Scan or type into the <strong>Search</strong> box at the top of the tab &mdash; once it recognizes a UPC it presses Enter to trigger the lookup itself, same as a USB/Bluetooth scanner's own trailing Enter keystroke, so nothing else needs clicking. The first time, use the desktop app's <strong>Advanced &rarr; Export File Settings&hellip;</strong> menu and point it at the file WinePOS writes (ask WinePOS support how to set up that export if it isn't running yet); after that it's saved on this PC and re-read automatically whenever the file changes. If a scanned UPC isn't in the file, add that item manually instead.</p>
         <p>Once an item is found in the file, <strong>Wine / Spirits</strong> pulls a fresher description from liquoroutletwinecellars.com using the export's own store SKU &mdash; the same site SKU Lookup already reads one from. <strong>Beer</strong> instead looks itself up on that same site (title, size, and pricing), then fills in the brewery, location, style, ABV, IBU, and rating from Untappd using that store-listed name &mdash; the exact same two-step lookup SKU Lookup's own Beer path runs, which finds far more on Untappd than searching with the export file's own (often abbreviated) title would. Either of those steps failing just leaves the export file's own value in place for that field, with a note explaining why.</p>
         <p>If the scanned row's own export data also has a pack price (a separate column beyond the per-unit price &mdash; check with whoever maintains the WinePOS export if this is missing), a <strong>Unit / Pack</strong> choice appears under the status line, same control and same <strong>Pack</strong> default as Search by Name's own (see above) &mdash; beer here is mostly shelved and shopped by the pack or case. Click <strong>Unit</strong> instead if the talker is meant for singles; the price updates immediately either way, and picking Pack clears the Sale Price field too, since the export only has a per-unit sale price. A scan with a Unit/Pack choice to make always stops for a manual <strong>Add to Queue</strong> click, so a pick you never saw doesn't get queued out from under you.</p>
-        <p>A scan that comes back completely clean, with no Unit/Pack choice to make, is added to the queue automatically &mdash; there's no "Add to Queue" click needed, so you can walk the aisle and keep scanning one bottle after another, with the UPC box clearing and staying focused for the next scan. If anything above couldn't be filled in (a store SKU the site didn't recognize, a beer Untappd has no match for, and so on), the scan stops short of the queue instead: the fields stay filled in with whatever did resolve, the status line explains what didn't, and you decide whether to click <strong>Add to Queue</strong> as-is or fix it on Edit Talker first. The same holds if a scan is missing something the queue always requires, like a price.</p>
+        <p>A scan that comes back completely clean, with no Unit/Pack choice to make, is added to the queue automatically &mdash; there's no "Add to Queue" click needed, so you can walk the aisle and keep scanning one bottle after another, with the Search box clearing and staying focused for the next scan. If anything above couldn't be filled in (a store SKU the site didn't recognize, a beer Untappd has no match for, and so on), the scan stops short of the queue instead: the fields stay filled in with whatever did resolve, the status line explains what didn't, and you decide whether to click <strong>Add to Queue</strong> as-is or fix it on Edit Talker first. The same holds if a scan is missing something the queue always requires, like a price.</p>
 
         <h3>The queue</h3>
         <p>Everything you've added sits in the <strong>Queue</strong> panel on the right, and is saved automatically in the browser so it survives closing the app. Click the &#8942; menu on any item to <strong>Edit</strong>, <strong>Copy</strong>, <strong>Delete</strong>, or <strong>Move Up</strong>/<strong>Move Down</strong> it &mdash; queue order is print order, so moving an item changes where it lands on the printed sheet.</p>
