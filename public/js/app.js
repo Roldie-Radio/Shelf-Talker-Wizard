@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.8',
+      items: [
+        'Fixed: confirming a beer\'s Untappd match ("Use This Match") on Scan UPC, SKU Lookup, and Search by Name no longer overwrites a Pack price staff had already picked back to the Unit price from liquoroutletwinecellars.com. Also fixes Scan UPC\'s Unit/Pack toggle wiping out the just-confirmed brewery/style/ABV/rating fields if clicked again after confirming - both were caused by the confirm step re-applying the raw lookup response instead of running it back through the same price-aware fill each tab already uses.',
+      ],
+    },
+    {
       version: '4.5.7',
       items: [
         'Changed: on Closeout shelf talkers, Rating now prints directly under the CLOSEOUT!! badge (right above Size) instead of in its usual mid-card spot - same "grouped with the badge at the foot of the card" treatment Super Sale\'s own Rating already got. Standard and Super Sale talkers are unaffected.',
@@ -5424,24 +5430,29 @@
   // the same way it always has) and its own status-message wording, but the
   // strip/confirm/merge sequence itself is identical, so it lives here once
   // instead of four times. Returns whether staff confirmed the match.
+  //
+  // Re-runs the SAME applyFn on Accept, with the full (non-stripped) `data`,
+  // rather than merging `data` straight into the form via applyUntappdFields
+  // as this used to. That merge applied EVERY field `data` carries, not just
+  // the Untappd ones - for a beer whose export row has a pack price, `data`
+  // still carries the unit `price` (and, for Scan UPC/Search by Name, the
+  // pack price staff had already picked was live in scanUpcPriceMode/
+  // nameSearchPriceMode before the confirm dialog ever opened - see each
+  // tab's own note on that state), so Accept always overwrote the price
+  // field back to Unit even when Pack was the one on screen. Calling
+  // applyFn(data) instead reuses that tab's own price-mode-aware field
+  // selection (e.g. applyUpcScanProduct's `usePack` check) the exact same
+  // way the initial strip/apply above already does, so Accept can no longer
+  // clobber a price staff had already confirmed. It also keeps a price-choice
+  // card's own re-render (e.g. renderScanUpcPriceChoice) working off this
+  // same confirmed `data` - toggling Unit/Pack again after Accept used to
+  // silently fall back to whatever stale, stripped (blank-Untappd) copy the
+  // pre-confirm render had closed over, wiping out the very brewery/style/
+  // ABV/rating fields staff just confirmed.
   async function confirmBeerUntappdMatch(data, applyFn) {
     applyFn(stripUntappdFields(data));
     const confirmed = await openUntappdConfirm(data);
-    // `data` is the raw lookup response, which for a Scan UPC/SKU Lookup hit
-    // can carry its own `category` field - not the app's 'beer'/'wine'
-    // enum, but whatever literal department/class text the WinePOS export
-    // (or scraped store page) happened to have in that column (see
-    // FIELD_ALIASES.category in upcCatalog.js and enrichBeerFromUntappd's
-    // `...product` spread). applyFn above already set Product Type
-    // correctly from the tab staff are actually on; merging that stray
-    // field back in via applyUntappdFields's `{...readForm(), ...fields}`
-    // would silently overwrite it (almost never literally the string
-    // "beer", so fillForm's `talker.category === 'beer'` check falls
-    // through to 'wine') the moment staff click "Use This Match".
-    if (confirmed) {
-      const { category, ...untappdFields } = data;
-      applyUntappdFields(untappdFields);
-    }
+    if (confirmed) applyFn(data);
     return confirmed;
   }
 
