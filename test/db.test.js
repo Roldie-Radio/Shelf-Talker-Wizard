@@ -620,6 +620,32 @@ test('upsertBeer creates a new entry with the given fields', () => {
   });
 });
 
+// A fresh Untappd import only ever hands upsertBeer a `location` string, not
+// region/country - the one-time migration backfill above never re-runs for
+// beers added afterward. Confirm upsertBeer derives region/country from
+// location itself now, on every save, the same split parseLocationForGeoColumns
+// already does for that migration - otherwise "Where it's from" only ever
+// shows beers someone happened to type a Country into by hand.
+test('upsertBeer derives region/country from location when neither is given directly', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({
+      title: 'Amstel Light',
+      brewery: 'Heineken',
+      location: 'Amsterdam, Netherlands',
+    });
+    assert.equal(entry.region, '');
+    assert.equal(entry.country, 'Netherlands');
+
+    // An explicit Region/Country (typed by hand, or from a prior derive)
+    // is never overwritten by a fresh guess off the location string on a
+    // later save.
+    const kept = db.upsertBeer({ title: 'Amstel Light', country: 'Germany' });
+    assert.equal(kept.country, 'Germany');
+    const secondSave = db.upsertBeer({ title: 'Amstel Light', location: 'Amsterdam, Netherlands' });
+    assert.equal(secondSave.country, 'Germany');
+  });
+});
+
 test('upsertBeer persists beerName separately from title, and an omitted beerName on a repeat save leaves it alone', () => {
   withTempDb(() => {
     const first = db.upsertBeer({

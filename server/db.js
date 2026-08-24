@@ -790,12 +790,31 @@ function beerOptionalFieldParams({
   const prev = existing || {
     beerName: '', brewery: '', location: '', region: '', country: '', style: '', size: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '', varietyPack: false,
   };
+  const resolvedLocation = normalizeOptionalText(location !== undefined ? location : prev.location);
+  let resolvedRegion = normalizeOptionalText(region !== undefined ? region : prev.region);
+  let resolvedCountry = normalizeOptionalText(country !== undefined ? country : prev.country);
+  // A beer saved with only a `location` string (the shape Untappd imports
+  // arrive in - see productImport.js's fillBeerLocation) never had its own
+  // Region/Country split out the way backfillBeerGeoColumns does for older
+  // rows at migration time - that one-time pass never re-runs for beers
+  // added afterward, so every subsequent import landed with a country-less
+  // entry unless staff typed one in by hand. Deriving it here, on every
+  // save, means the "Where it's from" breakdown actually reflects what's on
+  // file instead of only whatever a person got around to typing. Only fires
+  // when both are still blank - an explicit Region and/or Country already
+  // on file (typed by hand, or a prior derive) is never overwritten by a
+  // fresh guess off the location string.
+  if (!resolvedRegion && !resolvedCountry && resolvedLocation) {
+    const derived = parseLocationForGeoColumns(resolvedLocation);
+    resolvedRegion = derived.region;
+    resolvedCountry = derived.country;
+  }
   return {
     beerName: normalizeOptionalText(beerName !== undefined ? beerName : prev.beerName),
     brewery: normalizeOptionalText(brewery !== undefined ? brewery : prev.brewery),
-    location: normalizeOptionalText(location !== undefined ? location : prev.location),
-    region: normalizeOptionalText(region !== undefined ? region : prev.region),
-    country: normalizeOptionalText(country !== undefined ? country : prev.country),
+    location: resolvedLocation,
+    region: resolvedRegion,
+    country: resolvedCountry,
     style: normalizeOptionalText(style !== undefined ? style : prev.style),
     size: normalizeOptionalText(size !== undefined ? size : prev.size),
     abv: normalizeOptionalText(abv !== undefined ? abv : prev.abv),
