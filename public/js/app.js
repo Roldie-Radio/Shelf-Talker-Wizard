@@ -9881,6 +9881,11 @@
   // so drilling into a country doesn't clear a style drill-down already
   // open in the section above it, or vice versa.
   let beerLandingSelectedOrigin = null;
+  // Which style-family tab the Top Rated spotlight is currently showing -
+  // 'all' (the default) or one of BEER_STYLE_FAMILIES' own names/a raw
+  // style string (see beerStyleFamily). Same reset-on-open, not
+  // reset-on-every-render, rule as beerLandingSelectedFamily/Origin above.
+  let beerLandingSpotlightFilter = 'all';
   // Whether the "Customize this page" popover is open - a plain var rather
   // than reading the DOM's own hidden attribute back, since
   // renderBeerBibleLanding rebuilds that DOM from scratch on every call
@@ -10267,30 +10272,77 @@
   // Top Rated spotlight - reuses ratingDotsHtml/beerDisplayName as-is, same
   // fields the grid card/profile page already show, just ranked and
   // clickable straight into that beer's own profile.
+  //
+  // Tabbed by style family (see beerStyleFamily/BEER_STYLE_FAMILIES) - same
+  // family bucketing the style-mix donut above already uses, so "IPA" here
+  // means the same thing it does there. Tabs are built from whatever
+  // families actually have a rated beer on file (top 6 by count, "All"
+  // always first) rather than every family BEER_STYLE_FAMILIES knows about
+  // - a store that's only ever researched Lagers and Stouts doesn't need a
+  // Cider/Seltzer tab sitting there empty.
   function beerLandingSpotlightHtml(groups) {
-    const ranked = groups
-      .filter((g) => Number(g.untappdRating) > 0)
-      .sort((a, b) => Number(b.untappdRating) - Number(a.untappdRating))
-      .slice(0, 6);
-    if (!ranked.length) {
+    const rated = groups.filter((g) => Number(g.untappdRating) > 0);
+    if (!rated.length) {
       return '<p class="empty-hint">No Untappd ratings on file yet - Research a beer to pull one in.</p>';
     }
-    return `<div class="beer-spotlight-grid">${ranked.map((g, i) => `
-      <div class="beer-card" role="button" tabindex="0" data-id="${g.id}">
-        <div class="beer-card__top">
-          <div>
-            <div class="beer-card__title">${escapeHtml(beerDisplayName(g))}</div>
-            <div class="beer-card__brewery">${escapeHtml(g.brewery || 'Brewery unknown')}</div>
+
+    const familyCounts = new Map();
+    rated.forEach((g) => {
+      const key = beerStyleFamily(g.style) || 'Style not on file';
+      familyCounts.set(key, (familyCounts.get(key) || 0) + 1);
+    });
+    const topFamilies = Array.from(familyCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([name]) => name);
+
+    // A tab picked in a previous render (or before "Style not on file" beers
+    // dropped off the top-6 cut, say) that no longer has any rated beer
+    // behind it falls back to "All" instead of rendering an empty grid with
+    // no way to tell why.
+    const activeFilter = beerLandingSpotlightFilter === 'all' || topFamilies.includes(beerLandingSpotlightFilter)
+      ? beerLandingSpotlightFilter
+      : 'all';
+
+    const tabsHtml = `<div class="beer-spotlight-tabs">
+      <button type="button" class="toggle-btn${activeFilter === 'all' ? ' is-active' : ''}" data-spotlight-family="all">All</button>
+      ${topFamilies.map((name) => `
+        <button type="button" class="toggle-btn${activeFilter === name ? ' is-active' : ''}" data-spotlight-family="${escapeHtml(name)}">${escapeHtml(name)}</button>
+      `).join('')}
+    </div>`;
+
+    const filtered = activeFilter === 'all'
+      ? rated
+      : rated.filter((g) => (beerStyleFamily(g.style) || 'Style not on file') === activeFilter);
+    const ranked = filtered
+      .sort((a, b) => Number(b.untappdRating) - Number(a.untappdRating))
+      .slice(0, 6);
+
+    const gridHtml = ranked.length
+      ? `<div class="beer-spotlight-grid">${ranked.map((g, i) => `
+        <div class="beer-card" role="button" tabindex="0" data-id="${g.id}">
+          <div class="beer-card__top">
+            <div>
+              <div class="beer-card__title">${escapeHtml(beerDisplayName(g))}</div>
+              <div class="beer-card__brewery">${escapeHtml(g.brewery || 'Brewery unknown')}</div>
+            </div>
+            <span class="rank-badge">${i + 1}</span>
           </div>
-          <span class="rank-badge">${i + 1}</span>
+          ${g.style ? `<div class="beer-card__tags"><span class="tag">${escapeHtml(g.style)}</span></div>` : ''}
+          <div class="beer-card__meta">
+            ${ratingDotsHtml(g.untappdRating)}
+            <span class="beer-card__abv">${g.abv ? `${escapeHtml(g.abv)} ABV` : ''}</span>
+          </div>
         </div>
-        ${g.style ? `<div class="beer-card__tags"><span class="tag">${escapeHtml(g.style)}</span></div>` : ''}
-        <div class="beer-card__meta">
-          ${ratingDotsHtml(g.untappdRating)}
-          <span class="beer-card__abv">${g.abv ? `${escapeHtml(g.abv)} ABV` : ''}</span>
-        </div>
-      </div>
-    `).join('')}</div>`;
+      `).join('')}</div>`
+      : `<p class="empty-hint">No rated ${escapeHtml(activeFilter)} beers on file yet.</p>`;
+
+    return `${tabsHtml}${gridHtml}`;
+  }
+
+  function selectBeerLandingSpotlightFamily(key) {
+    beerLandingSpotlightFilter = key;
+    renderBeerBibleLanding();
   }
 
   // Breweries grid, ranked by beer count - each tile is a shortcut into the
@@ -10455,7 +10507,6 @@
       <div class="beer-landing">
         <div class="beer-landing__hero">
           <div class="beer-landing__hero-copy">
-            <h2>Every beer in the store, one page.</h2>
             <p>Brewery, style, ABV/IBU, and Untappd rating for every title you carry &mdash; researched once, reused on every shelf talker from here on.</p>
             <div class="beer-landing__hero-actions">
               <button type="button" class="btn btn--primary" id="beerLandingBrowseBtn">Browse the Library</button>
@@ -10526,6 +10577,12 @@
     });
     els.beerBibleBody.querySelector('.drilldown__back[data-key]')?.addEventListener('click', (e) => {
       selectBeerLandingFamily(e.currentTarget.dataset.key);
+    });
+
+    // Top Rated spotlight's own style-family tabs - see
+    // selectBeerLandingSpotlightFamily above.
+    els.beerBibleBody.querySelectorAll('.beer-spotlight-tabs [data-spotlight-family]').forEach((btn) => {
+      btn.addEventListener('click', () => selectBeerLandingSpotlightFamily(btn.dataset.spotlightFamily));
     });
 
     // "Where it's from" flag cards + that drill-down's own Clear button -
@@ -10733,6 +10790,7 @@
       // last time (see renderBeerBibleLanding above).
       beerLandingSelectedFamily = null;
       beerLandingSelectedOrigin = null;
+      beerLandingSpotlightFilter = 'all';
       beerLandingCustomizePopoverOpen = false;
       els.beerBibleSelectToggleBtn.classList.remove('btn--primary');
       els.beerBibleSelectToggleBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Select';

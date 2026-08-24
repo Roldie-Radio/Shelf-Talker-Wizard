@@ -1051,7 +1051,6 @@ h1, h2, h3 { margin: 0; }
     linear-gradient(135deg, #4a2e10 0%, #8a5f27 55%, #c8722c 100%);
 }
 .beer-landing__hero-copy { max-width: 46ch; }
-.beer-landing__hero h2 { margin: 0 0 0.5rem; font-size: 1.5rem; letter-spacing: -0.01em; }
 .beer-landing__hero-copy p { margin: 0 0 1rem; font-size: 0.9rem; line-height: 1.55; color: #fce6c8; }
 .beer-landing__hero-actions { display: flex; gap: 0.55rem; flex-wrap: wrap; }
 .beer-landing__hero-actions .btn:not(.btn--primary) { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.4); color: #fff8ec; }
@@ -1213,6 +1212,7 @@ button.beer-legend-row { border: none; background: none; font-family: inherit; t
    scoped to its own class rather than reusing .bourbon-card directly,
    since this card has no Select-mode checkbox/research-chip footer to
    accommodate, just a rank badge and the rating/ABV line. */
+.beer-spotlight-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
 .beer-spotlight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
 @media (max-width: 900px) { .beer-spotlight-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .beer-spotlight-grid { grid-template-columns: 1fr; } }
