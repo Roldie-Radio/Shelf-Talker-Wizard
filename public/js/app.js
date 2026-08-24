@@ -5986,17 +5986,20 @@
   // Picking a result fills the form immediately from the export's own
   // columns (title/size/price/etc - no network needed for those), then
   // always kicks off a best-effort background call to
-  // /api/name-search-select, which runs enrichSalePriceFromStore
-  // (productImport.js) against the export's own SKU to pick up a sale price
-  // from liquoroutletwinecellars.com - the local export commonly has no
-  // sale/promo price column of its own (see FIELD_ALIASES.salePrice in
-  // upcCatalog.js), even when the store's site is actually showing one, and
+  // /api/name-search-select. For Wine/Spirits, that runs enrichWineFromStore
+  // (productImport.js) against the export's own SKU to pick up both a sale
+  // price and a fresher description from liquoroutletwinecellars.com - the
+  // local export commonly has no sale/promo price column of its own (see
+  // FIELD_ALIASES.salePrice in upcCatalog.js), and its own Description
+  // column tends to be blank or a short internal note, even when the
+  // store's site is actually showing a sale price or a real description;
   // Search by Name used to never touch the store site at all, unlike SKU
-  // Lookup/Scan UPC. For beer, that same call also runs a best-effort
-  // Untappd search for the brewery/location/style/ABV/IBU/rating the export
-  // file doesn't carry - the same enrichment step SKU Lookup and Scan UPC
-  // already run for beer, just reached from a picked export row instead of
-  // a typed SKU or scanned UPC.
+  // Lookup/Scan UPC, and only picked up salePrice once it started. For beer,
+  // that same call runs enrichSalePriceFromStore's own narrower salePrice-
+  // only lookup, then a best-effort Untappd search for the brewery/
+  // location/style/ABV/IBU/rating the export file doesn't carry - the same
+  // enrichment step SKU Lookup and Scan UPC already run for beer, just
+  // reached from a picked export row instead of a typed SKU or scanned UPC.
   async function selectNameSearchProduct(product) {
     const myToken = ++nameSearchSelectToken;
     nameSearchSelectedProduct = product;
@@ -6013,7 +6016,7 @@
 
     els.nameSearchSpinner.hidden = false;
     els.nameSearchSaveBtn.disabled = true;
-    els.nameSearchStatus.textContent = isBeer ? 'Found it! Searching Untappd...' : 'Found it! Checking for a sale price...';
+    els.nameSearchStatus.textContent = isBeer ? 'Found it! Searching Untappd...' : 'Found it! Checking the store site for a sale price and description...';
     try {
       const resp = await fetch('/api/name-search-select', {
         method: 'POST',
@@ -6025,14 +6028,20 @@
       // whatever that pick already put on the form/status line alone.
       if (myToken !== nameSearchSelectToken) return;
       if (!resp.ok) {
-        throw new Error(data.error || (isBeer ? 'Could not search Untappd for that beer.' : 'Could not check for a sale price.'));
+        throw new Error(data.error || (isBeer ? 'Could not search Untappd for that beer.' : 'Could not check the store site.'));
       }
       nameSearchSelectedProduct = data;
 
       if (!isBeer) {
         applyNameSearchProduct(data, false, nameSearchPriceMode);
         renderNameSearchSelected();
-        els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+        // data.storeSourceError (see enrichWineFromStore in
+        // productImport.js) means the sale price/description fetch itself
+        // failed - the export's own values are still in the form above, so
+        // this is a heads-up, not a blocker.
+        els.nameSearchStatus.textContent = data.storeSourceError
+          ? `Found it! Store: ${data.storeSourceError} Review the fields, then click "Add to Queue".`
+          : 'Found it! Review the fields, then click "Add to Queue".';
         return;
       }
 
@@ -6080,7 +6089,7 @@
       if (myToken !== nameSearchSelectToken) return;
       els.nameSearchStatus.textContent = isBeer
         ? `Found it! Untappd: ${err.message || 'Something went wrong searching Untappd.'}`
-        : `Found it! ${err.message || 'Something went wrong checking for a sale price.'}`;
+        : `Found it! ${err.message || 'Something went wrong checking the store site.'}`;
     } finally {
       if (myToken === nameSearchSelectToken) {
         els.nameSearchSpinner.hidden = true;
