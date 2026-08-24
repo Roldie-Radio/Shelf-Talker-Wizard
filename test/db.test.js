@@ -587,6 +587,42 @@ test('applyBeerColumns migrates a pre-existing beers table and backfills region/
   });
 });
 
+// A beer saved before upsertBeer/updateBeerById started deriving region/
+// country from location on save (see beerOptionalFieldParams) - or one
+// added some other way that only ever set location - sits with both
+// blank indefinitely otherwise. backfillMissingBeerGeoColumns (unlike
+// backfillBeerGeoColumns, which only ever ran once, when the columns were
+// first added) runs on every launch and catches rows like this one, not
+// just rows migrated from a pre-region/country schema.
+test('a pre-existing beer with location but no region/country picks it up on the next launch, without touching a beer that already has one set', () => {
+  withTempDb(() => {
+    // Bypass upsertBeer's own save-time derive (this simulates data that
+    // predates it) by inserting directly, same as the schema-migration
+    // test above.
+    const raw = db.getDb();
+    raw.prepare(`
+      INSERT INTO beers (title, location, region, country, source, updated_at)
+      VALUES
+        ('Blank Geo Beer', 'Munich, Germany', '', '', 'Manual', '2025-01-01T00:00:00.000Z'),
+        ('Region Only Beer', 'Portland, OR United States', 'OR', '', 'Manual', '2025-01-01T00:00:00.000Z')
+    `).run();
+    db.closeDb();
+
+    // Next launch against the same file (a fresh getDb() call re-runs
+    // applySchema) - the blank one gets filled in...
+    const blankGeoBeer = db.listBeers().find((b) => b.title === 'Blank Geo Beer');
+    assert.equal(blankGeoBeer.region, '');
+    assert.equal(blankGeoBeer.country, 'Germany');
+
+    // ...but a beer that already has a real value in either field (region,
+    // here, even with country still blank) is left exactly as it was, not
+    // silently overwritten with a fresh guess off location.
+    const regionOnlyBeer = db.listBeers().find((b) => b.title === 'Region Only Beer');
+    assert.equal(regionOnlyBeer.region, 'OR');
+    assert.equal(regionOnlyBeer.country, '');
+  });
+});
+
 // ---------- The Beer Bible ----------
 
 test('upsertBeer creates a new entry with the given fields', () => {
@@ -617,6 +653,32 @@ test('upsertBeer creates a new entry with the given fields', () => {
     assert.equal(entry.source, 'Manual');
     assert.ok(entry.updatedAt);
     assert.ok(entry.id);
+  });
+});
+
+// A fresh Untappd import only ever hands upsertBeer a `location` string, not
+// region/country - the one-time migration backfill above never re-runs for
+// beers added afterward. Confirm upsertBeer derives region/country from
+// location itself now, on every save, the same split parseLocationForGeoColumns
+// already does for that migration - otherwise "Where it's from" only ever
+// shows beers someone happened to type a Country into by hand.
+test('upsertBeer derives region/country from location when neither is given directly', () => {
+  withTempDb(() => {
+    const entry = db.upsertBeer({
+      title: 'Amstel Light',
+      brewery: 'Heineken',
+      location: 'Amsterdam, Netherlands',
+    });
+    assert.equal(entry.region, '');
+    assert.equal(entry.country, 'Netherlands');
+
+    // An explicit Region/Country (typed by hand, or from a prior derive)
+    // is never overwritten by a fresh guess off the location string on a
+    // later save.
+    const kept = db.upsertBeer({ title: 'Amstel Light', country: 'Germany' });
+    assert.equal(kept.country, 'Germany');
+    const secondSave = db.upsertBeer({ title: 'Amstel Light', location: 'Amsterdam, Netherlands' });
+    assert.equal(secondSave.country, 'Germany');
   });
 });
 

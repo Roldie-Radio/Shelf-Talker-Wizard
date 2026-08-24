@@ -204,17 +204,25 @@ function applyBeerColumns(db) {
   if (!existing.has('variety_pack')) db.exec('ALTER TABLE beers ADD COLUMN variety_pack INTEGER NOT NULL DEFAULT 0');
   if (!existing.has('size')) db.exec('ALTER TABLE beers ADD COLUMN size TEXT');
   // region/country back the Beer Bible's geography sort/filter options (see
-  // BEER_SORTS in app.js) - split out from the single free-text `location`
-  // field (which stays as-is, still shown/edited on its own) so sorting by
-  // state/province or country doesn't have to re-parse that string on every
-  // render. Added together, and only backfilled here - the one time each
-  // column is actually created on an install that predates it - so a later
-  // manual edit that clears region/country back to blank never gets
-  // silently re-filled by this running again on the next launch.
+  // BEER_SORTS in app.js) and the landing page's "Where it's from" section
+  // - split out from the single free-text `location` field (which stays
+  // as-is, still shown/edited on its own) so sorting/grouping by
+  // state/province or country doesn't have to re-parse that string on
+  // every render.
   const addingGeoColumns = !existing.has('region') || !existing.has('country');
   if (!existing.has('region')) db.exec('ALTER TABLE beers ADD COLUMN region TEXT');
   if (!existing.has('country')) db.exec('ALTER TABLE beers ADD COLUMN country TEXT');
+  // On a fresh migration both columns are blank for every row (they didn't
+  // exist a moment ago), so the full-table backfillBeerGeoColumns below
+  // covers it. On every other launch, backfillMissingBeerGeoColumns (see
+  // its own comment) catches any row that's still sitting with both blank
+  // - e.g. a beer imported before upsertBeer/updateBeerById started
+  // deriving region/country from location on save (see
+  // beerOptionalFieldParams). Neither ever touches a row that has a real
+  // value in either field already, so a save that deliberately blanks one
+  // out - country but not region, say - is never silently re-filled.
   if (addingGeoColumns) backfillBeerGeoColumns(db);
+  else backfillMissingBeerGeoColumns(db);
 }
 
 // rums shipped without country for several releases - same "ALTER TABLE
@@ -302,6 +310,34 @@ function parseLocationForGeoColumns(location) {
 
 function backfillBeerGeoColumns(db) {
   const rows = db.prepare("SELECT id, location FROM beers WHERE location IS NOT NULL AND location != ''").all();
+  const update = db.prepare('UPDATE beers SET region = @region, country = @country WHERE id = @id');
+  const runAll = db.transaction((entries) => {
+    for (const row of entries) {
+      const { region, country } = parseLocationForGeoColumns(row.location);
+      if (region || country) update.run({ id: row.id, region, country });
+    }
+  });
+  runAll(rows);
+}
+
+// Ongoing counterpart to backfillBeerGeoColumns above - runs on every
+// launch (see applyBeerColumns), not just the one-time column-creation
+// migration, so a beer that already existed before upsertBeer/
+// updateBeerById started deriving region/country from location on save
+// (see beerOptionalFieldParams) still picks it up, without anyone having to
+// open and re-save every entry by hand. Only rows where BOTH region and
+// country are still blank get touched - a row with a real value in either
+// field is left exactly as it is, same "never overwrite an explicit value"
+// rule the save path follows. Cheap to run every launch: once a row has
+// been filled in (here or by any later save), it never matches this WHERE
+// clause again.
+function backfillMissingBeerGeoColumns(db) {
+  const rows = db.prepare(`
+    SELECT id, location FROM beers
+    WHERE location IS NOT NULL AND location != ''
+      AND (region IS NULL OR region = '')
+      AND (country IS NULL OR country = '')
+  `).all();
   const update = db.prepare('UPDATE beers SET region = @region, country = @country WHERE id = @id');
   const runAll = db.transaction((entries) => {
     for (const row of entries) {
@@ -790,12 +826,31 @@ function beerOptionalFieldParams({
   const prev = existing || {
     beerName: '', brewery: '', location: '', region: '', country: '', style: '', size: '', abv: '', ibu: '', untappdRating: '', untappdRatingCount: '', description: '', sku: '', upc: '', varietyPack: false,
   };
+  const resolvedLocation = normalizeOptionalText(location !== undefined ? location : prev.location);
+  let resolvedRegion = normalizeOptionalText(region !== undefined ? region : prev.region);
+  let resolvedCountry = normalizeOptionalText(country !== undefined ? country : prev.country);
+  // A beer saved with only a `location` string (the shape Untappd imports
+  // arrive in - see productImport.js's fillBeerLocation) never had its own
+  // Region/Country split out the way backfillBeerGeoColumns does for older
+  // rows at migration time - that one-time pass never re-runs for beers
+  // added afterward, so every subsequent import landed with a country-less
+  // entry unless staff typed one in by hand. Deriving it here, on every
+  // save, means the "Where it's from" breakdown actually reflects what's on
+  // file instead of only whatever a person got around to typing. Only fires
+  // when both are still blank - an explicit Region and/or Country already
+  // on file (typed by hand, or a prior derive) is never overwritten by a
+  // fresh guess off the location string.
+  if (!resolvedRegion && !resolvedCountry && resolvedLocation) {
+    const derived = parseLocationForGeoColumns(resolvedLocation);
+    resolvedRegion = derived.region;
+    resolvedCountry = derived.country;
+  }
   return {
     beerName: normalizeOptionalText(beerName !== undefined ? beerName : prev.beerName),
     brewery: normalizeOptionalText(brewery !== undefined ? brewery : prev.brewery),
-    location: normalizeOptionalText(location !== undefined ? location : prev.location),
-    region: normalizeOptionalText(region !== undefined ? region : prev.region),
-    country: normalizeOptionalText(country !== undefined ? country : prev.country),
+    location: resolvedLocation,
+    region: resolvedRegion,
+    country: resolvedCountry,
     style: normalizeOptionalText(style !== undefined ? style : prev.style),
     size: normalizeOptionalText(size !== undefined ? size : prev.size),
     abv: normalizeOptionalText(abv !== undefined ? abv : prev.abv),
