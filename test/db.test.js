@@ -587,6 +587,42 @@ test('applyBeerColumns migrates a pre-existing beers table and backfills region/
   });
 });
 
+// A beer saved before upsertBeer/updateBeerById started deriving region/
+// country from location on save (see beerOptionalFieldParams) - or one
+// added some other way that only ever set location - sits with both
+// blank indefinitely otherwise. backfillMissingBeerGeoColumns (unlike
+// backfillBeerGeoColumns, which only ever ran once, when the columns were
+// first added) runs on every launch and catches rows like this one, not
+// just rows migrated from a pre-region/country schema.
+test('a pre-existing beer with location but no region/country picks it up on the next launch, without touching a beer that already has one set', () => {
+  withTempDb(() => {
+    // Bypass upsertBeer's own save-time derive (this simulates data that
+    // predates it) by inserting directly, same as the schema-migration
+    // test above.
+    const raw = db.getDb();
+    raw.prepare(`
+      INSERT INTO beers (title, location, region, country, source, updated_at)
+      VALUES
+        ('Blank Geo Beer', 'Munich, Germany', '', '', 'Manual', '2025-01-01T00:00:00.000Z'),
+        ('Region Only Beer', 'Portland, OR United States', 'OR', '', 'Manual', '2025-01-01T00:00:00.000Z')
+    `).run();
+    db.closeDb();
+
+    // Next launch against the same file (a fresh getDb() call re-runs
+    // applySchema) - the blank one gets filled in...
+    const blankGeoBeer = db.listBeers().find((b) => b.title === 'Blank Geo Beer');
+    assert.equal(blankGeoBeer.region, '');
+    assert.equal(blankGeoBeer.country, 'Germany');
+
+    // ...but a beer that already has a real value in either field (region,
+    // here, even with country still blank) is left exactly as it was, not
+    // silently overwritten with a fresh guess off location.
+    const regionOnlyBeer = db.listBeers().find((b) => b.title === 'Region Only Beer');
+    assert.equal(regionOnlyBeer.region, 'OR');
+    assert.equal(regionOnlyBeer.country, '');
+  });
+});
+
 // ---------- The Beer Bible ----------
 
 test('upsertBeer creates a new entry with the given fields', () => {
