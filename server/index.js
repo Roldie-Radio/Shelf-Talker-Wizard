@@ -5,7 +5,7 @@ const {
   extractProduct, extractBeer, findTastingNotes, TASTING_NOTE_PROVIDER_NAMES,
   TASTING_NOTE_EXPERIMENTAL_PROVIDER_NAMES, parsePastedProduct,
   lookupSku, lookupSkuFromHtml, untappdBeerFromUrl, untappdBeerFromHtml, enrichWineDescriptionFromStore,
-  enrichBeerScanFromStore, enrichBeerFromUntappd, enrichSalePriceFromStore, mergeUntappdBeer,
+  enrichBeerScanFromStore, enrichBeerFromUntappd, enrichSalePriceFromStore, enrichWineFromStore, mergeUntappdBeer,
   algoliaSearchBeerCandidates,
 } = require('./productImport');
 const {
@@ -423,35 +423,47 @@ function createApp({
   // Backs picking a candidate off the "Search by Name" tab's dropdown - runs
   // once, on that click/Enter, not per keystroke against the whole result
   // list above (an Untappd search per row would be both slow and a good way
-  // to get this app's Algolia key rate-limited or revoked). Every pick now
-  // runs enrichSalePriceFromStore (productImport.js) first - a best-effort,
-  // never-throws lookup of the export's own SKU against
+  // to get this app's Algolia key rate-limited or revoked).
+  //
+  // Wine/Spirits: every pick runs enrichWineFromStore (productImport.js) - a
+  // best-effort, never-throws lookup of the export's own SKU against
   // liquoroutletwinecellars.com's product page, since the local WinePOS
   // export often has no sale/promo price column of its own (see
-  // FIELD_ALIASES.salePrice in upcCatalog.js) even when the store's site is
-  // actually showing one. Everything else about the product (title/size/
-  // regular price) still comes from the export - only salePrice is ever
-  // taken from the store site here. Wine/Spirits stops there. Beer also
-  // runs the same best-effort Untappd step SKU Lookup and Scan UPC already
-  // layer on top of their own product (see enrichBeerFromUntappd in
-  // productImport.js), off of the export's own title/brand/size rather than
-  // the store page. A miss (blocked, no match) comes back as untappdError,
-  // same as those two tabs, rather than failing the pick outright - the
-  // export's own fields are still good enough to queue a talker from.
+  // FIELD_ALIASES.salePrice in upcCatalog.js), and its own Description
+  // column tends to be blank or a short internal note rather than
+  // shopper-facing tasting notes. That store page supplies both salePrice
+  // and description in one fetch, same as Scan UPC/SKU Lookup already
+  // source a Wine/Spirits description - all three lookup methods now end up
+  // sourcing it the same way. Everything else about the product (title/
+  // size/regular price) still comes from the export.
   //
-  // Every pick runs a live Untappd search, same as SKU Lookup/Scan UPC - a
-  // search that fails outright is a real error, not a stale fallback.
+  // Beer keeps running enrichSalePriceFromStore on its own (unchanged) for
+  // the same salePrice gap, then the same best-effort Untappd step SKU
+  // Lookup and Scan UPC already layer on top of their own product (see
+  // enrichBeerFromUntappd in productImport.js), off of the export's own
+  // title/brand/size rather than the store page - beer's description comes
+  // from Untappd, not this store page, so it has no use for
+  // enrichWineFromStore. A miss (blocked, no match) comes back as
+  // untappdError, same as those two tabs, rather than failing the pick
+  // outright - the export's own fields are still good enough to queue a
+  // talker from.
+  //
+  // Every pick runs a live store/Untappd search, same as SKU Lookup/Scan
+  // UPC - a search that fails outright is a real error, not a stale
+  // fallback.
   app.post('/api/name-search-select', async (req, res) => {
     const { product, category } = req.body || {};
     if (!product || typeof product !== 'object' || !product.title) {
       return res.status(400).json({ error: 'A product is required.' });
     }
     const normalizedCategory = category === 'beer' ? 'beer' : 'wine';
-    const withSalePrice = await enrichSalePriceFromStore(product);
+
     if (normalizedCategory !== 'beer') {
-      return res.json({ ...withSalePrice, category: normalizedCategory });
+      const enriched = await enrichWineFromStore(product);
+      return res.json({ ...enriched, category: normalizedCategory });
     }
 
+    const withSalePrice = await enrichSalePriceFromStore(product);
     try {
       const data = { ...applyBeerBibleFallback(await enrichBeerFromUntappd(withSalePrice)), category: 'beer' };
       res.json(data);

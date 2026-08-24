@@ -1541,6 +1541,33 @@ async function enrichSalePriceFromStore(product) {
 }
 
 // ================================================================
+// Search by Name wine/spirits enrichment - a Search by Name wine/spirits
+// pick needs both enrichSalePriceFromStore's salePrice and
+// enrichWineDescriptionFromStore's description above, so all three lookup
+// methods (Scan UPC, SKU Lookup, Search by Name) end up sourcing a
+// Wine/Spirits description the same way. Calling those two functions
+// separately would fetch the exact same SKU's product page from
+// liquoroutletwinecellars.com twice; this fetches it once and applies both.
+// Beer keeps calling enrichSalePriceFromStore on its own (see the
+// /api/name-search-select route in index.js) - its description comes from
+// Untappd instead of this store page, so there's nothing here for it to
+// share, and this function is never used on the beer path.
+async function enrichWineFromStore(product) {
+  const sku = (product.sku || '').trim();
+  if (!sku) return product;
+  try {
+    const storeProduct = await lookupStoreSku(sku);
+    return {
+      ...product,
+      salePrice: storeProduct.salePrice || '',
+      description: firstNonEmpty(storeProduct.description, product.description) || '',
+    };
+  } catch (err) {
+    return { ...product, storeSourceError: err.message || 'Could not check liquoroutletwinecellars.com.' };
+  }
+}
+
+// ================================================================
 // Untappd search-by-name - the SKU lookup's beer-specific second step. The
 // store site above has no idea what Untappd calls a beer, so this takes
 // whatever title the SKU lookup just filled in and searches Untappd for
@@ -2227,6 +2254,7 @@ module.exports = {
   parsePastedStoreProduct,
   enrichWineDescriptionFromStore,
   enrichSalePriceFromStore,
+  enrichWineFromStore,
   algoliaSearchBeerCandidates,
   searchUntappd,
   matchUntappdCandidates,
