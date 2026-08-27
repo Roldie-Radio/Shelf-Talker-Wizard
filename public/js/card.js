@@ -1885,19 +1885,17 @@ function buildCardElement(talker) {
   // both tried and both reverted by follow-up requests. It's now locked at
   // the foot of the card instead, in a fixed order: callout, then Rating,
   // then Size, then Regular Price (when there's a Sale Price to compare
-  // to) - same general spot every other Talker Style's pricing occupies,
-  // just with Rating pulled down out of its usual mid-card position (see
-  // ratingsHtml below) to sit between the callout and Size specifically for
-  // this Talker Style. buildPricingHtml's supersalePart param (see its own
-  // comment) is what lets the callout and Regular Price render as two
-  // separate insertions instead of one combined block.
+  // to) - same general spot every other Talker Style's pricing occupies.
+  // buildPricingHtml's supersalePart param (see its own comment) is what
+  // lets the callout and Regular Price render as two separate insertions
+  // instead of one combined block.
   const isSuperSale = (talker.talkerType || 'standard') === 'supersale';
   const supersaleCalloutHtml = isSuperSale ? buildPricingHtml(talker, false, 'callout') : '';
   const supersaleRegularPriceHtml = isSuperSale ? buildPricingHtml(talker, false, 'regular') : '';
-  // Computed once so it can be slotted into its usual mid-card spot for
-  // Standard talkers, or pulled down next to Super Sale's/Closeout's own
-  // locked-bottom group instead - see the isSuperSale/isCloseout ternaries
-  // below.
+  // Computed once and always slotted into the locked-bottom group right
+  // above Size (see ratingsHtml's use below) so Rating and Size print flush
+  // against each other with no description/awards/pairings content able to
+  // wedge a gap between them, whatever Talker Style this is.
   const ratingsHtml = isBeer ? '' : buildRatingsHtml(talker, ratingsStyle);
   // Closeout's own badge prints directly above Rating and Size (both follow-
   // up requests - Size used to sit above CLOSEOUT!! instead, then Rating
@@ -1930,13 +1928,12 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
-      ${(isSuperSale || isCloseout) ? '' : ratingsHtml}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
       ${isCloseout ? closeoutBadgeHtml : ''}
       ${isSuperSale ? supersaleCalloutHtml : ''}
-      ${(isSuperSale || isCloseout) ? ratingsHtml : ''}
+      ${ratingsHtml}
       ${sizeHtml}
       ${isSuperSale ? supersaleRegularPriceHtml : (isCloseout ? closeoutRestHtml : pricingHtml)}
   `;
