@@ -4582,9 +4582,19 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   flex: 0 0 auto;
 }
 
+/* Fraction picked to match .sign__rating's own default point size (22pt on
+   Large - see DEFAULT_FONT_SIZE_PT.sign.ratings in app.js and the comment on
+   .sign__rating below) rather than .sign__rating's own CSS ratio: Ratings
+   has a Font Size box that's always populated (even a brand-new talker gets
+   the 22pt default written into ratingsFontSize - see fillForm in app.js),
+   so it always prints through fontSizeOverrideAttr's pt/72/refWidth
+   formula, never this file's --sign-text-scaled default. Size has no such
+   box, so its only path to matching Ratings' actual default size is this
+   rule computing the same effective point size directly: 22 / 72 / 8.5in
+   (sign-large's printWidth) / 1.4 (--sign-text) = ~0.02568. */
 .sign__size {
   font-weight: 800;
-  font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.02568 * var(--price-fit, 1));
 }
 /* Small signs are a third the width of a Large one, so a fraction tuned for
    Large renders tiny here - matches the reference sign's Size field, Arial
