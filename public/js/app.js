@@ -64,6 +64,32 @@
       ],
     },
     {
+      version: '4.5.12',
+      items: [
+        'Fixed: Rating now always prints directly above Size on Standard shelf talkers - it used to sit mid-card instead, leaving a gap above Size that varied with however much other content was on the talker.',
+        'Fixed: Size\'s default font size on Large Display Signs was noticeably smaller than Rating\'s - both now default to the same 22pt out of the box.',
+      ],
+    },
+    {
+      version: '4.5.11',
+      items: [
+        'New: Top Rated on the Beer Bible landing page now has All/IPA/Lager & Pilsner/... style tabs, so staff can jump straight to the top rated beers of one style instead of scanning the overall top 6.',
+        'Fixed: a beer\'s Region/Country weren\'t being filled in from its Location unless someone opened and re-saved it by hand - only a one-time migration ever did that split. Now every save derives it automatically when both are still blank, and beers already on file get backfilled the next time the app launches, so the landing page\'s "Where it\'s from" section actually reflects the whole library instead of just whatever anyone happened to fill in by hand.',
+      ],
+    },
+    {
+      version: '4.5.10',
+      items: [
+        'New: Search by Name now enriches a Wine/Spirits pick with a fresher description from liquoroutletwinecellars.com too, not just a sale price - same as Scan UPC and SKU Lookup already do, since the export file\'s own Description column tends to be blank or a short internal note rather than shopper-facing tasting notes.',
+      ],
+    },
+    {
+      version: '4.5.9',
+      items: [
+        'Fixed: Scan UPC and SKU Lookup showed their own UPC/SKU box right next to the shared Search box above them, even though that Search box already detects and drives a scan or SKU lookup by itself - the redundant field is gone from both panels, with Add to Queue now each one\'s single visible action.',
+      ],
+    },
+    {
       version: '4.5.8',
       items: [
         'Fixed: confirming a beer\'s Untappd match ("Use This Match") on Scan UPC, SKU Lookup, and Search by Name no longer overwrites a Pack price staff had already picked back to the Unit price from liquoroutletwinecellars.com. Also fixes Scan UPC\'s Unit/Pack toggle wiping out the just-confirmed brewery/style/ABV/rating fields if clicked again after confirming - both were caused by the confirm step re-applying the raw lookup response instead of running it back through the same price-aware fill each tab already uses.',
