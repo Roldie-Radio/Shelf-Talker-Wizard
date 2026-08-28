@@ -3018,6 +3018,60 @@ test('enrichBeerScanFromStore pulls title/size/price/description from the store 
   );
 });
 
+test('enrichBeerScanFromStore falls back to the export\'s own packQty for the printed Size when the store page has no Pack Size row - fixes two different pack sizes of the same beer printing an identical, undifferentiated Size', async () => {
+  // A real reported case: Sam Adams Summer Ale sold as both a 6-pack and a
+  // 12-pack, each its own SKU/UPC - but the store's own product page for
+  // this SKU has a bare Size row ("12 OZ") with no separate Pack Size row
+  // at all, so combineBeerSize used to have nothing to combine and every
+  // pack size of this beer printed the exact same "12oz" Size with no way
+  // to tell them apart on the shelf.
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="329" />
+        <a class="product-link" href="/Sam-Adams-Summer-Ale-329-1000329/">
+          <span class="productnameTitle">Sam Adams Summer Ale</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: '<h1 itemprop="name">Sam Adams Summer Ale</h1>'
+      + '<div class="pricingDetails"><span class="priceFull">$10.39</span></div>'
+      + '<table><tr><th>Size</th><td>12 OZ</td></tr></table>',
+  });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'samuel-adams-summer-ale', bid: 42, beer_name: 'Samuel Adams Summer Ale', brewery_name: 'Samuel Adams' },
+  ]);
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Summer Ale by Samuel Adams | Untappd" />',
+    body: '<p class="brewery"><a href="#">Samuel Adams</a></p><p class="style">Wheat Beer - American Pale Wheat</p>',
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Sam')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      // packQty here is exactly what searchByName/lookupUpc (upcCatalog.js)
+      // would have already parsed from the local export - either its own
+      // dedicated Pack Qty column, or the export's Size text itself (see
+      // parsePackQtyFromSize) - well before this function ever runs.
+      const sixPack = await enrichBeerScanFromStore({
+        title: 'SAM ADAMS SUMMER ALE 6PK', sku: '329', size: '6PK 12OZ', packQty: 6, price: '10.39', salePrice: '',
+      });
+      assert.equal(sixPack.size, '6-Pack 12 OZ');
+
+      const twelvePack = await enrichBeerScanFromStore({
+        title: 'SAM ADAMS SUMMER ALE 12PK', sku: '329', size: '12PK 12OZ', packQty: 12, price: '10.39', salePrice: '',
+      });
+      assert.equal(twelvePack.size, '12-Pack 12 OZ');
+    }
+  );
+});
+
 test('enrichBeerScanFromStore still tries Untappd with the local title when there is no store SKU to look up', async () => {
   const algoliaBody = algoliaHitsResponse([
     { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },

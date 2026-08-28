@@ -1918,11 +1918,25 @@ function composeProducerTitle({ title, brand, size }) {
 // match what's actually still sitting in the scraped title (just the
 // container size, confirmed from a real product page), not a phrase that
 // includes the pack count too.
-function combineBeerSize(size, packSize) {
+function combineBeerSize(size, packSize, packQty) {
   const base = (size || '').trim();
   const pack = (packSize || '').trim();
-  if (!pack) return base;
-  return base ? `${pack} ${base}` : pack;
+  if (pack) return base ? `${pack} ${base}` : pack;
+  // The store's own product page has no Pack Size spec row (missing
+  // entirely, or the "Not Specified" placeholder dropNotSpecified already
+  // stripped) - fall back to the local WinePOS export's own pack quantity
+  // (packQty - see FIELD_ALIASES/parsePackQtyFromSize in upcCatalog.js),
+  // if it has one, rather than printing the same bare unit size ("12oz")
+  // for every pack size of the same beer. This is what actually
+  // distinguishes a 6-pack SKU from a 12-pack SKU of the same 12oz Sam
+  // Adams Summer Ale on the printed talker when the store site's own page
+  // doesn't spell that out.
+  const qty = Number(packQty);
+  if (Number.isFinite(qty) && qty > 1) {
+    const synthesized = `${qty}-Pack`;
+    return base ? `${synthesized} ${base}` : synthesized;
+  }
+  return base;
 }
 
 // Layers Untappd's own description/brewery/style/ABV/IBU/rating on top of
@@ -2008,7 +2022,7 @@ function untappdFieldsOnly(beer) {
 
 async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
-  const size = combineBeerSize(product.size, product.packSize);
+  const size = combineBeerSize(product.size, product.packSize, product.packQty);
   // The displayed Product Title keeps its style suffix (`title` above,
   // unchanged) - only the string actually sent to Untappd has it stripped
   // (see buildUntappdSearchQuery's own comment for why).
