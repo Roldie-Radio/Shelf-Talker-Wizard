@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.14',
+      items: [
+        'Fixed: a beer sold in more than one pack size (a 6-pack and a 12-pack of the same 12oz Sam Adams Summer Ale, say) could print the exact same, undifferentiated Size on both talkers - Scan UPC and Search by Name now fall back to the local export\'s own pack count when the store\'s own product page has no separate Pack Size of its own to combine in.',
+      ],
+    },
+    {
       version: '4.5.13',
       items: [
         'New: the Confirm Untappd Match popup (Scan UPC, SKU Lookup, Search by Name, Research) now has its own "Or search Untappd yourself" box right there, instead of only offering one after clicking "Not the Right Beer" - if the matched beer up top isn\'t right, type in what you\'d search Untappd for without leaving the dialog. Picking a result works exactly like picking one from the Pick the Right Beer dialog that already offered this for a tie.',
