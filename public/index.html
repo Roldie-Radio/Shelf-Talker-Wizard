@@ -1496,6 +1496,22 @@
           <p class="untappd-confirm-card__description" id="untappdConfirmDescription"></p>
         </div>
         <p class="help-text untappd-confirm-price-note" id="untappdConfirmPriceNote"></p>
+
+        <!-- "Or search Untappd yourself" - same manual search openUntappdPicker's
+             own box offers a tie/miss, but available right away here too
+             instead of only after clicking "Not the Right Beer" - see
+             openUntappdConfirm in app.js. Submitting hands the typed query
+             straight to openUntappdPicker (as its own initialQuery), which
+             runs the search and takes over from there. -->
+        <div class="untappd-manual-search">
+          <div class="untappd-others-divider"><span>Or search Untappd yourself</span></div>
+          <p class="help-text">Not the right beer? Type in what you'd search Untappd for and we'll look again.</p>
+          <form id="untappdConfirmManualForm" class="untappd-manual-search__row">
+            <input type="search" id="untappdConfirmManualInput" placeholder="e.g. Devils Backbone Barleywine" autocomplete="off" />
+            <button type="submit" class="btn btn--small btn--primary" id="untappdConfirmManualBtn">Search</button>
+          </form>
+          <p class="help-text" id="untappdConfirmManualStatus" role="status" aria-live="polite"></p>
+        </div>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn" id="untappdConfirmRejectBtn">Not the Right Beer</button>

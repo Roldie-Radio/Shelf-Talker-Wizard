@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.13',
+      items: [
+        'New: the Confirm Untappd Match popup (Scan UPC, SKU Lookup, Search by Name, Research) now has its own "Or search Untappd yourself" box right there, instead of only offering one after clicking "Not the Right Beer" - if the matched beer up top isn\'t right, type in what you\'d search Untappd for without leaving the dialog. Picking a result works exactly like picking one from the Pick the Right Beer dialog that already offered this for a tie.',
+      ],
+    },
+    {
       version: '4.5.8',
       items: [
         'Fixed: confirming a beer\'s Untappd match ("Use This Match") on Scan UPC, SKU Lookup, and Search by Name no longer overwrites a Pack price staff had already picked back to the Unit price from liquoroutletwinecellars.com. Also fixes Scan UPC\'s Unit/Pack toggle wiping out the just-confirmed brewery/style/ABV/rating fields if clicked again after confirming - both were caused by the confirm step re-applying the raw lookup response instead of running it back through the same price-aware fill each tab already uses.',
@@ -1295,6 +1301,10 @@
     untappdConfirmMeta: document.getElementById('untappdConfirmMeta'),
     untappdConfirmDescription: document.getElementById('untappdConfirmDescription'),
     untappdConfirmPriceNote: document.getElementById('untappdConfirmPriceNote'),
+    untappdConfirmManualForm: document.getElementById('untappdConfirmManualForm'),
+    untappdConfirmManualInput: document.getElementById('untappdConfirmManualInput'),
+    untappdConfirmManualBtn: document.getElementById('untappdConfirmManualBtn'),
+    untappdConfirmManualStatus: document.getElementById('untappdConfirmManualStatus'),
     vintageField: document.getElementById('vintageField'),
     vintage: document.getElementById('fVintage'),
     wineRatingsField: document.getElementById('wineRatingsField'),
@@ -4998,7 +5008,7 @@
   // from) instead of only ever a tie, specifically so staff land on the
   // manual search box below rather than a dead end (see the empty state
   // in render()/loadCandidates below).
-  function openUntappdPicker(candidates, queryTitle, { getCurrent = readForm, applyFn = applyUntappdFields } = {}) {
+  function openUntappdPicker(candidates, queryTitle, { getCurrent = readForm, applyFn = applyUntappdFields } = {}, initialQuery = '') {
     return new Promise((resolve) => {
       untappdPickerResolve = resolve;
       // Defensive reset: if the *previous* dialog was closed (Cancel/Escape/
@@ -5285,14 +5295,12 @@
 
       els.untappdPickerUseRecBtn.onclick = () => selectCandidate(order[0]);
 
-      // Reassigned (not addEventListener) each call, same reason
-      // els.untappdPickerUseRecBtn.onclick above already is - this
-      // function reruns every time the dialog opens, and addEventListener
-      // would stack a fresh listener on the same shared form node on top
-      // of every previous invocation's.
-      els.untappdPickerManualForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const q = els.untappdPickerManualInput.value.trim();
+      // Pulled out of the form's own onsubmit below so a query typed into
+      // the Confirm Untappd Match dialog's own search box (see
+      // openUntappdConfirm's initialQuery) can run the exact same search
+      // the instant this dialog opens, instead of only ever firing from a
+      // submit event on this dialog's own form.
+      async function runManualSearch(q) {
         if (!q) {
           els.untappdPickerStatus.textContent = 'Enter something to search Untappd for.';
           return;
@@ -5325,10 +5333,29 @@
             els.untappdPickerManualBtn.textContent = 'Search';
           }
         }
+      }
+
+      // Reassigned (not addEventListener) each call, same reason
+      // els.untappdPickerUseRecBtn.onclick above already is - this
+      // function reruns every time the dialog opens, and addEventListener
+      // would stack a fresh listener on the same shared form node on top
+      // of every previous invocation's.
+      els.untappdPickerManualForm.onsubmit = (e) => {
+        e.preventDefault();
+        runManualSearch(els.untappdPickerManualInput.value.trim());
       };
 
       loadCandidates(originalCandidates);
       untappdPickerModal.open();
+      // See this function's own comment above runManualSearch - a query
+      // handed in from openUntappdConfirm's search box means staff already
+      // typed and submitted it there, so run it immediately rather than
+      // landing on an empty "no confident match" state for a search that
+      // was never actually tried.
+      if (initialQuery) {
+        els.untappdPickerManualInput.value = initialQuery;
+        runManualSearch(initialQuery);
+      }
     });
   }
 
@@ -5363,6 +5390,17 @@
   // openUntappdPicker's candidates, there's no second fetch needed here,
   // since a confident single match already came back with full details.
   let untappdConfirmResolve = null;
+  // The applyFn/data this dialog's current invocation was opened with -
+  // stashed here so the Accept button handler below (registered once, not
+  // re-created per open like openUntappdConfirm's own promise executor is)
+  // can apply them itself. Moving the apply into Accept (instead of
+  // leaving it to confirmBeerUntappdMatch's own caller, as it used to)
+  // means a manual search's own pick (see the search form's onsubmit
+  // below) and a plain Accept both go through the exact same "this dialog
+  // applies its own outcome" path, so nothing has to guess which of the
+  // two actually happened before deciding whether to apply `data` again.
+  let untappdConfirmApplyFn = null;
+  let untappdConfirmData = null;
 
   const untappdConfirmModal = createModal({
     overlay: els.untappdConfirmOverlay,
@@ -5380,12 +5418,44 @@
     },
   });
 
-  // Returns a Promise resolving to true if staff confirmed the match
-  // (Use This Match), false if they rejected it (Not the Right Beer, or
-  // closed the dialog any other way).
-  function openUntappdConfirm(data) {
+  // Returns a Promise resolving to true if staff confirmed the match (Use
+  // This Match, or a pick made after searching Untappd themselves from the
+  // box below), false if they rejected it outright (Not the Right Beer, or
+  // closed the dialog any other way without picking anything).
+  // getCurrent/applyFn are the same options openUntappdPicker itself takes
+  // (and default the same way) - passed through to it when the search box
+  // below hands off to it, so a manual search from this dialog reads/
+  // writes the same place Accept above would.
+  function openUntappdConfirm(data, { getCurrent = readForm, applyFn = applyUntappdFields } = {}) {
     return new Promise((resolve) => {
       untappdConfirmResolve = resolve;
+      untappdConfirmApplyFn = applyFn;
+      untappdConfirmData = data;
+      els.untappdConfirmManualInput.value = '';
+      els.untappdConfirmManualBtn.textContent = 'Search';
+      els.untappdConfirmManualStatus.textContent = '';
+      // Reassigned (not addEventListener) each open, same reason
+      // openUntappdPicker's own manual form onsubmit is - this function
+      // reruns every time the dialog opens, and addEventListener would
+      // stack a fresh listener on this shared form node on top of every
+      // previous invocation's.
+      els.untappdConfirmManualForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const q = els.untappdConfirmManualInput.value.trim();
+        if (!q) {
+          els.untappdConfirmManualStatus.textContent = 'Enter something to search Untappd for.';
+          return;
+        }
+        // Same ordering rule as the Accept handler below: null out and
+        // grab untappdConfirmResolve, then close, *before* handing off to
+        // openUntappdPicker - so a backdrop/Escape close racing with this
+        // handoff can't also try to resolve the same promise.
+        const resolveFn = untappdConfirmResolve;
+        untappdConfirmResolve = null;
+        untappdConfirmModal.close();
+        const picked = await openUntappdPicker([], q, { getCurrent, applyFn }, q);
+        if (resolveFn) resolveFn(picked);
+      };
       // data.untappdSource is only ever set when a live Untappd search came
       // back empty and this instead came from a matching Beer Bible entry
       // (see applyBeerBibleFallback in index.js) - the heading says so
@@ -5425,12 +5495,20 @@
     });
   }
 
-  els.untappdConfirmAcceptBtn.addEventListener('click', () => {
-    // Null out (and grab) untappdConfirmResolve before closing - same
-    // ordering rule as everywhere else this pattern shows up in this file.
+  els.untappdConfirmAcceptBtn.addEventListener('click', async () => {
+    // Null out (and grab) untappdConfirmResolve/applyFn/data before
+    // closing - same ordering rule as everywhere else this pattern shows
+    // up in this file.
     const resolveFn = untappdConfirmResolve;
+    const applyFn = untappdConfirmApplyFn;
+    const data = untappdConfirmData;
     untappdConfirmResolve = null;
     untappdConfirmModal.close();
+    // Applying here (rather than leaving it to confirmBeerUntappdMatch's
+    // own caller, as this used to) is what lets the manual-search-and-pick
+    // path above resolve(true) without a second, stale `applyFn(data)`
+    // call stepping on the pick it already applied.
+    if (applyFn && data) await applyFn(data);
     if (resolveFn) resolveFn(true);
   });
 
@@ -5462,8 +5540,11 @@
   // ABV/rating fields staff just confirmed.
   async function confirmBeerUntappdMatch(data, applyFn) {
     applyFn(stripUntappdFields(data));
-    const confirmed = await openUntappdConfirm(data);
-    if (confirmed) applyFn(data);
+    // openUntappdConfirm now applies `data` itself on Accept (and applies
+    // whatever a manual search's own pick resolves to) - see its own
+    // comment - so this no longer re-applies `data` after the fact the way
+    // it used to.
+    const confirmed = await openUntappdConfirm(data, { applyFn });
     return confirmed;
   }
 
@@ -8930,7 +9011,10 @@
       // other beer lookup shows before committing anything (see
       // confirmBeerUntappdMatch's own comment) - staff can reject a
       // confident-but-wrong match here same as anywhere else.
-      const confirmed = await openUntappdConfirm(data);
+      const confirmed = await openUntappdConfirm(data, {
+        getCurrent: () => beerResearchCurrentFields(entry),
+        applyFn: (fields) => saveBeerResearchFields(entryId, fields),
+      });
       if (!confirmed) {
         // Not the Right Beer used to just reset the button and stop there -
         // a dead end with no way to actually finish researching this beer
@@ -8946,7 +9030,9 @@
         if (!picked) resetBeerResearchButton(btn, idleHtml, idleTitle);
         return picked;
       }
-      await saveBeerResearchFields(entryId, data);
+      // openUntappdConfirm above already saved - either `data` itself (a
+      // plain Accept) or whatever its own search box's pick resolved to -
+      // so there's nothing left to save here.
       return true;
     } catch (err) {
       btn.disabled = false;
@@ -11398,10 +11484,15 @@
           els.beerBibleBulkResearchCurrent.innerHTML = `${BEER_RESEARCH_ICON}Confirm match for <b style="color:var(--ui-ink-soft)">${escapeHtml(beerDisplayName(beer) || beer.title)}</b>&hellip;`;
           els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(beer, 'match', data);
           // eslint-disable-next-line no-await-in-loop
-          const confirmed = await openUntappdConfirm(data);
+          const confirmed = await openUntappdConfirm(data, {
+            getCurrent: () => beerResearchCurrentFields(beer),
+            applyFn: (fields) => saveBeerResearchFields(beer.id, fields),
+          });
           if (confirmed) {
-            // eslint-disable-next-line no-await-in-loop
-            await saveBeerResearchFields(beer.id, data);
+            // openUntappdConfirm above already saved - either `data` itself
+            // (a plain Accept) or whatever a manual search's own pick
+            // resolved to (see openUntappdConfirm's own comment) - so
+            // there's nothing left to save here.
             outcome = 'match';
             freshBeer = beerBibleCache.find((b) => b.id === beer.id) || beer;
             els.beerBibleBulkResearchLive.innerHTML = beerCompareCardHtml(freshBeer, 'match', freshBeer);
