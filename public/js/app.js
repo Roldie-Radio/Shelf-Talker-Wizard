@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.15',
+      items: [
+        'Fixed: Search by Name never offered the "Fill from Untappd"/"Search Untappd yourself" fallback that Scan UPC and SKU Lookup already had - a beer name search with no automatic Untappd match, an unresolved multi-candidate pick, or a declined "Not the Right Beer" confirm had no way forward but re-typing the search. Search by Name now offers the same manual Untappd URL/HTML fallback in all three cases.',
+      ],
+    },
+    {
       version: '4.5.14',
       items: [
         'Fixed: a beer sold in more than one pack size (a 6-pack and a 12-pack of the same 12oz Sam Adams Summer Ale, say) could print the exact same, undifferentiated Size on both talkers - Scan UPC and Search by Name now fall back to the local export\'s own pack count when the store\'s own product page has no separate Pack Size of its own to combine in.',
