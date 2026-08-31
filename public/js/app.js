@@ -1415,6 +1415,16 @@
     nameSearchSelectedWrap: document.getElementById('nameSearchSelectedWrap'),
     nameSearchSaveBtn: document.getElementById('nameSearchSaveBtn'),
     nameSearchStatus: document.getElementById('nameSearchStatus'),
+    nameSearchUntappdSection: document.getElementById('nameSearchUntappdSection'),
+    nameSearchUntappdSearchInput: document.getElementById('nameSearchUntappdSearchInput'),
+    nameSearchUntappdSearchBtn: document.getElementById('nameSearchUntappdSearchBtn'),
+    nameSearchUntappdUrl: document.getElementById('nameSearchUntappdUrl'),
+    nameSearchUntappdBtn: document.getElementById('nameSearchUntappdBtn'),
+    nameSearchUntappdStatus: document.getElementById('nameSearchUntappdStatus'),
+    nameSearchUntappdHtmlToggle: document.getElementById('nameSearchUntappdHtmlToggle'),
+    nameSearchUntappdHtmlSection: document.getElementById('nameSearchUntappdHtmlSection'),
+    nameSearchUntappdHtmlInput: document.getElementById('nameSearchUntappdHtmlInput'),
+    nameSearchUntappdHtmlBtn: document.getElementById('nameSearchUntappdHtmlBtn'),
 
     skuHelpText: document.getElementById('skuHelpText'),
     skuInput: document.getElementById('skuInput'),
@@ -4861,6 +4871,7 @@
   // can only reach the lookup through the smartSearchInput keydown handler
   // above, same as Scan UPC.
   wireUntappdSearch(els.skuUntappdSearchInput, els.skuUntappdSearchBtn);
+  wireUntappdSearch(els.nameSearchUntappdSearchInput, els.nameSearchUntappdSearchBtn);
 
   // Fills the same fields the Import tab's applyImportedProduct fills, plus
   // price/size for a beer entry - unlike Untappd (a rating/check-in site
@@ -5764,6 +5775,69 @@
     }
   });
 
+  // Same manual Untappd URL/HTML fallback as skuUntappdBtn/skuUntappdHtmlBtn
+  // above, for Search by Name's own nameSearchUntappdSection (see
+  // selectNameSearchProduct's untappdError/candidates-not-picked/
+  // confirm-declined branches for when this shows).
+  els.nameSearchUntappdBtn.addEventListener('click', async () => {
+    const untappdUrl = els.nameSearchUntappdUrl.value.trim();
+    if (!untappdUrl) {
+      els.nameSearchUntappdStatus.textContent = "Enter the beer's Untappd URL first.";
+      return;
+    }
+    els.nameSearchUntappdBtn.disabled = true;
+    els.nameSearchUntappdStatus.textContent = 'Reading that Untappd page...';
+
+    try {
+      const resp = await fetch('/api/untappd-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: readForm(), untappdUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read that Untappd page.');
+
+      applyUntappdFields(data);
+      els.nameSearchUntappdStatus.textContent = 'Filled in from Untappd! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.nameSearchUntappdStatus.textContent = err.message || 'Something went wrong reading that Untappd page.';
+    } finally {
+      els.nameSearchUntappdBtn.disabled = false;
+    }
+  });
+
+  els.nameSearchUntappdHtmlToggle.addEventListener('click', () => {
+    els.nameSearchUntappdHtmlSection.hidden = !els.nameSearchUntappdHtmlSection.hidden;
+    els.nameSearchUntappdHtmlToggle.setAttribute('aria-expanded', String(!els.nameSearchUntappdHtmlSection.hidden));
+  });
+
+  els.nameSearchUntappdHtmlBtn.addEventListener('click', async () => {
+    const html = els.nameSearchUntappdHtmlInput.value;
+    if (!html.trim()) {
+      els.nameSearchUntappdStatus.textContent = "Paste the beer page's HTML first.";
+      return;
+    }
+    els.nameSearchUntappdHtmlBtn.disabled = true;
+    els.nameSearchUntappdStatus.textContent = 'Reading pasted HTML...';
+
+    try {
+      const resp = await fetch('/api/untappd-lookup-html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: readForm(), html, url: els.nameSearchUntappdUrl.value.trim() }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not read that pasted HTML.');
+
+      applyUntappdFields(data);
+      els.nameSearchUntappdStatus.textContent = 'Filled in from pasted HTML! Review the fields, then click "Add to Queue".';
+    } catch (err) {
+      els.nameSearchUntappdStatus.textContent = err.message || 'Something went wrong reading that HTML.';
+    } finally {
+      els.nameSearchUntappdHtmlBtn.disabled = false;
+    }
+  });
+
   // ---------- Search by Name ----------
 
   // Looks products up by (partial) title instead of a SKU/UPC - useful when
@@ -6039,6 +6113,7 @@
     nameSearchSelectedProduct = null;
     nameSearchPriceMode = 'unit';
     els.nameSearchSaveBtn.disabled = true;
+    els.nameSearchUntappdSection.hidden = true;
     renderNameSearchSelected();
   }
 
@@ -6101,6 +6176,17 @@
     applyNameSearchProduct(product, isBeer, nameSearchPriceMode);
     renderNameSearchSelected();
 
+    // Reset the manual Untappd fallback (see nameSearchUntappdSection in
+    // index.html) left over from a previous pick's attempt at it - same
+    // reset applySkuLookupProduct does each time.
+    els.nameSearchUntappdSection.hidden = true;
+    els.nameSearchUntappdSearchInput.value = product.title || '';
+    els.nameSearchUntappdUrl.value = '';
+    els.nameSearchUntappdStatus.textContent = '';
+    els.nameSearchUntappdHtmlInput.value = '';
+    els.nameSearchUntappdHtmlSection.hidden = true;
+    els.nameSearchUntappdHtmlToggle.setAttribute('aria-expanded', 'false');
+
     els.nameSearchSpinner.hidden = false;
     els.nameSearchSaveBtn.disabled = true;
     els.nameSearchStatus.textContent = isBeer ? 'Found it! Searching Untappd...' : 'Found it! Checking the store site for a sale price and description...';
@@ -6149,7 +6235,13 @@
           // picker branches above.
           addNameSearchToQueue('Found it and added to queue! Search for the next product.');
         } else {
-          els.nameSearchStatus.textContent = 'Found it! Untappd had more than one possible match and none was picked - review the fields, then click "Add to Queue".';
+          // None of the offered candidates were right - reveal the same
+          // manual "paste an Untappd URL" fallback a plain miss already
+          // offers below, rather than leaving no way forward but Manual
+          // Entry (see SKU Lookup/Scan UPC's own handlers for the same).
+          els.nameSearchUntappdSection.hidden = false;
+          els.nameSearchStatus.textContent = 'Found it! Untappd had more than one possible match and none was picked - '
+            + 'try the Untappd URL box below, or review the fields and add it as-is.';
         }
         return;
       }
@@ -6163,14 +6255,23 @@
           renderNameSearchSelected();
         });
         if (myToken !== nameSearchSelectToken) return;
-        els.nameSearchStatus.textContent = confirmed
-          ? 'Found it! Review the fields, then click "Add to Queue".'
-          : 'Found it! Not the right beer - brewery/style/ABV/rating left blank. Review the fields, then click "Add to Queue".';
+        if (confirmed) {
+          els.nameSearchStatus.textContent = 'Found it! Review the fields, then click "Add to Queue".';
+        } else {
+          els.nameSearchUntappdSection.hidden = false;
+          els.nameSearchStatus.textContent = 'Found it! Not the right beer - brewery/style/ABV/rating left blank. '
+            + 'Try the Untappd URL box below, or review the fields and add it as-is.';
+        }
         return;
       }
 
       applyNameSearchProduct(data, true, nameSearchPriceMode);
       renderNameSearchSelected();
+      // Untappd's own search only ever fails for beer (see untappdError's
+      // origin in enrichBeerFromUntappd) - offer the manual "paste the
+      // beer's Untappd URL/HTML" fallback below, same as SKU Lookup/Scan
+      // UPC's own plain-miss handling.
+      els.nameSearchUntappdSection.hidden = false;
       els.nameSearchStatus.textContent = `Found it! Untappd: ${data.untappdError}`;
     } catch (err) {
       if (myToken !== nameSearchSelectToken) return;
