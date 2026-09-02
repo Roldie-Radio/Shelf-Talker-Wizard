@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.19',
+      items: [
+        'Fixed: Scan UPC, SKU Lookup, and Search by Name reset Type back to Shelf Talker and Talker Size back to Full every time a lookup filled the form - including the second fill a "Pick the Right Beer" dialog pick triggers - silently undoing a Large/Small Display Sign (or Half/Quarter Talker Size) staff had already picked before scanning or searching. Those three tabs now carry over whatever Type/Talker Size was already selected, the same fix Import already had.',
+      ],
+    },
+    {
       version: '4.5.18',
       items: [
         'Fixed: SKU Lookup came back "No product found" for a SKU that\'s clearly sitting in the WinePOS export file (visible on the Product Database screen, On Hand and all) whenever liquoroutletwinecellars.com\'s own search doesn\'t have that SKU - out of stock and pulled from the site, or never published there to begin with. It now falls back to the export\'s own title/size/price (still running Untappd off that title for beer) instead of a hard error, the same best-effort fallback Scan UPC already gives a scanned UPC whose export SKU the store site doesn\'t recognize. A SKU in neither place is still a real error.',
@@ -4205,6 +4211,16 @@
   function applyUpcScanProduct(data, isBeer, priceMode = 'unit') {
     const usePack = isBeer && priceMode === 'pack' && productHasPackPrice(data);
     const fields = {
+      // Carries over whatever Type (Shelf Talker/Small Display/Large
+      // Display) and Talker Size were already picked before the scan ran -
+      // same fix as applyImportedProduct's own currentType, and for the
+      // same reason: fillForm falls back to Shelf Talker/Full Size for any
+      // of these it isn't given, which would otherwise silently override a
+      // Display Sign selection on every single scan (including the second
+      // fillForm a Pick the Right Beer dialog's pick triggers below).
+      signType: currentSignType,
+      signSize: currentSignSize,
+      talkerSize: currentTalkerSize,
       // See applyNameSearchProduct's comment on the same line - falling back
       // to currentCategory (not a flat 'wine') keeps Bourbon from reverting
       // to Wine/Spirits on every scan.
@@ -4923,6 +4939,13 @@
   // price" split here the way applyImportedProduct has.
   function applySkuLookupProduct(data, isBeer) {
     const fields = {
+      // See applyUpcScanProduct's own note on the same lines - carries over
+      // the Type/Talker Size already picked before the lookup ran, instead
+      // of letting fillForm's Shelf Talker/Full Size fallback silently
+      // override a Display Sign selection.
+      signType: currentSignType,
+      signSize: currentSignSize,
+      talkerSize: currentTalkerSize,
       // See applyNameSearchProduct's comment on the same line - falling back
       // to currentCategory (not a flat 'wine') keeps Bourbon from reverting
       // to Wine/Spirits on every lookup.
@@ -6047,6 +6070,13 @@
   function applyNameSearchProduct(product, isBeer, priceMode = 'unit') {
     const usePack = priceMode === 'pack' && productHasPackPrice(product);
     const fields = {
+      // See applyUpcScanProduct's own note on the same lines - carries over
+      // the Type/Talker Size already picked before the search ran, instead
+      // of letting fillForm's Shelf Talker/Full Size fallback silently
+      // override a Display Sign selection.
+      signType: currentSignType,
+      signSize: currentSignSize,
+      talkerSize: currentTalkerSize,
       // Not just `isBeer ? 'beer' : 'wine'` - that collapsed Bourbon back to
       // Wine/Spirits on every pick, since isBeer only distinguishes beer
       // from "not beer". Falling back to currentCategory instead preserves
