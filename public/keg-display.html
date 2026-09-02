@@ -248,16 +248,8 @@
   .keg-card__bottom {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: calc(10px * var(--card-scale, 1));
-  }
-
-  .keg-card__brand {
-    font-size: calc(15px * var(--card-scale, 1));
-    color: var(--muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .keg-card__price {
@@ -707,6 +699,10 @@
     }).join(' ');
   }
 
+  // Skips brand, same reasoning as buildRow below - this store's own
+  // WinePOS titles already lead with the brewery name, so a separate brand
+  // line just repeated it in smaller text under the name it's the same
+  // beer as.
   function buildCard(keg) {
     var info = extractKegInfo(keg.title);
     var size = info.size || keg.size || '';
@@ -729,10 +725,6 @@
 
     var bottom = document.createElement('div');
     bottom.className = 'keg-card__bottom';
-    var brand = document.createElement('div');
-    brand.className = 'keg-card__brand';
-    brand.textContent = keg.brand || '';
-    bottom.appendChild(brand);
 
     var priceWrap = document.createElement('div');
     var onSale = keg.salePrice && keg.regularPrice && Number(keg.salePrice) < Number(keg.regularPrice);
