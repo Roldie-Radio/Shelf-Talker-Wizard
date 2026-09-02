@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.18',
+      items: [
+        'Fixed: SKU Lookup came back "No product found" for a SKU that\'s clearly sitting in the WinePOS export file (visible on the Product Database screen, On Hand and all) whenever liquoroutletwinecellars.com\'s own search doesn\'t have that SKU - out of stock and pulled from the site, or never published there to begin with. It now falls back to the export\'s own title/size/price (still running Untappd off that title for beer) instead of a hard error, the same best-effort fallback Scan UPC already gives a scanned UPC whose export SKU the store site doesn\'t recognize. A SKU in neither place is still a real error.',
+      ],
+    },
+    {
       version: '4.5.17',
       items: [
         'Fixed: on Scan UPC and Search by Name, switching a beer talker to Unit pricing kept printing the whole pack\'s Size ("4-Pack 12oz") instead of the single can/bottle\'s own size ("12oz") - Unit mode now prints the size that actually matches what\'s being priced. Pack pricing is unaffected.',
@@ -5607,11 +5613,21 @@
   // productImport.js. The store lookup itself still succeeded, so the form
   // is filled either way; this just tells staff why brewery/style/ABV/IBU
   // came back store-only instead of leaving them to guess.
+  //
+  // data.storeSourceError means the live store search had no match for this
+  // SKU at all (or was blocked) - see the /api/sku-lookup fallback in
+  // server/index.js - so the fields actually came from the local WinePOS
+  // export instead, same as Scan UPC's own storeSourceError already means
+  // (see scanUpcProblems). Called out here instead of loadedFrom staying
+  // "the store", so staff know a store-only field (title/size/price coming
+  // from the live site) is really the export's own and worth double-checking.
   function skuLookupLoadedMessage(data, loadedFrom) {
-    if (data.untappdError) {
-      return `Loaded from ${loadedFrom}. Untappd: ${data.untappdError}`;
-    }
-    return `Loaded from ${loadedFrom}! Review the fields, then click "Add to Queue".`;
+    const source = data.storeSourceError ? 'your export file' : loadedFrom;
+    const problems = [];
+    if (data.storeSourceError) problems.push(`Store: ${data.storeSourceError}`);
+    if (data.untappdError) problems.push(`Untappd: ${data.untappdError}`);
+    if (problems.length) return `Loaded from ${source}. ${problems.join(' ')}`;
+    return `Loaded from ${source}! Review the fields, then click "Add to Queue".`;
   }
 
   els.skuLookupBtn.addEventListener('click', async () => {
@@ -5633,6 +5649,15 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'SKU lookup failed.');
 
+      // See skuLookupLoadedMessage's own comment on data.storeSourceError -
+      // the live store search had no match for this SKU (or was blocked),
+      // so title/size/price actually came from the local WinePOS export
+      // instead. Called out in every status message below, not just the
+      // plain-miss one that function covers, so a fallback never reads as an
+      // ordinary store hit.
+      const source = data.storeSourceError ? 'your export file' : 'the store';
+      const storeNote = data.storeSourceError ? ` Store: ${data.storeSourceError}` : '';
+
       // Same disambiguation step Scan UPC's own handler takes above - see
       // openUntappdPicker's comment for why this can't just auto-pick one.
       // Once staff actually make a pick (Recommended or one of the
@@ -5643,14 +5668,14 @@
         applySkuLookupProduct(data, isBeer);
         const picked = await openUntappdPicker(data.untappdCandidates, data.title || sku);
         if (picked) {
-          addSkuLookupToQueue('Loaded from the store and added to queue! Enter another SKU to look up the next one.');
+          addSkuLookupToQueue(`Loaded from ${source} and added to queue!${storeNote} Enter another SKU to look up the next one.`);
         } else {
           // None of the offered candidates were right (or staff just backed
           // out) - reveal the same manual "paste an Untappd URL" fallback a
           // plain miss already offers below, rather than leaving no way
           // forward but Manual Entry.
           els.skuUntappdSection.hidden = false;
-          els.skuStatus.textContent = 'Loaded from the store. Untappd had more than one possible match and none was picked - '
+          els.skuStatus.textContent = `Loaded from ${source}.${storeNote} Untappd had more than one possible match and none was picked - `
             + 'try the Untappd URL box below, or review the fields and add it as-is.';
         }
         return;
@@ -5661,10 +5686,10 @@
       if (isBeer && !data.untappdError) {
         const confirmed = await confirmBeerUntappdMatch(data, (d) => applySkuLookupProduct(d, isBeer));
         if (confirmed) {
-          els.skuStatus.textContent = 'Loaded from the store! Review the fields, then click "Add to Queue".';
+          els.skuStatus.textContent = `Loaded from ${source}!${storeNote} Review the fields, then click "Add to Queue".`;
         } else {
           els.skuUntappdSection.hidden = false;
-          els.skuStatus.textContent = 'Loaded from the store. Not the right beer - brewery/style/ABV/rating left blank. '
+          els.skuStatus.textContent = `Loaded from ${source}.${storeNote} Not the right beer - brewery/style/ABV/rating left blank. `
             + 'Try the Untappd URL box below, or review the fields and add it as-is.';
         }
         return;

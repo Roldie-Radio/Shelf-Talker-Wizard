@@ -229,7 +229,18 @@ function createApp({
   // ambiguous) got cached as "fresh" for a full day exactly like a
   // successful lookup, so a fix that would have found it on a retry never
   // got the chance to - staff just saw the exact same stale result the next
-  // time they looked it up. A failed lookup is now a real error instead.
+  // time they looked it up.
+  //
+  // A SKU the live store search doesn't turn up anything for - out of stock
+  // and pulled from the site's own search, never published there to begin
+  // with, or the site blocking the request outright - falls back to the same
+  // local WinePOS export /api/upc-lookup already reads (see lookupSkuInExport
+  // in upcCatalog.js), same as enrichBeerScanFromStore/enrichWineFromStore
+  // already give a scanned UPC whose export row's own SKU the store site
+  // doesn't recognize (see storeSourceError there) - just reached from a
+  // typed SKU instead of one read off a scanned UPC's export row. Only when
+  // the SKU is in neither place is a failed lookup still the hard error it
+  // always was.
   app.post('/api/sku-lookup', async (req, res) => {
     const { sku, category } = req.body || {};
 
@@ -244,7 +255,19 @@ function createApp({
       const withBeerBibleFallback = normalizedCategory === 'beer' ? applyBeerBibleFallback(product) : product;
       res.json({ ...withBeerBibleFallback, category: normalizedCategory });
     } catch (err) {
-      res.status(502).json({ error: err.message || 'Could not look up that SKU.' });
+      let exportProduct;
+      try {
+        exportProduct = lookupSkuInExport(trimmedSku);
+      } catch {
+        return res.status(502).json({ error: err.message || 'Could not look up that SKU.' });
+      }
+      const enriched = normalizedCategory === 'beer' ? await enrichBeerFromUntappd(exportProduct) : exportProduct;
+      const withBeerBibleFallback = normalizedCategory === 'beer' ? applyBeerBibleFallback(enriched) : enriched;
+      res.json({
+        ...withBeerBibleFallback,
+        category: normalizedCategory,
+        storeSourceError: err.message || 'Could not look up that SKU on liquoroutletwinecellars.com.',
+      });
     }
   });
 

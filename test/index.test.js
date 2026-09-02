@@ -379,6 +379,78 @@ test('a bare-stub Beer Bible entry does not mask a real Untappd miss', async () 
   }));
 });
 
+// Coverage for the local-export fallback: a SKU the WinePOS export clearly
+// has (same file the Product Database screen and Scan UPC both read) but
+// liquoroutletwinecellars.com's own search doesn't turn up anything for -
+// out of stock and pulled from the site, never published there, or the
+// site blocking the request - used to be a hard "No product found" error
+// even though the export had everything needed to fill in the talker. Now
+// it falls back to that export row, the same best-effort shape
+// enrichWineFromStore/enrichBeerScanFromStore already give a scanned UPC
+// whose export SKU the store site doesn't recognize (see storeSourceError
+// there), just reached from a typed SKU instead.
+test('a Wine/Spirits SKU lookup falls back to the local export when the live store has no match', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['085000010652,Tilquin Riesling Lambic 750ML,27741,internal note: reorder soon']));
+    await withMockFetch(
+      async (url) => mockResponse({ body: url.includes('/store/search.asp') ? page({ body: '' }) : page() }),
+      async () => {
+        const result = await postJson(port, '/api/sku-lookup', { sku: '27741', category: 'wine' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.title, 'Tilquin Riesling Lambic 750ML');
+        assert.match(result.body.storeSourceError, /No product found for SKU "27741"/);
+      }
+    );
+  }));
+});
+
+// Same fallback, Beer this time - the export's own (often abbreviated)
+// title still gets run through Untappd, same as enrichBeerScanFromStore
+// already does off a scanned UPC's export row.
+test('a Beer SKU lookup falls back to the local export and still searches Untappd off its title', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['019214600037,Corona Extra 12pk Cans,27741,internal note: reorder soon']));
+    const algoliaBody = algoliaHitsResponse([
+      { beer_slug: 'grupo-modelo-corona-extra', bid: 4321, beer_name: 'Corona Extra', brewery_name: 'Grupo Modelo' },
+    ]);
+    const untappdBeerHtml = page({
+      head: '<meta property="og:title" content="Corona Extra by Grupo Modelo | Untappd" />',
+      body: '<p class="brewery"><a href="#">Grupo Modelo</a></p><p class="style">Pale Lager</p>',
+    });
+    await withMockFetch(
+      async (url) => {
+        if (url.includes('/store/search.asp')) return mockResponse({ body: page({ body: '' }) });
+        if (url.includes('algolia.net')) return mockResponse({ body: algoliaBody });
+        return mockResponse({ body: untappdBeerHtml });
+      },
+      async () => {
+        const result = await postJson(port, '/api/sku-lookup', { sku: '27741', category: 'beer' });
+        assert.equal(result.status, 200);
+        assert.match(result.body.storeSourceError, /No product found for SKU "27741"/);
+        assert.equal(result.body.brewery, 'Grupo Modelo');
+        assert.equal(result.body.untappdError, undefined);
+      }
+    );
+  }));
+});
+
+// A SKU that isn't in the live store search OR the local export is still a
+// real, hard error - the fallback above only ever covers a SKU the export
+// actually has.
+test('a SKU lookup with no live match and no local export match is still a hard error', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    setUpcSettings(writeUpcExport(dir, ['085000010652,Some Other Wine,99999,internal note: reorder soon']));
+    await withMockFetch(
+      async (url) => mockResponse({ body: url.includes('/store/search.asp') ? page({ body: '' }) : page() }),
+      async () => {
+        const result = await postJson(port, '/api/sku-lookup', { sku: '27741', category: 'wine' });
+        assert.equal(result.status, 502);
+        assert.match(result.body.error, /No product found for SKU "27741"/);
+      }
+    );
+  }));
+});
+
 // Regression coverage for the product cache's removal: a live attempt that
 // fails outright (site blocked, Untappd down, a network hiccup) used to
 // fall back to the last thing that DID resolve, marked stale - now it's
