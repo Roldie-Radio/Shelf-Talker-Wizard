@@ -10,6 +10,7 @@ const {
 } = require('./productImport');
 const {
   getUpcSettings, setUpcSettings, setAutoSync, lookupUpc, lookupSkuInExport, searchByName, previewExport,
+  listKegsInStock,
 } = require('./upcCatalog');
 const {
   recordPrintedTalkers, searchHistory, getHistoryEntry, deleteHistoryEntry, getStats,
@@ -485,6 +486,24 @@ function createApp({
     } catch (err) {
       const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
       res.status(status).json({ error: err.message || 'Could not read the export file.', code: err.code });
+    }
+  });
+
+  // Backs the sales-floor Keg Display page (public/keg-display.html) -
+  // every keg currently in stock, with its price, straight out of the same
+  // WinePOS export file Scan UPC/Search by Name already read (see
+  // listKegsInStock in upcCatalog.js). No separate setup: whatever export
+  // file is already configured in Advanced -> Export File Settings is what
+  // this reads too. Same error codes/status mapping as every other export-
+  // backed route above (NO_EXPORT_PATH/EXPORT_NOT_FOUND -> 404,
+  // EXPORT_UNREADABLE -> 500) so the display page can show one clear message
+  // for "nothing configured yet" vs. "something's actually broken".
+  app.get('/api/kegs', (req, res) => {
+    try {
+      res.json({ kegs: listKegsInStock() });
+    } catch (err) {
+      const status = err.code === 'EXPORT_UNREADABLE' ? 500 : 404;
+      res.status(status).json({ error: err.message || 'Could not read kegs from the export file.', code: err.code });
     }
   });
 

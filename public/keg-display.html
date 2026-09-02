@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kegs In Stock</title>
+<link rel="icon" href="assets/logo.png" />
+<style>
+  :root {
+    --bg: #15120e;
+    --bg-panel: #211b14;
+    --bg-card: #2a2219;
+    --border: #4a3c28;
+    --amber: #e0a94a;
+    --amber-dim: #b3823a;
+    --cream: #f6efe1;
+    --muted: #b7a98f;
+    --sale-red: #ff5a5a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--cream);
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: clamp(1rem, 2vw, 2.25rem);
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-bottom: clamp(0.75rem, 1.5vh, 1.5rem);
+    border-bottom: 2px solid var(--border);
+    flex: none;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .brand__logo {
+    background: var(--cream);
+    border-radius: 0.6rem;
+    padding: 0.5rem 0.9rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  .brand__logo img {
+    display: block;
+    height: clamp(2.1rem, 3.4vw, 3.4rem);
+    width: auto;
+  }
+
+  .brand__title {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .brand__title h1 {
+    margin: 0;
+    font-size: clamp(1.6rem, 3.1vw, 3rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cream);
+  }
+
+  .brand__title h1 span {
+    color: var(--amber);
+  }
+
+  .keg-icon {
+    width: clamp(1.8rem, 3vw, 2.8rem);
+    height: clamp(1.8rem, 3vw, 2.8rem);
+    flex: none;
+  }
+
+  .clock {
+    text-align: right;
+    flex: none;
+  }
+
+  .clock__time {
+    font-size: clamp(1.5rem, 2.6vw, 2.5rem);
+    font-weight: 700;
+    color: var(--amber);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .clock__date {
+    font-size: clamp(0.85rem, 1.1vw, 1.1rem);
+    color: var(--muted);
+    margin-top: 0.15rem;
+  }
+
+  /* ---------- Main ---------- */
+  main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-top: clamp(0.75rem, 1.6vh, 1.5rem);
+  }
+
+  #stateScreen {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  #stateScreen[hidden] { display: none; }
+
+  .state-box {
+    max-width: 42rem;
+    padding: 2rem;
+  }
+
+  .state-box__icon {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: 1rem;
+  }
+
+  .state-box h2 {
+    margin: 0 0 0.75rem;
+    font-size: clamp(1.3rem, 2.4vw, 2rem);
+    color: var(--cream);
+  }
+
+  .state-box p {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.4vw, 1.3rem);
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  #grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    /* grid-template-columns/grid-auto-rows/gap and --card-scale are all set
+       inline by layout() below, sized to fit every keg on screen at once -
+       see its own header comment for why this can't just be a responsive
+       CSS grid the way the rest of the app's layouts are. */
+    place-content: center;
+  }
+
+  #grid[hidden] { display: none; }
+
+  .keg-card {
+    background: linear-gradient(160deg, var(--bg-card), var(--bg-panel));
+    border: 1px solid var(--border);
+    border-radius: calc(14px * var(--card-scale, 1));
+    padding: calc(16px * var(--card-scale, 1)) calc(22px * var(--card-scale, 1));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: calc(8px * var(--card-scale, 1));
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .keg-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: calc(5px * var(--card-scale, 1));
+    background: var(--amber);
+  }
+
+  .keg-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: calc(10px * var(--card-scale, 1));
+  }
+
+  .keg-card__name {
+    font-size: calc(24px * var(--card-scale, 1));
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.22;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .keg-card__size {
+    flex: none;
+    font-size: calc(13px * var(--card-scale, 1));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bg);
+    background: var(--amber);
+    border-radius: 999px;
+    padding: calc(4px * var(--card-scale, 1)) calc(10px * var(--card-scale, 1));
+    white-space: nowrap;
+  }
+
+  .keg-card__bottom {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: calc(10px * var(--card-scale, 1));
+  }
+
+  .keg-card__brand {
+    font-size: calc(15px * var(--card-scale, 1));
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .keg-card__price {
+    flex: none;
+    font-size: calc(29px * var(--card-scale, 1));
+    font-weight: 800;
+    color: var(--amber);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .keg-card__price--sale { color: var(--sale-red); }
+
+  .keg-card__regular {
+    font-size: calc(15px * var(--card-scale, 1));
+    color: var(--muted);
+    text-decoration: line-through;
+    margin-right: 0.3em;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: clamp(0.6rem, 1.2vh, 1.1rem);
+    color: var(--muted);
+    font-size: clamp(0.75rem, 0.95vw, 0.95rem);
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand__logo"><img src="assets/logo.png" alt="Liquor Outlet Wine Cellars" /></div>
+      <div class="brand__title">
+        <svg class="keg-icon" viewBox="0 0 24 30" aria-hidden="true">
+          <path d="M6,4 L18,4 L18,9 L21,13 L21,26 C21,27.1 20,28 18.7,28 L5.3,28 C4,28 3,27.1 3,26 L3,13 L6,9 Z"
+                fill="none" stroke="#e0a94a" stroke-width="1.8" stroke-linejoin="round" />
+          <line x1="3.4" y1="14.5" x2="20.6" y2="14.5" stroke="#e0a94a" stroke-width="1.4" />
+          <line x1="3.2" y1="21.5" x2="20.8" y2="21.5" stroke="#e0a94a" stroke-width="1.4" />
+        </svg>
+        <h1>Kegs <span>In Stock</span></h1>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="clock__time" id="clockTime">--:--</div>
+      <div class="clock__date" id="clockDate">&nbsp;</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="stateScreen">
+      <div class="state-box">
+        <div class="state-box__icon">🍺</div>
+        <h2 id="stateTitle">Loading&hellip;</h2>
+        <p id="stateMessage">Checking what's on tap.</p>
+      </div>
+    </div>
+    <div id="grid" hidden></div>
+  </main>
+
+  <footer>
+    <div id="footerStatus">&nbsp;</div>
+    <div id="footerCount">&nbsp;</div>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // Polls the same WinePOS export file Scan UPC/Search by Name already read
+  // (see listKegsInStock in server/upcCatalog.js) - nothing to configure on
+  // this page itself, it just reflects whatever export file is already set
+  // up in Advanced -> Export File Settings on the register. That export is a
+  // point-in-time snapshot (re-generated by WinePOS on whatever schedule the
+  // store runs it), not a live feed, so polling every couple of minutes is
+  // plenty - there's no benefit to polling faster than the underlying data
+  // actually changes.
+  var REFRESH_MS = 2 * 60 * 1000;
+
+  var els = {
+    stateScreen: document.getElementById('stateScreen'),
+    stateTitle: document.getElementById('stateTitle'),
+    stateMessage: document.getElementById('stateMessage'),
+    grid: document.getElementById('grid'),
+    footerStatus: document.getElementById('footerStatus'),
+    footerCount: document.getElementById('footerCount'),
+    clockTime: document.getElementById('clockTime'),
+    clockDate: document.getElementById('clockDate'),
+  };
+
+  var lastSignature = null;
+
+  // ---------- Clock ----------
+  function tickClock() {
+    var now = new Date();
+    els.clockTime.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    els.clockDate.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  tickClock();
+  setInterval(tickClock, 15000);
+
+  // ---------- Formatting ----------
+  function formatMoney(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return '';
+    return '$' + n.toFixed(2);
+  }
+
+  // Pulls the fractional/half-barrel size (and "Mini", if present) off a raw
+  // WinePOS title into its own badge, e.g. "BELLS TWO HEARTED ALE 1/4 KEG"
+  // -> name "Bell's Two Hearted Ale", size "1/4 Keg". Falls back to leaving
+  // the title untouched if nothing matches (still shows fine, just without
+  // a size badge) rather than guessing.
+  var KEG_SIZE_PATTERN = /\b(?:(\d+\s*\/\s*\d+|\d+(?:\.\d+)?\s*l)\s*(bbl\s*)?)?(mini\s+)?kegs?\b/i;
+
+  function extractKegInfo(rawTitle) {
+    var title = String(rawTitle || '').trim();
+    var match = title.match(KEG_SIZE_PATTERN);
+    if (!match) return { name: toDisplayCase(title), size: '' };
+    var fraction = match[1] ? match[1].replace(/\s+/g, '').toUpperCase() : '';
+    var bbl = !!match[2];
+    var mini = !!match[3];
+    var size = [fraction, bbl ? 'BBL' : '', mini ? 'Mini' : '', 'Keg'].filter(Boolean).join(' ');
+    var name = (title.slice(0, match.index) + title.slice(match.index + match[0].length))
+      .replace(/\s+/g, ' ')
+      .trim();
+    return { name: toDisplayCase(name || title), size: size };
+  }
+
+  // A short, deliberately narrow whitelist of real acronyms/initialisms
+  // that turn up in beer names - NOT a generic "short all-caps word" guess,
+  // which would just as happily "preserve" ordinary short words a WinePOS
+  // title happens to have (ALE, TWO, BUD, NEW, FAT, PALE, LITE...), leaving
+  // half the title yelling while the rest reads normally.
+  var KNOWN_ACRONYMS = {
+    ipa: 1, dipa: 1, tipa: 1, ibu: 1, abv: 1, esb: 1, ipl: 1, nz: 1, uk: 1, usa: 1,
+  };
+
+  // Raw export titles are ALL CAPS - fine for a shelf talker's own card
+  // (staff type those by hand), but shouty on a TV. Lowercases each word and
+  // re-capitalizes its first letter, except a known acronym (see above) or
+  // anything with a digit in it (e.g. "5L"), both left exactly as the
+  // export has them rather than mangled into "Ipa" or "5l".
+  function toDisplayCase(text) {
+    return String(text || '').split(' ').map(function (word) {
+      if (!word) return word;
+      if (/\d/.test(word)) return word;
+      var bare = word.replace(/[^A-Za-z]/g, '').toLowerCase();
+      if (KNOWN_ACRONYMS[bare]) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+  }
+
+  function buildCard(keg) {
+    var info = extractKegInfo(keg.title);
+    var size = info.size || keg.size || '';
+    var card = document.createElement('div');
+    card.className = 'keg-card';
+
+    var top = document.createElement('div');
+    top.className = 'keg-card__top';
+    var name = document.createElement('div');
+    name.className = 'keg-card__name';
+    name.textContent = info.name;
+    top.appendChild(name);
+    if (size) {
+      var badge = document.createElement('div');
+      badge.className = 'keg-card__size';
+      badge.textContent = size;
+      top.appendChild(badge);
+    }
+    card.appendChild(top);
+
+    var bottom = document.createElement('div');
+    bottom.className = 'keg-card__bottom';
+    var brand = document.createElement('div');
+    brand.className = 'keg-card__brand';
+    brand.textContent = keg.brand || '';
+    bottom.appendChild(brand);
+
+    var priceWrap = document.createElement('div');
+    var onSale = keg.salePrice && keg.regularPrice && Number(keg.salePrice) < Number(keg.regularPrice);
+    if (onSale) {
+      var reg = document.createElement('span');
+      reg.className = 'keg-card__regular';
+      reg.textContent = formatMoney(keg.regularPrice);
+      priceWrap.appendChild(reg);
+    }
+    var price = document.createElement('span');
+    price.className = 'keg-card__price' + (onSale ? ' keg-card__price--sale' : '');
+    price.textContent = formatMoney(keg.price);
+    priceWrap.appendChild(price);
+    bottom.appendChild(priceWrap);
+
+    card.appendChild(bottom);
+    return card;
+  }
+
+  // ---------- States ----------
+  function showState(icon, title, message) {
+    els.grid.hidden = true;
+    els.stateScreen.hidden = false;
+    els.stateScreen.querySelector('.state-box__icon').textContent = icon;
+    els.stateTitle.textContent = title;
+    els.stateMessage.textContent = message;
+    els.footerCount.textContent = ' ';
+  }
+
+  function showGrid() {
+    els.stateScreen.hidden = true;
+    els.grid.hidden = false;
+  }
+
+  // ---------- Layout ----------
+  // This is meant to run unattended on a sales-floor TV, so there's no
+  // scrolling and no one to page through a list by hand - every keg in
+  // stock has to be on screen at once, however many there are. Rather than
+  // a fixed card size (which would either waste space for a short list or
+  // overflow a long one), this works out the largest uniform card size that
+  // still lets an n-item grid fit inside the space available, the classic
+  // "pack N boxes into a WxH area" optimization: try every possible column
+  // count, and for each one compute the biggest card height a
+  // cols x ceil(n/cols) grid could use without exceeding the container's
+  // width or height, then keep whichever column count came out biggest.
+  // CARD_ASPECT/GAP_RATIO/BASELINE_HEIGHT describe the card design in
+  // buildCard/its CSS above - change one, keep the others in sync.
+  var CARD_ASPECT = 2.15; // width / height at --card-scale: 1
+  var GAP_RATIO = 0.14; // gap between cards, as a fraction of card height
+  var BASELINE_HEIGHT = 170; // px card height that --card-scale: 1 means
+  var MAX_CARD_HEIGHT = 230; // keeps a short list from producing absurdly huge cards
+  var MIN_CARD_HEIGHT = 54; // floor so a very long list stays legible-ish rather than vanishing
+  var SAFETY = 0.985; // shaves a hair off the measured space so rounding can't cause an overflow
+
+  function bestCardHeight(n, containerW, containerH) {
+    var best = 0;
+    for (var cols = 1; cols <= n; cols++) {
+      var rows = Math.ceil(n / cols);
+      var hForWidth = containerW / (cols * CARD_ASPECT + (cols - 1) * CARD_ASPECT * GAP_RATIO);
+      var hForHeight = containerH / (rows + (rows - 1) * GAP_RATIO);
+      var h = Math.min(hForWidth, hForHeight);
+      if (h > best) best = h;
+    }
+    return best;
+  }
+
+  function layout(kegs) {
+    if (!kegs.length) {
+      showState('🍺', 'No kegs in stock right now', "Check back soon - this page updates automatically.");
+      return;
+    }
+    showGrid();
+    els.footerCount.textContent = kegs.length + (kegs.length === 1 ? ' keg in stock' : ' kegs in stock');
+
+    var containerW = els.grid.clientWidth * SAFETY;
+    var containerH = els.grid.clientHeight * SAFETY;
+    var h = bestCardHeight(kegs.length, containerW, containerH);
+    h = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, h));
+    var w = h * CARD_ASPECT;
+    var gap = h * GAP_RATIO;
+    var cols = Math.max(1, Math.min(kegs.length, Math.floor((containerW + gap) / (w + gap))));
+
+    els.grid.style.gridTemplateColumns = 'repeat(' + cols + ', ' + w + 'px)';
+    els.grid.style.gridAutoRows = h + 'px';
+    els.grid.style.gap = gap + 'px';
+    els.grid.style.setProperty('--card-scale', h / BASELINE_HEIGHT);
+
+    els.grid.innerHTML = '';
+    kegs.forEach(function (keg) { els.grid.appendChild(buildCard(keg)); });
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { layout(lastKegs || []); }, 250);
+  });
+
+  // ---------- Data ----------
+  var lastKegs = [];
+
+  function setFooterStatus(text) {
+    els.footerStatus.textContent = text;
+  }
+
+  function fetchKegs() {
+    fetch('/api/kegs')
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          var err = new Error(result.data && result.data.error ? result.data.error : 'Could not load kegs.');
+          err.code = result.data && result.data.code;
+          throw err;
+        }
+        var kegs = (result.data && result.data.kegs) || [];
+        var signature = JSON.stringify(kegs);
+        var now = new Date();
+        setFooterStatus('Updated ' + now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
+        if (signature !== lastSignature) {
+          lastSignature = signature;
+          lastKegs = kegs;
+          layout(kegs);
+        }
+      })
+      .catch(function (err) {
+        // Only take over the whole screen with an error if nothing has ever
+        // loaded successfully - a single missed poll (server restarting,
+        // say) shouldn't blank out a display that's currently showing good
+        // data. If it keeps failing, the footer status line below still
+        // tells whoever's watching that it's stale.
+        if (!lastKegs.length) {
+          if (err.code === 'NO_EXPORT_PATH' || err.code === 'EXPORT_NOT_FOUND') {
+            showState('⚙️', 'Export file not set up yet', 'Open Advanced → Export File Settings on the register and point it at the WinePOS export, then this page will pick it up automatically.');
+          } else {
+            showState('⚠️', "Can't reach the keg list", err.message || 'Will keep trying automatically.');
+          }
+        } else {
+          setFooterStatus('Last update failed - showing last known data.');
+        }
+      });
+  }
+
+  fetchKegs();
+  setInterval(fetchKegs, REFRESH_MS);
+})();
+</script>
+</body>
+</html>

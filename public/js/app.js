@@ -13442,6 +13442,12 @@
       case 'find-queue':
         findQueueModal.open();
         break;
+      case 'keg-display':
+        // Opens in its own tab/window rather than an in-app modal - this is
+        // meant to be dragged onto the sales-floor TV and left running full-
+        // screen, not viewed alongside the editor.
+        window.open('keg-display.html', '_blank');
+        break;
       case 'beer-talker-info':
         guidePreviewModal.open();
         break;

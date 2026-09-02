@@ -8,6 +8,7 @@ const {
   parseDelimited, matchColumns, upcVariants, buildIndex,
   getUpcSettings, setUpcSettings, setAutoSync, syncedExportFilePath, readExportFileRaw,
   lookupUpc, lookupSkuInExport, searchByName, scoreNameMatch, previewExport, parsePackQtyFromSize, dedupeProducts,
+  listKegsInStock,
 } = require('../server/upcCatalog');
 
 // Every test gets its own throwaway config dir (so config.json read/writes
@@ -844,5 +845,60 @@ test('lookupUpc also finds the same real export row by the exact (zero-dropped) 
   withTempConfigDir(() => {
     setUpcSettings(REAL_EXPORT_PATH);
     assert.equal(lookupUpc('88586001895').title, '14 HANDS CABERNET');
+  });
+});
+
+// ---------- listKegsInStock ----------
+// Backs the sales-floor Keg Display page (public/keg-display.html) - see
+// the comment above listKegsInStock in upcCatalog.js.
+
+const KEG_CSV = [
+  'UPC,Title,SKU,Regular Price,Sale Price,Current Inv',
+  '011110038364,BELLS TWO HEARTED ALE 1/4 KEG,5001,145.99,,3',
+  '081124921024,ALLAGASH WHITE BELGIAN STYLE 1/6 KEG,5002,89.99,79.99,1',
+  '011110038371,BUD LIGHT 1/6 KEG,5003,99.99,,0',
+  '083783375226,PAULANER OKTOBERFEST 5L MINI KEG,5004,39.99,,4',
+  '019214600037,CORONA EXTRA 12PK CANS,5005,15.99,,20',
+].join('\n');
+
+test('listKegsInStock returns only keg-titled rows with a positive on-hand quantity', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'kegs.csv', KEG_CSV));
+    const kegs = listKegsInStock();
+    // Corona (not a keg) and the Bud Light keg (0 on hand) are both left out.
+    assert.deepEqual(kegs.map((k) => k.title), [
+      'ALLAGASH WHITE BELGIAN STYLE 1/6 KEG',
+      'BELLS TWO HEARTED ALE 1/4 KEG',
+      'PAULANER OKTOBERFEST 5L MINI KEG',
+    ]);
+  });
+});
+
+test('listKegsInStock reports the sale price as `price` when one is on the row, falling back to regular price otherwise', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'kegs.csv', KEG_CSV));
+    const kegs = listKegsInStock();
+    const allagash = kegs.find((k) => k.sku === '5002');
+    assert.equal(allagash.regularPrice, '89.99');
+    assert.equal(allagash.salePrice, '79.99');
+    assert.equal(allagash.price, '79.99');
+
+    const bells = kegs.find((k) => k.sku === '5001');
+    assert.equal(bells.salePrice, null);
+    assert.equal(bells.price, '145.99');
+  });
+});
+
+test('listKegsInStock reports the on-hand quantity as a number', () => {
+  withTempConfigDir((dir) => {
+    setUpcSettings(writeExport(dir, 'kegs.csv', KEG_CSV));
+    const kegs = listKegsInStock();
+    assert.equal(kegs.find((k) => k.sku === '5001').onHand, 3);
+  });
+});
+
+test('listKegsInStock throws NO_EXPORT_PATH when nothing has been configured yet', () => {
+  withTempConfigDir(() => {
+    assert.throws(() => listKegsInStock(), (err) => err.code === 'NO_EXPORT_PATH');
   });
 });

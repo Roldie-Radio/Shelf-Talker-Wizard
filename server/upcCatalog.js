@@ -400,6 +400,11 @@ function buildIndex(rows) {
       packQty,
       description: cell(row, colFor, 'description'),
       category: cell(row, colFor, 'category'),
+      // Raw cell, not normalizeMoney'd (it's a count, not currency) - see
+      // FIELD_ALIASES.onHand above. Kept as a string, same as every other
+      // field here; consumers (e.g. listKegsInStock below) parse it as a
+      // number themselves.
+      onHand: cell(row, colFor, 'onHand'),
     };
     products.push(product);
     for (const variant of upcVariants(rawUpc)) {
@@ -703,6 +708,61 @@ function previewExport({ limit = 50, query = '' } = {}) {
   };
 }
 
+// ================================================================
+// Sales Floor Keg Display - backs the TV-facing keg-display.html page: every
+// keg currently in stock, with its price, out of the same export file
+// everything else above reads (no separate file to configure). "Currently
+// in stock" leans on the same on-hand quantity Product Database/the Rum
+// Repository's In-Stock Only toggle already use (see FIELD_ALIASES.onHand) -
+// a snapshot as of the export's last generation, not a live register count.
+// ================================================================
+
+// Matches how a keg shows up in this store's own WinePOS titles - confirmed
+// against a real export (see scripts/beer-bible-seed-data.json, generated
+// from that same store's beer department): "BELLS TWO HEARTED ALE 1/4 KEG",
+// "ALLAGASH WHITE BELGIAN STYLE 1/6 KEG", "PAULANER OKTOBERFEST 5L MINI
+// KEG", or just "KEG" on its own. A single whole-word match on "keg" covers
+// all of these without needing to separately enumerate every fractional-
+// barrel size (1/6, 1/4, 1/2...) the way CONTAINER_WORD_PATTERN in
+// productImport.js does for its own, different purpose (stripping an
+// Untappd search query).
+const KEG_TITLE_PATTERN = /\bkegs?\b/i;
+
+function parseOnHandQty(raw) {
+  const n = parseFloat(String(raw || '').replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+// Returns every export row that (a) looks like a keg by title and (b) has a
+// positive on-hand quantity, sorted alphabetically so the display page
+// doesn't need to re-sort. `price` is the sale price when
+// the export has one, falling back to regular price, same "what's the
+// actual shelf price today" convention Search by Name's own enrichment
+// leans on elsewhere; `regularPrice`/`salePrice` are both still handed back
+// so the page can show a struck-through regular price when a sale is on.
+// Throws the same NO_EXPORT_PATH/EXPORT_NOT_FOUND/EXPORT_UNREADABLE codes as
+// every other export-backed lookup in this file (see requireCatalog).
+function listKegsInStock() {
+  const { products } = requireCatalog();
+  return products
+    .filter((p) => KEG_TITLE_PATTERN.test(p.title))
+    .map((p) => {
+      const onHand = parseOnHandQty(p.onHand);
+      return {
+        title: p.title,
+        brand: p.brand,
+        sku: p.sku,
+        size: p.size,
+        regularPrice: p.price || null,
+        salePrice: p.salePrice || null,
+        price: p.salePrice || p.price || null,
+        onHand,
+      };
+    })
+    .filter((k) => k.onHand !== null && k.onHand > 0)
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
+
 // Reads the manually-configured export file's raw bytes, ignoring auto-sync
 // entirely - used only by exportSync.js's serve side (a PC marked as the
 // Server PC hands this back to other PCs over the LAN, see
@@ -747,6 +807,7 @@ module.exports = {
   lookupSkuInExport,
   searchByName,
   previewExport,
+  listKegsInStock,
   // Exported for tests only.
   parseDelimited,
   matchColumns,

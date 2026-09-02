@@ -676,6 +676,40 @@ test('GET /api/export-price requires a sku query param', async () => {
 });
 
 // ================================================================
+// /api/kegs - backs the sales-floor Keg Display page (public/keg-
+// display.html). The underlying filtering (keg-title match, positive
+// on-hand quantity) is already covered in depth in test/upcCatalog.test.js
+// against listKegsInStock directly - these just confirm the HTTP layer
+// wraps it correctly.
+// ================================================================
+
+test('GET /api/kegs returns in-stock kegs from the configured export file', async () => {
+  await withTempDb((dir) => withServer(async (port) => {
+    const filePath = path.join(dir, 'export.csv');
+    fs.writeFileSync(filePath, [
+      'UPC,Title,SKU,Regular Price,Current Inv',
+      '011110038364,BELLS TWO HEARTED ALE 1/4 KEG,5001,145.99,3',
+      '011110038371,BUD LIGHT 1/6 KEG,5003,99.99,0',
+      '019214600037,CORONA EXTRA 12PK CANS,5005,15.99,20',
+    ].join('\n'), 'utf-8');
+    setUpcSettings(filePath);
+    const result = await getJson(port, '/api/kegs');
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body.kegs.map((k) => k.title), ['BELLS TWO HEARTED ALE 1/4 KEG']);
+    assert.equal(result.body.kegs[0].price, '145.99');
+    assert.equal(result.body.kegs[0].onHand, 3);
+  }));
+});
+
+test('GET /api/kegs 404s with NO_EXPORT_PATH when nothing has been configured yet', async () => {
+  await withTempDb(() => withServer(async (port) => {
+    const result = await getJson(port, '/api/kegs');
+    assert.equal(result.status, 404);
+    assert.equal(result.body.code, 'NO_EXPORT_PATH');
+  }));
+});
+
+// ================================================================
 // /api/name-search - see the comment above the route in server/index.js.
 // The ranking/error-code behavior itself is covered in
 // test/upcCatalog.test.js against searchByName directly; these confirm the
