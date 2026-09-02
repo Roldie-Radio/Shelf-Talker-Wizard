@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.16',
+      items: [
+        'Fixed: on Scan UPC and Search by Name, picking a beer from the "Pick the Right Beer" dialog (shown when Untappd found two or more equally-likely matches) and then toggling Unit/Pack wiped the just-picked brewery/style/ABV/rating fields back out. That toggle re-applies the lookup\'s own data, which this dialog\'s pick was never folded back into - only the visible form fields were updated. The pick now updates that underlying data too, so switching Unit/Pack afterward no longer loses it.',
+      ],
+    },
+    {
       version: '4.5.15',
       items: [
         'Fixed: Search by Name never offered the "Fill from Untappd"/"Search Untappd yourself" fallback that Scan UPC and SKU Lookup already had - a beer name search with no automatic Untappd match, an unresolved multi-candidate pick, or a declined "Not the Right Beer" confirm had no way forward but re-typing the search. Search by Name now offers the same manual Untappd URL/HTML fallback in all three cases.',
@@ -4347,7 +4353,20 @@
       // review/click too.
       if (isBeer && data.untappdCandidates && data.untappdCandidates.length) {
         applyUpcScanProduct(data, isBeer, scanUpcPriceMode);
-        const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc);
+        const picked = await openUntappdPicker(data.untappdCandidates, data.title || upc, {
+          // Default applyFn (applyUntappdFields) only merges the pick into
+          // the form's own fields, leaving this scan's `data` (what the
+          // price-choice buttons below re-apply on every Unit/Pack click -
+          // see renderScanUpcPriceChoice) stale and still missing the
+          // brewery/style/ABV/rating this pick just resolved. Merging the
+          // pick into `data` itself and re-running applyUpcScanProduct on
+          // it, same fix confirmBeerUntappdMatch's own applyFn uses, keeps
+          // a later Unit/Pack toggle from wiping that Untappd data back out.
+          applyFn: (d) => {
+            Object.assign(data, d);
+            applyUpcScanProduct(data, isBeer, scanUpcPriceMode);
+          },
+        });
         if (picked && !hasPackChoice) {
           addScannedUpcToQueue('Added to queue! Scan the next one.');
         } else if (picked) {
@@ -6233,7 +6252,19 @@
       if (data.untappdCandidates && data.untappdCandidates.length) {
         applyNameSearchProduct(data, true, nameSearchPriceMode);
         renderNameSearchSelected();
-        const picked = await openUntappdPicker(data.untappdCandidates, data.title || product.title);
+        const picked = await openUntappdPicker(data.untappdCandidates, data.title || product.title, {
+          // Same fix as Scan UPC's own tie branch above: merge the pick
+          // into this search's `data` (which nameSearchSelectedProduct
+          // already points at) instead of only the form, so the price-
+          // choice buttons in renderNameSearchSelected re-apply the
+          // resolved Untappd fields instead of the pre-pick, blank ones on
+          // a later Unit/Pack toggle.
+          applyFn: (d) => {
+            Object.assign(data, d);
+            applyNameSearchProduct(data, true, nameSearchPriceMode);
+            renderNameSearchSelected();
+          },
+        });
         if (myToken !== nameSearchSelectToken) return;
         if (picked) {
           // Same explicit sign-off "Use This Match" would give - goes
