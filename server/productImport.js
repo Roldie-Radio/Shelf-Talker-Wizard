@@ -2023,6 +2023,16 @@ function untappdFieldsOnly(beer) {
 async function enrichBeerFromUntappd(product) {
   const title = composeProducerTitle(product);
   const size = combineBeerSize(product.size, product.packSize, product.packQty);
+  // The pre-combine unit size ("12oz"), kept alongside the combined `size`
+  // above ("4-Pack 12oz") so a caller pricing this beer per-unit (Scan
+  // UPC/Search by Name's own Unit/Pack toggle - see priceChoiceHtml/
+  // applyUpcScanProduct in app.js) can print the size that actually matches
+  // a single can/bottle instead of the whole pack's. Without this, `size`
+  // was the only size this function returned at all, so switching that
+  // toggle to Unit changed the printed price but left the Size line reading
+  // "4-Pack 12oz" for a talker that was now pricing (and meant for) a
+  // single one.
+  const baseSize = (product.size || '').trim();
   // The displayed Product Title keeps its style suffix (`title` above,
   // unchanged) - only the string actually sent to Untappd has it stripped
   // (see buildUntappdSearchQuery's own comment for why).
@@ -2047,6 +2057,7 @@ async function enrichBeerFromUntappd(product) {
       ...product,
       title: displayTitle,
       size,
+      baseSize,
       ...untappdFieldsOnly(beer),
     };
   } catch (err) {
@@ -2063,9 +2074,13 @@ async function enrichBeerFromUntappd(product) {
     // exclusive so a caller can check one field to know which situation
     // it's looking at.
     if (err instanceof UntappdAmbiguousMatchError) {
-      return { ...product, title, size, brewery: product.brand || '', untappdCandidates: err.candidates };
+      return {
+        ...product, title, size, baseSize, brewery: product.brand || '', untappdCandidates: err.candidates,
+      };
     }
-    return { ...product, title, size, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.' };
+    return {
+      ...product, title, size, baseSize, brewery: product.brand || '', untappdError: err.message || 'Untappd search failed.',
+    };
   }
 }
 

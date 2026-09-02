@@ -2230,6 +2230,38 @@ test('enrichBeerFromUntappd leaves a container word in the displayed title when 
   );
 });
 
+// Regression coverage for the Unit/Pack toggle's own Size bug (Scan UPC/
+// Search by Name - see applyUpcScanProduct/applyNameSearchProduct in
+// app.js): `size` is the pack-combined value for a Pack-priced talker, but
+// a Unit-priced one is for a single can/bottle and needs the pre-combine
+// unit size instead. Without `baseSize` alongside it, that pre-combine size
+// wasn't returned at all, so switching to Unit changed the price but left
+// Size reading the whole pack's.
+test('enrichBeerFromUntappd returns baseSize (the pre-combine unit size) alongside the pack-combined size', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    {
+      beer_slug: 'founders-brewing-company-kbs',
+      bid: 9001,
+      beer_name: 'KBS',
+      brewery_name: 'Founders Brewing Co.',
+    },
+  ]);
+  const beerHtml = page({
+    head: '<meta property="og:title" content="KBS by Founders Brewing Co. | Untappd" />',
+    body: '<p class="brewery"><a href="#">Founders Brewing Co.</a></p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
+    async () => {
+      const result = await enrichBeerFromUntappd({
+        title: 'KBS', brand: 'Founders', size: '12oz', packSize: '4-Pack', sku: '31389',
+      });
+      assert.equal(result.size, '4-Pack 12oz');
+      assert.equal(result.baseSize, '12oz');
+    }
+  );
+});
+
 // Regression coverage for untappdFieldsOnly's own reasoning: a confident
 // match must never quietly backfill from whatever `product` already had -
 // otherwise a stale style/ABV/description sitting in the Search tab form

@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.17',
+      items: [
+        'Fixed: on Scan UPC and Search by Name, switching a beer talker to Unit pricing kept printing the whole pack\'s Size ("4-Pack 12oz") instead of the single can/bottle\'s own size ("12oz") - Unit mode now prints the size that actually matches what\'s being priced. Pack pricing is unaffected.',
+      ],
+    },
+    {
       version: '4.5.16',
       items: [
         'Fixed: on Scan UPC and Search by Name, picking a beer from the "Pick the Right Beer" dialog (shown when Untappd found two or more equally-likely matches) and then toggling Unit/Pack wiped the just-picked brewery/style/ABV/rating fields back out. That toggle re-applies the lookup\'s own data, which this dialog\'s pick was never folded back into - only the visible form fields were updated. The pick now updates that underlying data too, so switching Unit/Pack afterward no longer loses it.',
@@ -4199,7 +4205,13 @@
       category: isBeer ? 'beer' : currentCategory,
       title: data.title,
       description: data.description,
-      size: data.size,
+      // data.size is the combined "4-Pack 12oz" (see combineBeerSize in
+      // productImport.js) - right for a Pack-priced talker, but wrong for a
+      // Unit one, which is for a single can/bottle. data.baseSize is that
+      // same beer's pre-combine unit size ("12oz"), so Unit mode prints the
+      // size that actually matches what's being priced instead of leaving
+      // the whole pack's size on a single-item talker.
+      size: (isBeer && !usePack && data.baseSize) ? data.baseSize : data.size,
       price: usePack ? data.packPrice : data.price,
       // See applyNameSearchProduct's own note on the same line - the export
       // has no separate pack sale price, so a unit sale price carried over
@@ -6017,7 +6029,12 @@
       category: isBeer ? 'beer' : currentCategory,
       title: product.title,
       description: product.description,
-      size: product.size,
+      // See applyUpcScanProduct's own note on the same line - product.size
+      // is the pack-combined size once Untappd enrichment has run
+      // (combineBeerSize in productImport.js); product.baseSize is that
+      // beer's own pre-combine unit size, which is what a Unit-priced
+      // talker should print instead of the whole pack's.
+      size: (isBeer && !usePack && product.baseSize) ? product.baseSize : product.size,
       price: usePack ? product.packPrice : product.price,
       // The export has no separate "pack sale price" to offer (see
       // packPrice's comment in upcCatalog.js) - the unit sale price doesn't
