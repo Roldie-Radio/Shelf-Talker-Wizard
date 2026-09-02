@@ -34,7 +34,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    padding: clamp(0.65rem, 1.3vh, 1.25rem) clamp(0.5rem, 1vw, 1.25rem);
+    padding: clamp(0.4rem, 0.9vh, 0.85rem) clamp(0.25rem, 0.5vw, 0.65rem);
   }
 
   /* ---------- Header ---------- */
@@ -170,11 +170,20 @@
     flex: 1 1 auto;
     min-height: 0;
     display: grid;
-    /* grid-template-columns/grid-auto-rows/gap and --card-scale are all set
-       inline by layout() below, sized to fit every keg on screen at once -
-       see its own header comment for why this can't just be a responsive
-       CSS grid the way the rest of the app's layouts are. */
+    /* grid-template-columns/rows, grid-auto-flow, gap and --card-scale are
+       all set inline by layoutGrid()/layoutList() below, sized to fit every
+       keg on screen at once - see their own header comment for why this
+       can't just be a responsive CSS grid the way the rest of the app's
+       layouts are. */
     place-content: center;
+  }
+
+  /* List mode reads top-to-bottom like an actual list/menu board rather
+     than as a centered block of tiles - see layoutList()'s own comment for
+     why it fills columns instead of centering them. */
+  #grid.mode-list {
+    place-content: start;
+    justify-items: stretch;
   }
 
   #grid[hidden] { display: none; }
@@ -263,6 +272,70 @@
 
   .keg-card__regular {
     font-size: calc(15px * var(--card-scale, 1));
+    color: var(--muted);
+    text-decoration: line-through;
+    margin-right: 0.3em;
+  }
+
+  /* ---------- List view (an alternative to the card grid above) ---------- */
+  .keg-row {
+    display: flex;
+    align-items: center;
+    gap: calc(14px * var(--card-scale, 1));
+    padding: 0 calc(16px * var(--card-scale, 1)) 0 calc(20px * var(--card-scale, 1));
+    border-bottom: 1px solid var(--border);
+    width: 100%;
+    height: 100%;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  .keg-row::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 18%;
+    bottom: 18%;
+    width: calc(4px * var(--card-scale, 1));
+    background: var(--accent);
+  }
+
+  .keg-row__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: calc(21px * var(--card-scale, 1));
+    font-weight: 700;
+    color: var(--cream);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .keg-row__size {
+    flex: none;
+    font-size: calc(11px * var(--card-scale, 1));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bg);
+    background: var(--accent);
+    border-radius: 999px;
+    padding: calc(3px * var(--card-scale, 1)) calc(8px * var(--card-scale, 1));
+    white-space: nowrap;
+  }
+
+  .keg-row__price {
+    flex: none;
+    font-size: calc(23px * var(--card-scale, 1));
+    font-weight: 800;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .keg-row__price--sale { color: var(--sale-red); }
+
+  .keg-row__regular {
+    font-size: calc(14px * var(--card-scale, 1));
     color: var(--muted);
     text-decoration: line-through;
     margin-right: 0.3em;
@@ -409,6 +482,7 @@
         <div class="clock__time" id="clockTime">--:--</div>
         <div class="clock__date" id="clockDate">&nbsp;</div>
       </div>
+      <button type="button" class="settings-btn" id="viewToggleBtn" title="Switch to list view" aria-label="Switch view">▦</button>
       <button type="button" class="settings-btn" id="settingsBtn" title="Color settings" aria-label="Color settings">🎨</button>
     </div>
   </header>
@@ -467,6 +541,7 @@
     settingsSwatches: document.getElementById('settingsSwatches'),
     settingsCustomColor: document.getElementById('settingsCustomColor'),
     settingsReset: document.getElementById('settingsReset'),
+    viewToggleBtn: document.getElementById('viewToggleBtn'),
   };
 
   var lastSignature = null;
@@ -553,6 +628,32 @@
   });
   els.settingsCustomColor.addEventListener('input', function () { applyAccent(els.settingsCustomColor.value); });
   els.settingsReset.addEventListener('click', resetAccent);
+
+  // ---------- View mode (grid of cards vs. a plain list) ----------
+  var VIEW_STORAGE_KEY = 'kegDisplayView.v1';
+  var currentView = 'grid';
+  try {
+    var savedView = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (savedView === 'list') currentView = 'list';
+  } catch (e) { /* storage unavailable - stay on the default grid view */ }
+
+  function updateViewToggleButton() {
+    if (currentView === 'grid') {
+      els.viewToggleBtn.textContent = '▦';
+      els.viewToggleBtn.title = 'Switch to list view';
+    } else {
+      els.viewToggleBtn.textContent = '☰';
+      els.viewToggleBtn.title = 'Switch to grid view';
+    }
+  }
+  updateViewToggleButton();
+
+  els.viewToggleBtn.addEventListener('click', function () {
+    currentView = currentView === 'grid' ? 'list' : 'grid';
+    try { localStorage.setItem(VIEW_STORAGE_KEY, currentView); } catch (e) { /* storage unavailable */ }
+    updateViewToggleButton();
+    layout(lastKegs || []);
+  });
 
   // ---------- Formatting ----------
   function formatMoney(value) {
@@ -651,6 +752,46 @@
     return card;
   }
 
+  // A single line instead of a tile - for list view (see layoutList below).
+  // Skips brand (unlike buildCard) - a list row is already tight on width,
+  // especially once it's one of several columns, and this store's own
+  // WinePOS titles already lead with the brewery name (see
+  // scripts/beer-bible-seed-data.json's real examples, e.g. "BELLS TWO
+  // HEARTED ALE"), so a separate brand field mostly just repeated the name
+  // and crowded it into an ellipsis for no real benefit.
+  function buildRow(keg) {
+    var info = extractKegInfo(keg.title);
+    var size = info.size || keg.size || '';
+    var row = document.createElement('div');
+    row.className = 'keg-row';
+
+    var name = document.createElement('div');
+    name.className = 'keg-row__name';
+    name.textContent = info.name;
+    row.appendChild(name);
+
+    if (size) {
+      var badge = document.createElement('div');
+      badge.className = 'keg-row__size';
+      badge.textContent = size;
+      row.appendChild(badge);
+    }
+
+    var onSale = keg.salePrice && keg.regularPrice && Number(keg.salePrice) < Number(keg.regularPrice);
+    if (onSale) {
+      var reg = document.createElement('span');
+      reg.className = 'keg-row__regular';
+      reg.textContent = formatMoney(keg.regularPrice);
+      row.appendChild(reg);
+    }
+    var price = document.createElement('span');
+    price.className = 'keg-row__price' + (onSale ? ' keg-row__price--sale' : '');
+    price.textContent = formatMoney(keg.price);
+    row.appendChild(price);
+
+    return row;
+  }
+
   // ---------- States ----------
   function showState(icon, title, message) {
     els.grid.hidden = true;
@@ -669,33 +810,105 @@
   // ---------- Layout ----------
   // This is meant to run unattended on a sales-floor TV, so there's no
   // scrolling and no one to page through a list by hand - every keg in
-  // stock has to be on screen at once, however many there are. Rather than
-  // a fixed card size (which would either waste space for a short list or
-  // overflow a long one), this works out the largest uniform card size that
-  // still lets an n-item grid fit inside the space available, the classic
-  // "pack N boxes into a WxH area" optimization: try every possible column
-  // count, and for each one compute the biggest card height a
-  // cols x ceil(n/cols) grid could use without exceeding the container's
-  // width or height, then keep whichever column count came out biggest.
-  // CARD_ASPECT/GAP_RATIO/BASELINE_HEIGHT describe the card design in
-  // buildCard/its CSS above - change one, keep the others in sync.
-  var CARD_ASPECT = 2.15; // width / height at --card-scale: 1
-  var GAP_RATIO = 0.14; // gap between cards, as a fraction of card height
-  var BASELINE_HEIGHT = 170; // px card height that --card-scale: 1 means
-  var MAX_CARD_HEIGHT = 230; // keeps a short list from producing absurdly huge cards
-  var MIN_CARD_HEIGHT = 54; // floor so a very long list stays legible-ish rather than vanishing
-  var SAFETY = 0.985; // shaves a hair off the measured space so rounding can't cause an overflow
+  // stock has to be on screen at once, however many there are, in either
+  // view. SAFETY shaves a hair off every measured dimension below so
+  // floating-point rounding can't cause a one-pixel overflow.
+  var SAFETY = 0.985;
+
+  // ---- Grid view (see buildCard/.keg-card above) ----
+  // Rather than a fixed card size (which would either waste space for a
+  // short list or overflow a long one), this works out the largest uniform
+  // card size that still lets an n-item grid fit inside the space
+  // available, the classic "pack N boxes into a WxH area" optimization: try
+  // every possible column count, and for each one compute the biggest card
+  // height a cols x ceil(n/cols) grid could use without exceeding the
+  // container's width or height, then keep whichever column count came out
+  // biggest. GRID_ASPECT/GRID_GAP_RATIO/GRID_BASELINE_HEIGHT describe the
+  // card design in buildCard/its CSS above - change one, keep the others in
+  // sync.
+  var GRID_ASPECT = 2.15; // card width / height at --card-scale: 1
+  var GRID_GAP_RATIO = 0.14; // gap between cards, as a fraction of card height
+  var GRID_BASELINE_HEIGHT = 170; // px card height that --card-scale: 1 means
+  var GRID_MAX_HEIGHT = 230; // keeps a short list from producing absurdly huge cards
+  var GRID_MIN_HEIGHT = 54; // floor so a very long list stays legible-ish rather than vanishing
 
   function bestCardHeight(n, containerW, containerH) {
     var best = 0;
     for (var cols = 1; cols <= n; cols++) {
       var rows = Math.ceil(n / cols);
-      var hForWidth = containerW / (cols * CARD_ASPECT + (cols - 1) * CARD_ASPECT * GAP_RATIO);
-      var hForHeight = containerH / (rows + (rows - 1) * GAP_RATIO);
+      var hForWidth = containerW / (cols * GRID_ASPECT + (cols - 1) * GRID_ASPECT * GRID_GAP_RATIO);
+      var hForHeight = containerH / (rows + (rows - 1) * GRID_GAP_RATIO);
       var h = Math.min(hForWidth, hForHeight);
       if (h > best) best = h;
     }
     return best;
+  }
+
+  function layoutGrid(kegs, containerW, containerH) {
+    els.grid.classList.remove('mode-list');
+    els.grid.style.gridTemplateRows = '';
+    els.grid.style.gridAutoFlow = '';
+    els.grid.style.gridAutoColumns = '';
+
+    var h = bestCardHeight(kegs.length, containerW, containerH);
+    h = Math.max(GRID_MIN_HEIGHT, Math.min(GRID_MAX_HEIGHT, h));
+    var w = h * GRID_ASPECT;
+    var gap = h * GRID_GAP_RATIO;
+    var cols = Math.max(1, Math.min(kegs.length, Math.floor((containerW + gap) / (w + gap))));
+
+    els.grid.style.gridTemplateColumns = 'repeat(' + cols + ', ' + w + 'px)';
+    els.grid.style.gridAutoRows = h + 'px';
+    els.grid.style.gap = gap + 'px';
+    els.grid.style.setProperty('--card-scale', h / GRID_BASELINE_HEIGHT);
+
+    kegs.forEach(function (keg) { els.grid.appendChild(buildCard(keg)); });
+  }
+
+  // ---- List view (see buildRow/.keg-row above) ----
+  // A list row's width fills its column rather than being derived from its
+  // height (unlike a card's fixed aspect ratio), so the tradeoff is
+  // different: more columns always means shorter rows (fewer per column),
+  // so the search below only needs to find the *fewest* columns whose row
+  // height doesn't exceed LIST_MAX_HEIGHT - beyond that, more columns would
+  // just spread the same n rows thinner for no benefit. LIST_MIN_COL_WIDTH
+  // caps how many columns are even considered, so a column never gets so
+  // narrow the text is mostly ellipsis.
+  var LIST_MIN_COL_WIDTH = 460; // px - below this a row's text truncates too aggressively
+  var LIST_GAP_RATIO = 0.22; // gap between rows/columns, as a fraction of row height
+  var LIST_BASELINE_HEIGHT = 62; // px row height that --card-scale: 1 means
+  var LIST_MAX_HEIGHT = 90; // keeps a short list from producing absurdly tall rows
+  var LIST_MIN_HEIGHT = 30; // floor so a very long list stays legible-ish rather than vanishing
+
+  function bestListLayout(n, containerW, containerH) {
+    var maxCols = Math.max(1, Math.min(n, Math.floor((containerW + LIST_MIN_COL_WIDTH) / (LIST_MIN_COL_WIDTH * (1 + LIST_GAP_RATIO)))));
+    var best = { cols: 1, h: 0 };
+    for (var cols = 1; cols <= maxCols; cols++) {
+      var rows = Math.ceil(n / cols);
+      var h = containerH / (rows + (rows - 1) * LIST_GAP_RATIO);
+      if (h > best.h) best = { cols: cols, h: h };
+      if (h >= LIST_MAX_HEIGHT) break; // more columns would only spread rows thinner
+    }
+    return best;
+  }
+
+  function layoutList(kegs, containerW, containerH) {
+    els.grid.classList.add('mode-list');
+    els.grid.style.gridTemplateColumns = '';
+    els.grid.style.gridAutoRows = '';
+
+    var best = bestListLayout(kegs.length, containerW, containerH);
+    var h = Math.max(LIST_MIN_HEIGHT, Math.min(LIST_MAX_HEIGHT, best.h));
+    var gap = h * LIST_GAP_RATIO;
+    var rows = Math.ceil(kegs.length / best.cols);
+    var colWidth = (containerW - (best.cols - 1) * gap) / best.cols;
+
+    els.grid.style.gridTemplateRows = 'repeat(' + rows + ', ' + h + 'px)';
+    els.grid.style.gridAutoFlow = 'column';
+    els.grid.style.gridAutoColumns = colWidth + 'px';
+    els.grid.style.gap = gap + 'px';
+    els.grid.style.setProperty('--card-scale', h / LIST_BASELINE_HEIGHT);
+
+    kegs.forEach(function (keg) { els.grid.appendChild(buildRow(keg)); });
   }
 
   function layout(kegs) {
@@ -708,19 +921,9 @@
 
     var containerW = els.grid.clientWidth * SAFETY;
     var containerH = els.grid.clientHeight * SAFETY;
-    var h = bestCardHeight(kegs.length, containerW, containerH);
-    h = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, h));
-    var w = h * CARD_ASPECT;
-    var gap = h * GAP_RATIO;
-    var cols = Math.max(1, Math.min(kegs.length, Math.floor((containerW + gap) / (w + gap))));
-
-    els.grid.style.gridTemplateColumns = 'repeat(' + cols + ', ' + w + 'px)';
-    els.grid.style.gridAutoRows = h + 'px';
-    els.grid.style.gap = gap + 'px';
-    els.grid.style.setProperty('--card-scale', h / BASELINE_HEIGHT);
-
     els.grid.innerHTML = '';
-    kegs.forEach(function (keg) { els.grid.appendChild(buildCard(keg)); });
+    if (currentView === 'list') layoutList(kegs, containerW, containerH);
+    else layoutGrid(kegs, containerW, containerH);
   }
 
   var resizeTimer = null;
