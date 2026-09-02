@@ -105,6 +105,29 @@
     flex: none;
   }
 
+  /* Moved up from a since-removed footer row, so that space goes to the
+     keg list instead - see layout()'s own comment for why fitting
+     everything on screen benefits from every bit of vertical room. */
+  .header-status {
+    text-align: right;
+    font-size: clamp(0.7rem, 0.85vw, 0.9rem);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .header-status__sep {
+    margin: 0 0.35em;
+    opacity: 0.6;
+  }
+
+  /* Hides the dangling "·" when there's no keg count yet to separate from
+     the updated-at text (loading, or the empty/error states - see
+     showState() below, which clears #headerCount but leaves #headerUpdated
+     alone). */
+  #headerCount:empty + .header-status__sep {
+    display: none;
+  }
+
   .clock {
     text-align: right;
     flex: none;
@@ -333,17 +356,6 @@
     margin-right: 0.3em;
   }
 
-  /* ---------- Footer ---------- */
-  footer {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-top: clamp(0.6rem, 1.2vh, 1.1rem);
-    color: var(--muted);
-    font-size: clamp(0.75rem, 0.95vw, 0.95rem);
-  }
 
   /* ---------- Color settings ---------- */
   /* Deliberately small and low-contrast against the header - staff click it
@@ -470,6 +482,11 @@
       </div>
     </div>
     <div class="header-right">
+      <div class="header-status">
+        <span id="headerCount"></span>
+        <span class="header-status__sep">&middot;</span>
+        <span id="headerUpdated"></span>
+      </div>
       <div class="clock">
         <div class="clock__time" id="clockTime">--:--</div>
         <div class="clock__date" id="clockDate">&nbsp;</div>
@@ -500,11 +517,6 @@
     <div id="grid" hidden></div>
   </main>
 
-  <footer>
-    <div id="footerStatus">&nbsp;</div>
-    <div id="footerCount">&nbsp;</div>
-  </footer>
-
 <script>
 (function () {
   'use strict';
@@ -524,8 +536,8 @@
     stateTitle: document.getElementById('stateTitle'),
     stateMessage: document.getElementById('stateMessage'),
     grid: document.getElementById('grid'),
-    footerStatus: document.getElementById('footerStatus'),
-    footerCount: document.getElementById('footerCount'),
+    headerUpdated: document.getElementById('headerUpdated'),
+    headerCount: document.getElementById('headerCount'),
     clockTime: document.getElementById('clockTime'),
     clockDate: document.getElementById('clockDate'),
     settingsBtn: document.getElementById('settingsBtn'),
@@ -791,7 +803,7 @@
     els.stateScreen.querySelector('.state-box__icon').textContent = icon;
     els.stateTitle.textContent = title;
     els.stateMessage.textContent = message;
-    els.footerCount.textContent = ' ';
+    els.headerCount.textContent = '';
   }
 
   function showGrid() {
@@ -909,7 +921,7 @@
       return;
     }
     showGrid();
-    els.footerCount.textContent = kegs.length + (kegs.length === 1 ? ' keg in stock' : ' kegs in stock');
+    els.headerCount.textContent = kegs.length + (kegs.length === 1 ? ' keg in stock' : ' kegs in stock');
 
     var containerW = els.grid.clientWidth * SAFETY;
     var containerH = els.grid.clientHeight * SAFETY;
@@ -927,8 +939,8 @@
   // ---------- Data ----------
   var lastKegs = [];
 
-  function setFooterStatus(text) {
-    els.footerStatus.textContent = text;
+  function setUpdatedStatus(text) {
+    els.headerUpdated.textContent = text;
   }
 
   function fetchKegs() {
@@ -945,7 +957,7 @@
         var kegs = (result.data && result.data.kegs) || [];
         var signature = JSON.stringify(kegs);
         var now = new Date();
-        setFooterStatus('Updated ' + now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
+        setUpdatedStatus('Updated ' + now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
         if (signature !== lastSignature) {
           lastSignature = signature;
           lastKegs = kegs;
@@ -956,8 +968,8 @@
         // Only take over the whole screen with an error if nothing has ever
         // loaded successfully - a single missed poll (server restarting,
         // say) shouldn't blank out a display that's currently showing good
-        // data. If it keeps failing, the footer status line below still
-        // tells whoever's watching that it's stale.
+        // data. If it keeps failing, the header status text still tells
+        // whoever's watching that it's stale.
         if (!lastKegs.length) {
           if (err.code === 'NO_EXPORT_PATH' || err.code === 'EXPORT_NOT_FOUND') {
             showState('⚙️', 'Export file not set up yet', 'Open Advanced → Export File Settings on the register and point it at the WinePOS export, then this page will pick it up automatically.');
@@ -965,7 +977,7 @@
             showState('⚠️', "Can't reach the keg list", err.message || 'Will keep trying automatically.');
           }
         } else {
-          setFooterStatus('Last update failed - showing last known data.');
+          setUpdatedStatus('Last update failed - showing last known data.');
         }
       });
   }
