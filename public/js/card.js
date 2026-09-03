@@ -1597,7 +1597,11 @@ function buildRatingsInlineHtml(talker) {
 // Font Size) as the Shelf Talker card's .card__closeout-badge/.card__ratings
 // above, and .sign__closeout-badge's/.sign__rating's base rules always
 // multiply by --price-fit too, so includePriceFit is true for both here.
-function buildSignMetaRowHtml(talker, leftHtml) {
+// includeSize defaults true (wine/spirits/bourbon keep Size up here,
+// unchanged) - beer's own call site passes false, since Size moves down
+// next to Regular Price there instead (see buildSignSizeInlineHtml/
+// buildSignPriceRowHtml below).
+function buildSignMetaRowHtml(talker, leftHtml, includeSize = true) {
   const talkerType = talker.talkerType || 'standard';
   const ratingsStyle = fontSizeOverrideAttr(talker.ratingsFontSize, SIGN_LAYOUTS['sign-large'].printWidth, true);
   // Also Available Chilled is independent of Talker Style (see
@@ -1617,13 +1621,27 @@ function buildSignMetaRowHtml(talker, leftHtml) {
   } else {
     left = leftHtml ? `<div class="sign__rating"${ratingsStyle}>${leftHtml}</div>` : '';
   }
-  if (!left && !talker.size) return '';
+  const showSize = includeSize && talker.size;
+  if (!left && !showSize) return '';
   return `
     <div class="sign__meta-row">
       <div class="sign__meta-row-left">${left}</div>
-      ${talker.size ? `<div class="sign__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '<div></div>'}
+      ${showSize ? `<div class="sign__size">${escapeHtml(lowercaseSizeUnits(talker.size))}</div>` : '<div></div>'}
     </div>
   `;
+}
+
+// Beer Large Display Sign only - Size moved down next to Regular Price
+// instead of sitting alone above the price row (see buildSignMetaRowHtml's
+// includeSize=false at that call site), with a small divider between the
+// two so they still read as two distinct facts on one line rather than
+// running together. Appended inside whichever .sign__regular-price div
+// buildSignPriceRowHtml is currently building, so it inherits that div's
+// own size/weight rather than needing its own font-size rule for each of
+// the regular/solo variants.
+function buildSignSizeInlineHtml(talker) {
+  if (!talker.size) return '';
+  return `<span class="sign__size-divider">|</span><span class="sign__size-inline">${escapeHtml(lowercaseSizeUnits(talker.size))}</span>`;
 }
 
 // Case Price - Large Display Signs only (see fCasePrice in index.html), an
@@ -1656,10 +1674,18 @@ function buildCasePriceHtml(talker, solo = false) {
 // empty (Standard/Closeout with no Sale Price, Super Sale with no Sale
 // Price to compare against), and drops to its own right-aligned row below
 // the price row whenever that slot is already the Regular Price.
-function buildSignPriceRowHtml(talker) {
+// includeSizeInline defaults false (wine/spirits/bourbon unchanged, Size
+// stays up in the meta row); beer's own call site passes true, appending
+// buildSignSizeInlineHtml's divider+Size onto whichever .sign__regular-price
+// div ends up rendering below - Super Sale Price's own no-Regular-Price
+// branch has no Regular Price to attach it to, so Size simply doesn't
+// appear there (same as it wouldn't appear anywhere near a price row on a
+// pure Super Sale with no regular price to compare against).
+function buildSignPriceRowHtml(talker, includeSizeInline = false) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   const regular = formatMoney(talker.price);
+  const sizeInlineHtml = includeSizeInline ? buildSignSizeInlineHtml(talker) : '';
   // Two sizes, not one - whichever one actually shares Case Price's row.
   // The with-Sale-Price branches below stack Case Price under a Regular
   // Price that's sharing its row with Sale Price (base size); the no-Sale-
@@ -1676,7 +1702,7 @@ function buildSignPriceRowHtml(talker) {
       return `
         <div class="sign__price-row">
           <div class="sign__sale-price">Super Sale Price ${formatMoney(bigPrice)}</div>
-          <div class="sign__regular-price">Regular Price ${regular}</div>
+          <div class="sign__regular-price">Regular Price ${regular}${sizeInlineHtml}</div>
         </div>
         ${caseHtml ? `<div class="sign__case-price-row">${caseHtml}</div>` : ''}
       `;
@@ -1698,7 +1724,7 @@ function buildSignPriceRowHtml(talker) {
   if (!hasSale) {
     return `
       <div class="sign__price-row">
-        <div class="sign__regular-price sign__regular-price--solo">Regular Price ${regular}</div>
+        <div class="sign__regular-price sign__regular-price--solo">Regular Price ${regular}${sizeInlineHtml}</div>
         ${caseHtmlSolo}
       </div>
     `;
@@ -1707,7 +1733,7 @@ function buildSignPriceRowHtml(talker) {
   return `
     <div class="sign__price-row">
       <div class="sign__sale-price">Sale Price ${formatMoney(talker.salePrice)}</div>
-      <div class="sign__regular-price">Regular Price ${regular}</div>
+      <div class="sign__regular-price">Regular Price ${regular}${sizeInlineHtml}</div>
     </div>
     ${caseHtml ? `<div class="sign__case-price-row">${caseHtml}</div>` : ''}
   `;
@@ -1752,8 +1778,8 @@ function buildLargeBeerSignBodyHtml(talker) {
       </div>
     </div>
     <div class="sign__footer-block">
-      ${buildSignMetaRowHtml(talker, '')}
-      ${buildSignPriceRowHtml(talker)}
+      ${buildSignMetaRowHtml(talker, '', false)}
+      ${buildSignPriceRowHtml(talker, true)}
     </div>
   `;
 }
@@ -2034,8 +2060,27 @@ function buildCardElement(talker) {
  * called after the element is attached to the document (needs real layout).
  */
 function fitCardText(cardEl) {
+  // Live-editing calls this on every field change, re-fitting the same
+  // card/sign element repeatedly rather than building a fresh one each
+  // time - a --price-fit an earlier, more cramped state of the form left
+  // behind (e.g. typing Brewery/Location/Style before Description) has to
+  // be cleared before this pass measures anything, or every check below
+  // (titleEl/description/body scrollHeight vs. clientHeight) reads a body
+  // still sized by that stale shrink and never lets it recover even once
+  // the current content no longer needs it - the while loop further down
+  // only ever tightens --price-fit, it never widens or clears it back out
+  // on a call that turns out not to need it.
+  const body0 = cardEl.querySelector('.card__body, .sign__body');
+  if (body0) body0.style.removeProperty('--price-fit');
+
   const titleEl = cardEl.querySelector('[data-fit="title"]');
   const titleAutoSize = !!titleEl && titleEl.dataset.autoSize === 'true';
+
+  // Captured before the loop below touches anything, so both this pass and
+  // shrinkTitleToFitBody's later escalation share one floor relative to the
+  // title's true starting size - shrinking further off an already-shrunk
+  // value here would compound past the intended 50% floor.
+  const titleNaturalPx = titleEl ? parseFloat(getComputedStyle(titleEl).fontSize) : 0;
 
   if (titleAutoSize && titleEl) {
     // Both the floor and the step are relative to the element's own starting
@@ -2046,9 +2091,8 @@ function fitCardText(cardEl) {
     // amount of shrink was available at each scale: the small previews were
     // already at (or under) the floor before shrinking started, and truncated
     // titles that print perfectly well.
-    const startPx = parseFloat(getComputedStyle(titleEl).fontSize);
-    const minPx = Math.max(startPx * 0.5, 4);
-    let fontSize = startPx;
+    const minPx = Math.max(titleNaturalPx * 0.5, 4);
+    let fontSize = titleNaturalPx;
     let guard = 40;
     while (titleEl.scrollHeight > titleEl.clientHeight + 1 && fontSize > minPx && guard > 0) {
       fontSize *= 0.97;
@@ -2091,14 +2135,27 @@ function fitCardText(cardEl) {
     clampDescriptionToAvailableSpace(description, body);
   }
 
-  // Escalation, non-Auto-Size title only: a maxed-out three-line title
-  // stacked with a full ratings/awards list can still be too tall even with
-  // the description already clamped down to a single line. Rather than
+  // Escalation: a maxed-out title stacked with a full ratings/awards list
+  // (or, on a beer sign, a tall facts column) can still leave the body too
+  // tall even with the description already clamped/shrunk down. Rather than
   // jumping straight to the whole-block --price-fit shrink below (which
-  // would also touch the price row), give the title the same treatment as
-  // the description first - narrow its own visible lines - since it's still
-  // just text taking up room, not the price block itself.
-  if (!titleAutoSize) {
+  // would also touch the price row and everything else), give the title a
+  // chance to absorb its share of the overflow first - it's still just text
+  // taking up room, not the price block itself.
+  if (titleAutoSize) {
+    // Auto Size's own promise is "shrink the font, never truncate the
+    // text" - clampTitleToAvailableSpace's line-count cut would break that,
+    // so this shrinks the title's font further instead, same 0.97-per-step/
+    // 50%-floor shape as the pass above, just checking the body's overflow
+    // now that the description has had its turn rather than only the
+    // title's own box. Before this, an Auto-Size title that already fit
+    // within its own 2-line box stopped shrinking right there even when the
+    // body was still overflowing from something else entirely (a tall facts
+    // column, a full ratings list) - leaving --price-fit as the only
+    // lever left, which shrank the price row/facts column/badges too even
+    // though only the title needed to give any ground.
+    shrinkTitleToFitBody(titleEl, titleNaturalPx, body);
+  } else {
     clampTitleToAvailableSpace(titleEl, body);
   }
 
@@ -2196,6 +2253,55 @@ function clampTitleToAvailableSpace(titleEl, body) {
     lines -= 1;
     titleEl.style.webkitLineClamp = String(lines);
     titleEl.style.lineClamp = String(lines);
+    guard -= 1;
+  }
+}
+
+// Auto Size only: clampTitleToAvailableSpace's counterpart for when the
+// title's own Auto Size box is checked - same escalation slot (after the
+// description has had its turn), same 0.97-per-step shape as the title's
+// first shrink pass in fitCardText above, but checking the body's overflow
+// instead of just the title's own box, and continuing from whatever font
+// size that first pass already left it at rather than starting over. Auto
+// Size means "shrink the font, don't truncate the text" - line-clamping the
+// title the way the non-Auto-Size path does would break that promise - so
+// this is what stands in for clampTitleToAvailableSpace here: without it, a
+// title that already fit its own 2-line box stopped shrinking right there
+// even when the body was still overflowing from something else entirely (a
+// tall facts column, a full ratings list), leaving --price-fit as the only
+// remaining lever - which shrinks the price row/facts column/badges too,
+// even though only the title needed to give ground.
+function shrinkTitleToFitBody(titleEl, naturalPx, body) {
+  if (!titleEl || !naturalPx || !titleEl.textContent.trim()) return;
+  if (body.scrollHeight <= body.clientHeight + 1) return;
+
+  // Mirrors clampTitleToAvailableSpace's own gate, just phrased for a
+  // font-shrink instead of a line-count cut: clamping a title down from 2
+  // lines to 1 does nothing when the title's full text already reads on
+  // one line - there's no second line's worth of height to reclaim. Same
+  // here - a short beer name (title already fits within a single line at
+  // its natural size) has nothing to give in this escalation either, so it
+  // stays at its natural size and leaves the rest of the overflow to
+  // --price-fit below, same as a non-Auto-Size title this short would.
+  // Without this check, a name like "Corona Extra" - nowhere close to
+  // needing 2 lines - would still shrink toward its 50% floor purely
+  // because something ELSE (a tall facts column) left the body still
+  // overflowing, reading as a disproportionately tiny beer name for no
+  // real gain.
+  const previousClamp = titleEl.style.webkitLineClamp;
+  titleEl.style.webkitLineClamp = '1';
+  titleEl.style.lineClamp = '1';
+  const alreadyOneLine = titleEl.scrollHeight <= titleEl.clientHeight + 1;
+  titleEl.style.webkitLineClamp = previousClamp;
+  titleEl.style.lineClamp = previousClamp;
+  if (alreadyOneLine) return;
+
+  const minPx = Math.max(naturalPx * 0.5, 4);
+  let fontSize = parseFloat(getComputedStyle(titleEl).fontSize);
+  let guard = 40;
+  while (body.scrollHeight > body.clientHeight + 1 && fontSize > minPx && guard > 0) {
+    fontSize *= 0.97;
+    titleEl.style.fontSize = `${fontSize}px`;
     guard -= 1;
   }
 }
