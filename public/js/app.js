@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.0',
+      items: [
+        'New: a Sales Floor Keg Display page (Tools → Sales Floor Keg Display…) – a TV-ready screen listing every keg currently in stock with its price, read straight from the same WinePOS export file Scan UPC/Search by Name already use, no separate setup. Every keg in stock fits on screen at once (no scrolling or paging, however many there are) and the page refreshes itself every couple of minutes. A palette button offers a grid or list layout and a customizable accent color (five presets plus a custom picker), both remembered per-TV.',
+      ],
+    },
+    {
       version: '4.5.20',
       items: [
         'New: beer Large Display Signs now show the same Untappd facts the Shelf Talker card already prints - country flag and state/country silhouette in their usual corners, Untappd Rating and Style side by side, and a Brewery/Location/ABV/IBU table - laid out in two columns (facts on the left, Description on its own column to the right) since the Large sign has the width a portrait Shelf Talker doesn\'t. Small Display Signs and every non-beer sign are unchanged.',
@@ -13550,6 +13556,12 @@
         break;
       case 'find-queue':
         findQueueModal.open();
+        break;
+      case 'keg-display':
+        // Opens in its own tab/window rather than an in-app modal - this is
+        // meant to be dragged onto the sales-floor TV and left running full-
+        // screen, not viewed alongside the editor.
+        window.open('keg-display.html', '_blank');
         break;
       case 'beer-talker-info':
         guidePreviewModal.open();
