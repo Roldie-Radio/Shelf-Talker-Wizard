@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.0',
+      items: [
+        'New: a Sales Floor Keg Display page (Tools → Sales Floor Keg Display…) – a TV-ready screen listing every keg currently in stock with its price, read straight from the same WinePOS export file Scan UPC/Search by Name already use, no separate setup. Every keg in stock fits on screen at once (no scrolling or paging, however many there are) and the page refreshes itself every couple of minutes. A palette button offers a grid or list layout and a customizable accent color (five presets plus a custom picker), both remembered per-TV.',
+      ],
+    },
+    {
       version: '4.5.15',
       items: [
         'Fixed: Search by Name never offered the "Fill from Untappd"/"Search Untappd yourself" fallback that Scan UPC and SKU Lookup already had - a beer name search with no automatic Untappd match, an unresolved multi-candidate pick, or a declined "Not the Right Beer" confirm had no way forward but re-typing the search. Search by Name now offers the same manual Untappd URL/HTML fallback in all three cases.',
