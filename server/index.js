@@ -17,6 +17,7 @@ const {
   listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
   listBeers, getBeer, upsertBeer, updateBeerById, deleteBeer, getBeerByTitle,
   listRums, upsertRum, updateRumById, deleteRum,
+  listHighShelfEntries, getHighShelfEntryByTitle, upsertHighShelfEntry, updateHighShelfEntryById, deleteHighShelfEntry,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
@@ -1025,6 +1026,69 @@ function createApp({
   app.delete('/api/rums/:id', (req, res) => {
     const deleted = deleteRum(Number(req.params.id));
     if (!deleted) return res.status(404).json({ error: 'No rum entry with that id.' });
+    res.json({ success: true });
+  });
+
+  // The High Shelf (rail "The High Shelf" view) - a researched THC/CBD
+  // ready-to-drink beverage per title, same bare-scaffold shape as the Rum
+  // Repository above (this PC's own data.db directly, no Server PC
+  // branching/forwardWrite, no external-lookup import route - no live data
+  // source exists for this category). Every THC/CBD talker added to the
+  // queue also POSTs here silently (see autoSaveThcCbdToHighShelf in
+  // app.js), so this single upsert route serves both the manual Add/Edit
+  // form and that auto-save.
+  app.get('/api/high-shelf', (req, res) => {
+    res.json({ entries: listHighShelfEntries() });
+  });
+
+  // Used by the Edit Talker recall banner (see refreshHighShelfRecall in
+  // app.js) - an exact, case-insensitive title match against what's already
+  // on file, same convention as the Bourbon Library's own recall lookup.
+  app.get('/api/high-shelf/by-title', (req, res) => {
+    const entry = getHighShelfEntryByTitle(req.query.title);
+    res.json({ entry: entry || null });
+  });
+
+  // The High Shelf fields beyond title/source - see highShelfOptionalFieldParams
+  // in db.js for how an omitted (undefined) one leaves whatever's already
+  // saved alone rather than blanking it out.
+  function highShelfOptionalFields(body) {
+    const {
+      sku, thcMg, cbdMg, servings, isLabTested,
+    } = body || {};
+    return {
+      sku, thcMg, cbdMg, servings, isLabTested,
+    };
+  }
+
+  app.post('/api/high-shelf', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = highShelfOptionalFields(req.body);
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'A product name is required.' });
+    }
+    try {
+      res.status(201).json(upsertHighShelfEntry({ title, source, ...optional }));
+    } catch (err) {
+      res.status(err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.put('/api/high-shelf/:id', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = highShelfOptionalFields(req.body);
+    try {
+      const updated = updateHighShelfEntryById(Number(req.params.id), { title, source, ...optional });
+      if (!updated) return res.status(404).json({ error: 'No entry with that id.' });
+      res.json(updated);
+    } catch (err) {
+      res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.delete('/api/high-shelf/:id', (req, res) => {
+    const deleted = deleteHighShelfEntry(Number(req.params.id));
+    if (!deleted) return res.status(404).json({ error: 'No entry with that id.' });
     res.json({ success: true });
   });
 

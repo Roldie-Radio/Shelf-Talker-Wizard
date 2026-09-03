@@ -188,6 +188,35 @@ function applySchema(db) {
       updated_at TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_rums_title_unique ON rums (title COLLATE NOCASE);
+
+    -- The High Shelf (rail "The High Shelf" view): one researched THC/CBD
+    -- ready-to-drink beverage per title, same idea as beers/rums above - a
+    -- potency lookup typed in once doesn't need retyping on the next talker
+    -- made for that same product. One row per title (case-insensitive - the
+    -- unique index below); sku is also unique per non-blank value the same
+    -- way beers' own sku column is matched (see getHighShelfEntryBySku/
+    -- upsertHighShelfEntry) even though it isn't itself a unique index -
+    -- application code, not the schema, resolves SKU-vs-title collisions.
+    --
+    -- No external lookup source exists for this category (no Untappd
+    -- equivalent), so unlike beers this never gets an import-from-export or
+    -- research-on-X feature - every entry is either typed by hand here or
+    -- auto-saved from a THC/CBD talker (see autoSaveThcCbdToHighShelf in
+    -- app.js). No cross-register sync yet either, same bare-scaffold reach
+    -- as the rums table above - a natural follow-up, not ruled out by this
+    -- schema.
+    CREATE TABLE IF NOT EXISTS high_shelf_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      sku TEXT,
+      thc_mg TEXT,
+      cbd_mg TEXT,
+      servings TEXT,
+      is_lab_tested INTEGER NOT NULL DEFAULT 0,
+      source TEXT NOT NULL DEFAULT 'Manual',
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_high_shelf_entries_title_unique ON high_shelf_entries (title COLLATE NOCASE);
   `);
   applyMashBillColumns(db);
   applyBeerColumns(db);
@@ -1131,6 +1160,166 @@ function deleteRum(id) {
   return db.prepare('DELETE FROM rums WHERE id = ?').run(id).changes > 0;
 }
 
+function rowToHighShelfEntry(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    sku: row.sku || '',
+    thcMg: row.thc_mg || '',
+    cbdMg: row.cbd_mg || '',
+    servings: row.servings || '',
+    isLabTested: !!row.is_lab_tested,
+    source: row.source,
+    updatedAt: row.updated_at,
+  };
+}
+
+function listHighShelfEntries() {
+  const db = getDb();
+  return db.prepare('SELECT * FROM high_shelf_entries ORDER BY title COLLATE NOCASE ASC').all().map(rowToHighShelfEntry);
+}
+
+function getHighShelfEntry(id) {
+  const db = getDb();
+  return rowToHighShelfEntry(db.prepare('SELECT * FROM high_shelf_entries WHERE id = ?').get(id));
+}
+
+// Same idea as getBeerByTitle/getBeerBySku above - exposed as plain lookups
+// (case-insensitive, trimmed, null on blank input) rather than an upsert,
+// for the Edit Talker recall banner's own exact-title match.
+function getHighShelfEntryByTitle(title) {
+  const db = getDb();
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) return null;
+  return rowToHighShelfEntry(db.prepare('SELECT * FROM high_shelf_entries WHERE title = ? COLLATE NOCASE').get(cleanTitle));
+}
+
+function getHighShelfEntryBySku(sku) {
+  const db = getDb();
+  const cleanSku = (sku || '').toString().trim();
+  if (!cleanSku) return null;
+  return rowToHighShelfEntry(db.prepare('SELECT * FROM high_shelf_entries WHERE sku = ? COLLATE NOCASE').get(cleanSku));
+}
+
+function validateHighShelfInput({ title }) {
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) throw Object.assign(new Error('A product name is required.'), { code: 'TITLE_REQUIRED' });
+  return { cleanTitle };
+}
+
+// Same "undefined leaves whatever's already there alone" convention as
+// beerOptionalFieldParams/rumOptionalFieldParams above - isLabTested is the
+// one exception, same as beer's own varietyPack: `false` is a real,
+// meaningful value there, so it checks undefined specifically, not
+// falsiness.
+function highShelfOptionalFieldParams({
+  sku, thcMg, cbdMg, servings, isLabTested,
+}, existing) {
+  const prev = existing || {
+    sku: '', thcMg: '', cbdMg: '', servings: '', isLabTested: false,
+  };
+  return {
+    sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
+    thcMg: normalizeOptionalText(thcMg !== undefined ? thcMg : prev.thcMg),
+    cbdMg: normalizeOptionalText(cbdMg !== undefined ? cbdMg : prev.cbdMg),
+    servings: normalizeOptionalText(servings !== undefined ? servings : prev.servings),
+    isLabTested: (isLabTested !== undefined ? !!isLabTested : !!prev.isLabTested) ? 1 : 0,
+  };
+}
+
+const HIGH_SHELF_OPTIONAL_COLUMNS_SET = `
+  sku = @sku, thc_mg = @thcMg, cbd_mg = @cbdMg, servings = @servings, is_lab_tested = @isLabTested
+`;
+
+// Create-or-update by SKU first, title (case-insensitive) second - same
+// reasoning and shape as upsertBeer above: a THC/CBD talker's own auto-save
+// (see autoSaveThcCbdToHighShelf in app.js) and The High Shelf form's own
+// Add/Save button both call this, so saving again for a product already on
+// file updates that same entry instead of duplicating it.
+function upsertHighShelfEntry({
+  title, source, sku, thcMg, cbdMg, servings, isLabTested,
+}) {
+  const db = getDb();
+  const { cleanTitle } = validateHighShelfInput({ title });
+  const now = nowIso();
+
+  const bySku = getHighShelfEntryBySku(sku);
+  let existing = bySku;
+  if (!existing) {
+    const existingRow = db.prepare('SELECT id FROM high_shelf_entries WHERE title = ? COLLATE NOCASE').get(cleanTitle);
+    existing = existingRow ? getHighShelfEntry(existingRow.id) : null;
+  }
+
+  // A SKU match under a different title never renames the existing row -
+  // same "don't clobber an already-established name" rule upsertBeer uses.
+  const resolvedTitle = bySku ? bySku.title : cleanTitle;
+
+  const params = {
+    title: resolvedTitle,
+    source: source || 'Manual',
+    updatedAt: now,
+    ...highShelfOptionalFieldParams({ sku, thcMg, cbdMg, servings, isLabTested }, existing),
+  };
+
+  if (existing) {
+    db.prepare(`
+      UPDATE high_shelf_entries SET title = @title, source = @source, updated_at = @updatedAt,
+      ${HIGH_SHELF_OPTIONAL_COLUMNS_SET}
+      WHERE id = @id
+    `).run({ ...params, id: existing.id });
+    return getHighShelfEntry(existing.id);
+  }
+  const info = db.prepare(`
+    INSERT INTO high_shelf_entries (
+      title, source, updated_at, sku, thc_mg, cbd_mg, servings, is_lab_tested
+    )
+    VALUES (
+      @title, @source, @updatedAt, @sku, @thcMg, @cbdMg, @servings, @isLabTested
+    )
+  `).run(params);
+  return getHighShelfEntry(info.lastInsertRowid);
+}
+
+// Explicit update-by-id - only The High Shelf form's "Edit" flow uses this
+// (it already knows the id, and may be changing the title itself). Unlike
+// upsertHighShelfEntry above, renaming onto a title another entry already
+// owns is a real conflict here, not a merge - same DUPLICATE_TITLE handling
+// as updateBeerById/updateRumById.
+function updateHighShelfEntryById(id, {
+  title, source, sku, thcMg, cbdMg, servings, isLabTested,
+}) {
+  const db = getDb();
+  const existing = getHighShelfEntry(id);
+  if (!existing) return null;
+  const { cleanTitle } = validateHighShelfInput({ title: title !== undefined ? title : existing.title });
+
+  try {
+    db.prepare(`
+      UPDATE high_shelf_entries SET title = @title, source = @source, updated_at = @updatedAt,
+      ${HIGH_SHELF_OPTIONAL_COLUMNS_SET}
+      WHERE id = @id
+    `).run({
+      id,
+      title: cleanTitle,
+      source: source || existing.source,
+      updatedAt: nowIso(),
+      ...highShelfOptionalFieldParams({ sku, thcMg, cbdMg, servings, isLabTested }, existing),
+    });
+  } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      throw Object.assign(new Error(`Another entry already uses the name "${cleanTitle}" - edit that one instead, or delete it first.`), { code: 'DUPLICATE_TITLE' });
+    }
+    throw err;
+  }
+  return getHighShelfEntry(id);
+}
+
+function deleteHighShelfEntry(id) {
+  const db = getDb();
+  return db.prepare('DELETE FROM high_shelf_entries WHERE id = ?').run(id).changes > 0;
+}
+
 module.exports = {
   getDb,
   closeDb,
@@ -1156,6 +1345,13 @@ module.exports = {
   upsertRum,
   updateRumById,
   deleteRum,
+  listHighShelfEntries,
+  getHighShelfEntry,
+  getHighShelfEntryByTitle,
+  getHighShelfEntryBySku,
+  upsertHighShelfEntry,
+  updateHighShelfEntryById,
+  deleteHighShelfEntry,
   // Exported for tests only.
   dbFilePath,
 };

@@ -1410,10 +1410,32 @@
     tastingNotesSaveBtn: document.getElementById('tastingNotesSaveBtn'),
     tastingNotesSaveStatus: document.getElementById('tastingNotesSaveStatus'),
     thcCbdFields: document.getElementById('thcCbdFields'),
+    highShelfRecallBanner: document.getElementById('highShelfRecallBanner'),
+    thcCbdSku: document.getElementById('fThcCbdSku'),
     thcMg: document.getElementById('fThcMg'),
     cbdMg: document.getElementById('fCbdMg'),
     thcCbdServings: document.getElementById('fThcCbdServings'),
     labTested: document.getElementById('fLabTested'),
+    railHighShelfBtn: document.getElementById('railHighShelfBtn'),
+    highShelfView: document.getElementById('highShelfView'),
+    highShelfAddBtn: document.getElementById('highShelfAddBtn'),
+    highShelfFilterInput: document.getElementById('highShelfFilterInput'),
+    highShelfStats: document.getElementById('highShelfStats'),
+    highShelfBody: document.getElementById('highShelfBody'),
+    highShelfOverlay: document.getElementById('highShelfOverlay'),
+    highShelfCloseBtn: document.getElementById('highShelfCloseBtn'),
+    highShelfCloseFooterBtn: document.getElementById('highShelfCloseFooterBtn'),
+    highShelfFormTitle: document.getElementById('highShelfFormTitle'),
+    highShelfFormTitleInput: document.getElementById('highShelfFormTitleInput'),
+    highShelfFormSkuInput: document.getElementById('highShelfFormSkuInput'),
+    highShelfFormThcInput: document.getElementById('highShelfFormThcInput'),
+    highShelfFormCbdInput: document.getElementById('highShelfFormCbdInput'),
+    highShelfFormServingsInput: document.getElementById('highShelfFormServingsInput'),
+    highShelfFormLabTestedInput: document.getElementById('highShelfFormLabTestedInput'),
+    highShelfFormSaveBtn: document.getElementById('highShelfFormSaveBtn'),
+    highShelfFormCancelBtn: document.getElementById('highShelfFormCancelBtn'),
+    highShelfFormDeleteBtn: document.getElementById('highShelfFormDeleteBtn'),
+    highShelfFormStatus: document.getElementById('highShelfFormStatus'),
     profileField: document.getElementById('profileField'),
     suggestProfileBtn: document.getElementById('suggestProfileBtn'),
     profileSuggestStatus: document.getElementById('profileSuggestStatus'),
@@ -2271,6 +2293,11 @@
     // Tested only ever render onto the .card printout (see buildDoseHtml in
     // card.js), no external lookup or library for this category.
     els.thcCbdFields.hidden = isSign || !isThcCbd;
+    // THC/CBD fields just changed visibility (or the Product Title may have
+    // too, on the fillForm() call path) - re-check whether The High Shelf's
+    // own recall banner should be showing (see refreshHighShelfRecall
+    // further down), same reasoning as refreshMashBillRecall above.
+    refreshHighShelfRecall();
     // Same rule/reasoning as Nose/Palate/Finish right above - printed onto
     // the .card only (see buildPairingsHtml in card.js), and gated behind
     // its own Settings -> Experimental Features -> Wine Food Pairings
@@ -2482,7 +2509,12 @@
       isLabTested: els.labTested.checked,
       pairings: currentPairings.slice(),
       wineProfile: { ...currentProfile },
-      sku: els.sku.value.trim(),
+      // Beer and THC/CBD each have their own SKU box (only one is ever
+      // visible at once, gated by Product Type - see applyFormMode), so
+      // whichever this talker's category is decides which one readForm
+      // reads the store SKU from. Both feed the same printed .card__sku
+      // footer badge and the same auto-save-to-library flow.
+      sku: (currentCategory === 'thccbd' ? els.thcCbdSku.value : els.sku.value).trim(),
       beerName: els.beerName.value.trim(),
       brewery: els.brewery.value.trim(),
       location: els.location.value.trim(),
@@ -2568,10 +2600,13 @@
     els.nose.value = talker.nose || '';
     els.palate.value = talker.palate || '';
     els.finish.value = talker.finish || '';
+    els.thcCbdSku.value = currentCategory === 'thccbd' ? (talker.sku || '') : '';
     els.thcMg.value = talker.thcMg || '';
     els.cbdMg.value = talker.cbdMg || '';
     els.thcCbdServings.value = talker.thcCbdServings || '';
     els.labTested.checked = !!talker.isLabTested;
+    highShelfRecallDismissedFor = '';
+    refreshHighShelfRecall();
     currentPairings = Array.isArray(talker.pairings) ? talker.pairings.slice() : [];
     renderPairingsList();
     // A fresh Suggest Pairings run is for the talker now loaded, not
@@ -2643,6 +2678,7 @@
     els.tastingNotesSaveRow.hidden = true;
     els.tastingNotesSaveStatus.textContent = '';
     mashBillRecallDismissedFor = '';
+    highShelfRecallDismissedFor = '';
     hideError();
     refreshPreview();
   }
@@ -2793,6 +2829,10 @@
   // talker is loaded (see fillForm/resetForm), so the same title can always
   // bring the banner back if staff type it again later.
   let mashBillRecallDismissedFor = '';
+  // Same "don't immediately re-offer the match just dismissed/applied"
+  // convention as mashBillRecallDismissedFor above, for The High Shelf's
+  // own recall banner (see refreshHighShelfRecall further down).
+  let highShelfRecallDismissedFor = '';
 
   // A fresh install (or a genuinely single-PC store) has no Server PC
   // marked yet, so every read/write here 502s with mashBillSync.js's own
@@ -3112,6 +3152,166 @@
     } finally {
       els.tastingNotesSaveBtn.disabled = false;
     }
+  });
+
+  // ---------- The High Shelf recall banner ----------
+  //
+  // Mirrors the Bourbon Library's own Mash Bill recall above (see
+  // refreshMashBillRecall/findMashBillMatch), just against the shared
+  // `high_shelf_entries` table instead - exact, case-insensitive Product
+  // Title match, with a row per field the matched entry actually has
+  // (THC, CBD, Servings, Lab Tested), each with its own "Use" plus a
+  // combined "Use All". There's no separate manual "Save to The High
+  // Shelf" checkbox the way Mash Bill/Nose-Palate-Finish get - every
+  // THC/CBD talker already auto-saves here on its own (see
+  // autoSaveThcCbdToHighShelf further down), so recall is the only piece
+  // this form needs to read the table back.
+
+  let highShelfLibraryCache = [];
+
+  async function fetchHighShelfLibrary() {
+    try {
+      const resp = await fetch('/api/high-shelf');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not load The High Shelf.');
+      highShelfLibraryCache = Array.isArray(data.entries) ? data.entries : [];
+      return data;
+    } catch {
+      // Keep whatever was already cached rather than clearing it - same
+      // graceful-degradation spirit as fetchMashBillLibrary above.
+      return null;
+    }
+  }
+
+  function findHighShelfMatch(title) {
+    const needle = (title || '').trim().toLowerCase();
+    if (!needle) return null;
+    return highShelfLibraryCache.find((e) => (e.title || '').trim().toLowerCase() === needle) || null;
+  }
+
+  function highShelfRecallRowHtml(label, value, action) {
+    if (!value) {
+      return `
+        <div class="af-row af-row--muted">
+          <div class="af-label">${label}</div>
+          <div class="af-value af-value--muted">Not yet researched</div>
+        </div>`;
+    }
+    return `
+      <div class="af-row">
+        <div class="af-label">${label}</div>
+        <div class="af-value">${escapeHtml(value)}</div>
+        <button type="button" class="btn btn--small" data-recall-action="${action}">Use</button>
+      </div>`;
+  }
+
+  function refreshHighShelfRecall() {
+    if (els.thcCbdFields.hidden) { els.highShelfRecallBanner.hidden = true; return; }
+    const title = els.title.value.trim();
+    if (!title || title === highShelfRecallDismissedFor) { els.highShelfRecallBanner.hidden = true; return; }
+    const match = findHighShelfMatch(title);
+    if (!match) { els.highShelfRecallBanner.hidden = true; return; }
+
+    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested);
+    if (!hasAnything) {
+      els.highShelfRecallBanner.innerHTML = `
+        <div class="mashbill-recall__title">📚 "${escapeHtml(match.title)}" is in The High Shelf, but nothing's been researched yet.</div>
+        <div class="mashbill-recall__meta">Add what you know from The High Shelf in the sidebar.</div>
+      `;
+      els.highShelfRecallBanner.hidden = false;
+      return;
+    }
+
+    const rows = [
+      highShelfRecallRowHtml('THC (mg/serving)', match.thcMg, 'use-thc'),
+      highShelfRecallRowHtml('CBD (mg/serving)', match.cbdMg, 'use-cbd'),
+      highShelfRecallRowHtml('Servings', match.servings, 'use-servings'),
+      highShelfRecallRowHtml('Lab Tested', match.isLabTested ? 'Yes' : '', 'use-lab-tested'),
+    ].join('');
+    const updated = match.updatedAt ? formatHistoryTimestamp(match.updatedAt) : '';
+    const metaBits = [`Source: ${escapeHtml(match.source || 'Manual')}`];
+    if (updated) metaBits.push(`Updated ${updated}`);
+
+    els.highShelfRecallBanner.innerHTML = `
+      <div class="mashbill-recall__title">📚 The High Shelf match found for "${escapeHtml(match.title)}"</div>
+      <div class="af-rows">${rows}</div>
+      <div class="mashbill-recall__meta">${metaBits.join(' &middot; ')}</div>
+      <div class="mashbill-recall__actions">
+        <button type="button" class="btn btn--small btn--primary" data-recall-action="use-all">Use All</button>
+        <button type="button" class="btn btn--small btn--ghost" data-recall-action="dismiss">Not This One</button>
+      </div>
+    `;
+    els.highShelfRecallBanner.hidden = false;
+  }
+
+  els.title.addEventListener('input', () => {
+    highShelfRecallDismissedFor = '';
+    refreshHighShelfRecall();
+  });
+
+  function highShelfFieldEl(field) {
+    return {
+      thcMg: els.thcMg, cbdMg: els.cbdMg, servings: els.thcCbdServings,
+    }[field];
+  }
+
+  // Same "confirm before overwriting something already typed" pattern as
+  // applyMashBillRecallFlavorField above - Lab Tested is a checkbox, not a
+  // text field, so it's handled separately (no confirm - flipping a switch
+  // back is a one-click undo, unlike retyping a note).
+  function applyHighShelfRecallField(match, field) {
+    if (field === 'isLabTested') {
+      els.labTested.checked = !!match.isLabTested;
+      refreshPreview();
+      return;
+    }
+    const value = match[field];
+    if (!value) return;
+    const el = highShelfFieldEl(field);
+    if (el.value.trim() && el.value.trim() !== String(value).trim()
+        && !confirm(`Replace the current ${field === 'thcMg' ? 'THC' : field === 'cbdMg' ? 'CBD' : 'Servings'} value with The High Shelf's?`)) return;
+    el.value = value;
+    refreshPreview();
+  }
+
+  function applyHighShelfRecallAll(match) {
+    const targets = ['thcMg', 'cbdMg', 'servings'].filter((f) => match[f]);
+    const overwriting = targets.some((f) => {
+      const el = highShelfFieldEl(f);
+      return el.value.trim() && el.value.trim() !== String(match[f]).trim();
+    });
+    if (overwriting && !confirm('Replace the current THC/CBD potency with The High Shelf\'s?')) return;
+    targets.forEach((f) => { highShelfFieldEl(f).value = match[f]; });
+    els.labTested.checked = !!match.isLabTested;
+    refreshPreview();
+  }
+
+  els.highShelfRecallBanner.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-recall-action]');
+    if (!btn) return;
+    const title = els.title.value.trim();
+    const match = findHighShelfMatch(title);
+    if (!match) return;
+    const { recallAction: action } = btn.dataset;
+    if (action === 'use-thc') {
+      applyHighShelfRecallField(match, 'thcMg');
+    } else if (action === 'use-cbd') {
+      applyHighShelfRecallField(match, 'cbdMg');
+    } else if (action === 'use-servings') {
+      applyHighShelfRecallField(match, 'servings');
+    } else if (action === 'use-lab-tested') {
+      applyHighShelfRecallField(match, 'isLabTested');
+    } else if (action === 'use-all') {
+      applyHighShelfRecallAll(match);
+      highShelfRecallDismissedFor = title;
+      els.highShelfRecallBanner.hidden = true;
+      return;
+    } else if (action === 'dismiss') {
+      highShelfRecallDismissedFor = title;
+      els.highShelfRecallBanner.hidden = true;
+      return;
+    }
+    refreshHighShelfRecall();
   });
 
   els.manageReviewersToggle.addEventListener('click', () => {
@@ -4140,6 +4340,36 @@
     });
   }
 
+  // Same "no checkbox, nothing extra to click" auto-save as
+  // autoSaveBeerToBible above, for The High Shelf. isLabTested is sent
+  // unconditionally (not folded into the `if (talker[key])` loop the way
+  // the string fields are) since `false` is a real, meaningful value here -
+  // same distinction highShelfOptionalFieldParams makes server-side.
+  function thcCbdAutoSaveFields(talker) {
+    const fields = { isLabTested: !!talker.isLabTested };
+    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings'].forEach((key) => {
+      if (talker[key]) fields[key] = talker[key];
+    });
+    // server/db.js's high_shelf_entries columns are named servings, not
+    // thcCbdServings - the talker object's own field name (matching its
+    // form input, #fThcCbdServings) doesn't need to match the library's.
+    if (fields.thcCbdServings !== undefined) {
+      fields.servings = fields.thcCbdServings;
+      delete fields.thcCbdServings;
+    }
+    return fields;
+  }
+
+  function autoSaveThcCbdToHighShelf(talker) {
+    fetch('/api/high-shelf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: talker.title, source: 'Shelf Talker', ...thcCbdAutoSaveFields(talker) }),
+    }).then(() => fetchHighShelfLibrary()).catch((err) => {
+      console.warn('The High Shelf auto-save failed:', err.message);
+    });
+  }
+
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const talker = readForm();
@@ -4161,6 +4391,7 @@
     renderQueue();
     resetForm();
     if (talker.category === 'beer' && talker.title) autoSaveBeerToBible(talker);
+    else if (talker.category === 'thccbd' && talker.title) autoSaveThcCbdToHighShelf(talker);
   });
 
   // SKU Lookup's own "Add to Queue" - saves whatever the lookup (or its
@@ -12516,6 +12747,223 @@
     }
   });
 
+  // ---------- The High Shelf (rail view) ----------
+  //
+  // A bare-scaffold browse screen over the shared `high_shelf_entries` data
+  // (see server/db.js) - search and a card grid, same shape as The Rum
+  // Repository above. Adding/editing/deleting goes through the form modal
+  // below (opened via #highShelfAddBtn, or a card's own click); this
+  // section itself never writes anything beyond what that form does, only
+  // reads highShelfLibraryCache (shared with the Edit Talker recall banner
+  // above - both this view and that banner read/refresh the one cache) and
+  // re-fetches it after the form modal changes something.
+  //
+  // Two things this has that the Rum Repository doesn't: every THC/CBD
+  // talker added to the queue auto-saves here (see
+  // autoSaveThcCbdToHighShelf above), and the Edit Talker recall banner
+  // reads from it (see refreshHighShelfRecall above). Same reach otherwise:
+  // no cross-register sync, no GitHub curated-list seed, no bulk import -
+  // no live data source exists for this category to import from.
+
+  function highShelfMatchesSearch(entry) {
+    const q = (highShelfFilterQuery || '').trim().toLowerCase();
+    if (!q) return true;
+    return (entry.title || '').toLowerCase().includes(q)
+      || (entry.sku || '').toLowerCase().includes(q);
+  }
+
+  function renderHighShelfStats() {
+    const labTested = highShelfLibraryCache.filter((e) => e.isLabTested).length;
+    els.highShelfStats.innerHTML = `
+      <div class="library-stat"><b>${highShelfLibraryCache.length}</b><span>Products</span></div>
+      <div class="library-stat"><b>${labTested}</b><span>Lab Tested</span></div>
+    `;
+  }
+
+  // Reuses .bourbon-grid/.bourbon-card as-is (see styles.css) - the same
+  // generic card grid the Bourbon Library/Beer Bible/Rum Repository above
+  // already share.
+  function highShelfCardHtml(entry) {
+    const statBits = [];
+    if (entry.thcMg) statBits.push(`${escapeHtml(entry.thcMg)}mg THC`);
+    if (entry.cbdMg) statBits.push(`${escapeHtml(entry.cbdMg)}mg CBD`);
+    if (entry.servings) statBits.push(`${escapeHtml(entry.servings)} servings`);
+    return `
+      <button type="button" class="bourbon-card" data-id="${entry.id}">
+        <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
+        <div class="bourbon-card__sub">${entry.sku ? `SKU ${escapeHtml(entry.sku)}` : 'No SKU on file'}</div>
+        <div class="bourbon-card__footer">
+          <span class="bourbon-card__sub">${statBits.join(' &middot; ') || 'Not yet researched'}</span>
+          <span class="bourbon-card__sub">${entry.isLabTested ? 'Lab Tested' : ''}</span>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderHighShelfGrid() {
+    const rows = highShelfLibraryCache
+      .filter(highShelfMatchesSearch)
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title));
+    if (!rows.length) {
+      els.highShelfBody.innerHTML = highShelfLibraryCache.length
+        ? '<p class="empty-hint">No products match this search.</p>'
+        : '<p class="empty-hint">Nothing on The High Shelf yet - add a THC/CBD Shelf Talker to the queue, or click Add Product to research your first one.</p>';
+      return;
+    }
+    els.highShelfBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => highShelfCardHtml(entry)).join('')}</div>`;
+    els.highShelfBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const entry = highShelfLibraryCache.find((r) => r.id === Number(btn.dataset.id));
+        highShelfModal.open();
+        if (entry) loadHighShelfEntryIntoForm(entry);
+      });
+    });
+  }
+
+  let highShelfFilterQuery = '';
+  els.highShelfFilterInput.addEventListener('input', (e) => {
+    highShelfFilterQuery = e.target.value;
+    renderHighShelfGrid();
+  });
+
+  // Called every time the rail switches to The High Shelf (see
+  // setActiveView below) - re-fetches so the screen reflects the table's
+  // actual current state rather than a possibly-stale cache from earlier in
+  // the session (e.g. a talker auto-saved here since this screen was last
+  // open).
+  function renderHighShelfView() {
+    fetchHighShelfLibrary().then(() => {
+      els.highShelfFilterInput.value = '';
+      highShelfFilterQuery = '';
+      renderHighShelfStats();
+      renderHighShelfGrid();
+    });
+  }
+
+  // ---------- The High Shelf add/edit form ----------
+  //
+  // Manages the `high_shelf_entries` table directly (add/edit/delete) -
+  // opened from The High Shelf page's own Add Product button or a card's
+  // click. Reuses .settings-section/.reviewer-manager__add for the form
+  // itself, same pattern as the Rum Repository's own add/edit form above.
+
+  // null while adding a new entry; the entry's id while editing an existing
+  // one (see loadHighShelfEntryIntoForm) - one form serves both, switching
+  // label/button text based on which mode this is in.
+  let highShelfEditingId = null;
+
+  function resetHighShelfForm() {
+    highShelfEditingId = null;
+    els.highShelfFormTitleInput.value = '';
+    els.highShelfFormSkuInput.value = '';
+    els.highShelfFormThcInput.value = '';
+    els.highShelfFormCbdInput.value = '';
+    els.highShelfFormServingsInput.value = '';
+    els.highShelfFormLabTestedInput.checked = false;
+    els.highShelfFormTitle.textContent = 'Add an entry manually';
+    els.highShelfFormSaveBtn.textContent = 'Add Entry';
+    els.highShelfFormCancelBtn.hidden = true;
+    els.highShelfFormDeleteBtn.hidden = true;
+    els.highShelfFormStatus.textContent = '';
+  }
+
+  function loadHighShelfEntryIntoForm(entry) {
+    highShelfEditingId = entry.id;
+    els.highShelfFormTitleInput.value = entry.title;
+    els.highShelfFormSkuInput.value = entry.sku || '';
+    els.highShelfFormThcInput.value = entry.thcMg || '';
+    els.highShelfFormCbdInput.value = entry.cbdMg || '';
+    els.highShelfFormServingsInput.value = entry.servings || '';
+    els.highShelfFormLabTestedInput.checked = !!entry.isLabTested;
+    els.highShelfFormTitle.textContent = `Edit "${entry.title}"`;
+    els.highShelfFormSaveBtn.textContent = 'Save Changes';
+    els.highShelfFormCancelBtn.hidden = false;
+    els.highShelfFormDeleteBtn.hidden = false;
+    els.highShelfFormStatus.textContent = '';
+    els.highShelfFormTitleInput.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Deletes an entry from The High Shelf, then closes this form and
+  // refreshes the grid underneath it (and the recall banner's own cache,
+  // via fetchHighShelfLibrary). The entry being deleted is always the one
+  // currently open in this form (see els.highShelfFormDeleteBtn's own click
+  // handler below), so there's nothing left to keep editing once it
+  // succeeds.
+  async function deleteHighShelfLibraryEntry(id) {
+    try {
+      const resp = await fetch(`/api/high-shelf/${id}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not delete that entry.');
+      highShelfModal.close();
+      await fetchHighShelfLibrary();
+      renderHighShelfStats();
+      renderHighShelfGrid();
+      refreshHighShelfRecall();
+    } catch (err) {
+      els.highShelfFormStatus.textContent = err.message || 'Could not delete that entry.';
+    }
+  }
+
+  els.highShelfFormDeleteBtn.addEventListener('click', () => {
+    if (highShelfEditingId === null) return;
+    const title = els.highShelfFormTitleInput.value.trim();
+    if (!confirm(`Delete "${title}" from The High Shelf? This can't be undone.`)) return;
+    deleteHighShelfLibraryEntry(highShelfEditingId);
+  });
+
+  // Always resets to a blank "Add an entry manually" form on open - the
+  // Edit path (renderHighShelfGrid's card click, above) opens first, then
+  // calls loadHighShelfEntryIntoForm afterward to fill it back in, same
+  // order the Rum Repository's own card click handler uses.
+  const highShelfModal = createModal({
+    overlay: els.highShelfOverlay,
+    closeBtns: [els.highShelfCloseBtn, els.highShelfCloseFooterBtn],
+    onOpen: resetHighShelfForm,
+  });
+
+  els.highShelfAddBtn.addEventListener('click', () => highShelfModal.open());
+  els.highShelfFormCancelBtn.addEventListener('click', resetHighShelfForm);
+
+  els.highShelfFormSaveBtn.addEventListener('click', async () => {
+    const title = els.highShelfFormTitleInput.value.trim();
+    if (!title) {
+      els.highShelfFormStatus.textContent = 'A product name is required.';
+      return;
+    }
+    els.highShelfFormSaveBtn.disabled = true;
+    els.highShelfFormStatus.textContent = 'Saving...';
+    try {
+      const payload = {
+        title,
+        sku: els.highShelfFormSkuInput.value.trim(),
+        thcMg: els.highShelfFormThcInput.value.trim(),
+        cbdMg: els.highShelfFormCbdInput.value.trim(),
+        servings: els.highShelfFormServingsInput.value.trim(),
+        isLabTested: els.highShelfFormLabTestedInput.checked,
+        source: 'Manual',
+      };
+      const resp = highShelfEditingId
+        ? await fetch(`/api/high-shelf/${highShelfEditingId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        })
+        : await fetch('/api/high-shelf', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not save that entry.');
+      highShelfModal.close();
+      await fetchHighShelfLibrary();
+      renderHighShelfStats();
+      renderHighShelfGrid();
+      refreshHighShelfRecall();
+    } catch (err) {
+      els.highShelfFormStatus.textContent = err.message || 'Could not save that entry.';
+    } finally {
+      els.highShelfFormSaveBtn.disabled = false;
+    }
+  });
+
   // ---------- The Pairing Atlas (rail view) ----------
   //
   // A read-focused browse/profile screen over WINE_PAIRING_RULES (a plain
@@ -13516,12 +13964,14 @@
     els.railAtlasBtn.classList.toggle('is-active', view === 'atlas');
     els.railBeerBibleBtn.classList.toggle('is-active', view === 'beerBible');
     els.railRumRepositoryBtn.classList.toggle('is-active', view === 'rumRepository');
+    els.railHighShelfBtn.classList.toggle('is-active', view === 'highShelf');
     els.railProductDatabaseBtn.classList.toggle('is-active', view === 'productDatabase');
     els.shelfTalkerView.hidden = view !== 'shelfTalker';
     els.libraryView.hidden = view !== 'library';
     els.atlasView.hidden = view !== 'atlas';
     els.beerBibleView.hidden = view !== 'beerBible';
     els.rumRepositoryView.hidden = view !== 'rumRepository';
+    els.highShelfView.hidden = view !== 'highShelf';
     els.productDatabaseView.hidden = view !== 'productDatabase';
     // The Library, Atlas, Beer Bible, Rum Repository, and Product Database
     // screens render their own header band (name, search, stats) the
@@ -13560,6 +14010,9 @@
       // Same reasoning as Beer Bible above - the Rum Repository has no
       // cross-register sync yet either.
       renderRumRepositoryView();
+    } else if (view === 'highShelf') {
+      // Same reasoning as Rum Repository above - no cross-register sync yet.
+      renderHighShelfView();
     } else if (view === 'productDatabase') {
       loadProductDatabase();
     }
@@ -13570,6 +14023,7 @@
   els.railAtlasBtn.addEventListener('click', () => setActiveView('atlas'));
   els.railBeerBibleBtn.addEventListener('click', () => setActiveView('beerBible'));
   els.railRumRepositoryBtn.addEventListener('click', () => setActiveView('rumRepository'));
+  els.railHighShelfBtn.addEventListener('click', () => setActiveView('highShelf'));
   els.railProductDatabaseBtn.addEventListener('click', () => setActiveView('productDatabase'));
   els.railSettingsBtn.addEventListener('click', () => settingsModal.open());
 
@@ -14055,6 +14509,9 @@
   // Product Type to be switched to Bourbon for the first time, so the
   // recall banner can already show something the moment it does.
   fetchMashBillLibrary().then(refreshMashBillRecall);
+  // Same reasoning as the Mash Bill Library warm-up right above, for The
+  // High Shelf's own recall banner.
+  fetchHighShelfLibrary().then(refreshHighShelfRecall);
   applyExperimentalPairings(experimentalPairingsEnabled);
   applyExperimentalWineProfile(experimentalProfileEnabled);
   applyExperimentalTastingNotes(experimentalTastingNotesEnabled);
