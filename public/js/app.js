@@ -4272,6 +4272,7 @@
       // as-is under a pack price would read as a misleading "was $X" on a
       // talker that's actually pricing the pack.
       salePrice: usePack ? '' : data.salePrice,
+      casePrice: data.casePrice,
       theme: els.theme.value,
     };
     if (isBeer) {
@@ -4987,6 +4988,7 @@
       size: data.size,
       price: data.price,
       salePrice: data.salePrice,
+      casePrice: data.casePrice,
       theme: els.theme.value,
     };
     if (isBeer) {
@@ -6130,6 +6132,7 @@
       // talker. Left blank for staff to fill in by hand if the pack itself
       // is genuinely on sale.
       salePrice: usePack ? '' : product.salePrice,
+      casePrice: product.casePrice,
       theme: els.theme.value,
     };
     if (isBeer) {

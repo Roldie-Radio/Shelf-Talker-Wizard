@@ -204,8 +204,24 @@ const FIELD_ALIASES = {
   // for, so Search by Name can offer that instead of (or alongside) the
   // per-unit price. Both are optional: a row with no matching column here
   // just has no pack price to offer, same as any other unmatched field.
-  packPrice: ['pack price', 'case price', 'carton price', 'multi-pack price', 'multipack price', 'pack retail price'],
+  // 'case price' used to be an alias here too, on the assumption a "case"
+  // was just this store's word for "pack" - wrong for a real export
+  // (wine-pos-inventory-demo.csv), which carries Pack Price and Case Price
+  // as two distinct columns (a 6-pack vs. a full case). With 'case price'
+  // still aliased to packPrice, matchColumns' first-header-wins scan always
+  // found the earlier "Pack Price" column and never even looked at "Case
+  // Price" - the real Case Price data was never read at all, which is why
+  // it never showed up automatically on a beer Large Display Sign. Now its
+  // own field below.
+  packPrice: ['pack price', 'carton price', 'multi-pack price', 'multipack price', 'pack retail price'],
   packQty: ['pack qty', 'pack quantity', 'pack count', 'units per pack', 'case qty', 'case quantity', 'case count', 'units per case'],
+  // Case Price - Large Display Signs only (see fCasePrice in index.html) -
+  // an optional per-case cost, printed alongside Regular Price (see
+  // buildCasePriceHtml in card.js). Was previously swallowed by packPrice's
+  // own 'case price' alias above; now captured on its own so a store whose
+  // export genuinely has both a Pack Price and a Case Price column keeps
+  // them distinct instead of losing one.
+  casePrice: ['case price'],
   description: ['tasting notes', 'notes', 'long description', 'web description'],
   category: ['category', 'department', 'class', 'dept'],
   // 'current inv' confirmed against a real WinePOS export
@@ -308,7 +324,7 @@ function upcVariants(raw) {
 function productSignature(p) {
   return [
     p.title, p.brand, p.sku, p.size, p.vintage, p.price, p.salePrice,
-    p.packPrice, p.packQty, p.description, p.category,
+    p.packPrice, p.packQty, p.casePrice, p.description, p.category,
   ].map((v) => (v === null || v === undefined ? '' : String(v)).trim().toLowerCase()).join('');
 }
 
@@ -398,6 +414,9 @@ function buildIndex(rows) {
       // the export has no pack pricing of its own to offer.
       packPrice: normalizeMoney(cell(row, colFor, 'packPrice')),
       packQty,
+      // See casePrice in FIELD_ALIASES above - blank when the export has no
+      // Case Price column of its own.
+      casePrice: normalizeMoney(cell(row, colFor, 'casePrice')),
       description: cell(row, colFor, 'description'),
       category: cell(row, colFor, 'category'),
       // Raw cell, not normalizeMoney'd (it's a count, not currency) - see

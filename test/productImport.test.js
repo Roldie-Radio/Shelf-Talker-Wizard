@@ -3050,6 +3050,51 @@ test('enrichBeerScanFromStore pulls title/size/price/description from the store 
   );
 });
 
+test('enrichBeerScanFromStore carries the export\'s own casePrice over even though the store site has no case pricing of its own', async () => {
+  // Regression test: this function replaces the export row with
+  // `...storeProduct` (the store page has no pack/case columns at all), so
+  // packPrice/packQty are carried over explicitly - casePrice needs the
+  // same explicit carry or it silently disappears the same way, which is
+  // what used to make Case Price never auto-fill from Scan UPC even after
+  // upcCatalog.js learned to parse it from the export.
+  const storeSearchHtml = page({
+    body: `
+      <div class="product-list-item">
+        <input class="product-code" type="hidden" value="09144" />
+        <a class="product-link" href="/Michelob-ULTRA-09144-1009144/">
+          <span class="productnameTitle">Michelob ULTRA</span>
+        </a>
+      </div>
+    `,
+  });
+  const storeProductHtml = page({
+    body: '<h1 itemprop="name">Michelob ULTRA</h1>'
+      + '<div class="pricingDetails"><span class="priceFull">$9.99</span></div>',
+  });
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'anheuser-busch-michelob-ultra', bid: 1234, beer_name: 'Michelob ULTRA', brewery_name: 'Anheuser-Busch' },
+  ]);
+  const untappdBeerHtml = page({
+    head: '<meta property="og:title" content="Michelob ULTRA by Anheuser-Busch | Untappd" />',
+    body: '<p class="brewery"><a href="#">Anheuser-Busch</a></p>',
+  });
+  await withMockFetch(
+    async (url) => {
+      if (url.includes('/store/search.asp')) return mockResponse({ status: 200, body: storeSearchHtml });
+      if (url.includes('liquoroutletwinecellars.com/Michelob')) return mockResponse({ status: 200, body: storeProductHtml });
+      if (url.includes('algolia.net')) return mockResponse({ status: 200, body: algoliaBody });
+      return mockResponse({ status: 200, body: untappdBeerHtml });
+    },
+    async () => {
+      const result = await enrichBeerScanFromStore({
+        title: 'MICHELOB ULTRA CAN', sku: '09144', size: '12PK',
+        price: '7.49', salePrice: '', casePrice: '79.99',
+      });
+      assert.equal(result.casePrice, '79.99');
+    }
+  );
+});
+
 test('enrichBeerScanFromStore falls back to the export\'s own packQty for the printed Size when the store page has no Pack Size row - fixes two different pack sizes of the same beer printing an identical, undifferentiated Size', async () => {
   // A real reported case: Sam Adams Summer Ale sold as both a 6-pack and a
   // 12-pack, each its own SKU/UPC - but the store's own product page for

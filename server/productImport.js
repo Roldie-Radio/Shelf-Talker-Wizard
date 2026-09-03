@@ -2111,15 +2111,18 @@ async function enrichBeerFromUntappd(product) {
 // genuinely useful local note the export did have, the one field here that
 // isn't strictly "fresher from the store" the way title/size/price are.
 //
-// packPrice/packQty are carried over from the local export row explicitly -
-// parseStoreProductHtml has no equivalent columns of its own (the store
-// site's product page is one SKU, one price), so spreading `...storeProduct`
-// alone would silently drop them even though nothing about a fresher store
-// price makes the export's own pack price stale. Losing them here is what
-// used to make Scan UPC fall back to per-unit pricing for beer that the
-// export file actually has a pack price for, unlike Search by Name reading
-// the same file's packPrice column directly (see productHasPackPrice/
-// priceChoiceHtml in app.js).
+// packPrice/packQty/casePrice are carried over from the local export row
+// explicitly - parseStoreProductHtml has no equivalent columns of its own
+// (the store site's product page is one SKU, one price), so spreading
+// `...storeProduct` alone would silently drop them even though nothing
+// about a fresher store price makes the export's own pack/case price
+// stale. Losing packPrice/packQty here is what used to make Scan UPC fall
+// back to per-unit pricing for beer that the export file actually has a
+// pack price for, unlike Search by Name reading the same file's packPrice
+// column directly (see productHasPackPrice/priceChoiceHtml in app.js) -
+// casePrice would silently go missing the same way without this, which is
+// why Case Price never auto-filled on a beer Large Display Sign from Scan
+// UPC even after the export parsing itself learned to read it.
 async function enrichBeerScanFromStore(product) {
   const sku = (product.sku || '').trim();
   if (!sku) return enrichBeerFromUntappd(product);
@@ -2131,6 +2134,7 @@ async function enrichBeerScanFromStore(product) {
       description: firstNonEmpty(storeProduct.description, product.description) || '',
       packPrice: product.packPrice,
       packQty: product.packQty,
+      casePrice: product.casePrice,
     });
   } catch (err) {
     return enrichBeerFromUntappd({

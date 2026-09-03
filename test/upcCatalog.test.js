@@ -232,6 +232,28 @@ test('buildIndex leaves packPrice/packQty blank when neither a column nor the Si
   assert.equal(product.packQty, null);
 });
 
+test('buildIndex reads a Case Price column distinct from Pack Price when the export has both', () => {
+  // Regression test: 'case price' used to be an alias for packPrice, so an
+  // export with both columns (a real WinePOS export can have a 6-pack Pack
+  // Price and a full-case Case Price) had its Case Price column silently
+  // ignored - matchColumns' first-header-wins scan always matched the
+  // earlier Pack Price column instead.
+  const csv = [
+    'UPC,Title,Size,Regular Price,Pack Price,Case Price',
+    '019214600037,Corona Extra 12pk Cans,12pk 12oz Can,1.79,16.99,79.99',
+  ].join('\n');
+  const { byUpc } = buildIndex(parseDelimited(csv));
+  const product = byUpc.get('019214600037');
+  assert.equal(product.packPrice, '16.99');
+  assert.equal(product.casePrice, '79.99');
+});
+
+test('buildIndex leaves casePrice blank when the export has no Case Price column', () => {
+  const { byUpc } = buildIndex(parseDelimited(SAMPLE_CSV));
+  const product = byUpc.get('019214600037');
+  assert.equal(product.casePrice, '');
+});
+
 test('parsePackQtyFromSize recognizes common pack-count phrasings', () => {
   assert.equal(parsePackQtyFromSize('12pk 12oz Cans'), 12);
   assert.equal(parsePackQtyFromSize('6 Pack 12oz Btl'), 6);
