@@ -304,6 +304,7 @@
               <option value="wine">Wine / Spirits</option>
               <option value="bourbon">Bourbon</option>
               <option value="beer">Beer</option>
+              <option value="thccbd">THC/CBD</option>
             </select>
           </div>
         </div>
@@ -454,6 +455,38 @@
               </div>
               <p class="help-text" id="tastingNotesSaveStatus" role="status" aria-live="polite"></p>
             </div>
+          </div>
+
+          <!-- THC/CBD-only fields - same visibility rule as Store Pick/Mash
+               Bill/Nose-Palate-Finish above (Shelf Talkers only, hidden for
+               Beer/Display Signs), plus a Product Type: THC/CBD gate (see
+               applyFormMode in app.js). No external lookup/library for this
+               category - potency is typed in by hand. -->
+          <div class="field-group" id="thcCbdFields" hidden>
+            <div class="field-row">
+              <label class="field">
+                <span>THC (mg per serving)</span>
+                <input type="text" inputmode="decimal" id="fThcMg" maxlength="8" placeholder="5" />
+              </label>
+              <label class="field">
+                <span>CBD (mg per serving)</span>
+                <input type="text" inputmode="decimal" id="fCbdMg" maxlength="8" placeholder="5" />
+              </label>
+            </div>
+            <label class="field">
+              <span>Servings per Container (optional)</span>
+              <input type="text" inputmode="numeric" id="fThcCbdServings" maxlength="4" placeholder="4" />
+            </label>
+            <div class="field" id="labTestedField">
+              <div class="store-pick-toggle-row">
+                <span class="store-pick-toggle-row__label">Lab Tested</span>
+                <label class="switch">
+                  <input type="checkbox" id="fLabTested" />
+                  <span class="switch__track"><span class="switch__thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <p class="help-text">Prints as a THC/CBD potency callout under the description, plus a fixed 21+ compliance line - Lab Tested adds its own badge next to it.</p>
           </div>
 
           <!-- Wine/Spirits-only, same visibility rule as Food Pairing
@@ -710,6 +743,7 @@
               <option value="wine">Wine / Spirits</option>
               <option value="bourbon">Bourbon</option>
               <option value="beer">Beer</option>
+              <option value="thccbd">THC/CBD</option>
             </select>
           </div>
         </div>
@@ -767,6 +801,7 @@
               <option value="wine">Wine / Spirits</option>
               <option value="bourbon">Bourbon</option>
               <option value="beer">Beer</option>
+              <option value="thccbd">THC/CBD</option>
             </select>
           </div>
         </div>

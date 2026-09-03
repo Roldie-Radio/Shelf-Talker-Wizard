@@ -217,6 +217,41 @@ function buildFlavorHtml(talker) {
   return `<div class="card__flavor">${rowsHtml}</div>`;
 }
 
+// THC/CBD potency callout - paired mg badges (mirrors the Beer talker's own
+// Untappd rating row in spirit: a shopper-facing number that reads at a
+// glance) plus a fixed 21+ compliance line, since every THC/CBD talker needs
+// one regardless of what else is filled in. Lab Tested is a plain boolean
+// (talker.isLabTested, see #fLabTested in index.html), same shape as
+// Bourbon's own Store Pick above - it just adds a badge next to the
+// compliance line rather than a corner ribbon, since there's no free corner
+// left once the state-badge slot is unused for this category.
+function buildDoseHtml(talker) {
+  const thc = String(talker.thcMg || '').trim();
+  const cbd = String(talker.cbdMg || '').trim();
+  const servings = String(talker.thcCbdServings || '').trim();
+  if (!thc && !cbd) return '';
+  const doseHtml = [
+    thc ? `<div class="card__dose card__dose--thc"><span class="card__dose-label">THC</span><span class="card__dose-amount">${escapeHtml(thc)}<span class="card__dose-unit">mg</span></span></div>` : '',
+    cbd ? `<div class="card__dose card__dose--cbd"><span class="card__dose-label">CBD</span><span class="card__dose-amount">${escapeHtml(cbd)}<span class="card__dose-unit">mg</span></span></div>` : '',
+  ].join('');
+  const servingsHtml = servings ? `<div class="card__dose-servings">${escapeHtml(servings)} servings per container</div>` : '';
+  return `
+    <div class="card__potency">
+      <div class="card__dose-row">${doseHtml}</div>
+      ${servingsHtml}
+    </div>
+  `;
+}
+
+// Always printed for a THC/CBD talker (no checkbox - it's store policy, not
+// a per-item fact), with Lab Tested's own badge folded in next to it when
+// set. Sits directly under the dose row above, same spot Mash Bill/Nose-
+// Palate-Finish occupy for Bourbon.
+function buildComplianceHtml(talker) {
+  const labBadge = talker.isLabTested ? '<span class="card__lab-badge">Lab Tested</span>' : '';
+  return `<div class="card__compliance">21+ ONLY &middot; KEEP OUT OF REACH OF CHILDREN${labBadge}</div>`;
+}
+
 // Wine/Spirits varietal -> candidate food pairings, for the Food Pairing
 // Suggestions field (Settings -> Experimental Features -> Wine Food
 // Pairings). Matched by keyword against the Product Title (falling back to
@@ -1874,7 +1909,8 @@ function buildSignElement(talker) {
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, isChilled, ratings: [{reviewer, score}],
  *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
- *   location, style, abv, ibu, untappdRating, untappdRatingCount }
+ *   location, style, abv, ibu, untappdRating, untappdRatingCount, thcMg,
+ *   cbdMg, thcCbdServings, isLabTested }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -1897,6 +1933,10 @@ function buildCardElement(talker) {
   // immediately without touching the underlying data, same as switching it
   // back does.
   const isBourbon = talker.category === 'bourbon';
+  // Same "hidden, never deleted" behavior as Bourbon above - potency/
+  // compliance print whenever the talker's own category says THC/CBD, no
+  // Settings toggle involved.
+  const isThcCbd = talker.category === 'thccbd';
   card.dataset.category = isBeer ? 'beer' : 'wine';
   // Same "hidden, never deleted" behavior as Bourbon above, but still
   // toggle-driven - published by applyExperimentalPairings in app.js, read
@@ -1989,6 +2029,8 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
+      ${isThcCbd ? buildDoseHtml(talker) : ''}
+      ${isThcCbd ? buildComplianceHtml(talker) : ''}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>

@@ -1095,7 +1095,7 @@
   let currentSignType = 'talker'; // 'talker' | 'sign'
   let currentSignSize = 'large'; // 'small' | 'large' (Display Signs only)
   let currentTalkerSize = 'full'; // 'full' | 'half' | 'quarter' (Shelf Talkers only)
-  let currentCategory = 'wine'; // 'wine' | 'bourbon' | 'beer'
+  let currentCategory = 'wine'; // 'wine' | 'bourbon' | 'beer' | 'thccbd'
 
   // Settings -> Experimental Features -> Wine Food Pairings - read once at
   // load, then kept in sync with the checkbox from there on.
@@ -1409,6 +1409,11 @@
     tastingNotesSaveRow: document.getElementById('tastingNotesSaveRow'),
     tastingNotesSaveBtn: document.getElementById('tastingNotesSaveBtn'),
     tastingNotesSaveStatus: document.getElementById('tastingNotesSaveStatus'),
+    thcCbdFields: document.getElementById('thcCbdFields'),
+    thcMg: document.getElementById('fThcMg'),
+    cbdMg: document.getElementById('fCbdMg'),
+    thcCbdServings: document.getElementById('fThcCbdServings'),
+    labTested: document.getElementById('fLabTested'),
     profileField: document.getElementById('profileField'),
     suggestProfileBtn: document.getElementById('suggestProfileBtn'),
     profileSuggestStatus: document.getElementById('profileSuggestStatus'),
@@ -2218,6 +2223,7 @@
   function applyFormMode() {
     const isBeer = currentCategory === 'beer';
     const isBourbon = currentCategory === 'bourbon';
+    const isThcCbd = currentCategory === 'thccbd';
     const isSign = currentSignType === 'sign';
     const isSmallSign = isSign && currentSignSize === 'small';
 
@@ -2230,12 +2236,13 @@
     els.talkerSizeField.hidden = isSign;
     els.talkerSize.value = currentTalkerSize;
     els.descriptionField.hidden = isSmallSign;
-    // Wine.com wouldn't have anything for a beer, and Beer already has its
-    // own tasting-note source (the Untappd import tab) - only show the
-    // button for Wine/Spirits/Bourbon, and only once Settings ->
+    // Wine.com/Vivino wouldn't have anything for a beer or a THC/CBD
+    // beverage either, and Beer already has its own tasting-note source
+    // (the Untappd import tab) - only show the button for Wine/Spirits/
+    // Bourbon, and only once Settings ->
     // Experimental Features -> Find Tasting Notes is turned on (see
     // applyExperimentalTastingNotes).
-    els.tastingNotesRow.hidden = isBeer || !experimentalTastingNotesEnabled;
+    els.tastingNotesRow.hidden = isBeer || isThcCbd || !experimentalTastingNotesEnabled;
     els.vintageField.hidden = isBeer || isSmallSign;
     els.wineRatingsField.hidden = isBeer || isSmallSign;
     // Shelf Talkers only, unlike Ratings above (which Large Display Signs
@@ -2259,6 +2266,11 @@
     // have too, on the fillForm() call path) - re-check whether the recall
     // banner should be showing (see refreshMashBillRecall below).
     refreshMashBillRecall();
+    // Same rule as Store Pick/Mash Bill/Nose-Palate-Finish above, tied to
+    // Product Type = THC/CBD instead of Bourbon - potency/servings/Lab
+    // Tested only ever render onto the .card printout (see buildDoseHtml in
+    // card.js), no external lookup or library for this category.
+    els.thcCbdFields.hidden = isSign || !isThcCbd;
     // Same rule/reasoning as Nose/Palate/Finish right above - printed onto
     // the .card only (see buildPairingsHtml in card.js), and gated behind
     // its own Settings -> Experimental Features -> Wine Food Pairings
@@ -2380,7 +2392,7 @@
   // setCategory and fillForm below so the two can't drift apart on what
   // counts as a valid category.
   function normalizeCategory(value) {
-    return value === 'beer' || value === 'bourbon' ? value : 'wine';
+    return value === 'beer' || value === 'bourbon' || value === 'thccbd' ? value : 'wine';
   }
 
   function setCategory(category) {
@@ -2464,6 +2476,10 @@
       nose: els.nose.value.trim(),
       palate: els.palate.value.trim(),
       finish: els.finish.value.trim(),
+      thcMg: els.thcMg.value.trim(),
+      cbdMg: els.cbdMg.value.trim(),
+      thcCbdServings: els.thcCbdServings.value.trim(),
+      isLabTested: els.labTested.checked,
       pairings: currentPairings.slice(),
       wineProfile: { ...currentProfile },
       sku: els.sku.value.trim(),
@@ -2552,6 +2568,10 @@
     els.nose.value = talker.nose || '';
     els.palate.value = talker.palate || '';
     els.finish.value = talker.finish || '';
+    els.thcMg.value = talker.thcMg || '';
+    els.cbdMg.value = talker.cbdMg || '';
+    els.thcCbdServings.value = talker.thcCbdServings || '';
+    els.labTested.checked = !!talker.isLabTested;
     currentPairings = Array.isArray(talker.pairings) ? talker.pairings.slice() : [];
     renderPairingsList();
     // A fresh Suggest Pairings run is for the talker now loaded, not
