@@ -2105,6 +2105,60 @@ function fitCardText(cardEl) {
   }
 
   if (descriptionAutoSize) growDescriptionToFillSlack(cardEl, body);
+  // Auto Size off, beer Large Display Sign only (.sign__col-right marks
+  // this two-column layout - see buildLargeBeerSignBodyHtml): the
+  // clampDescriptionToAvailableSpace pass above ran before the --price-fit
+  // loop just above it had shrunk the facts column/footer down to make
+  // room, so it can lock Description in at fewer lines than its own
+  // column actually has room for once everything else has finished
+  // shrinking - the classic "decided too early" ordering problem, not one
+  // shrinkDescriptionToFitBody(Auto Size on)/growDescriptionToFillSlack
+  // above already covers. Regrows Description's own line count back up
+  // toward this sign's CSS ceiling (see .sign__col-right .sign__description
+  // in styles.css) to reclaim that leftover slack, checking both
+  // Description's own column and the sign as a whole so neither can
+  // overflow again.
+  else regrowSignDescriptionLines(cardEl, body);
+}
+
+function regrowSignDescriptionLines(cardEl, body) {
+  const colRight = cardEl.querySelector('.sign__col-right');
+  const description = colRight && colRight.querySelector('[data-fit="description"]');
+  if (!description || !description.textContent.trim()) return;
+
+  // colRight's own height, not description.clientHeight - .sign__col-right
+  // is align-items: center (Description reads centered in its column, not
+  // stretched to fill it top-to-bottom), so a flex item sized to its own
+  // content is always exactly as tall as however many lines its line-clamp
+  // currently allows. Checking description.scrollHeight against that would
+  // be circular - always roughly equal regardless of whether real room is
+  // left in the column, never actually detecting slack to grow into.
+  const availableH = colRight.clientHeight;
+
+  const currentLines = parseInt(description.style.webkitLineClamp, 10) || 1;
+  // Clear the inline override clampDescriptionToAvailableSpace left behind
+  // so the CSS cascade's own ceiling (.sign__col-right .sign__description's
+  // line-clamp) is what getComputedStyle reports here, not that override.
+  description.style.webkitLineClamp = '';
+  description.style.lineClamp = '';
+  const maxLines = parseInt(getComputedStyle(description).webkitLineClamp, 10) || currentLines;
+  let lines = currentLines;
+  description.style.webkitLineClamp = String(lines);
+  description.style.lineClamp = String(lines);
+
+  let guard = maxLines;
+  while (lines < maxLines && guard > 0) {
+    const nextLines = lines + 1;
+    description.style.webkitLineClamp = String(nextLines);
+    description.style.lineClamp = String(nextLines);
+    if (description.scrollHeight > availableH + 1 || body.scrollHeight > body.clientHeight + 1) {
+      description.style.webkitLineClamp = String(lines);
+      description.style.lineClamp = String(lines);
+      break;
+    }
+    lines = nextLines;
+    guard -= 1;
+  }
 }
 
 // Never resizes the title's font - only how many of its lines are visible.

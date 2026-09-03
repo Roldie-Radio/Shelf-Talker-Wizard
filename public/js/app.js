@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.2',
+      items: [
+        'Fixed: on a beer Large Display Sign, a long beer name ran corner-to-corner on one line right up against the flag/state badges instead of wrapping onto its own second line - the title now stays confined to a centered block clear of both badges, wrapping to 2 lines the way it already had room to.',
+        'Fixed: Description on a beer Large Display Sign could cut itself off after just one short line with the rest of its own column sitting empty underneath, even on a long description - the shrink-to-fit pass that decides how many lines it gets to show ran before the facts column/price row had finished shrinking to make room, so it locked in a smaller line count than the space actually left available. It now reclaims that room afterward, up to about 7-9 lines depending on the sign.',
+      ],
+    },
+    {
       version: '4.6.1',
       items: [
         'Fixed: on a beer Large Display Sign, Description could run straight off the right edge of the sign instead of wrapping inside its own column - the description was sizing itself to its longest line\'s natural width rather than the column\'s actual (narrower) width. It now wraps and, if still too long, ends in an ellipsis like every other description already does.',

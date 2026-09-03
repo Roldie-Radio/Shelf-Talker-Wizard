@@ -4621,15 +4621,26 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    (top 0.012 + width 0.045 of --w) that a short, single-line title's own
    height plus .sign__content's ordinary flex gap (0.008*--w) isn't enough
    clearance on its own; without this, the badges' lower edge overlaps the
-   Untappd Rating/Style row directly underneath. */
+   Untappd Rating/Style row directly underneath.
+   Padding widened from 0.075 to 0.16 a side - at 0.075 a long beer name
+   ("New Belgium Brewing Voodoo Ranger Imperial IPA") still had enough
+   width to run the full distance between the badges on one line instead
+   of wrapping onto its own already-provisioned 2nd line (see
+   clampTitleToAvailableSpace's maxLines for .sign__title in card.js),
+   reading as text stretched corner-to-corner rather than a title confined
+   to its own centered block. The badge-clearance padding-bottom is
+   trimmed slightly (0.02 -> 0.015) to help make room for that now more
+   likely 2nd line - a title that does wrap to 2 lines is already tall
+   enough on its own to clear the badges, so the 1-line worst case this
+   padding exists for needs less insurance than before. */
 .sign__title--badge-left,
 .sign__title--badge-right {
-  padding-bottom: calc(var(--w) * 0.02);
+  padding-bottom: calc(var(--w) * 0.015);
 }
-.sign__title--badge-left { padding-left: calc(var(--w) * 0.075); }
-.sign__title--badge-right { padding-right: calc(var(--w) * 0.075); }
-.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.075); }
-.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.075); }
+.sign__title--badge-left { padding-left: calc(var(--w) * 0.16); }
+.sign__title--badge-right { padding-right: calc(var(--w) * 0.16); }
+.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.16); }
+.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.16); }
 
 /* Beer's own two-column body: facts (rating/style/brewery/location/abv-ibu)
    on the left, Description gets the right column to itself - see
@@ -4689,10 +4700,22 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    same flex: 0 0 auto let it size to its longest line's natural width
    rather than the column's actual (much narrower) available width, running
    the text straight past the sign's own right edge instead of wrapping. */
+/* line-clamp raised from the base rule's 5 to 9 - the base 5 was tuned for
+   the single-column sign body (Description sharing the sign's full width,
+   Rating/Table underneath it), where 5 lines was already most of the
+   available height. In its own dedicated column here, Description has
+   real room to spare (the whole right half of the sign, nothing sharing
+   it) - a short description still only shows as many lines as it needs
+   (clampDescriptionToAvailableSpace in card.js still trims from this
+   ceiling if the column genuinely doesn't have room, same JS pass as
+   always), but a longer one is no longer artificially cut off at 5 with
+   the rest of its own column sitting empty underneath it. */
 .sign__col-right .sign__description {
   flex: 1 1 auto;
   min-width: 0;
   font-size: calc(var(--w) * var(--sign-text) * 0.0146);
+  -webkit-line-clamp: 9;
+  line-clamp: 9;
 }
 .sign__col-right .sign__description[data-auto-size="true"] {
   font-size: calc(var(--w) * var(--sign-text) * 0.0146 * var(--price-fit, 1));
