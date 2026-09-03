@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.4',
+      items: [
+        'Fixed: Case Price on a beer Large Display Sign never filled in automatically from Scan UPC, SKU Lookup, or Search by Name, even when the export file had a Case Price for that item - a "case price" column header was being read as just another name for Pack Price, so the export\'s real, separate Case Price column was never actually being read. It now fills in on its own the same way Regular Price does.',
+      ],
+    },
+    {
       version: '4.6.3',
       items: [
         'Fixed: on any Large Display Sign with no Sale Price set, Case Price printed noticeably smaller than the Regular Price it shares a row with - Regular Price gets bumped up to fill that row alone when there\'s no Sale Price to pair with, but Case Price never got the same bump, so the two read as two different weights of price side by side. Case Price now always matches whichever size Regular Price is actually using. Applies to every Large Display Sign, wine/spirits/bourbon included, not just beer.',
