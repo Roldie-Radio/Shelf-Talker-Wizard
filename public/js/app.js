@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.7',
+      items: [
+        'Fixed: on a beer Large Display Sign, checking Beer Name\'s Auto-Size box shrank the whole sign - facts, badges, prices - more than leaving it unchecked, the opposite of what "auto" should do. Checking it now only shrinks the beer name itself when it genuinely needs the room, same as before, and never touches everything else more than not checking it would.',
+        'Size (e.g. "12 pack 12oz Cans") now prints next to Regular Price with a small divider, instead of sitting alone above the price row - beer Large Display Signs only; wine/spirits/bourbon keep Size in its usual spot.',
+      ],
+    },
+    {
       version: '4.6.6',
       items: [
         'The beer Large Display Sign\'s Untappd facts print even larger again, and now Product Name, Regular Price, and Case Price print larger too, so the whole sign reads bigger - not just the facts column against an unchanged title/price.',
