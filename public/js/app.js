@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.5',
+      items: [
+        'The Untappd facts on a beer Large Display Sign (Rating, Style, Brewery, Location, ABV, IBU, plus the country flag/state silhouette badges) now print noticeably larger - they were reading small and sparse next to the sign\'s own title and price lettering.',
+      ],
+    },
+    {
       version: '4.6.4',
       items: [
         'Fixed: Case Price on a beer Large Display Sign never filled in automatically from Scan UPC, SKU Lookup, or Search by Name, even when the export file had a Case Price for that item - a "case price" column header was being read as just another name for Pack Price, so the export\'s real, separate Case Price column was never actually being read. It now fills in on its own the same way Regular Price does.',
