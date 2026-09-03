@@ -4567,35 +4567,35 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    didn't exist here before (signs never showed Style), so the old
    centered override was safe; it isn't once Style is in the mix. */
 /* Sized up ~20% from this override's first pass, then another ~40% on top
-   of that - even at the first bump, the facts column still read small and
-   sparse next to the rest of the sign's own lettering (title/price) once
-   seen printed rather than just previewed. fitCardText's own --price-fit
-   shrink (every rule here still multiplies by it) is what brings this back
-   down for a two-line title/long Style that doesn't have that headroom, so
-   sizing for the common case rather than the tightest one is the right
-   default. */
-.sign__content .card__beer-rating { flex: 0 0 auto; align-items: flex-start; gap: calc(var(--w) * 0.032); margin: 0; }
+   of that, then another large step up on top of that (this pass) - even
+   after the first two bumps, the facts column still read small next to the
+   rest of the sign's own lettering (title/price) once seen printed rather
+   than just previewed. fitCardText's own --price-fit shrink (every rule
+   here still multiplies by it) is what brings this back down for a
+   two-line title/long Style that doesn't have that headroom, so sizing for
+   the common case rather than the tightest one is the right default. */
+.sign__content .card__beer-rating { flex: 0 0 auto; align-items: flex-start; gap: calc(var(--w) * 0.04); margin: 0; }
 .sign__content .card__beer-rating-detail { flex: 0 0 auto; }
-.sign__content .card__beer-rating-label { font-size: calc(var(--w) * var(--sign-text) * 0.0185 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * var(--sign-text) * 0.0068 * var(--price-fit, 1)); }
-.sign__content .card__beer-dot { width: calc(var(--w) * var(--sign-text) * 0.0185 * var(--price-fit, 1)); height: calc(var(--w) * var(--sign-text) * 0.0185 * var(--price-fit, 1)); }
-.sign__content .card__beer-rating-num { font-size: calc(var(--w) * var(--sign-text) * 0.027 * var(--price-fit, 1)); }
-.sign__content .card__beer-rating-count { font-size: calc(var(--w) * var(--sign-text) * 0.0152 * var(--price-fit, 1)); margin-top: calc(var(--w) * var(--sign-text) * 0.005 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-label { font-size: calc(var(--w) * var(--sign-text) * 0.024 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * var(--sign-text) * 0.009 * var(--price-fit, 1)); }
+.sign__content .card__beer-dot { width: calc(var(--w) * var(--sign-text) * 0.024 * var(--price-fit, 1)); height: calc(var(--w) * var(--sign-text) * 0.024 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-num { font-size: calc(var(--w) * var(--sign-text) * 0.035 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-count { font-size: calc(var(--w) * var(--sign-text) * 0.02 * var(--price-fit, 1)); margin-top: calc(var(--w) * var(--sign-text) * 0.0065 * var(--price-fit, 1)); }
 .sign__content .card__beer-style { flex: 1 1 auto; min-width: 0; }
 .sign__content .card__beer-style-value {
-  font-size: calc(var(--w) * var(--sign-text) * 0.0176 * var(--price-fit, 1));
-  padding: calc(var(--w) * 0.01 * var(--price-fit, 1)) calc(var(--w) * 0.027 * var(--price-fit, 1));
-  border-radius: calc(var(--w) * 0.011);
+  font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.013 * var(--price-fit, 1)) calc(var(--w) * 0.035 * var(--price-fit, 1));
+  border-radius: calc(var(--w) * 0.014);
 }
 
 .sign__content .card__beer-table { margin: calc(var(--w) * 0.026 * var(--price-fit, 1)) 0 0; }
 .sign__content .card__beer-table-row {
-  gap: calc(var(--w) * 0.023);
-  padding: calc(var(--w) * 0.011 * var(--price-fit, 1)) 0;
-  font-size: calc(var(--w) * var(--sign-text) * 0.0121 * var(--price-fit, 1));
+  gap: calc(var(--w) * 0.03);
+  padding: calc(var(--w) * 0.0145 * var(--price-fit, 1)) 0;
+  font-size: calc(var(--w) * var(--sign-text) * 0.0158 * var(--price-fit, 1));
 }
 .sign__content .card__beer-table-label { width: auto; }
-.sign__content .card__beer-table-value { font-size: calc(var(--w) * var(--sign-text) * 0.0176 * var(--price-fit, 1)); }
-.sign__content .card__beer-table-cell { gap: calc(var(--w) * 0.011); }
+.sign__content .card__beer-table-value { font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1)); }
+.sign__content .card__beer-table-cell { gap: calc(var(--w) * 0.014); }
 
 /* Country flag (top-left) / state-or-country silhouette (top-right) on the
    sign, same two badges and corners as .card__country-badge/.card__state-
@@ -4605,11 +4605,26 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .sign__content .card__country-badge,
 .sign__content .card__state-badge {
   top: calc(var(--w) * 0.012 * var(--price-fit, 1));
-  width: calc(var(--w) * 0.056 * var(--price-fit, 1));
+  width: calc(var(--w) * 0.07 * var(--price-fit, 1));
 }
 .sign__content .card__country-badge { left: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
 .sign__content .card__state-badge { right: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
-.sign__content .card__state-badge-label { font-size: calc(var(--w) * var(--sign-text) * 0.0092 * var(--price-fit, 1)); }
+.sign__content .card__state-badge-label { font-size: calc(var(--w) * var(--sign-text) * 0.012 * var(--price-fit, 1)); }
+
+/* Title/Regular Price/Case Price enlarged too, beer Large Display Signs
+   only - scoped via :has(.sign__columns), the two-column wrapper only
+   buildLargeBeerSignBodyHtml ever renders (see card.js), rather than a
+   category attribute on .sign itself (there isn't one). Wine/spirits/
+   bourbon Large Display Signs have no .sign__columns, so :has() never
+   matches them and they keep the plain .sign__title/.sign__regular-price/
+   .sign__case-price sizes untouched - confirmed via screenshot. Not just
+   bumping --sign-text itself, since that variable is shared by every
+   category's Large Display Sign, not beer-only. */
+.sign:has(.sign__columns) .sign__title { font-size: calc(var(--w) * var(--sign-text) * 0.0285 * var(--price-fit, 1)); }
+.sign:has(.sign__columns) .sign__regular-price,
+.sign:has(.sign__columns) .sign__case-price { font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
+.sign:has(.sign__columns) .sign__regular-price--solo,
+.sign:has(.sign__columns) .sign__case-price--solo { font-size: calc(var(--w) * var(--sign-text) * 0.032 * var(--price-fit, 1)); }
 
 /* Same symmetric-reservation trick as .card__title--badge-left/-right on
    the Shelf Talker card (see styles.css) - reserves room on whichever
