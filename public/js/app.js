@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.3',
+      items: [
+        'Fixed: on any Large Display Sign with no Sale Price set, Case Price printed noticeably smaller than the Regular Price it shares a row with - Regular Price gets bumped up to fill that row alone when there\'s no Sale Price to pair with, but Case Price never got the same bump, so the two read as two different weights of price side by side. Case Price now always matches whichever size Regular Price is actually using. Applies to every Large Display Sign, wine/spirits/bourbon included, not just beer.',
+      ],
+    },
+    {
       version: '4.6.2',
       items: [
         'Fixed: on a beer Large Display Sign, a long beer name ran corner-to-corner on one line right up against the flag/state badges instead of wrapping onto its own second line - the title now stays confined to a centered block clear of both badges, wrapping to 2 lines the way it already had room to.',

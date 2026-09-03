@@ -1632,9 +1632,17 @@ function buildSignMetaRowHtml(talker, leftHtml) {
 // base rule - see styles.css). formatMoney already returns '' for a blank
 // field, so an unset Case Price simply renders nothing, same as Regular/
 // Sale Price above.
-function buildCasePriceHtml(talker) {
+// solo mirrors Regular Price's own --solo bump (see .sign__regular-price
+// --solo below): whenever Case Price shares its row with a lone, no-sale
+// Regular/Super Sale Price rather than stacking under a Regular Price
+// that's already sharing the row with a Sale Price, it needs the same
+// enlarged size so the two don't read as two different weights of price
+// on the same line - .sign__case-price on its own always stayed at the
+// smaller base size regardless of which case this was.
+function buildCasePriceHtml(talker, solo = false) {
   const casePrice = formatMoney(talker.casePrice);
-  return casePrice ? `<div class="sign__case-price">Case Price ${casePrice}</div>` : '';
+  const classes = solo ? 'sign__case-price sign__case-price--solo' : 'sign__case-price';
+  return casePrice ? `<div class="${classes}">Case Price ${casePrice}</div>` : '';
 }
 
 // Price row for Large signs: sale/super-sale price on the left, regular
@@ -1652,7 +1660,15 @@ function buildSignPriceRowHtml(talker) {
   const talkerType = talker.talkerType || 'standard';
   const hasSale = talker.salePrice && Number(talker.salePrice) > 0 && Number(talker.salePrice) !== Number(talker.price);
   const regular = formatMoney(talker.price);
+  // Two sizes, not one - whichever one actually shares Case Price's row.
+  // The with-Sale-Price branches below stack Case Price under a Regular
+  // Price that's sharing its row with Sale Price (base size); the no-Sale-
+  // Price branches instead put Case Price directly on the row next to a
+  // Regular/Super Sale Price that's already bumped up to fill the row
+  // alone (solo size, see .sign__regular-price--solo/.sign__sale-price) -
+  // it needs to match that size too, not sit small next to it.
   const caseHtml = buildCasePriceHtml(talker);
+  const caseHtmlSolo = buildCasePriceHtml(talker, true);
 
   if (talkerType === 'supersale') {
     const bigPrice = hasSale ? talker.salePrice : talker.price;
@@ -1668,7 +1684,7 @@ function buildSignPriceRowHtml(talker) {
     return `
       <div class="sign__price-row">
         <div class="sign__sale-price">Super Sale Price ${formatMoney(bigPrice)}</div>
-        ${caseHtml || '<div></div>'}
+        ${caseHtmlSolo || '<div></div>'}
       </div>
     `;
   }
@@ -1683,7 +1699,7 @@ function buildSignPriceRowHtml(talker) {
     return `
       <div class="sign__price-row">
         <div class="sign__regular-price sign__regular-price--solo">Regular Price ${regular}</div>
-        ${caseHtml}
+        ${caseHtmlSolo}
       </div>
     `;
   }
