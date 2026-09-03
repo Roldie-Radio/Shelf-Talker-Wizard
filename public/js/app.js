@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.1',
+      items: [
+        'Fixed: on a beer Large Display Sign, Description could run straight off the right edge of the sign instead of wrapping inside its own column - the description was sizing itself to its longest line\'s natural width rather than the column\'s actual (narrower) width. It now wraps and, if still too long, ends in an ellipsis like every other description already does.',
+        'Fixed: the new Untappd facts column (Rating/Style/Brewery/Location/ABV/IBU) read small and left a gap of empty space above the price row on a beer name short enough not to need the shrink-to-fit pass - sized up and now spreads across whatever height is actually available instead of bunching at the top.',
+      ],
+    },
+    {
       version: '4.6.0',
       items: [
         'New: a Sales Floor Keg Display page (Tools → Sales Floor Keg Display…) – a TV-ready screen listing every keg currently in stock with its price, read straight from the same WinePOS export file Scan UPC/Search by Name already use, no separate setup. Every keg in stock fits on screen at once (no scrolling or paging, however many there are) and the page refreshes itself every couple of minutes. A palette button offers a grid or list layout and a customizable accent color (five presets plus a custom picker), both remembered per-TV.',

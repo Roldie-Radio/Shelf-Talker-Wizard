@@ -4566,27 +4566,36 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    .card__beer-rating's own comment in this file. That misalignment risk
    didn't exist here before (signs never showed Style), so the old
    centered override was safe; it isn't once Style is in the mix. */
+/* Sized up ~20% from this override's first pass - a short beer name (one-
+   line title) left the facts column with real headroom to spare, and at
+   the original size it read as small/sparse against the rest of the
+   sign's own lettering instead of filling its column the way a "read from
+   across the aisle" sign should. fitCardText's own --price-fit shrink
+   (every rule here still multiplies by it) is what brings this back down
+   for a two-line title/long Style that doesn't have that headroom, so
+   sizing for the common case rather than the tightest one is the right
+   default. */
 .sign__content .card__beer-rating { flex: 0 0 auto; align-items: flex-start; gap: calc(var(--w) * 0.026); margin: 0; }
 .sign__content .card__beer-rating-detail { flex: 0 0 auto; }
-.sign__content .card__beer-rating-label { font-size: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * var(--sign-text) * 0.004 * var(--price-fit, 1)); }
-.sign__content .card__beer-dot { width: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); height: calc(var(--w) * var(--sign-text) * 0.011 * var(--price-fit, 1)); }
-.sign__content .card__beer-rating-num { font-size: calc(var(--w) * var(--sign-text) * 0.016 * var(--price-fit, 1)); }
-.sign__content .card__beer-rating-count { font-size: calc(var(--w) * var(--sign-text) * 0.009 * var(--price-fit, 1)); margin-top: calc(var(--w) * var(--sign-text) * 0.003 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-label { font-size: calc(var(--w) * var(--sign-text) * 0.0132 * var(--price-fit, 1)); margin-bottom: calc(var(--w) * var(--sign-text) * 0.0048 * var(--price-fit, 1)); }
+.sign__content .card__beer-dot { width: calc(var(--w) * var(--sign-text) * 0.0132 * var(--price-fit, 1)); height: calc(var(--w) * var(--sign-text) * 0.0132 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-num { font-size: calc(var(--w) * var(--sign-text) * 0.0192 * var(--price-fit, 1)); }
+.sign__content .card__beer-rating-count { font-size: calc(var(--w) * var(--sign-text) * 0.0108 * var(--price-fit, 1)); margin-top: calc(var(--w) * var(--sign-text) * 0.0036 * var(--price-fit, 1)); }
 .sign__content .card__beer-style { flex: 1 1 auto; min-width: 0; }
 .sign__content .card__beer-style-value {
-  font-size: calc(var(--w) * var(--sign-text) * 0.0104 * var(--price-fit, 1));
-  padding: calc(var(--w) * 0.006 * var(--price-fit, 1)) calc(var(--w) * 0.016 * var(--price-fit, 1));
+  font-size: calc(var(--w) * var(--sign-text) * 0.0125 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.007 * var(--price-fit, 1)) calc(var(--w) * 0.019 * var(--price-fit, 1));
   border-radius: calc(var(--w) * 0.008);
 }
 
-.sign__content .card__beer-table { margin: calc(var(--w) * 0.016 * var(--price-fit, 1)) 0 0; }
+.sign__content .card__beer-table { margin: calc(var(--w) * 0.02 * var(--price-fit, 1)) 0 0; }
 .sign__content .card__beer-table-row {
   gap: calc(var(--w) * 0.018);
-  padding: calc(var(--w) * 0.007 * var(--price-fit, 1)) 0;
-  font-size: calc(var(--w) * var(--sign-text) * 0.0072 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.0084 * var(--price-fit, 1)) 0;
+  font-size: calc(var(--w) * var(--sign-text) * 0.0086 * var(--price-fit, 1));
 }
 .sign__content .card__beer-table-label { width: auto; }
-.sign__content .card__beer-table-value { font-size: calc(var(--w) * var(--sign-text) * 0.0104 * var(--price-fit, 1)); }
+.sign__content .card__beer-table-value { font-size: calc(var(--w) * var(--sign-text) * 0.0125 * var(--price-fit, 1)); }
 .sign__content .card__beer-table-cell { gap: calc(var(--w) * 0.008); }
 
 /* Country flag (top-left) / state-or-country silhouette (top-right) on the
@@ -4645,10 +4654,17 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   gap: 3.6%;
   text-align: left;
 }
+/* justify-content: space-between (not the flex column default flex-start)
+   - a short beer name leaves the two-column area taller than the facts
+   actually need, and without this every row bunched at the top of the
+   column with the rest sitting empty; this spreads Rating+Style and the
+   Brewery/Location/ABV/IBU table across whatever height is actually
+   available instead. */
 .sign__col-left {
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: calc(var(--w) * 0.012);
   border-right: 1px solid #e7ddc9;
   padding-right: 3.6%;
@@ -4665,8 +4681,17 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    plain and Auto Size variants need overriding here (not just one), same
    [data-auto-size="true"] split as the base rule above - overriding only
    the plain one would silently disable Auto Size's own --price-fit shrink
-   the moment a beer talker used it on a sign. */
+   the moment a beer talker used it on a sign.
+   flex/min-width also need overriding, not just font-size: the base rule
+   is flex: 0 0 auto (sized to its own natural content width, correct when
+   .sign__description is a column flex child spanning the full sign) - as
+   the lone child of .sign__col-right's own *row* flex context instead, that
+   same flex: 0 0 auto let it size to its longest line's natural width
+   rather than the column's actual (much narrower) available width, running
+   the text straight past the sign's own right edge instead of wrapping. */
 .sign__col-right .sign__description {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: calc(var(--w) * var(--sign-text) * 0.0146);
 }
 .sign__col-right .sign__description[data-auto-size="true"] {
