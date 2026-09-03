@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.6',
+      items: [
+        'The beer Large Display Sign\'s Untappd facts print even larger again, and now Product Name, Regular Price, and Case Price print larger too, so the whole sign reads bigger - not just the facts column against an unchanged title/price.',
+      ],
+    },
+    {
       version: '4.6.5',
       items: [
         'The Untappd facts on a beer Large Display Sign (Rating, Style, Brewery, Location, ABV, IBU, plus the country flag/state silhouette badges) now print noticeably larger - they were reading small and sparse next to the sign\'s own title and price lettering.',
