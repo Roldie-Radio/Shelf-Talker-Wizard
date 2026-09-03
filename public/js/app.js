@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.8',
+      items: [
+        'Tightened the gap between the Untappd rating count and the Brewery row on a beer Large Display Sign, and used that freed-up room to print the beer name a bit larger.',
+        'Fixed: Size next to Regular Price (added last release) printed in a muted gray instead of matching Regular Price\'s own color.',
+      ],
+    },
+    {
       version: '4.6.7',
       items: [
         'Fixed: on a beer Large Display Sign, checking Beer Name\'s Auto-Size box shrank the whole sign - facts, badges, prices - more than leaving it unchecked, the opposite of what "auto" should do. Checking it now only shrinks the beer name itself when it genuinely needs the room, same as before, and never touches everything else more than not checking it would.',
