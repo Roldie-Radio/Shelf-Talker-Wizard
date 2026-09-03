@@ -1697,19 +1697,64 @@ function buildSignPriceRowHtml(talker) {
   `;
 }
 
+// Beer only: everything Untappd already gave us but the sign never showed -
+// country flag/state (or country) silhouette in their usual corners (same
+// badges, same two spots the Shelf Talker card already uses - see
+// buildCountryFlagHtml/buildRightBadgeHtml), Untappd Rating + Style side by
+// side, and the Brewery/Location/ABV/IBU table, all reusing the card's own
+// functions rather than a second copy of this content. Two columns since a
+// Large sign (8.5in wide, landscape) has the room a portrait Shelf Talker
+// doesn't: facts on the left, Description gets the right column to itself
+// instead of squeezed underneath everything else.
+function buildLargeBeerSignBodyHtml(talker) {
+  const refWidthIn = SIGN_LAYOUTS['sign-large'].printWidth;
+  const titleAutoSize = !!talker.titleAutoSize;
+  const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, false);
+  const descriptionAutoSize = !!talker.descriptionAutoSize;
+  const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
+  const countryFlagHtml = buildCountryFlagHtml(talker);
+  const rightBadgeHtml = buildRightBadgeHtml(talker);
+  // Same symmetric-padding trick as the Shelf Talker card's own
+  // .card__title--badge-left/-right (see styles.css) - reserves room on
+  // whichever side(s) actually have a badge, and mirrors onto the empty
+  // side too when only one badge resolved, so the title stays centered on
+  // the sign's true midpoint instead of drifting toward the empty side.
+  const titleClasses = ['sign__title'];
+  if (countryFlagHtml) titleClasses.push('sign__title--badge-left');
+  if (rightBadgeHtml) titleClasses.push('sign__title--badge-right');
+  return `
+    ${countryFlagHtml}
+    ${rightBadgeHtml}
+    <div class="${titleClasses.join(' ')}"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || 'Beer Name')}</div>
+    <div class="sign__columns">
+      <div class="sign__col-left">
+        ${buildBeerRatingHtml(talker, { includeStyle: true })}
+        ${buildBeerTableHtml(talker)}
+      </div>
+      <div class="sign__col-right">
+        <div class="sign__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
+      </div>
+    </div>
+    <div class="sign__footer-block">
+      ${buildSignMetaRowHtml(talker, '')}
+      ${buildSignPriceRowHtml(talker)}
+    </div>
+  `;
+}
+
 function buildLargeSignBodyHtml(talker) {
   const isBeer = talker.category === 'beer';
-  const ratingHtml = isBeer ? '' : buildRatingsInlineHtml(talker);
+  if (isBeer) return buildLargeBeerSignBodyHtml(talker);
+  const ratingHtml = buildRatingsInlineHtml(talker);
   const refWidthIn = SIGN_LAYOUTS['sign-large'].printWidth;
   const titleAutoSize = !!talker.titleAutoSize;
   const titleStyle = fontSizeOverrideAttr(talker.titleFontSize, refWidthIn, false);
   const descriptionAutoSize = !!talker.descriptionAutoSize;
   const descriptionStyle = fontSizeOverrideAttr(talker.descriptionFontSize, refWidthIn, descriptionAutoSize);
   return `
-    <div class="sign__title"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || (isBeer ? 'Beer Name' : 'Product Name'))}</div>
-    ${!isBeer && talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
+    <div class="sign__title"${titleStyle} data-fit="title" data-auto-size="${titleAutoSize}">${escapeHtml(talker.title || 'Product Name')}</div>
+    ${talker.vintage ? `<div class="sign__vintage">${escapeHtml(talker.vintage)}</div>` : ''}
     <div class="sign__description"${descriptionStyle} data-fit="description" data-auto-size="${descriptionAutoSize}">${escapeHtml(talker.description || '')}</div>
-    ${isBeer ? buildBeerRatingHtml(talker) : ''}
     <div class="sign__footer-block">
       ${buildSignMetaRowHtml(talker, ratingHtml)}
       ${buildSignPriceRowHtml(talker)}

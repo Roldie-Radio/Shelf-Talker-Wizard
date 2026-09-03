@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.5.20',
+      items: [
+        'New: beer Large Display Signs now show the same Untappd facts the Shelf Talker card already prints - country flag and state/country silhouette in their usual corners, Untappd Rating and Style side by side, and a Brewery/Location/ABV/IBU table - laid out in two columns (facts on the left, Description on its own column to the right) since the Large sign has the width a portrait Shelf Talker doesn\'t. Small Display Signs and every non-beer sign are unchanged.',
+      ],
+    },
+    {
       version: '4.5.19',
       items: [
         'Fixed: Scan UPC, SKU Lookup, and Search by Name reset Type back to Shelf Talker and Talker Size back to Full every time a lookup filled the form - including the second fill a "Pick the Right Beer" dialog pick triggers - silently undoing a Large/Small Display Sign (or Half/Quarter Talker Size) staff had already picked before scanning or searching. Those three tabs now carry over whatever Type/Talker Size was already selected, the same fix Import already had.',
