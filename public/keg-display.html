@@ -38,10 +38,15 @@
   }
 
   /* ---------- Header ---------- */
+  /* Grid, not flex - a left | center | right layout with the center item
+     (.header-status) truly centered on the header as a whole needs a
+     dedicated middle column, not just "whatever space is left between two
+     flex children" (which centers only when .brand and .header-right
+     happen to be the same width, which they aren't). */
   header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 1.5rem;
     padding-bottom: clamp(0.4rem, 0.9vh, 0.85rem);
     border-bottom: 2px solid var(--border);
@@ -102,21 +107,22 @@
     display: flex;
     align-items: center;
     gap: clamp(0.5rem, 1vw, 0.9rem);
-    flex: none;
+    justify-self: end;
   }
 
   /* Moved up from a since-removed footer row, so that space goes to the
      keg list instead - see layout()'s own comment for why fitting
      everything on screen benefits from every bit of vertical room. */
   .header-status {
-    text-align: right;
-    font-size: clamp(0.7rem, 0.85vw, 0.9rem);
-    color: var(--muted);
+    text-align: center;
+    font-size: clamp(1.1rem, 1.9vw, 1.7rem);
+    font-weight: 700;
+    color: var(--cream);
     white-space: nowrap;
   }
 
   .header-status__sep {
-    margin: 0 0.35em;
+    margin: 0 0.45em;
     opacity: 0.6;
   }
 
@@ -481,12 +487,12 @@
         <h1>Kegs <span>In Stock</span></h1>
       </div>
     </div>
+    <div class="header-status">
+      <span id="headerCount"></span>
+      <span class="header-status__sep">&middot;</span>
+      <span id="headerUpdated"></span>
+    </div>
     <div class="header-right">
-      <div class="header-status">
-        <span id="headerCount"></span>
-        <span class="header-status__sep">&middot;</span>
-        <span id="headerUpdated"></span>
-      </div>
       <div class="clock">
         <div class="clock__time" id="clockTime">--:--</div>
         <div class="clock__date" id="clockDate">&nbsp;</div>
