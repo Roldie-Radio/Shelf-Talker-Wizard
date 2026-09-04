@@ -217,6 +217,38 @@ function buildFlavorHtml(talker) {
   return `<div class="card__flavor">${rowsHtml}</div>`;
 }
 
+// THC/CBD potency callout - paired mg badges (mirrors the Beer talker's own
+// Untappd rating row in spirit: a shopper-facing number that reads at a
+// glance). Lab Tested is a plain boolean (talker.isLabTested, see
+// #fLabTested in index.html) printed as its own small badge next to the
+// servings line when set. Strain Type (talker.strain: 'sativa' | 'indica' |
+// 'hybrid', see #fStrain) prints as a small pill above the dose row, same
+// spot a beer's style pill occupies relative to its own rating row.
+const STRAIN_LABELS = { sativa: 'Sativa', indica: 'Indica', hybrid: 'Hybrid' };
+function buildDoseHtml(talker) {
+  const thc = String(talker.thcMg || '').trim();
+  const cbd = String(talker.cbdMg || '').trim();
+  const servings = String(talker.thcCbdServings || '').trim();
+  if (!thc && !cbd) return '';
+  const doseHtml = [
+    thc ? `<div class="card__dose card__dose--thc"><span class="card__dose-label">THC</span><span class="card__dose-amount">${escapeHtml(thc)}<span class="card__dose-unit">mg</span></span></div>` : '',
+    cbd ? `<div class="card__dose card__dose--cbd"><span class="card__dose-label">CBD</span><span class="card__dose-amount">${escapeHtml(cbd)}<span class="card__dose-unit">mg</span></span></div>` : '',
+  ].join('');
+  const strainLabel = STRAIN_LABELS[talker.strain];
+  const strainHtml = strainLabel ? `<div class="card__strain-badge card__strain-badge--${talker.strain}">${strainLabel}</div>` : '';
+  const labBadge = talker.isLabTested ? '<span class="card__lab-badge">Lab Tested</span>' : '';
+  const servingsHtml = (servings || labBadge)
+    ? `<div class="card__dose-servings">${servings ? `${escapeHtml(servings)} servings per container` : ''}${labBadge}</div>`
+    : '';
+  return `
+    <div class="card__potency">
+      ${strainHtml}
+      <div class="card__dose-row">${doseHtml}</div>
+      ${servingsHtml}
+    </div>
+  `;
+}
+
 // Wine/Spirits varietal -> candidate food pairings, for the Food Pairing
 // Suggestions field (Settings -> Experimental Features -> Wine Food
 // Pairings). Matched by keyword against the Product Title (falling back to
@@ -1900,7 +1932,8 @@ function buildSignElement(talker) {
  * @param {object} talker - { category, title, description, size, price,
  *   salePrice, theme, talkerType, isChilled, ratings: [{reviewer, score}],
  *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
- *   location, style, abv, ibu, untappdRating, untappdRatingCount }
+ *   location, style, abv, ibu, untappdRating, untappdRatingCount, thcMg,
+ *   cbdMg, thcCbdServings, isLabTested, strain }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {
@@ -1923,6 +1956,10 @@ function buildCardElement(talker) {
   // immediately without touching the underlying data, same as switching it
   // back does.
   const isBourbon = talker.category === 'bourbon';
+  // Same "hidden, never deleted" behavior as Bourbon above - potency/
+  // compliance print whenever the talker's own category says THC/CBD, no
+  // Settings toggle involved.
+  const isThcCbd = talker.category === 'thccbd';
   card.dataset.category = isBeer ? 'beer' : 'wine';
   // Same "hidden, never deleted" behavior as Bourbon above, but still
   // toggle-driven - published by applyExperimentalPairings in app.js, read
@@ -2015,6 +2052,7 @@ function buildCardElement(talker) {
       ${(isBeer || !experimentalWineProfile) ? '' : buildWineProfileHtml(talker)}
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
+      ${isThcCbd ? buildDoseHtml(talker) : ''}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>
@@ -2025,14 +2063,16 @@ function buildCardElement(talker) {
       ${isSuperSale ? supersaleRegularPriceHtml : (isCloseout ? closeoutRestHtml : pricingHtml)}
   `;
 
-  // Store SKU: Beer only, and not on Quarter (which only ever shows Title/
-  // Size/Regular Price/Sale Price - see the isQuarter branch above). Set
-  // into the footer band next to the store URL rather than anywhere in
-  // .card__body - it's inventory/restock information for staff, not part
-  // of the shopper-facing pitch, so it belongs with the other "back of
-  // house" line already down there instead of competing with the price or
-  // description for room.
-  const showSku = isBeer && !isQuarter && talker.sku;
+  // Store SKU: Beer and THC/CBD only, and not on Quarter (which only ever
+  // shows Title/Size/Regular Price/Sale Price - see the isQuarter branch
+  // above). Set into the footer band next to the store URL rather than
+  // anywhere in .card__body - it's inventory/restock information for
+  // staff, not part of the shopper-facing pitch, so it belongs with the
+  // other "back of house" line already down there instead of competing
+  // with the price or description for room. THC/CBD's own SKU (see
+  // #fThcCbdSku in index.html) is also what The High Shelf's auto-save
+  // matches by first, same as Beer's.
+  const showSku = (isBeer || isThcCbd) && !isQuarter && talker.sku;
   const footerClasses = ['card__band', 'card__band--footer'];
   if (showSku) footerClasses.push('card__band--footer--split');
 
