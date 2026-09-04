@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.11',
+      items: [
+        'Fixed: a long beer name on a beer Large Display Sign could render garbled - an ellipsis mid-word with a second, real line of text still showing beneath it. The beer name now always prints on a single line, shrinking to fit and falling back to an ellipsis only if it truly can\'t.',
+        'Tightened the Untappd rating\'s own vertical spacing further on a beer Large Display Sign, freeing up room to print Regular Price and Case Price larger.',
+      ],
+    },
+    {
       version: '4.6.10',
       items: [
         'The beer name on a beer Large Display Sign runs even wider now, closer to the flag/state badges - the previous pass left more room to give.',
