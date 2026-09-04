@@ -259,7 +259,14 @@ function buildDoseHtml(talker) {
   const effects = String(talker.effects || '').trim();
   const onset = String(talker.onset || '').trim();
   const tastingNotes = String(talker.tastingNotes || '').trim();
-  if (!thc && !cbd) return '';
+  // Nothing to say about the product = no callout at all. This used to test
+  // thc/cbd alone, back when those were the only things in this block; a
+  // product whose mg figure isn't published (several variety packs, and
+  // every Uncle Arnie's SKU in this store's own export) would then print no
+  // onset window or tasting notes either, despite having both researched.
+  // Servings/strain/lab-tested deliberately stay out of this test - they
+  // decorate a callout, they don't justify one on their own.
+  if (!thc && !cbd && !effects && !onset && !tastingNotes) return '';
   const doseHtml = [
     thc ? `<div class="card__dose card__dose--thc"><span class="card__dose-label">THC</span><span class="card__dose-amount">${escapeHtml(thc)}<span class="card__dose-unit">mg</span></span></div>` : '',
     cbd ? `<div class="card__dose card__dose--cbd"><span class="card__dose-label">CBD</span><span class="card__dose-amount">${escapeHtml(cbd)}<span class="card__dose-unit">mg</span></span></div>` : '',

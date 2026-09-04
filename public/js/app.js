@@ -52,6 +52,15 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.18',
+      items: [
+        'New: THC/CBD talkers and The High Shelf now carry two more researched fields - Onset Time (how long a brand says its own drink takes to come on, e.g. "15-30 min") and Tasting Notes (that brand\'s own flavor copy). Both print on the talker under Effects: Onset as its own labeled badge, Tasting Notes as a closing line. Both pull back in through the recall banner (their own Use buttons, plus Use All) and auto-save to The High Shelf with the rest of the talker, same as every other THC/CBD field.',
+        'New: all 130 products on The High Shelf have been researched brand by brand - Onset Time on 101 of them, Effects on 83, Tasting Notes on 85, plus a Strain Type on the six Delta seltzers whose brand actually names one. Where a brand publishes no onset window or flavor copy for a product, that field is deliberately left blank rather than filled with a plausible guess, so a blank on a talker means the brand doesn\'t say it.',
+        'New: The High Shelf page now shows a Researched count next to Products and Lab Tested, has a "Needs Research First" sort that floats whatever still has no Effects, Onset, or Tasting Notes to the top, and searches Tasting Notes and Effects as well as name and SKU - so "citrus" or "calming" finds a product whose own name says neither.',
+        'Fixed: a THC/CBD talker whose mg figure isn\'t published (every Uncle Arnie\'s SKU in the export, and several variety packs) printed no potency callout at all, which would have swallowed its Effects, Onset, and Tasting Notes too. The callout now prints whenever there\'s something to say.',
+      ],
+    },
+    {
       version: '4.6.17',
       items: [
         "A beer Large Display Sign's Store SKU now always prints as the full 5 digits (e.g. \"00665\", not \"665\") even if it was typed without its leading zero(s).",

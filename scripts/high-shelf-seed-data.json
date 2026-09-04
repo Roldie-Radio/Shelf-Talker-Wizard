@@ -6,6 +6,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "onset": "10-15 min",
+    "tastingNotes": "Berry-forward with a bright citrus lift and a whisper of creamy vanilla",
     "source": "Manual"
   },
   {
@@ -15,7 +17,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "10-15 min",
+    "source": "Manual"
   },
   {
     "title": "ALTE THC TANGERINE CRANBERRY 5MG 4PK CAN",
@@ -24,7 +27,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "10-15 min",
+    "source": "Manual"
   },
   {
     "title": "ALTE THC WATERMELON BASIL JALAPENO 10MG 4PK CAN",
@@ -33,7 +37,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "10-15 min",
+    "source": "Manual"
   },
   {
     "title": "ARTET CHAMOMILE LEMON SPRITZ 10MG",
@@ -42,6 +47,9 @@
     "cbdMg": "10",
     "servings": "",
     "isLabTested": false,
+    "effects": "Bright & Conversational",
+    "onset": "15-30 min",
+    "tastingNotes": "Chamomile tonic, lemon and Artet's botanicals - a tribute to the Gin & Tonic",
     "source": "Manual"
   },
   {
@@ -51,6 +59,9 @@
     "cbdMg": "10",
     "servings": "",
     "isLabTested": false,
+    "effects": "Bright & Conversational",
+    "onset": "15-30 min",
+    "tastingNotes": "Real grapefruit juice and rosemary syrup - zesty, sweet and sessionable",
     "source": "Manual"
   },
   {
@@ -60,6 +71,9 @@
     "cbdMg": "10",
     "servings": "",
     "isLabTested": false,
+    "effects": "Bright & Conversational",
+    "onset": "15-30 min",
+    "tastingNotes": "Real fruit juice, ginger and citrus - effervescent, with a touch of spice and no added sugar",
     "source": "Manual"
   },
   {
@@ -69,6 +83,9 @@
     "cbdMg": "10",
     "servings": "",
     "isLabTested": false,
+    "effects": "Bright & Conversational",
+    "onset": "15-30 min",
+    "tastingNotes": "Rich berries, sweet basil and a hint of pink peppercorn",
     "source": "Manual"
   },
   {
@@ -78,6 +95,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Calm & Sessionable",
+    "onset": "10-20 min",
+    "tastingNotes": "Southern-style sweet tea from real black tea leaves - subtle tannins, a mellow citrus edge",
     "source": "Manual"
   },
   {
@@ -87,6 +107,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Calm & Sessionable",
+    "onset": "10-20 min",
+    "tastingNotes": "Bright, zesty lemonade",
     "source": "Manual"
   },
   {
@@ -96,6 +119,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Calm & Sessionable",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -105,6 +130,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Full-Body Relaxation",
+    "onset": "15-20 min",
+    "tastingNotes": "Brewed black iced tea with blueberry and pomegranate, non-carbonated",
     "source": "Manual"
   },
   {
@@ -114,6 +142,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Full-Body Relaxation",
+    "onset": "15-20 min",
+    "tastingNotes": "Brewed black iced tea with peach, non-carbonated",
     "source": "Manual"
   },
   {
@@ -123,6 +154,9 @@
     "cbdMg": "75",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Dreamlike Relaxation",
+    "onset": "Within 5 min",
+    "tastingNotes": "Wild blueberry and cherry with lemon and blue lotus flower - smooth and lightly sweet",
     "source": "Manual"
   },
   {
@@ -132,6 +166,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Calming Finish",
+    "tastingNotes": "Soothing lavender over bright, zesty lemon",
     "source": "Manual"
   },
   {
@@ -141,6 +177,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Mellow, Happy Lift",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -150,6 +188,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Mellow, Happy Lift",
+    "onset": "10-20 min",
+    "tastingNotes": "A spicy, herbal twist on a legendary soda flavor",
     "source": "Manual"
   },
   {
@@ -159,6 +200,8 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "effects": "Super High Lift",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -168,6 +211,9 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "effects": "Super High Lift",
+    "onset": "10-20 min",
+    "tastingNotes": "Part cream soda, part campfire - creamy vanilla with a touch of spice",
     "source": "Manual"
   },
   {
@@ -177,6 +223,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Smooth & Relaxing",
+    "tastingNotes": "Crisp black tea with juicy peach",
     "source": "Manual"
   },
   {
@@ -186,6 +234,7 @@
     "cbdMg": "",
     "servings": "12",
     "isLabTested": true,
+    "effects": "Smooth & Relaxing",
     "source": "Manual"
   },
   {
@@ -195,6 +244,8 @@
     "cbdMg": "10",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Then Calm",
+    "onset": "10-15 min",
     "source": "Manual"
   },
   {
@@ -204,6 +255,9 @@
     "cbdMg": "10",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Then Calm",
+    "onset": "10-15 min",
+    "tastingNotes": "Grape and ginger beer, with caffeine",
     "source": "Manual"
   },
   {
@@ -213,6 +267,8 @@
     "cbdMg": "10",
     "servings": "6",
     "isLabTested": true,
+    "effects": "Uplifting, Then Calm",
+    "onset": "10-15 min",
     "source": "Manual"
   },
   {
@@ -222,6 +278,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxing & Euphoric",
+    "onset": "About 15 min",
+    "tastingNotes": "Smooth lemonade with a touch of ginger",
     "source": "Manual"
   },
   {
@@ -231,6 +290,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxing & Euphoric",
+    "onset": "About 15 min",
+    "tastingNotes": "Sweet grape with tangy lemonade - bright and bold",
     "source": "Manual"
   },
   {
@@ -240,6 +302,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxing & Euphoric",
+    "onset": "About 15 min",
     "source": "Manual"
   },
   {
@@ -249,6 +313,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxing & Euphoric",
+    "onset": "About 15 min",
+    "tastingNotes": "Watermelon with sour overtones - refreshing and subtle",
     "source": "Manual"
   },
   {
@@ -258,6 +325,8 @@
     "cbdMg": "0",
     "servings": "12",
     "isLabTested": true,
+    "effects": "Relaxing & Euphoric",
+    "onset": "About 15 min",
     "source": "Manual"
   },
   {
@@ -267,6 +336,7 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "tastingNotes": "Cold-brew depth laced with cacao smoke and blackened caramel",
     "source": "Manual"
   },
   {
@@ -285,6 +355,9 @@
     "cbdMg": "6",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Clear-Headed",
+    "onset": "10-20 min",
+    "tastingNotes": "Margarita-style jalapeno and lime, with no hempy finish",
     "source": "Manual"
   },
   {
@@ -294,6 +367,9 @@
     "cbdMg": "6",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Clear-Headed",
+    "onset": "10-20 min",
+    "tastingNotes": "Fresh yuzu and grapefruit juice - bright and uplifting",
     "source": "Manual"
   },
   {
@@ -303,6 +379,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "strain": "indica",
+    "effects": "Supreme Relaxation",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -312,6 +391,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "strain": "indica",
+    "effects": "Supreme Relaxation",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -321,6 +403,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "strain": "hybrid",
+    "effects": "Balanced Hybrid",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -330,6 +415,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "strain": "sativa",
+    "effects": "Energizing & Euphoric",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -339,6 +427,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "strain": "sativa",
+    "effects": "Energizing & Euphoric",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -348,6 +439,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "strain": "hybrid",
+    "effects": "Balanced Hybrid",
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -357,6 +451,7 @@
     "cbdMg": "1",
     "servings": "4",
     "isLabTested": true,
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -366,6 +461,7 @@
     "cbdMg": "1",
     "servings": "4",
     "isLabTested": true,
+    "onset": "10-20 min",
     "source": "Manual"
   },
   {
@@ -375,7 +471,8 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "15-30 min",
+    "source": "Manual"
   },
   {
     "title": "FIND WUNDER BLACKBERRY LEMON 10MG",
@@ -384,7 +481,9 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "15-30 min",
+    "tastingNotes": "Rich, succulent blackberry with zesty, crisp lemon",
+    "source": "Manual"
   },
   {
     "title": "FIND WUNDER BLOOD ORANGE BITTERS 4PK",
@@ -393,7 +492,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "15-30 min",
+    "tastingNotes": "Tart blood orange with the sharpness of bitters - tangy and bold",
+    "source": "Manual"
   },
   {
     "title": "FIND WUNDER GRAPEFRUIT HIBISCUS 4PK",
@@ -402,7 +503,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "15-30 min",
+    "tastingNotes": "Bright, tart grapefruit evened out by delicate hibiscus",
+    "source": "Manual"
   },
   {
     "title": "FIND WUNDER MIDNIGHT BERRY 10MG",
@@ -411,7 +514,8 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "15-30 min",
+    "source": "Manual"
   },
   {
     "title": "FIND WUNDER WATERMELON BASIL 10MG",
@@ -420,7 +524,9 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": false,
-    "source": "Export File"
+    "onset": "15-30 min",
+    "tastingNotes": "Delicate watermelon sweetness with herby basil on the finish",
+    "source": "Manual"
   },
   {
     "title": "FIVE FLOWERS THC COOLERS BLACKBERRY 10MG 4PK",
@@ -429,6 +535,9 @@
     "cbdMg": "10",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Calm & Gently Uplifting",
+    "onset": "Up to 2 hrs",
+    "tastingNotes": "Ripe blackberry first, then light floral notes, with a hint of citrus on the finish",
     "source": "Manual"
   },
   {
@@ -438,6 +547,8 @@
     "cbdMg": "10",
     "servings": "6",
     "isLabTested": true,
+    "effects": "Calm & Gently Uplifting",
+    "onset": "Up to 2 hrs",
     "source": "Manual"
   },
   {
@@ -447,7 +558,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Easy & Laid-Back",
+    "tastingNotes": "Brewed with real black tea, naturally flavored, non-carbonated",
+    "source": "Manual"
   },
   {
     "title": "FIVEISLANDS THC HALF & HALF 10 MG 4PK",
@@ -456,7 +569,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Easy & Laid-Back",
+    "tastingNotes": "Brewed with real black tea, naturally flavored, non-carbonated",
+    "source": "Manual"
   },
   {
     "title": "FIVEISLANDS THC PEACH 10 MG 4PK",
@@ -465,7 +580,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Easy & Laid-Back",
+    "tastingNotes": "Brewed with real black tea, naturally flavored, non-carbonated",
+    "source": "Manual"
   },
   {
     "title": "FIZZY JANE THC LEMON LIME 10 MG 4PK",
@@ -474,6 +591,7 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "tastingNotes": "Crisp, fruit-forward lemon-lime",
     "source": "Manual"
   },
   {
@@ -483,6 +601,7 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Vanilla and pure Wisconsin honey, caramelized",
     "source": "Manual"
   },
   {
@@ -492,6 +611,7 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Pumpkin, cinnamon, nutmeg and vanilla",
     "source": "Manual"
   },
   {
@@ -501,6 +621,7 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Fire-brewed with pure honey",
     "source": "Manual"
   },
   {
@@ -510,6 +631,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Soothing & Uplifting",
+    "tastingNotes": "Bubbly effervescence with fruity peach sweetness",
     "source": "Manual"
   },
   {
@@ -519,6 +642,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Soothing & Uplifting",
+    "tastingNotes": "Ripe, juicy strawberry",
     "source": "Manual"
   },
   {
@@ -528,6 +653,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed Euphoria",
+    "tastingNotes": "Creamy ripe banana with hints of tropical fruit",
     "source": "Manual"
   },
   {
@@ -537,6 +664,7 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed Euphoria",
     "source": "Manual"
   },
   {
@@ -546,6 +674,7 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed Euphoria",
     "source": "Manual"
   },
   {
@@ -555,6 +684,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed Euphoria",
+    "tastingNotes": "Ripe strawberry with a smooth, creamy undertone - like a strawberry milkshake",
     "source": "Manual"
   },
   {
@@ -564,6 +695,9 @@
     "cbdMg": "10",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Smooth & Easygoing",
+    "onset": "15-30 min",
+    "tastingNotes": "Juicy, sunny and easygoing - made with real fruit juice",
     "source": "Manual"
   },
   {
@@ -573,6 +707,9 @@
     "cbdMg": "<1",
     "servings": "",
     "isLabTested": false,
+    "effects": "Happy, Talkative, Then Relaxed",
+    "onset": "5-15 min",
+    "tastingNotes": "Spicy ginger root syrup, zesty lime puree, a rice wine vinegar finish",
     "source": "Manual"
   },
   {
@@ -582,6 +719,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
     "source": "Manual"
   },
   {
@@ -591,6 +730,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
+    "tastingNotes": "Rich black cherry and fresh lemonade - deep and tart, with added electrolytes",
     "source": "Manual"
   },
   {
@@ -600,6 +742,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
     "source": "Manual"
   },
   {
@@ -609,6 +753,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
+    "tastingNotes": "Tart, zesty limeade",
     "source": "Manual"
   },
   {
@@ -618,6 +765,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
+    "tastingNotes": "Juicy strawberry and real lemon juice - smooth and lightly sweet",
     "source": "Manual"
   },
   {
@@ -627,6 +777,8 @@
     "cbdMg": "",
     "servings": "12",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
     "source": "Manual"
   },
   {
@@ -636,6 +788,9 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
+    "tastingNotes": "Sweet peach over a smooth, relaxing tea",
     "source": "Manual"
   },
   {
@@ -645,6 +800,8 @@
     "cbdMg": "",
     "servings": "12",
     "isLabTested": true,
+    "effects": "Uplifting, Clean & Refreshing",
+    "onset": "About 15 min",
     "source": "Manual"
   },
   {
@@ -654,6 +811,8 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "effects": "Uplifting, Relaxed & Social",
+    "onset": "5-15 min",
     "source": "Manual"
   },
   {
@@ -663,6 +822,9 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "effects": "Uplifting, Relaxed & Social",
+    "onset": "5-15 min",
+    "tastingNotes": "Flavorless - made for shots, sipping and mixing",
     "source": "Manual"
   },
   {
@@ -672,6 +834,8 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "effects": "Uplifting, Relaxed & Social",
+    "onset": "5-15 min",
     "source": "Manual"
   },
   {
@@ -681,6 +845,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Smooth, Social Buzz",
+    "onset": "15-20 min",
+    "tastingNotes": "A classic margarita with a twist",
     "source": "Manual"
   },
   {
@@ -690,6 +857,9 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Smooth, Social Buzz",
+    "onset": "15-20 min",
+    "tastingNotes": "Barrel whiskey notes from real bitters",
     "source": "Manual"
   },
   {
@@ -699,6 +869,8 @@
     "cbdMg": "10",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Balanced & Relaxing",
+    "tastingNotes": "Tart citrus balanced with stone-fruit sweetness",
     "source": "Manual"
   },
   {
@@ -708,6 +880,8 @@
     "cbdMg": "0",
     "servings": "6",
     "isLabTested": true,
+    "onset": "10-15 min",
+    "tastingNotes": "Real fruit flavors, crisp clean finish, no cannabis taste",
     "source": "Manual"
   },
   {
@@ -717,6 +891,8 @@
     "cbdMg": "0",
     "servings": "6",
     "isLabTested": true,
+    "onset": "10-15 min",
+    "tastingNotes": "Real fruit flavors, crisp clean finish, no cannabis taste",
     "source": "Manual"
   },
   {
@@ -726,6 +902,8 @@
     "cbdMg": "0",
     "servings": "6",
     "isLabTested": true,
+    "onset": "10-15 min",
+    "tastingNotes": "Real fruit flavors, crisp clean finish, no cannabis taste",
     "source": "Manual"
   },
   {
@@ -735,6 +913,8 @@
     "cbdMg": "0",
     "servings": "6",
     "isLabTested": true,
+    "onset": "10-15 min",
+    "tastingNotes": "Real fruit flavors, crisp clean finish, no cannabis taste",
     "source": "Manual"
   },
   {
@@ -744,6 +924,8 @@
     "cbdMg": "0",
     "servings": "6",
     "isLabTested": true,
+    "onset": "10-15 min",
+    "tastingNotes": "Real fruit flavors, crisp clean finish, no cannabis taste",
     "source": "Manual"
   },
   {
@@ -753,6 +935,8 @@
     "cbdMg": "0",
     "servings": "",
     "isLabTested": true,
+    "onset": "10-15 min",
+    "tastingNotes": "Real fruit flavors, crisp clean finish, no cannabis taste",
     "source": "Manual"
   },
   {
@@ -789,6 +973,9 @@
     "cbdMg": "2",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Gentle, Uplifting Buzz",
+    "onset": "10-15 min",
+    "tastingNotes": "Peach and guava with lemon, passionfruit and strawberry",
     "source": "Manual"
   },
   {
@@ -798,6 +985,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Gentle Buzz",
+    "tastingNotes": "Lemon and honey sun tea, made with real juice",
     "source": "Manual"
   },
   {
@@ -807,6 +996,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Euphoric",
+    "onset": "10-30 min",
+    "tastingNotes": "Fizzy fruit punch, with no artificial colors or flavors",
     "source": "Manual"
   },
   {
@@ -816,6 +1008,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Euphoric",
+    "onset": "10-30 min",
+    "tastingNotes": "Crisp orange soda, with no artificial colors or flavors",
     "source": "Manual"
   },
   {
@@ -825,8 +1020,10 @@
     "cbdMg": "10",
     "servings": "4",
     "isLabTested": false,
-    "source": "Manual",
-    "effects": "Chill & Calming"
+    "effects": "Chill & Calming",
+    "onset": "10-15 min",
+    "tastingNotes": "Real tropical mango and pineapple, with CBD and L-theanine",
+    "source": "Manual"
   },
   {
     "title": "SENORITA LIME JALAPENO 10MG 4PK",
@@ -835,6 +1032,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "onset": "20-30 min",
+    "tastingNotes": "Real lime juice, blue agave, jalapeno and pink salt - bright, with a hint of heat rather than burn",
     "source": "Manual"
   },
   {
@@ -844,6 +1043,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "onset": "20-30 min",
+    "tastingNotes": "Sweet, tangy tropical mango",
     "source": "Manual"
   },
   {
@@ -853,6 +1054,7 @@
     "cbdMg": "10",
     "servings": "",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -862,6 +1064,7 @@
     "cbdMg": "10",
     "servings": "",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -871,6 +1074,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Uplifting Calmness",
+    "tastingNotes": "Brewed black tea with peach - smooth and crisp",
     "source": "Manual"
   },
   {
@@ -880,6 +1085,7 @@
     "cbdMg": "",
     "servings": "6",
     "isLabTested": true,
+    "tastingNotes": "Clean, poised and elegant",
     "source": "Manual"
   },
   {
@@ -889,6 +1095,7 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Clean, poised and elegant",
     "source": "Manual"
   },
   {
@@ -898,6 +1105,7 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Rich, smooth and indulgent",
     "source": "Manual"
   },
   {
@@ -907,6 +1115,7 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Tropical, with a subtle heat",
     "source": "Manual"
   },
   {
@@ -916,6 +1125,7 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "tastingNotes": "Real juice and cane sugar, no artificial colors or sweeteners",
     "source": "Manual"
   },
   {
@@ -925,6 +1135,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Deep & Long-Lasting",
+    "onset": "30-40 min",
+    "tastingNotes": "Rich, juicy blackberry - lightly carbonated and smooth",
     "source": "Manual"
   },
   {
@@ -934,6 +1147,9 @@
     "cbdMg": "5",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
+    "tastingNotes": "Bold iced tea and citrusy lemonade",
     "source": "Manual"
   },
   {
@@ -943,6 +1159,9 @@
     "cbdMg": "5",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
+    "tastingNotes": "Juicy watermelon with a zesty lime twist",
     "source": "Manual"
   },
   {
@@ -952,6 +1171,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
+    "tastingNotes": "Ripe, luscious black cherry over crisp sparkling seltzer",
     "source": "Manual"
   },
   {
@@ -961,6 +1183,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
+    "tastingNotes": "Sweet blue raspberry and zesty lemonade - sweet-tart with a bright citrus finish",
     "source": "Manual"
   },
   {
@@ -970,6 +1195,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
+    "tastingNotes": "Sweet, juicy ripe pineapple with a zesty citrus kick",
     "source": "Manual"
   },
   {
@@ -979,6 +1207,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -988,6 +1218,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -997,6 +1229,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "effects": "Relaxed & Social",
+    "onset": "15-30 min",
+    "tastingNotes": "Juicy watermelon meeting the zing of lime - sweet and tangy",
     "source": "Manual"
   },
   {
@@ -1006,6 +1241,8 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": true,
+    "onset": "About 15 min",
+    "tastingNotes": "Bright lime with a whisper of sea salt, not too sweet",
     "source": "Manual"
   },
   {
@@ -1015,6 +1252,7 @@
     "cbdMg": "",
     "servings": "12",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1024,6 +1262,7 @@
     "cbdMg": "",
     "servings": "12",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1033,6 +1272,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "onset": "15-30 min",
+    "tastingNotes": "Tart and sweet cherries over zesty limeade",
     "source": "Manual"
   },
   {
@@ -1042,6 +1283,7 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1051,6 +1293,7 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1060,6 +1303,7 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1069,6 +1313,7 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1078,6 +1323,7 @@
     "cbdMg": "",
     "servings": "",
     "isLabTested": true,
+    "onset": "15-30 min",
     "source": "Manual"
   },
   {
@@ -1087,6 +1333,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "onset": "15-30 min",
+    "tastingNotes": "Extra-juicy watermelon, brewed for maximum thirst-quenching",
     "source": "Manual"
   },
   {
@@ -1096,6 +1344,8 @@
     "cbdMg": "",
     "servings": "4",
     "isLabTested": true,
+    "onset": "15-30 min",
+    "tastingNotes": "Calming green tea with a zest of lemon and a clean finish",
     "source": "Manual"
   },
   {
@@ -1105,7 +1355,10 @@
     "cbdMg": "",
     "servings": "12",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "No cannabis flavor or bitterness - light, crisp and fruit-forward",
+    "source": "Manual"
   },
   {
     "title": "WYNK THC 10MG LEMONADE VARIETY PACK 12PK",
@@ -1114,6 +1367,9 @@
     "cbdMg": "0",
     "servings": "12",
     "isLabTested": false,
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "Lightly sweetened lemonade - monk fruit and allulose, zero sugar",
     "source": "Manual"
   },
   {
@@ -1123,6 +1379,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "Lightly sweetened lemonade - monk fruit and allulose, zero sugar",
     "source": "Manual"
   },
   {
@@ -1132,6 +1391,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "Lightly sweetened lemonade - monk fruit and allulose, zero sugar",
     "source": "Manual"
   },
   {
@@ -1141,7 +1403,10 @@
     "cbdMg": "",
     "servings": "6",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "No cannabis flavor or bitterness - light, crisp and fruit-forward",
+    "source": "Manual"
   },
   {
     "title": "WYNK THC SELTZER LIME TWIST 5MG 6PK CAN",
@@ -1150,7 +1415,10 @@
     "cbdMg": "",
     "servings": "6",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "No cannabis flavor or bitterness - light, crisp and fruit-forward",
+    "source": "Manual"
   },
   {
     "title": "WYNK THC STRAWBERRY LEMONADE 10MG 4PK CAN",
@@ -1159,6 +1427,9 @@
     "cbdMg": "0",
     "servings": "4",
     "isLabTested": false,
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "Lightly sweetened lemonade - monk fruit and allulose, zero sugar",
     "source": "Manual"
   },
   {
@@ -1168,6 +1439,9 @@
     "cbdMg": "",
     "servings": "6",
     "isLabTested": false,
-    "source": "Export File"
+    "effects": "Balanced, Light & Social",
+    "onset": "10-15 min",
+    "tastingNotes": "No cannabis flavor or bitterness - light, crisp and fruit-forward",
+    "source": "Manual"
   }
 ]
