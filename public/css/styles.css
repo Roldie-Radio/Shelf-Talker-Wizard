@@ -3932,6 +3932,96 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   color: var(--ink);
 }
 
+/* THC/CBD potency callout (see buildDoseHtml in card.js) - sits directly
+   under the description, same spot Mash Bill/Nose-Palate-Finish occupy for
+   Bourbon. Fixed colors, not accent-based, same reasoning as the Mash Bill
+   grain palette above: a THC/CBD talker's own Theme (amber/purple) is a
+   store-brand choice, not a claim about the product, so this stays green/
+   teal regardless of which theme the talker uses. */
+.card__potency {
+  flex: 0 0 auto;
+  margin: calc(var(--w) * 0.018 * var(--price-fit, 1)) 0 calc(var(--w) * 0.03 * var(--price-fit, 1));
+}
+/* Strain Type pill (see #fStrain in index.html) - sits above the dose row,
+   same relative spot a beer's style pill occupies above its own rating
+   row. Fixed colors, not accent-based, same reasoning as the dose badges
+   below - a talker's Theme is a store-brand choice, not a claim about the
+   product. */
+.card__strain-badge {
+  display: inline-block;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  padding: calc(var(--w) * 0.006 * var(--price-fit, 1)) calc(var(--w) * 0.018 * var(--price-fit, 1));
+  border-radius: 999px;
+  margin-bottom: calc(var(--w) * 0.012 * var(--price-fit, 1));
+}
+.card__strain-badge--sativa { color: #a8391a; background: rgba(168, 57, 26, 0.12); }
+.card__strain-badge--indica { color: #4a3f8f; background: rgba(74, 63, 143, 0.12); }
+.card__strain-badge--hybrid { color: #2e7d32; background: rgba(46, 125, 50, 0.12); }
+.card__dose-row {
+  display: flex;
+  gap: calc(var(--w) * 0.03 * var(--price-fit, 1));
+}
+.card__dose {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: calc(var(--w) * 0.012 * var(--price-fit, 1));
+  border-radius: calc(var(--w) * 0.014);
+  padding: calc(var(--w) * 0.016 * var(--price-fit, 1)) calc(var(--w) * 0.02 * var(--price-fit, 1));
+  color: #fff;
+}
+.card__dose--thc { background: #3f7d4a; }
+.card__dose--cbd { background: #2f7f7a; }
+.card__dose-label {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: calc(var(--w) * 0.026 * var(--price-fit, 1));
+  opacity: 0.9;
+}
+.card__dose-amount {
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 800;
+  font-size: calc(var(--w) * 0.05 * var(--price-fit, 1));
+  line-height: 1;
+}
+.card__dose-unit {
+  font-weight: 700;
+  font-size: 0.5em;
+  margin-left: calc(var(--w) * 0.004);
+}
+.card__dose-servings {
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: calc(var(--w) * 0.03 * var(--price-fit, 1));
+  color: var(--muted);
+  margin-top: calc(var(--w) * 0.012 * var(--price-fit, 1));
+}
+
+/* Lab Tested badge (see #fLabTested in index.html) - folded into
+   .card__dose-servings above rather than a line of its own, next to the
+   servings count when both are present. */
+.card__lab-badge {
+  display: inline-block;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: normal;
+  font-size: calc(var(--w) * 0.022 * var(--price-fit, 1));
+  color: #2f7f7a;
+  background: rgba(47, 127, 122, 0.12);
+  padding: calc(var(--w) * 0.005 * var(--price-fit, 1)) calc(var(--w) * 0.014 * var(--price-fit, 1));
+  border-radius: 999px;
+  margin-left: calc(var(--w) * 0.01);
+}
+
 /* Food Pairing Suggestions - up to 3 icon+word pairings (see
    buildPairingsHtml in card.js), Wine/Spirits Shelf Talkers only (not Beer,
    not Quarter Size - same isBeer/isQuarter guards as Nose/Palate/Finish

@@ -17,6 +17,7 @@ const {
   listMashBills, upsertMashBill, updateMashBillById, deleteMashBill,
   listBeers, getBeer, upsertBeer, updateBeerById, deleteBeer, getBeerByTitle,
   listRums, upsertRum, updateRumById, deleteRum,
+  listHighShelfEntries, getHighShelfEntryByTitle, upsertHighShelfEntry, updateHighShelfEntryById, deleteHighShelfEntry,
 } = require('./db');
 const { getServerConfig, setServerConfig } = require('./serverConfig');
 const { createBeacon } = require('./discovery');
@@ -32,6 +33,8 @@ const {
   isEnriched: isBeerBibleEntryEnriched,
 } = require('./beerBibleImport');
 const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
+const { importHighShelfExport } = require('./highShelfImport');
+const { maybeAutoSeedHighShelf, syncNewHighShelfEntries } = require('./highShelfSeed');
 const {
   getState: getProductDatabaseState, setExportFile: setProductDatabaseExportFile, setHaFile: setProductDatabaseHaFile,
   findRumProducts,
@@ -1028,6 +1031,105 @@ function createApp({
     res.json({ success: true });
   });
 
+  // The High Shelf (rail "The High Shelf" view) - a researched THC/CBD
+  // ready-to-drink beverage per title, same bare-scaffold shape as the Rum
+  // Repository above (this PC's own data.db directly, no Server PC
+  // branching/forwardWrite, no external-lookup import route - no live data
+  // source exists for this category). Every THC/CBD talker added to the
+  // queue also POSTs here silently (see autoSaveThcCbdToHighShelf in
+  // app.js), so this single upsert route serves both the manual Add/Edit
+  // form and that auto-save.
+  app.get('/api/high-shelf', (req, res) => {
+    res.json({ entries: listHighShelfEntries() });
+  });
+
+  // Used by the Edit Talker recall banner (see refreshHighShelfRecall in
+  // app.js) - an exact, case-insensitive title match against what's already
+  // on file, same convention as the Bourbon Library's own recall lookup.
+  app.get('/api/high-shelf/by-title', (req, res) => {
+    const entry = getHighShelfEntryByTitle(req.query.title);
+    res.json({ entry: entry || null });
+  });
+
+  // The High Shelf fields beyond title/source - see highShelfOptionalFieldParams
+  // in db.js for how an omitted (undefined) one leaves whatever's already
+  // saved alone rather than blanking it out.
+  function highShelfOptionalFields(body) {
+    const {
+      sku, thcMg, cbdMg, servings, isLabTested, strain,
+    } = body || {};
+    return {
+      sku, thcMg, cbdMg, servings, isLabTested, strain,
+    };
+  }
+
+  app.post('/api/high-shelf', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = highShelfOptionalFields(req.body);
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'A product name is required.' });
+    }
+    try {
+      res.status(201).json(upsertHighShelfEntry({ title, source, ...optional }));
+    } catch (err) {
+      res.status(err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.put('/api/high-shelf/:id', (req, res) => {
+    const { title, source } = req.body || {};
+    const optional = highShelfOptionalFields(req.body);
+    try {
+      const updated = updateHighShelfEntryById(Number(req.params.id), { title, source, ...optional });
+      if (!updated) return res.status(404).json({ error: 'No entry with that id.' });
+      res.json(updated);
+    } catch (err) {
+      res.status(err.code === 'DUPLICATE_TITLE' ? 409 : err.code === 'TITLE_REQUIRED' ? 400 : 500).json({ error: err.message, code: err.code });
+    }
+  });
+
+  app.delete('/api/high-shelf/:id', (req, res) => {
+    const deleted = deleteHighShelfEntry(Number(req.params.id));
+    if (!deleted) return res.status(404).json({ error: 'No entry with that id.' });
+    res.json({ success: true });
+  });
+
+  // Import from Export File... (see server/highShelfImport.js's own header
+  // for why this is synchronous - no per-row live lookup the way the Beer
+  // Bible's own raw-export import needs, so no job/polling/cancel here).
+  // Reads a server-local file path, same convention as
+  // POST /api/beers/import/start - not an uploaded blob, since an .xlsx
+  // file can't just be read client-side and POSTed as text the way the
+  // Beer Bible's own plain CSV import does.
+  // Backs The High Shelf page's "Check GitHub for New Products" button -
+  // the manual counterpart to maybeAutoSeedHighShelf's own auto-seed, for a
+  // library that's already populated, same pattern as
+  // POST /api/rums/sync-library above. Not gated behind Server PC since
+  // there's no cross-register sync here yet - this PC's own data.db is
+  // always the one being updated.
+  app.post('/api/high-shelf/sync-library', async (req, res) => {
+    try {
+      const { added, skipped, source } = await syncNewHighShelfEntries(db);
+      res.json({ added, skipped, source, entries: listHighShelfEntries() });
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
+  });
+
+  app.post('/api/high-shelf/import', (req, res) => {
+    const { filePath } = req.body || {};
+    if (!filePath || typeof filePath !== 'string' || !filePath.trim()) {
+      return res.status(400).json({ error: 'An export file path is required.' });
+    }
+    try {
+      const result = importHighShelfExport(filePath.trim());
+      res.json({ ...result, entries: listHighShelfEntries() });
+    } catch (err) {
+      const notFound = err.code === 'ENOENT';
+      res.status(notFound ? 400 : 500).json({ error: notFound ? 'Could not find that file.' : (err.message || 'Could not import that file.') });
+    }
+  });
+
   // Backs the Rum Repository page's "Check GitHub for New Rums" button -
   // the manual counterpart to maybeAutoSeedRumRepository's own auto-seed,
   // for a library that's already populated, same pattern the Beer Bible's
@@ -1304,6 +1406,9 @@ function start(port) {
       // Same fire-and-forget pattern for the Rum Repository - see
       // rumRepositorySeed.js.
       maybeAutoSeedRumRepository(db);
+      // Same fire-and-forget pattern for The High Shelf - see
+      // highShelfSeed.js.
+      maybeAutoSeedHighShelf(db);
       resolve(server);
     });
     server.on('error', reject);
