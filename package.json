@@ -11,6 +11,7 @@
     "db:seed-bourbon-library": "node scripts/seed-bourbon-library.js",
     "db:seed-beer-bible": "node scripts/seed-beer-bible.js",
     "db:seed-rum-repository": "node scripts/seed-rum-repository.js",
+    "db:seed-high-shelf": "node scripts/seed-high-shelf.js",
     "electron": "electron .",
     "dist:win": "electron-builder --win --x64 --publish never",
     "release:patch": "npm version patch && git push --follow-tags",
@@ -48,6 +49,7 @@
       "scripts/bourbon-library-seed-data.json",
       "scripts/beer-bible-seed-data.json",
       "scripts/rum-repository-seed-data.json",
+      "scripts/high-shelf-seed-data.json",
       "package.json"
     ],
     "directories": {

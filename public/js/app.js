@@ -1420,6 +1420,8 @@
     highShelfView: document.getElementById('highShelfView'),
     highShelfAddBtn: document.getElementById('highShelfAddBtn'),
     highShelfFilterInput: document.getElementById('highShelfFilterInput'),
+    highShelfGithubSyncBtn: document.getElementById('highShelfGithubSyncBtn'),
+    highShelfGithubSyncStatus: document.getElementById('highShelfGithubSyncStatus'),
     highShelfImportPathInput: document.getElementById('highShelfImportPathInput'),
     highShelfImportBtn: document.getElementById('highShelfImportBtn'),
     highShelfImportStatus: document.getElementById('highShelfImportStatus'),
@@ -12843,6 +12845,31 @@
       renderHighShelfGrid();
     });
   }
+
+  // Backs "Check GitHub for New Products" - the manual catch-up for a
+  // High Shelf that already auto-seeded a while ago (see
+  // server/highShelfSeed.js), same pattern as the Rum Repository's own
+  // GitHub sync button.
+  els.highShelfGithubSyncBtn.addEventListener('click', async () => {
+    els.highShelfGithubSyncBtn.disabled = true;
+    els.highShelfGithubSyncStatus.textContent = 'Checking GitHub...';
+    try {
+      const resp = await fetch('/api/high-shelf/sync-library', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check GitHub right now.');
+      highShelfLibraryCache = Array.isArray(data.entries) ? data.entries : highShelfLibraryCache;
+      renderHighShelfStats();
+      renderHighShelfGrid();
+      refreshHighShelfRecall();
+      els.highShelfGithubSyncStatus.textContent = data.added
+        ? `Added ${data.added} new product${data.added === 1 ? '' : 's'} from ${data.source}.`
+        : `Already up to date - nothing new on ${data.source === 'GitHub' ? 'GitHub' : 'the bundled list'}.`;
+    } catch (err) {
+      els.highShelfGithubSyncStatus.textContent = err.message || 'Could not check GitHub right now.';
+    } finally {
+      els.highShelfGithubSyncBtn.disabled = false;
+    }
+  });
 
   // Import from Export File... - plain synchronous request/response (see
   // server/highShelfImport.js's own header for why: no live per-row lookup

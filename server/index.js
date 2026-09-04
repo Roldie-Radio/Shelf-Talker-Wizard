@@ -34,6 +34,7 @@ const {
 } = require('./beerBibleImport');
 const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
 const { importHighShelfExport } = require('./highShelfImport');
+const { maybeAutoSeedHighShelf, syncNewHighShelfEntries } = require('./highShelfSeed');
 const {
   getState: getProductDatabaseState, setExportFile: setProductDatabaseExportFile, setHaFile: setProductDatabaseHaFile,
   findRumProducts,
@@ -1100,6 +1101,21 @@ function createApp({
   // POST /api/beers/import/start - not an uploaded blob, since an .xlsx
   // file can't just be read client-side and POSTed as text the way the
   // Beer Bible's own plain CSV import does.
+  // Backs The High Shelf page's "Check GitHub for New Products" button -
+  // the manual counterpart to maybeAutoSeedHighShelf's own auto-seed, for a
+  // library that's already populated, same pattern as
+  // POST /api/rums/sync-library above. Not gated behind Server PC since
+  // there's no cross-register sync here yet - this PC's own data.db is
+  // always the one being updated.
+  app.post('/api/high-shelf/sync-library', async (req, res) => {
+    try {
+      const { added, skipped, source } = await syncNewHighShelfEntries(db);
+      res.json({ added, skipped, source, entries: listHighShelfEntries() });
+    } catch (err) {
+      res.status(502).json({ error: err.message || 'Could not reach GitHub or the bundled seed data right now.' });
+    }
+  });
+
   app.post('/api/high-shelf/import', (req, res) => {
     const { filePath } = req.body || {};
     if (!filePath || typeof filePath !== 'string' || !filePath.trim()) {
@@ -1390,6 +1406,9 @@ function start(port) {
       // Same fire-and-forget pattern for the Rum Repository - see
       // rumRepositorySeed.js.
       maybeAutoSeedRumRepository(db);
+      // Same fire-and-forget pattern for The High Shelf - see
+      // highShelfSeed.js.
+      maybeAutoSeedHighShelf(db);
       resolve(server);
     });
     server.on('error', reject);
