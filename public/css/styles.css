@@ -4486,6 +4486,21 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 }
 .sign[data-size="small"] .sign__footer-text { font-size: calc(var(--w) * var(--sign-text) * 0.014); }
 
+/* Same treatment as .sign__footer-text right above (same band, same weight
+   of information) but dimmed slightly via opacity - staff-facing restock
+   detail, not the shopper-facing footer text/logo it shares the band with.
+   Large sign only (see buildSignElement's showSku in card.js), so no
+   [data-size="small"] override is needed here the way .sign__footer-text
+   has one. */
+.sign__sku {
+  color: #fff;
+  font-weight: 800;
+  font-size: calc(var(--w) * var(--sign-text) * 0.011);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+  opacity: 0.85;
+}
+
 .sign__logo { height: calc(var(--w) * 0.028); }
 .sign[data-size="small"] .sign__logo { height: calc(var(--w) * 0.036); }
 
@@ -4541,8 +4556,10 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    .sign__size-inline, which is em-sized off Regular Price so it scales
    with it automatically) now uses. Scoped via :has(.sign__columns), same
    trick as the title/price overrides above, so wine/spirits/bourbon Large
-   Display Signs (no .sign__columns) keep the base 0.008 gap untouched. */
-.sign:has(.sign__columns) .sign__content { gap: calc(var(--w) * 0.003 * var(--price-fit, 1)); }
+   Display Signs (no .sign__columns) keep the base 0.008 gap untouched.
+   Tightened again here (0.003 -> 0.002) alongside the badge-clearance
+   padding-bottom below, per a follow-up request. */
+.sign:has(.sign__columns) .sign__content { gap: calc(var(--w) * 0.002 * var(--price-fit, 1)); }
 
 /* The real Small sign template doesn't center title+price+bottom-row as
    a group either: measured directly from the PDF, the title starts right
@@ -4791,16 +4808,16 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Bumped again here (0.019 -> 0.021 base, 0.037 -> 0.041 solo - roughly a
-   point and a half at this sign's own 8.5in print width) - per request,
-   using the room freed by .sign__content's own tightened gap above.
+/* Bumped again here (0.021 -> 0.023 base, 0.041 -> 0.045 solo) - per
+   request, using the room freed by .sign__content's own tightened gap
+   above plus the badge-clearance padding-bottom's own cut below.
    .sign__size-inline isn't listed here since it's em-sized off whichever
    of these two rules its own .sign__regular-price is actually using (see
    its rule below), so it scales with this bump automatically. */
 .sign:has(.sign__columns) .sign__regular-price,
-.sign:has(.sign__columns) .sign__case-price { font-size: calc(var(--w) * var(--sign-text) * 0.021 * var(--price-fit, 1)); }
+.sign:has(.sign__columns) .sign__case-price { font-size: calc(var(--w) * var(--sign-text) * 0.023 * var(--price-fit, 1)); }
 .sign:has(.sign__columns) .sign__regular-price--solo,
-.sign:has(.sign__columns) .sign__case-price--solo { font-size: calc(var(--w) * var(--sign-text) * 0.041 * var(--price-fit, 1)); }
+.sign:has(.sign__columns) .sign__case-price--solo { font-size: calc(var(--w) * var(--sign-text) * 0.045 * var(--price-fit, 1)); }
 
 /* Same symmetric-reservation trick as .card__title--badge-left/-right on
    the Shelf Talker card (see styles.css) - reserves room on whichever
@@ -4827,10 +4844,21 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    under 2px above the rating row, too easy to collide on a taller state
    shape or a longer Untappd Rating count pushing that row's own height up.
    The shorter, more typical beer name reads noticeably larger now too,
-   since shrinkTitleToFitBody (card.js) has more width to work with. */
+   since shrinkTitleToFitBody (card.js) has more width to work with.
+
+   Cut again here (0.03 -> 0.022, the same value tried and backed out of
+   above) per an explicit follow-up request to free more room for a bigger
+   Regular/Case Price and Size - re-tried and accepted this time with the
+   collision risk called out above, knowingly reinstated: a state badge on
+   a beer with little else in its facts column (no brewery/ABV/IBU, no
+   rating yet) can still sit within ~2px of the Untappd Rating/Style row,
+   or slightly under it. A beer with any real facts/rating data (the
+   common case - see buildBeerRatingHtml/buildBeerTableHtml's own
+   hasBeerData gate) pushes --price-fit down first, which shrinks the
+   badge well clear of this margin long before it gets that tight. */
 .sign__title--badge-left,
 .sign__title--badge-right {
-  padding-bottom: calc(var(--w) * 0.03);
+  padding-bottom: calc(var(--w) * 0.022);
 }
 .sign__title--badge-left { padding-left: calc(var(--w) * 0.045); }
 .sign__title--badge-right { padding-right: calc(var(--w) * 0.045); }
