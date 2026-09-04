@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.13',
+      items: [
+        'The beer name on a beer Large Display Sign runs larger again - its margins next to the flag/state badges are narrower, so there\'s more room for the name itself.',
+      ],
+    },
+    {
       version: '4.6.12',
       items: [
         'Fixed: a beer name on a beer Large Display Sign could still print with a trailing "..." instead of shrinking to fit, when that talker\'s Title Auto Size box was unchecked. The beer name now always shrinks to fit its one line - the Auto Size box keeps its usual effect everywhere else (Shelf Talkers, wine/spirits/bourbon signs).',
