@@ -2074,13 +2074,6 @@ function fitCardText(cardEl) {
   if (body0) body0.style.removeProperty('--price-fit');
 
   const titleEl = cardEl.querySelector('[data-fit="title"]');
-  const titleAutoSize = !!titleEl && titleEl.dataset.autoSize === 'true';
-
-  // Captured before the loop below touches anything, so both this pass and
-  // shrinkTitleToFitBody's later escalation share one floor relative to the
-  // title's true starting size - shrinking further off an already-shrunk
-  // value here would compound past the intended 50% floor.
-  const titleNaturalPx = titleEl ? parseFloat(getComputedStyle(titleEl).fontSize) : 0;
 
   // Beer Display Sign titles are one line only (see .sign:has(.sign__columns)
   // .sign__title in styles.css) and must actually fit that line - unlike
@@ -2097,6 +2090,23 @@ function fitCardText(cardEl) {
   // steps to reach it, guaranteeing an actual single-line fit even for a
   // pathologically long beer name, rather than a legible-but-broken one.
   const isBeerTitle = !!titleEl && titleEl.classList.contains('sign__title') && !!titleEl.closest('.sign')?.querySelector('.sign__columns');
+
+  // The Auto checkbox (#fTitleAutoSize) is shared, category-agnostic UI -
+  // its unchecked state ("fixed size, clip with an ellipsis instead") is a
+  // real, intentional choice everywhere else, but for a beer title it's
+  // exactly the truncated-instead-of-shrunk result the one-line redesign
+  // above exists to prevent - unlike wine/spirits/bourbon and every other
+  // sign/card title, a beer title has no second line to fall back on, so
+  // there's no non-broken way to honor "don't shrink me" here. Beer titles
+  // always get the shrink pass regardless of what the checkbox says;
+  // wine/spirits/bourbon keep the checkbox's real, unchanged effect.
+  const titleAutoSize = !!titleEl && (titleEl.dataset.autoSize === 'true' || isBeerTitle);
+
+  // Captured before the loop below touches anything, so both this pass and
+  // shrinkTitleToFitBody's later escalation share one floor relative to the
+  // title's true starting size - shrinking further off an already-shrunk
+  // value here would compound past the intended 50% floor.
+  const titleNaturalPx = titleEl ? parseFloat(getComputedStyle(titleEl).fontSize) : 0;
 
   if (titleAutoSize && titleEl) {
     // Both the floor and the step are relative to the element's own starting
