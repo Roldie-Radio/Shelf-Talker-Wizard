@@ -219,12 +219,9 @@ function buildFlavorHtml(talker) {
 
 // THC/CBD potency callout - paired mg badges (mirrors the Beer talker's own
 // Untappd rating row in spirit: a shopper-facing number that reads at a
-// glance) plus a fixed 21+ compliance line, since every THC/CBD talker needs
-// one regardless of what else is filled in. Lab Tested is a plain boolean
-// (talker.isLabTested, see #fLabTested in index.html), same shape as
-// Bourbon's own Store Pick above - it just adds a badge next to the
-// compliance line rather than a corner ribbon, since there's no free corner
-// left once the state-badge slot is unused for this category.
+// glance). Lab Tested is a plain boolean (talker.isLabTested, see
+// #fLabTested in index.html) printed as its own small badge next to the
+// servings line when set.
 function buildDoseHtml(talker) {
   const thc = String(talker.thcMg || '').trim();
   const cbd = String(talker.cbdMg || '').trim();
@@ -234,22 +231,16 @@ function buildDoseHtml(talker) {
     thc ? `<div class="card__dose card__dose--thc"><span class="card__dose-label">THC</span><span class="card__dose-amount">${escapeHtml(thc)}<span class="card__dose-unit">mg</span></span></div>` : '',
     cbd ? `<div class="card__dose card__dose--cbd"><span class="card__dose-label">CBD</span><span class="card__dose-amount">${escapeHtml(cbd)}<span class="card__dose-unit">mg</span></span></div>` : '',
   ].join('');
-  const servingsHtml = servings ? `<div class="card__dose-servings">${escapeHtml(servings)} servings per container</div>` : '';
+  const labBadge = talker.isLabTested ? '<span class="card__lab-badge">Lab Tested</span>' : '';
+  const servingsHtml = (servings || labBadge)
+    ? `<div class="card__dose-servings">${servings ? `${escapeHtml(servings)} servings per container` : ''}${labBadge}</div>`
+    : '';
   return `
     <div class="card__potency">
       <div class="card__dose-row">${doseHtml}</div>
       ${servingsHtml}
     </div>
   `;
-}
-
-// Always printed for a THC/CBD talker (no checkbox - it's store policy, not
-// a per-item fact), with Lab Tested's own badge folded in next to it when
-// set. Sits directly under the dose row above, same spot Mash Bill/Nose-
-// Palate-Finish occupy for Bourbon.
-function buildComplianceHtml(talker) {
-  const labBadge = talker.isLabTested ? '<span class="card__lab-badge">Lab Tested</span>' : '';
-  return `<div class="card__compliance">21+ ONLY &middot; KEEP OUT OF REACH OF CHILDREN${labBadge}</div>`;
 }
 
 // Wine/Spirits varietal -> candidate food pairings, for the Food Pairing
@@ -2030,7 +2021,6 @@ function buildCardElement(talker) {
       ${isBourbon ? buildMashBillHtml(talker) : ''}
       ${isBourbon ? buildFlavorHtml(talker) : ''}
       ${isThcCbd ? buildDoseHtml(talker) : ''}
-      ${isThcCbd ? buildComplianceHtml(talker) : ''}
       ${isBeer ? '' : buildAwardsHtml(talker)}
       ${(isBeer || !experimentalPairings) ? '' : buildPairingsHtml(talker)}
       <div class="card__spacer"></div>

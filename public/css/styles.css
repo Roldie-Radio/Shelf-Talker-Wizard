@@ -3986,21 +3986,9 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   margin-top: calc(var(--w) * 0.012 * var(--price-fit, 1));
 }
 
-/* Fixed 21+ compliance line, always printed on a THC/CBD talker (see
-   buildComplianceHtml in card.js) - store policy, not a per-item field, so
-   there's no matching form input for the text itself. */
-.card__compliance {
-  flex: 0 0 auto;
-  text-align: center;
-  font-family: Arial, Helvetica, sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  font-size: calc(var(--w) * 0.024 * var(--price-fit, 1));
-  color: var(--muted);
-  border-top: 1px solid #e5ddd0;
-  padding-top: calc(var(--w) * 0.016 * var(--price-fit, 1));
-  margin-top: calc(var(--w) * 0.016 * var(--price-fit, 1));
-}
+/* Lab Tested badge (see #fLabTested in index.html) - folded into
+   .card__dose-servings above rather than a line of its own, next to the
+   servings count when both are present. */
 .card__lab-badge {
   display: inline-block;
   font-family: Verdana, Geneva, sans-serif;
