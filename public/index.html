@@ -517,7 +517,11 @@
                 </label>
               </div>
             </div>
-            <p class="help-text">Prints as a THC/CBD potency callout under the description - Strain Type prints as a small pill above it, Lab Tested adds its own badge next to the servings count.</p>
+            <label class="field">
+              <span>Effects (optional)</span>
+              <input type="text" id="fEffects" maxlength="80" placeholder="Chill &amp; Calming" />
+            </label>
+            <p class="help-text">Prints as a THC/CBD potency callout under the description - Strain Type prints as a small pill above it, Effects as a line underneath, Lab Tested adds its own badge next to the servings count.</p>
           </div>
 
           <!-- Wine/Spirits-only, same visibility rule as Food Pairing
@@ -2462,6 +2466,10 @@
               </label>
             </div>
           </div>
+          <label class="field">
+            <span>Effects (optional)</span>
+            <input type="text" id="highShelfFormEffectsInput" maxlength="80" placeholder="Chill &amp; Calming" />
+          </label>
 
           <div class="reviewer-manager__add">
             <button type="button" class="btn btn--small btn--primary" id="highShelfFormSaveBtn">Add Entry</button>

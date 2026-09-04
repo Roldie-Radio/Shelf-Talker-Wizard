@@ -1462,6 +1462,7 @@
     thcCbdServings: document.getElementById('fThcCbdServings'),
     strain: document.getElementById('fStrain'),
     labTested: document.getElementById('fLabTested'),
+    effects: document.getElementById('fEffects'),
     railHighShelfBtn: document.getElementById('railHighShelfBtn'),
     highShelfView: document.getElementById('highShelfView'),
     highShelfAddBtn: document.getElementById('highShelfAddBtn'),
@@ -1484,6 +1485,7 @@
     highShelfFormServingsInput: document.getElementById('highShelfFormServingsInput'),
     highShelfFormStrainInput: document.getElementById('highShelfFormStrainInput'),
     highShelfFormLabTestedInput: document.getElementById('highShelfFormLabTestedInput'),
+    highShelfFormEffectsInput: document.getElementById('highShelfFormEffectsInput'),
     highShelfFormSaveBtn: document.getElementById('highShelfFormSaveBtn'),
     highShelfFormCancelBtn: document.getElementById('highShelfFormCancelBtn'),
     highShelfFormDeleteBtn: document.getElementById('highShelfFormDeleteBtn'),
@@ -2560,6 +2562,7 @@
       thcCbdServings: els.thcCbdServings.value.trim(),
       strain: els.strain.value,
       isLabTested: els.labTested.checked,
+      effects: els.effects.value.trim(),
       pairings: currentPairings.slice(),
       wineProfile: { ...currentProfile },
       // Beer and THC/CBD each have their own SKU box (only one is ever
@@ -2659,6 +2662,7 @@
     els.thcCbdServings.value = talker.thcCbdServings || '';
     els.strain.value = ['sativa', 'indica', 'hybrid'].includes(talker.strain) ? talker.strain : '';
     els.labTested.checked = !!talker.isLabTested;
+    els.effects.value = talker.effects || '';
     highShelfRecallDismissedFor = '';
     refreshHighShelfRecall();
     currentPairings = Array.isArray(talker.pairings) ? talker.pairings.slice() : [];
@@ -3266,7 +3270,7 @@
     const match = findHighShelfMatch(title);
     if (!match) { els.highShelfRecallBanner.hidden = true; return; }
 
-    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested || match.strain);
+    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested || match.strain || match.effects);
     if (!hasAnything) {
       els.highShelfRecallBanner.innerHTML = `
         <div class="mashbill-recall__title">📚 "${escapeHtml(match.title)}" is in The High Shelf, but nothing's been researched yet.</div>
@@ -3281,6 +3285,7 @@
       highShelfRecallRowHtml('CBD (mg/serving)', match.cbdMg, 'use-cbd'),
       highShelfRecallRowHtml('Servings', match.servings, 'use-servings'),
       highShelfRecallRowHtml('Strain Type', match.strain ? (match.strain.charAt(0).toUpperCase() + match.strain.slice(1)) : '', 'use-strain'),
+      highShelfRecallRowHtml('Effects', match.effects, 'use-effects'),
       highShelfRecallRowHtml('Lab Tested', match.isLabTested ? 'Yes' : '', 'use-lab-tested'),
     ].join('');
     const updated = match.updatedAt ? formatHistoryTimestamp(match.updatedAt) : '';
@@ -3306,8 +3311,12 @@
 
   function highShelfFieldEl(field) {
     return {
-      thcMg: els.thcMg, cbdMg: els.cbdMg, servings: els.thcCbdServings,
+      thcMg: els.thcMg, cbdMg: els.cbdMg, servings: els.thcCbdServings, effects: els.effects,
     }[field];
+  }
+
+  function highShelfFieldLabel(field) {
+    return { thcMg: 'THC', cbdMg: 'CBD', servings: 'Servings', effects: 'Effects' }[field] || field;
   }
 
   // Same "confirm before overwriting something already typed" pattern as
@@ -3330,13 +3339,13 @@
     if (!value) return;
     const el = highShelfFieldEl(field);
     if (el.value.trim() && el.value.trim() !== String(value).trim()
-        && !confirm(`Replace the current ${field === 'thcMg' ? 'THC' : field === 'cbdMg' ? 'CBD' : 'Servings'} value with The High Shelf's?`)) return;
+        && !confirm(`Replace the current ${highShelfFieldLabel(field)} value with The High Shelf's?`)) return;
     el.value = value;
     refreshPreview();
   }
 
   function applyHighShelfRecallAll(match) {
-    const targets = ['thcMg', 'cbdMg', 'servings'].filter((f) => match[f]);
+    const targets = ['thcMg', 'cbdMg', 'servings', 'effects'].filter((f) => match[f]);
     const overwriting = targets.some((f) => {
       const el = highShelfFieldEl(f);
       return el.value.trim() && el.value.trim() !== String(match[f]).trim();
@@ -3365,6 +3374,8 @@
       applyHighShelfRecallField(match, 'isLabTested');
     } else if (action === 'use-strain') {
       applyHighShelfRecallField(match, 'strain');
+    } else if (action === 'use-effects') {
+      applyHighShelfRecallField(match, 'effects');
     } else if (action === 'use-all') {
       applyHighShelfRecallAll(match);
       highShelfRecallDismissedFor = title;
@@ -4411,7 +4422,7 @@
   // same distinction highShelfOptionalFieldParams makes server-side.
   function thcCbdAutoSaveFields(talker) {
     const fields = { isLabTested: !!talker.isLabTested };
-    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings', 'strain'].forEach((key) => {
+    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings', 'strain', 'effects'].forEach((key) => {
       if (talker[key]) fields[key] = talker[key];
     });
     // server/db.js's high_shelf_entries columns are named servings, not
@@ -12914,6 +12925,7 @@
           <span class="bourbon-card__sub">${statBits.join(' &middot; ') || 'Not yet researched'}</span>
           <span class="bourbon-card__sub">${footerBits.join(' &middot; ')}</span>
         </div>
+        ${entry.effects ? `<div class="bourbon-card__sub bourbon-card__sub--effects">${escapeHtml(entry.effects)}</div>` : ''}
       </button>
     `;
   }
@@ -13077,6 +13089,7 @@
     els.highShelfFormServingsInput.value = '';
     els.highShelfFormStrainInput.value = '';
     els.highShelfFormLabTestedInput.checked = false;
+    els.highShelfFormEffectsInput.value = '';
     els.highShelfFormTitle.textContent = 'Add an entry manually';
     els.highShelfFormSaveBtn.textContent = 'Add Entry';
     els.highShelfFormCancelBtn.hidden = true;
@@ -13093,6 +13106,7 @@
     els.highShelfFormServingsInput.value = entry.servings || '';
     els.highShelfFormStrainInput.value = ['sativa', 'indica', 'hybrid'].includes(entry.strain) ? entry.strain : '';
     els.highShelfFormLabTestedInput.checked = !!entry.isLabTested;
+    els.highShelfFormEffectsInput.value = entry.effects || '';
     els.highShelfFormTitle.textContent = `Edit "${entry.title}"`;
     els.highShelfFormSaveBtn.textContent = 'Save Changes';
     els.highShelfFormCancelBtn.hidden = false;
@@ -13159,6 +13173,7 @@
         servings: els.highShelfFormServingsInput.value.trim(),
         strain: els.highShelfFormStrainInput.value,
         isLabTested: els.highShelfFormLabTestedInput.checked,
+        effects: els.highShelfFormEffectsInput.value.trim(),
         source: 'Manual',
       };
       const resp = highShelfEditingId

@@ -214,6 +214,7 @@ function applySchema(db) {
       servings TEXT,
       is_lab_tested INTEGER NOT NULL DEFAULT 0,
       strain TEXT,
+      effects TEXT,
       source TEXT NOT NULL DEFAULT 'Manual',
       updated_at TEXT NOT NULL
     );
@@ -268,13 +269,15 @@ function applyRumColumns(db) {
   if (!existing.has('country')) db.exec('ALTER TABLE rums ADD COLUMN country TEXT');
 }
 
-// high_shelf_entries shipped without strain for one release - same "ALTER
-// TABLE whatever PRAGMA table_info says is actually missing" migration as
-// applyRumColumns above. A row added before this column existed just starts
-// with a blank strain, same as every other optional field already does.
+// high_shelf_entries shipped without strain/effects across a couple of
+// releases - same "ALTER TABLE whatever PRAGMA table_info says is actually
+// missing" migration as applyRumColumns above. A row added before either
+// column existed just starts with it blank, same as every other optional
+// field already does.
 function applyHighShelfColumns(db) {
   const existing = new Set(db.pragma('table_info(high_shelf_entries)').map((col) => col.name));
   if (!existing.has('strain')) db.exec('ALTER TABLE high_shelf_entries ADD COLUMN strain TEXT');
+  if (!existing.has('effects')) db.exec('ALTER TABLE high_shelf_entries ADD COLUMN effects TEXT');
 }
 
 // Countries whose name this can recognize inside a Location tail, longest
@@ -1182,6 +1185,7 @@ function rowToHighShelfEntry(row) {
     servings: row.servings || '',
     isLabTested: !!row.is_lab_tested,
     strain: row.strain || '',
+    effects: row.effects || '',
     source: row.source,
     updatedAt: row.updated_at,
   };
@@ -1226,10 +1230,10 @@ function validateHighShelfInput({ title }) {
 // meaningful value there, so it checks undefined specifically, not
 // falsiness.
 function highShelfOptionalFieldParams({
-  sku, thcMg, cbdMg, servings, isLabTested, strain,
+  sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
 }, existing) {
   const prev = existing || {
-    sku: '', thcMg: '', cbdMg: '', servings: '', isLabTested: false, strain: '',
+    sku: '', thcMg: '', cbdMg: '', servings: '', isLabTested: false, strain: '', effects: '',
   };
   return {
     sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
@@ -1238,11 +1242,12 @@ function highShelfOptionalFieldParams({
     servings: normalizeOptionalText(servings !== undefined ? servings : prev.servings),
     isLabTested: (isLabTested !== undefined ? !!isLabTested : !!prev.isLabTested) ? 1 : 0,
     strain: normalizeOptionalText(strain !== undefined ? strain : prev.strain),
+    effects: normalizeOptionalText(effects !== undefined ? effects : prev.effects),
   };
 }
 
 const HIGH_SHELF_OPTIONAL_COLUMNS_SET = `
-  sku = @sku, thc_mg = @thcMg, cbd_mg = @cbdMg, servings = @servings, is_lab_tested = @isLabTested, strain = @strain
+  sku = @sku, thc_mg = @thcMg, cbd_mg = @cbdMg, servings = @servings, is_lab_tested = @isLabTested, strain = @strain, effects = @effects
 `;
 
 // Create-or-update by SKU first, title (case-insensitive) second - same
@@ -1251,7 +1256,7 @@ const HIGH_SHELF_OPTIONAL_COLUMNS_SET = `
 // Add/Save button both call this, so saving again for a product already on
 // file updates that same entry instead of duplicating it.
 function upsertHighShelfEntry({
-  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain,
+  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
 }) {
   const db = getDb();
   const { cleanTitle } = validateHighShelfInput({ title });
@@ -1273,7 +1278,7 @@ function upsertHighShelfEntry({
     source: source || 'Manual',
     updatedAt: now,
     ...highShelfOptionalFieldParams({
-      sku, thcMg, cbdMg, servings, isLabTested, strain,
+      sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
     }, existing),
   };
 
@@ -1287,10 +1292,10 @@ function upsertHighShelfEntry({
   }
   const info = db.prepare(`
     INSERT INTO high_shelf_entries (
-      title, source, updated_at, sku, thc_mg, cbd_mg, servings, is_lab_tested, strain
+      title, source, updated_at, sku, thc_mg, cbd_mg, servings, is_lab_tested, strain, effects
     )
     VALUES (
-      @title, @source, @updatedAt, @sku, @thcMg, @cbdMg, @servings, @isLabTested, @strain
+      @title, @source, @updatedAt, @sku, @thcMg, @cbdMg, @servings, @isLabTested, @strain, @effects
     )
   `).run(params);
   return getHighShelfEntry(info.lastInsertRowid);
@@ -1302,7 +1307,7 @@ function upsertHighShelfEntry({
 // owns is a real conflict here, not a merge - same DUPLICATE_TITLE handling
 // as updateBeerById/updateRumById.
 function updateHighShelfEntryById(id, {
-  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain,
+  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
 }) {
   const db = getDb();
   const existing = getHighShelfEntry(id);
@@ -1320,7 +1325,7 @@ function updateHighShelfEntryById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...highShelfOptionalFieldParams({
-        sku, thcMg, cbdMg, servings, isLabTested, strain,
+        sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
       }, existing),
     });
   } catch (err) {
