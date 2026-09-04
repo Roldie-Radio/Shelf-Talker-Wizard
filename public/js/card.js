@@ -2082,6 +2082,22 @@ function fitCardText(cardEl) {
   // value here would compound past the intended 50% floor.
   const titleNaturalPx = titleEl ? parseFloat(getComputedStyle(titleEl).fontSize) : 0;
 
+  // Beer Display Sign titles are one line only (see .sign:has(.sign__columns)
+  // .sign__title in styles.css) and must actually fit that line - unlike
+  // the 50%-of-natural floor below, which is a legibility limit, not a
+  // correctness one, since a 2-line title that hits it still has a second
+  // line to fall back on. A 1-line title has nowhere else to put the rest
+  // of its text: stopping at 50% before it genuinely fits left the CSS
+  // ellipsis to paper over the remainder, which is exactly the confirmed
+  // bug this exists to prevent (a garbled mid-word ellipsis with a second
+  // line of real text still showing beneath it - -webkit-line-clamp
+  // doesn't reliably truncate cleanly once JS has been repeatedly
+  // resizing the font underneath it). So beer titles get a much lower
+  // floor (mostly just the 4px absolute minimum) and far more shrink
+  // steps to reach it, guaranteeing an actual single-line fit even for a
+  // pathologically long beer name, rather than a legible-but-broken one.
+  const isBeerTitle = !!titleEl && titleEl.classList.contains('sign__title') && !!titleEl.closest('.sign')?.querySelector('.sign__columns');
+
   if (titleAutoSize && titleEl) {
     // Both the floor and the step are relative to the element's own starting
     // size, not absolute pixels. The same card gets rendered at wildly
@@ -2091,10 +2107,19 @@ function fitCardText(cardEl) {
     // amount of shrink was available at each scale: the small previews were
     // already at (or under) the floor before shrinking started, and truncated
     // titles that print perfectly well.
-    const minPx = Math.max(titleNaturalPx * 0.5, 4);
+    const minPx = Math.max(titleNaturalPx * (isBeerTitle ? 0.15 : 0.5), 4);
     let fontSize = titleNaturalPx;
-    let guard = 40;
-    while (titleEl.scrollHeight > titleEl.clientHeight + 1 && fontSize > minPx && guard > 0) {
+    let guard = isBeerTitle ? 150 : 40;
+    // Beer titles are white-space: nowrap (see styles.css) - they never
+    // wrap, so their box never grows taller than one line regardless of
+    // content, and scrollHeight/clientHeight would never show an overflow
+    // to shrink away. scrollWidth/clientWidth is the equivalent check for
+    // a single-line box: whether the full, unwrapped text is wider than
+    // the space it's been given.
+    const stillOverflowing = () => (isBeerTitle
+      ? titleEl.scrollWidth > titleEl.clientWidth + 1
+      : titleEl.scrollHeight > titleEl.clientHeight + 1);
+    while (stillOverflowing() && fontSize > minPx && guard > 0) {
       fontSize *= 0.97;
       titleEl.style.fontSize = `${fontSize}px`;
       guard -= 1;
@@ -2238,15 +2263,21 @@ function regrowSignDescriptionLines(cardEl, body) {
 // Used when this talker's title Auto Size box is unchecked (the default).
 // Mirrors clampDescriptionToAvailableSpace below, but only ever engages as
 // an escalation after the description has already been settled (see
-// fitCardText above) - the title's own 3-line (2-line Display Sign) CSS
-// clamp already bounds its natural height with no JS needed for the common
-// case, so this only narrows further if the body is still overflowing even
-// with the description already at its floor.
+// fitCardText above) - the title's own 3-line (2-line Display Sign, 1-line
+// beer Display Sign) CSS clamp already bounds its natural height with no
+// JS needed for the common case, so this only narrows further if the body
+// is still overflowing even with the description already at its floor.
 function clampTitleToAvailableSpace(titleEl, body) {
   if (!titleEl || !titleEl.textContent.trim()) return;
   if (body.scrollHeight <= body.clientHeight + 1) return;
 
-  const maxLines = titleEl.classList.contains('sign__title') ? 2 : 3;
+  // Beer Display Sign titles are one line only (see .sign:has(.sign__columns)
+  // .sign__title in styles.css) - maxLines matches that ceiling so the loop
+  // below is a correct no-op there (nothing left to narrow from 1), rather
+  // than starting from 2 and immediately narrowing to 1 anyway.
+  const isSignTitle = titleEl.classList.contains('sign__title');
+  const isBeerSign = isSignTitle && !!titleEl.closest('.sign')?.querySelector('.sign__columns');
+  const maxLines = isBeerSign ? 1 : isSignTitle ? 2 : 3;
   let lines = maxLines;
   let guard = maxLines;
   while (body.scrollHeight > body.clientHeight + 1 && lines > 1 && guard > 0) {
@@ -2275,6 +2306,13 @@ function shrinkTitleToFitBody(titleEl, naturalPx, body) {
   if (!titleEl || !naturalPx || !titleEl.textContent.trim()) return;
   if (body.scrollHeight <= body.clientHeight + 1) return;
 
+  // Beer titles are white-space: nowrap (see .sign:has(.sign__columns)
+  // .sign__title in styles.css), not the webkit-box/line-clamp non-beer
+  // sign/card titles still use - scrollWidth/clientWidth is the "does the
+  // full text already fit" check for a single-line box, same role the
+  // temporary clamp-to-1 trick below plays for a multi-line one.
+  const isBeerTitle = titleEl.classList.contains('sign__title') && !!titleEl.closest('.sign')?.querySelector('.sign__columns');
+
   // Mirrors clampTitleToAvailableSpace's own gate, just phrased for a
   // font-shrink instead of a line-count cut: clamping a title down from 2
   // lines to 1 does nothing when the title's full text already reads on
@@ -2288,17 +2326,27 @@ function shrinkTitleToFitBody(titleEl, naturalPx, body) {
   // because something ELSE (a tall facts column) left the body still
   // overflowing, reading as a disproportionately tiny beer name for no
   // real gain.
-  const previousClamp = titleEl.style.webkitLineClamp;
-  titleEl.style.webkitLineClamp = '1';
-  titleEl.style.lineClamp = '1';
-  const alreadyOneLine = titleEl.scrollHeight <= titleEl.clientHeight + 1;
-  titleEl.style.webkitLineClamp = previousClamp;
-  titleEl.style.lineClamp = previousClamp;
-  if (alreadyOneLine) return;
+  let alreadyFits;
+  if (isBeerTitle) {
+    alreadyFits = titleEl.scrollWidth <= titleEl.clientWidth + 1;
+  } else {
+    const previousClamp = titleEl.style.webkitLineClamp;
+    titleEl.style.webkitLineClamp = '1';
+    titleEl.style.lineClamp = '1';
+    alreadyFits = titleEl.scrollHeight <= titleEl.clientHeight + 1;
+    titleEl.style.webkitLineClamp = previousClamp;
+    titleEl.style.lineClamp = previousClamp;
+  }
+  if (alreadyFits) return;
 
-  const minPx = Math.max(naturalPx * 0.5, 4);
+  // Same lower floor as the first shrink pass in fitCardText, and for the
+  // same reason - a beer title's whole job is fitting on its one line, so
+  // it can afford to give up more relative size than a wine/spirits/
+  // bourbon title (still 2 lines, still has a legibility-first floor)
+  // would in the same "something else is overflowing" situation.
+  const minPx = Math.max(naturalPx * (isBeerTitle ? 0.15 : 0.5), 4);
   let fontSize = parseFloat(getComputedStyle(titleEl).fontSize);
-  let guard = 40;
+  let guard = isBeerTitle ? 150 : 40;
   while (body.scrollHeight > body.clientHeight + 1 && fontSize > minPx && guard > 0) {
     fontSize *= 0.97;
     titleEl.style.fontSize = `${fontSize}px`;
