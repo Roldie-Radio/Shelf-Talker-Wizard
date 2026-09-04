@@ -24,7 +24,7 @@ const {
   storeSearchUrl, parseStoreSearchResults, pickSkuMatch, parseStoreProductHtml,
   lookupStoreSku, parsePastedStoreProduct, enrichWineDescriptionFromStore, enrichWineFromStore,
   algoliaSearchBeerCandidates, searchUntappd, matchUntappdCandidates, UntappdAmbiguousMatchError,
-  composeProducerTitle, buildUntappdSearchQuery, stripUnmatchedContainerWords,
+  composeProducerTitle, normalizeProducerPrefix, buildUntappdSearchQuery, stripUnmatchedContainerWords,
   enrichBeerScanFromStore, enrichBeerFromUntappd,
   untappdBeerFromUrl, untappdBeerFromHtml, lookupSku, lookupSkuFromHtml,
 } = require('../server/productImport');
@@ -2226,6 +2226,66 @@ test('enrichBeerFromUntappd leaves a container word in the displayed title when 
       });
       assert.equal(result.title, 'Slack Tide Flounder Pounder Can');
       assert.ok(result.untappdError);
+    }
+  );
+});
+
+// normalizeProducerPrefix - the unit-level piece behind the Schilling
+// regression test below. Real bug: six liquoroutletwinecellars.com product
+// pages for the same brewery (Schilling Beer Co.) had their own brand/title
+// text spelled three different ways ("Schilling Beer", "Schilling Beer
+// Co.", and a bare "Schilling" baked into one page's own title), so
+// composeProducerTitle - working from just one SKU at a time - produced a
+// differently-worded producer prefix for each even though they're all the
+// same brewery.
+test('normalizeProducerPrefix shortens the producer prefix to Untappd\'s canonical core, never lengthens it', () => {
+  // "Schilling Beer" (no "Co.") -> the brewery's Untappd-confirmed core.
+  assert.equal(
+    normalizeProducerPrefix('Schilling Beer Hanse', 'Schilling Beer', 'Schilling Beer Co.'),
+    'Schilling Hanse'
+  );
+  // Full legal brand text -> the same core.
+  assert.equal(
+    normalizeProducerPrefix('Schilling Beer Co. Maly 8°', 'Schilling Beer Co.', 'Schilling Beer Co.'),
+    'Schilling Maly 8°'
+  );
+  // Already the canonical core - left untouched.
+  assert.equal(
+    normalizeProducerPrefix('Schilling Vorhe', 'Schilling Beer Co.', 'Schilling Beer Co.'),
+    'Schilling Vorhe'
+  );
+  // Untappd's own registered name carries a real descriptive word
+  // ("Craft") the store's shorter brand already dropped - normalizing
+  // would ADD a word the store's text never had, so this is left alone
+  // rather than "corrected" into something a shopper wouldn't recognize.
+  assert.equal(
+    normalizeProducerPrefix('Oakflower Augury Dry Irish Stout', 'Oakflower', 'Oakflower Craft Brewing Company'),
+    'Oakflower Augury Dry Irish Stout'
+  );
+  // No producer prefix on the title at all - nothing to shorten.
+  assert.equal(normalizeProducerPrefix('Augury', '', 'Oakflower Craft Brewing Company'), 'Augury');
+});
+
+// End-to-end coverage for the same Schilling scenario through the real
+// pipeline: two SKUs whose store pages disagree on how to spell the brand
+// still print the same producer prefix once Untappd confirms which brewery
+// they're both from.
+test('enrichBeerFromUntappd normalizes the producer prefix to Untappd\'s confirmed brewery core', async () => {
+  const algoliaBody = algoliaHitsResponse([
+    { beer_slug: 'schilling-beer-co-hanse', bid: 6001, beer_name: 'Hanse', brewery_name: 'Schilling Beer Co.' },
+  ]);
+  const beerHtml = page({
+    head: '<meta property="og:title" content="Hanse by Schilling Beer Co. | Untappd" />',
+    body: '<p class="brewery"><a href="#">Schilling Beer Co.</a></p>',
+  });
+  await withMockFetch(
+    async (url) => mockResponse({ status: 200, body: url.includes('algolia.net') ? algoliaBody : beerHtml }),
+    async () => {
+      const result = await enrichBeerFromUntappd({
+        title: 'Hanse', brand: 'Schilling Beer', size: '16oz', sku: '39014',
+      });
+      assert.equal(result.title, 'Schilling Hanse');
+      assert.equal(result.brewery, 'Schilling Beer Co.');
     }
   );
 });

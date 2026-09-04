@@ -52,6 +52,45 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.11',
+      items: [
+        'Fixed: a long beer name on a beer Large Display Sign could render garbled - an ellipsis mid-word with a second, real line of text still showing beneath it. The beer name now always prints on a single line, shrinking to fit and falling back to an ellipsis only if it truly can\'t.',
+        'Tightened the Untappd rating\'s own vertical spacing further on a beer Large Display Sign, freeing up room to print Regular Price and Case Price larger.',
+      ],
+    },
+    {
+      version: '4.6.10',
+      items: [
+        'The beer name on a beer Large Display Sign runs even wider now, closer to the flag/state badges - the previous pass left more room to give.',
+      ],
+    },
+    {
+      version: '4.6.9',
+      items: [
+        'On a beer Large Display Sign, the country flag and state/country silhouette badges print larger and sit closer to the corner, and the beer name\'s own margins are narrower so it runs closer to them too.',
+      ],
+    },
+    {
+      version: '4.6.8',
+      items: [
+        'Tightened the gap between the Untappd rating count and the Brewery row on a beer Large Display Sign, and used that freed-up room to print the beer name a bit larger.',
+        'Fixed: Size next to Regular Price (added last release) printed in a muted gray instead of matching Regular Price\'s own color.',
+      ],
+    },
+    {
+      version: '4.6.7',
+      items: [
+        'Fixed: on a beer Large Display Sign, checking Beer Name\'s Auto-Size box shrank the whole sign - facts, badges, prices - more than leaving it unchecked, the opposite of what "auto" should do. Checking it now only shrinks the beer name itself when it genuinely needs the room, same as before, and never touches everything else more than not checking it would.',
+        'Size (e.g. "12 pack 12oz Cans") now prints next to Regular Price with a small divider, instead of sitting alone above the price row - beer Large Display Signs only; wine/spirits/bourbon keep Size in its usual spot.',
+      ],
+    },
+    {
+      version: '4.6.6',
+      items: [
+        'The beer Large Display Sign\'s Untappd facts print even larger again, and now Product Name, Regular Price, and Case Price print larger too, so the whole sign reads bigger - not just the facts column against an unchanged title/price.',
+      ],
+    },
+    {
       version: '4.6.5',
       items: [
         'The Untappd facts on a beer Large Display Sign (Rating, Style, Brewery, Location, ABV, IBU, plus the country flag/state silhouette badges) now print noticeably larger - they were reading small and sparse next to the sign\'s own title and price lettering.',
