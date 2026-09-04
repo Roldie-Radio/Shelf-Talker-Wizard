@@ -1420,6 +1420,9 @@
     highShelfView: document.getElementById('highShelfView'),
     highShelfAddBtn: document.getElementById('highShelfAddBtn'),
     highShelfFilterInput: document.getElementById('highShelfFilterInput'),
+    highShelfImportPathInput: document.getElementById('highShelfImportPathInput'),
+    highShelfImportBtn: document.getElementById('highShelfImportBtn'),
+    highShelfImportStatus: document.getElementById('highShelfImportStatus'),
     highShelfStats: document.getElementById('highShelfStats'),
     highShelfBody: document.getElementById('highShelfBody'),
     highShelfOverlay: document.getElementById('highShelfOverlay'),
@@ -12840,6 +12843,45 @@
       renderHighShelfGrid();
     });
   }
+
+  // Import from Export File... - plain synchronous request/response (see
+  // server/highShelfImport.js's own header for why: no live per-row lookup
+  // the way the Beer Bible's own raw-export import needs, so no progress
+  // bar/polling/cancel here, same shape as the Beer Bible's plain CSV
+  // import). THC mg and Servings come straight from each row's own title
+  // text; CBD content and Lab Tested aren't in a POS export, so those stay
+  // blank on every imported row until edited by hand.
+  els.highShelfImportBtn.addEventListener('click', async () => {
+    const filePath = els.highShelfImportPathInput.value.trim();
+    if (!filePath) {
+      els.highShelfImportStatus.textContent = 'Enter the export file\'s path first.';
+      return;
+    }
+    els.highShelfImportBtn.disabled = true;
+    els.highShelfImportStatus.textContent = 'Importing...';
+    try {
+      const resp = await fetch('/api/high-shelf/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not import that file.');
+      highShelfLibraryCache = Array.isArray(data.entries) ? data.entries : highShelfLibraryCache;
+      renderHighShelfStats();
+      renderHighShelfGrid();
+      refreshHighShelfRecall();
+      const gaps = [];
+      if (data.missingThcMg) gaps.push(`${data.missingThcMg} with no THC mg in the title`);
+      if (data.missingServings) gaps.push(`${data.missingServings} with no pack size in the title`);
+      const gapsText = gaps.length ? ` (${gaps.join(', ')} - fill those in by hand)` : '';
+      els.highShelfImportStatus.textContent = `Imported ${data.imported} of ${data.total} rows${gapsText}.`;
+    } catch (err) {
+      els.highShelfImportStatus.textContent = err.message || 'Could not import that file.';
+    } finally {
+      els.highShelfImportBtn.disabled = false;
+    }
+  });
 
   // ---------- The High Shelf add/edit form ----------
   //

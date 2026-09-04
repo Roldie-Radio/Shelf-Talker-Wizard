@@ -1410,6 +1410,27 @@
         </div>
       </div>
       <p class="help-text">Every THC/CBD Shelf Talker added to the queue saves here automatically - add one you've researched by hand with <strong>Add Product</strong>, or edit/delete an existing card below.</p>
+      <!-- Import from Export File... - reads a raw product export (CSV/TSV,
+           or an Excel .xlsx/.xlsm workbook) and pulls THC mg and pack size
+           straight out of each row's own title text (see
+           server/highShelfImport.js) - no live per-row lookup the way the
+           Beer Bible's own raw-export import needs, so this is a plain
+           synchronous request, not a progress-bar job. CBD content and Lab
+           Tested aren't in a POS export, so those stay blank until edited
+           by hand (or filled in later via a card's own Edit). A server-
+           local file path, same convention as the Beer Bible's own Export
+           File Path box - not a browser file picker, since an .xlsx can't
+           just be read client-side and posted as text. -->
+      <div id="highShelfImportRow">
+        <label class="field">
+          <span>Import from Export File (optional)</span>
+          <input type="text" id="highShelfImportPathInput" placeholder="C:\WinePOS\Exports\thc-drinks.xlsx" />
+        </label>
+        <div class="reviewer-manager__add">
+          <button type="button" class="btn btn--small" id="highShelfImportBtn">Import from Export File&hellip;</button>
+        </div>
+        <p class="help-text" id="highShelfImportStatus" role="status" aria-live="polite"></p>
+      </div>
       <div class="library-search">
         <input type="search" id="highShelfFilterInput" aria-label="Search The High Shelf" placeholder="Search by name or SKU&hellip;" />
       </div>

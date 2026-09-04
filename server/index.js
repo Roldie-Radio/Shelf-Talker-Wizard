@@ -33,6 +33,7 @@ const {
   isEnriched: isBeerBibleEntryEnriched,
 } = require('./beerBibleImport');
 const { maybeAutoSeedRumRepository, syncNewRumRepositoryEntries } = require('./rumRepositorySeed');
+const { importHighShelfExport } = require('./highShelfImport');
 const {
   getState: getProductDatabaseState, setExportFile: setProductDatabaseExportFile, setHaFile: setProductDatabaseHaFile,
   findRumProducts,
@@ -1090,6 +1091,27 @@ function createApp({
     const deleted = deleteHighShelfEntry(Number(req.params.id));
     if (!deleted) return res.status(404).json({ error: 'No entry with that id.' });
     res.json({ success: true });
+  });
+
+  // Import from Export File... (see server/highShelfImport.js's own header
+  // for why this is synchronous - no per-row live lookup the way the Beer
+  // Bible's own raw-export import needs, so no job/polling/cancel here).
+  // Reads a server-local file path, same convention as
+  // POST /api/beers/import/start - not an uploaded blob, since an .xlsx
+  // file can't just be read client-side and POSTed as text the way the
+  // Beer Bible's own plain CSV import does.
+  app.post('/api/high-shelf/import', (req, res) => {
+    const { filePath } = req.body || {};
+    if (!filePath || typeof filePath !== 'string' || !filePath.trim()) {
+      return res.status(400).json({ error: 'An export file path is required.' });
+    }
+    try {
+      const result = importHighShelfExport(filePath.trim());
+      res.json({ ...result, entries: listHighShelfEntries() });
+    } catch (err) {
+      const notFound = err.code === 'ENOENT';
+      res.status(notFound ? 400 : 500).json({ error: notFound ? 'Could not find that file.' : (err.message || 'Could not import that file.') });
+    }
   });
 
   // Backs the Rum Repository page's "Check GitHub for New Rums" button -
