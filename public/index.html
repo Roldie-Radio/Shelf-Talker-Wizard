@@ -499,6 +499,15 @@
               <span>Servings per Container (optional)</span>
               <input type="text" inputmode="numeric" id="fThcCbdServings" maxlength="4" placeholder="4" />
             </label>
+            <label class="field">
+              <span>Strain Type (optional)</span>
+              <select id="fStrain">
+                <option value="">Not Specified</option>
+                <option value="sativa">Sativa</option>
+                <option value="indica">Indica</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </label>
             <div class="field" id="labTestedField">
               <div class="store-pick-toggle-row">
                 <span class="store-pick-toggle-row__label">Lab Tested</span>
@@ -508,7 +517,7 @@
                 </label>
               </div>
             </div>
-            <p class="help-text">Prints as a THC/CBD potency callout under the description - Lab Tested adds its own badge next to the servings count.</p>
+            <p class="help-text">Prints as a THC/CBD potency callout under the description - Strain Type prints as a small pill above it, Lab Tested adds its own badge next to the servings count.</p>
           </div>
 
           <!-- Wine/Spirits-only, same visibility rule as Food Pairing
@@ -2434,6 +2443,15 @@
           <label class="field">
             <span>Servings per Container (optional)</span>
             <input type="text" inputmode="numeric" id="highShelfFormServingsInput" maxlength="4" placeholder="4" />
+          </label>
+          <label class="field">
+            <span>Strain Type (optional)</span>
+            <select id="highShelfFormStrainInput">
+              <option value="">Not Specified</option>
+              <option value="sativa">Sativa</option>
+              <option value="indica">Indica</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
           </label>
           <div class="field" id="highShelfFormLabTestedField">
             <div class="store-pick-toggle-row">

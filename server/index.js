@@ -1056,10 +1056,10 @@ function createApp({
   // saved alone rather than blanking it out.
   function highShelfOptionalFields(body) {
     const {
-      sku, thcMg, cbdMg, servings, isLabTested,
+      sku, thcMg, cbdMg, servings, isLabTested, strain,
     } = body || {};
     return {
-      sku, thcMg, cbdMg, servings, isLabTested,
+      sku, thcMg, cbdMg, servings, isLabTested, strain,
     };
   }
 

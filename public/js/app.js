@@ -1415,6 +1415,7 @@
     thcMg: document.getElementById('fThcMg'),
     cbdMg: document.getElementById('fCbdMg'),
     thcCbdServings: document.getElementById('fThcCbdServings'),
+    strain: document.getElementById('fStrain'),
     labTested: document.getElementById('fLabTested'),
     railHighShelfBtn: document.getElementById('railHighShelfBtn'),
     highShelfView: document.getElementById('highShelfView'),
@@ -1436,6 +1437,7 @@
     highShelfFormThcInput: document.getElementById('highShelfFormThcInput'),
     highShelfFormCbdInput: document.getElementById('highShelfFormCbdInput'),
     highShelfFormServingsInput: document.getElementById('highShelfFormServingsInput'),
+    highShelfFormStrainInput: document.getElementById('highShelfFormStrainInput'),
     highShelfFormLabTestedInput: document.getElementById('highShelfFormLabTestedInput'),
     highShelfFormSaveBtn: document.getElementById('highShelfFormSaveBtn'),
     highShelfFormCancelBtn: document.getElementById('highShelfFormCancelBtn'),
@@ -2511,6 +2513,7 @@
       thcMg: els.thcMg.value.trim(),
       cbdMg: els.cbdMg.value.trim(),
       thcCbdServings: els.thcCbdServings.value.trim(),
+      strain: els.strain.value,
       isLabTested: els.labTested.checked,
       pairings: currentPairings.slice(),
       wineProfile: { ...currentProfile },
@@ -2609,6 +2612,7 @@
     els.thcMg.value = talker.thcMg || '';
     els.cbdMg.value = talker.cbdMg || '';
     els.thcCbdServings.value = talker.thcCbdServings || '';
+    els.strain.value = ['sativa', 'indica', 'hybrid'].includes(talker.strain) ? talker.strain : '';
     els.labTested.checked = !!talker.isLabTested;
     highShelfRecallDismissedFor = '';
     refreshHighShelfRecall();
@@ -3217,7 +3221,7 @@
     const match = findHighShelfMatch(title);
     if (!match) { els.highShelfRecallBanner.hidden = true; return; }
 
-    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested);
+    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested || match.strain);
     if (!hasAnything) {
       els.highShelfRecallBanner.innerHTML = `
         <div class="mashbill-recall__title">📚 "${escapeHtml(match.title)}" is in The High Shelf, but nothing's been researched yet.</div>
@@ -3231,6 +3235,7 @@
       highShelfRecallRowHtml('THC (mg/serving)', match.thcMg, 'use-thc'),
       highShelfRecallRowHtml('CBD (mg/serving)', match.cbdMg, 'use-cbd'),
       highShelfRecallRowHtml('Servings', match.servings, 'use-servings'),
+      highShelfRecallRowHtml('Strain Type', match.strain ? (match.strain.charAt(0).toUpperCase() + match.strain.slice(1)) : '', 'use-strain'),
       highShelfRecallRowHtml('Lab Tested', match.isLabTested ? 'Yes' : '', 'use-lab-tested'),
     ].join('');
     const updated = match.updatedAt ? formatHistoryTimestamp(match.updatedAt) : '';
@@ -3270,6 +3275,12 @@
       refreshPreview();
       return;
     }
+    if (field === 'strain') {
+      if (!match.strain) return;
+      els.strain.value = match.strain;
+      refreshPreview();
+      return;
+    }
     const value = match[field];
     if (!value) return;
     const el = highShelfFieldEl(field);
@@ -3288,6 +3299,7 @@
     if (overwriting && !confirm('Replace the current THC/CBD potency with The High Shelf\'s?')) return;
     targets.forEach((f) => { highShelfFieldEl(f).value = match[f]; });
     els.labTested.checked = !!match.isLabTested;
+    if (match.strain) els.strain.value = match.strain;
     refreshPreview();
   }
 
@@ -3306,6 +3318,8 @@
       applyHighShelfRecallField(match, 'servings');
     } else if (action === 'use-lab-tested') {
       applyHighShelfRecallField(match, 'isLabTested');
+    } else if (action === 'use-strain') {
+      applyHighShelfRecallField(match, 'strain');
     } else if (action === 'use-all') {
       applyHighShelfRecallAll(match);
       highShelfRecallDismissedFor = title;
@@ -4352,7 +4366,7 @@
   // same distinction highShelfOptionalFieldParams makes server-side.
   function thcCbdAutoSaveFields(talker) {
     const fields = { isLabTested: !!talker.isLabTested };
-    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings'].forEach((key) => {
+    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings', 'strain'].forEach((key) => {
       if (talker[key]) fields[key] = talker[key];
     });
     // server/db.js's high_shelf_entries columns are named servings, not
@@ -12793,13 +12807,16 @@
     if (entry.thcMg) statBits.push(`${escapeHtml(entry.thcMg)}mg THC`);
     if (entry.cbdMg) statBits.push(`${escapeHtml(entry.cbdMg)}mg CBD`);
     if (entry.servings) statBits.push(`${escapeHtml(entry.servings)} servings`);
+    const footerBits = [];
+    if (entry.strain) footerBits.push(escapeHtml(entry.strain.charAt(0).toUpperCase() + entry.strain.slice(1)));
+    if (entry.isLabTested) footerBits.push('Lab Tested');
     return `
       <button type="button" class="bourbon-card" data-id="${entry.id}">
         <div class="bourbon-card__title">${escapeHtml(entry.title)}</div>
         <div class="bourbon-card__sub">${entry.sku ? `SKU ${escapeHtml(entry.sku)}` : 'No SKU on file'}</div>
         <div class="bourbon-card__footer">
           <span class="bourbon-card__sub">${statBits.join(' &middot; ') || 'Not yet researched'}</span>
-          <span class="bourbon-card__sub">${entry.isLabTested ? 'Lab Tested' : ''}</span>
+          <span class="bourbon-card__sub">${footerBits.join(' &middot; ')}</span>
         </div>
       </button>
     `;
@@ -12929,6 +12946,7 @@
     els.highShelfFormThcInput.value = '';
     els.highShelfFormCbdInput.value = '';
     els.highShelfFormServingsInput.value = '';
+    els.highShelfFormStrainInput.value = '';
     els.highShelfFormLabTestedInput.checked = false;
     els.highShelfFormTitle.textContent = 'Add an entry manually';
     els.highShelfFormSaveBtn.textContent = 'Add Entry';
@@ -12944,6 +12962,7 @@
     els.highShelfFormThcInput.value = entry.thcMg || '';
     els.highShelfFormCbdInput.value = entry.cbdMg || '';
     els.highShelfFormServingsInput.value = entry.servings || '';
+    els.highShelfFormStrainInput.value = ['sativa', 'indica', 'hybrid'].includes(entry.strain) ? entry.strain : '';
     els.highShelfFormLabTestedInput.checked = !!entry.isLabTested;
     els.highShelfFormTitle.textContent = `Edit "${entry.title}"`;
     els.highShelfFormSaveBtn.textContent = 'Save Changes';
@@ -13009,6 +13028,7 @@
         thcMg: els.highShelfFormThcInput.value.trim(),
         cbdMg: els.highShelfFormCbdInput.value.trim(),
         servings: els.highShelfFormServingsInput.value.trim(),
+        strain: els.highShelfFormStrainInput.value,
         isLabTested: els.highShelfFormLabTestedInput.checked,
         source: 'Manual',
       };
