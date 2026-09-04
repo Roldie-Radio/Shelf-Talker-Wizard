@@ -52,6 +52,21 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Store SKUs at this store are always 5 digits (see the fSku placeholder
+// in index.html, "09144") - staff sometimes type one without its leading
+// zero(s), e.g. "665" for what's shelved/labeled as "00665", since a
+// numeric input drops them visually while typing. Pads back out to 5 on
+// print so a beer Large Display Sign's footer always matches the real
+// 5-digit SKU rather than whatever leading zeros happened to survive
+// typing. Non-numeric text (never expected in practice, but the field is
+// free text) and a SKU already 5+ digits both pass through unchanged.
+// Sign only, per request - the Shelf Talker card's own SKU (buildCardElement
+// below) prints talker.sku as typed, unpadded.
+function formatSkuDisplay(sku) {
+  const trimmed = String(sku == null ? '' : sku).trim();
+  return /^\d+$/.test(trimmed) ? trimmed.padStart(5, '0') : trimmed;
+}
+
 // The Size field's "ml"/"oz" unit comes straight from whatever the store
 // export or product page wrote it as ("750ML", "16OZ 4-Pack", "12oz") -
 // inconsistent about casing the abbreviation itself. Printed talkers/signs
@@ -1928,6 +1943,10 @@ function buildSignElement(talker) {
   const isBeer = talker.category === 'beer';
   const isThcCbd = talker.category === 'thccbd';
   const showSku = (isBeer || isThcCbd) && size === 'large' && talker.sku;
+  // formatSkuDisplay's 5-digit padding is beer Large Display Sign only, per
+  // request - a THC/CBD sign's SKU (rare in practice - see showSku above)
+  // still prints talker.sku as typed, same as the Shelf Talker card does.
+  const skuDisplay = isBeer ? formatSkuDisplay(talker.sku) : talker.sku;
 
   sign.innerHTML = `
     <div class="sign__band">
@@ -1940,7 +1959,7 @@ function buildSignElement(talker) {
     </div>
     <div class="sign__band sign__band--footer">
       <span class="sign__footer-text">www.liquoroutletwinecellars.com</span>
-      ${showSku ? `<span class="sign__sku">SKU ${escapeHtml(talker.sku)}</span>` : ''}
+      ${showSku ? `<span class="sign__sku">SKU ${escapeHtml(skuDisplay)}</span>` : ''}
       <img class="sign__logo" src="assets/logo.png" alt="" />
     </div>
   `;
