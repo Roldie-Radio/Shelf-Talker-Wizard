@@ -12830,6 +12830,57 @@
       || (entry.sku || '').toLowerCase().includes(q);
   }
 
+  // Sort by... - same field-select dropdown pattern (and .results-toolbar
+  // wrapper) as the Bourbon Library's/Beer Bible's own Sort by above, just
+  // with THC/CBD-shaped metrics instead of grain %/rating. A blank field
+  // (nothing researched yet for that metric) always sorts to the bottom of
+  // its group rather than floating to the top as if it were "0" - see the
+  // `?? -Infinity` fallback in each numeric cmp below.
+  function highShelfNum(value) {
+    const n = parseFloat(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  const HIGH_SHELF_SORTS = [
+    { group: 'Name', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => a.title.localeCompare(b.title) },
+    { group: 'Potency', key: 'thc-desc', label: 'Highest THC', cmp: (a, b) => (highShelfNum(b.thcMg) ?? -Infinity) - (highShelfNum(a.thcMg) ?? -Infinity) || a.title.localeCompare(b.title) },
+    { group: 'Potency', key: 'cbd-desc', label: 'Highest CBD', cmp: (a, b) => (highShelfNum(b.cbdMg) ?? -Infinity) - (highShelfNum(a.cbdMg) ?? -Infinity) || a.title.localeCompare(b.title) },
+    { group: 'Other', key: 'servings-desc', label: 'Most Servings', cmp: (a, b) => (highShelfNum(b.servings) ?? -Infinity) - (highShelfNum(a.servings) ?? -Infinity) || a.title.localeCompare(b.title) },
+    { group: 'Other', key: 'lab-tested', label: 'Lab Tested First', cmp: (a, b) => (b.isLabTested ? 1 : 0) - (a.isLabTested ? 1 : 0) || a.title.localeCompare(b.title) },
+    { group: 'Other', key: 'sku-asc', label: 'SKU (Low–High)', cmp: (a, b) => (highShelfNum(a.sku) ?? Infinity) - (highShelfNum(b.sku) ?? Infinity) || a.title.localeCompare(b.title) },
+    { group: 'Other', key: 'recent', label: 'Recently Updated', cmp: (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0) || a.title.localeCompare(b.title) },
+  ];
+  const HIGH_SHELF_SORTS_BY_KEY = Object.fromEntries(HIGH_SHELF_SORTS.map((s) => [s.key, s]));
+
+  // Persists per PC (localStorage), same spirit as LIBRARY_SORT_KEY - staff
+  // shouldn't have to reselect Highest THC every time they open the page.
+  const HIGH_SHELF_SORT_KEY = 'shelfTalkerHighShelfSortKey.v1';
+  function loadHighShelfSortKey() {
+    try {
+      const saved = localStorage.getItem(HIGH_SHELF_SORT_KEY);
+      return HIGH_SHELF_SORTS_BY_KEY[saved] ? saved : 'name-asc';
+    } catch {
+      return 'name-asc';
+    }
+  }
+  let highShelfSortKey = loadHighShelfSortKey();
+
+  function highShelfSortDropdownHtml() {
+    const groups = [];
+    HIGH_SHELF_SORTS.forEach((s) => {
+      if (!groups.length || groups[groups.length - 1].group !== s.group) groups.push({ group: s.group, items: [] });
+      groups[groups.length - 1].items.push(s);
+    });
+    return groups.map((g) => `
+      <div class="field-select__group-label">${escapeHtml(g.group)}</div>
+      ${g.items.map((s) => `
+        <button type="button" class="field-select__option" role="option" data-sort="${s.key}" aria-selected="${s.key === highShelfSortKey}">
+          <span class="field-select__option-check" aria-hidden="true">&#10003;</span>
+          <span class="field-select__option-label">${escapeHtml(s.label)}</span>
+        </button>
+      `).join('')}
+    `).join('');
+  }
+
   function renderHighShelfStats() {
     const labTested = highShelfLibraryCache.filter((e) => e.isLabTested).length;
     els.highShelfStats.innerHTML = `
@@ -12864,20 +12915,53 @@
   function renderHighShelfGrid() {
     const rows = highShelfLibraryCache
       .filter(highShelfMatchesSearch)
-      .slice()
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .slice();
+    const sort = HIGH_SHELF_SORTS_BY_KEY[highShelfSortKey];
+    rows.sort(sort.cmp);
+
+    const toolbarHtml = `
+      <div class="results-toolbar">
+        <span class="results-toolbar__count">${rows.length} product${rows.length === 1 ? '' : 's'}</span>
+        <div class="results-toolbar__controls">
+          <div class="field-select" id="highShelfSortSelect">
+            <button type="button" class="field-select__trigger" id="highShelfSortTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="field-select__value">${escapeHtml(sort.label)}</span>
+              <svg class="field-select__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="field-select__dropdown" role="listbox">${highShelfSortDropdownHtml()}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
     if (!rows.length) {
       els.highShelfBody.innerHTML = highShelfLibraryCache.length
-        ? '<p class="empty-hint">No products match this search.</p>'
+        ? `${toolbarHtml}<p class="empty-hint">No products match this search.</p>`
         : '<p class="empty-hint">Nothing on The High Shelf yet - add a THC/CBD Shelf Talker to the queue, or click Add Product to research your first one.</p>';
-      return;
+    } else {
+      els.highShelfBody.innerHTML = `${toolbarHtml}<div class="bourbon-grid">${rows.map((entry) => highShelfCardHtml(entry)).join('')}</div>`;
     }
-    els.highShelfBody.innerHTML = `<div class="bourbon-grid">${rows.map((entry) => highShelfCardHtml(entry)).join('')}</div>`;
+
     els.highShelfBody.querySelectorAll('.bourbon-card[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const entry = highShelfLibraryCache.find((r) => r.id === Number(btn.dataset.id));
         highShelfModal.open();
         if (entry) loadHighShelfEntryIntoForm(entry);
+      });
+    });
+    const sortTrigger = document.getElementById('highShelfSortTrigger');
+    if (sortTrigger) {
+      sortTrigger.addEventListener('click', () => {
+        const wrap = document.getElementById('highShelfSortSelect');
+        const isOpen = wrap.classList.toggle('is-open');
+        sortTrigger.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+    els.highShelfBody.querySelectorAll('.field-select__option[data-sort]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        highShelfSortKey = btn.dataset.sort;
+        try { localStorage.setItem(HIGH_SHELF_SORT_KEY, highShelfSortKey); } catch { /* choice just won't survive a restart */ }
+        renderHighShelfGrid();
       });
     });
   }
