@@ -223,12 +223,18 @@ function buildFlavorHtml(talker) {
 // #fLabTested in index.html) printed as its own small badge next to the
 // servings line when set. Strain Type (talker.strain: 'sativa' | 'indica' |
 // 'hybrid', see #fStrain) prints as a small pill above the dose row, same
-// spot a beer's style pill occupies relative to its own rating row.
+// spot a beer's style pill occupies relative to its own rating row. Effects
+// (talker.effects, free text - e.g. "Chill & Calming" - see #fEffects) is
+// whatever a brand's own marketing/site actually says about the drink, so
+// it's printed as-is rather than mapped to a fixed set like Strain Type -
+// there's no fixed vocabulary to normalize it against the way there is for
+// Sativa/Indica/Hybrid.
 const STRAIN_LABELS = { sativa: 'Sativa', indica: 'Indica', hybrid: 'Hybrid' };
 function buildDoseHtml(talker) {
   const thc = String(talker.thcMg || '').trim();
   const cbd = String(talker.cbdMg || '').trim();
   const servings = String(talker.thcCbdServings || '').trim();
+  const effects = String(talker.effects || '').trim();
   if (!thc && !cbd) return '';
   const doseHtml = [
     thc ? `<div class="card__dose card__dose--thc"><span class="card__dose-label">THC</span><span class="card__dose-amount">${escapeHtml(thc)}<span class="card__dose-unit">mg</span></span></div>` : '',
@@ -240,11 +246,13 @@ function buildDoseHtml(talker) {
   const servingsHtml = (servings || labBadge)
     ? `<div class="card__dose-servings">${servings ? `${escapeHtml(servings)} servings per container` : ''}${labBadge}</div>`
     : '';
+  const effectsHtml = effects ? `<div class="card__effects">${escapeHtml(effects)}</div>` : '';
   return `
     <div class="card__potency">
       ${strainHtml}
       <div class="card__dose-row">${doseHtml}</div>
       ${servingsHtml}
+      ${effectsHtml}
     </div>
   `;
 }
@@ -1933,7 +1941,7 @@ function buildSignElement(talker) {
  *   salePrice, theme, talkerType, isChilled, ratings: [{reviewer, score}],
  *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
  *   location, style, abv, ibu, untappdRating, untappdRatingCount, thcMg,
- *   cbdMg, thcCbdServings, isLabTested, strain }
+ *   cbdMg, thcCbdServings, isLabTested, strain, effects }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {

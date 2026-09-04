@@ -619,6 +619,10 @@ h1, h2, h3 { margin: 0; }
 .bourbon-card:hover { border-color: var(--ui-accent-ink); background: var(--ui-hover); }
 .bourbon-card__title { font-size: 0.98rem; font-weight: 700; }
 .bourbon-card__sub { font-size: 0.78rem; color: var(--ui-muted); }
+/* The High Shelf's own Effects line (see .card__effects for the printed
+   equivalent) - italic to read as quoted/descriptive copy rather than a
+   fact like the SKU/stat lines above it. */
+.bourbon-card__sub--effects { font-style: italic; margin-top: 0.2rem; }
 .bourbon-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.1rem; }
 /* Groups a researched entry's sort metric with its .research-reicon (see
    beerCardHtml/beerRowHtml's own reResearchHtml in app.js) so adding that
@@ -4003,6 +4007,19 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
   font-size: calc(var(--w) * 0.03 * var(--price-fit, 1));
   color: var(--muted);
   margin-top: calc(var(--w) * 0.012 * var(--price-fit, 1));
+}
+
+/* Effects (see #fEffects in index.html) - free text, whatever a brand's own
+   marketing says (e.g. "Chill & Calming"), so it prints as plain italic
+   copy rather than a colored badge like Strain Type above - there's no
+   fixed vocabulary here to give it that pill treatment. */
+.card__effects {
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-style: italic;
+  font-size: calc(var(--w) * 0.032 * var(--price-fit, 1));
+  color: var(--ink);
+  margin-top: calc(var(--w) * 0.014 * var(--price-fit, 1));
 }
 
 /* Lab Tested badge (see #fLabTested in index.html) - folded into
