@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.12',
+      items: [
+        'Fixed: a beer name on a beer Large Display Sign could still print with a trailing "..." instead of shrinking to fit, when that talker\'s Title Auto Size box was unchecked. The beer name now always shrinks to fit its one line - the Auto Size box keeps its usual effect everywhere else (Shelf Talkers, wine/spirits/bourbon signs).',
+      ],
+    },
+    {
       version: '4.6.11',
       items: [
         'Fixed: a long beer name on a beer Large Display Sign could render garbled - an ellipsis mid-word with a second, real line of text still showing beneath it. The beer name now always prints on a single line, shrinking to fit and falling back to an ellipsis only if it truly can\'t.',
