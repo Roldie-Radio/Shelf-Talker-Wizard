@@ -1918,6 +1918,17 @@ function buildSignElement(talker) {
   const bodyHtml = size === 'small' ? buildSmallSignBodyHtml(talker) : buildLargeSignBodyHtml(talker);
   const showRails = signHasDiscount(talker);
 
+  // Store SKU: same "Beer and THC/CBD only, when set" rule as the Shelf
+  // Talker card's own showSku (see buildCardElement above), but Large sign
+  // only - Small's footer band is already tight with just the URL and logo
+  // (see .sign[data-size="small"] .sign__band--footer in styles.css), and
+  // nothing asked for it there. Sits between the footer URL and logo in
+  // this same band rather than a new one - .sign__band--footer's existing
+  // space-between then centers it automatically.
+  const isBeer = talker.category === 'beer';
+  const isThcCbd = talker.category === 'thccbd';
+  const showSku = (isBeer || isThcCbd) && size === 'large' && talker.sku;
+
   sign.innerHTML = `
     <div class="sign__band">
       <div class="sign__tagline">Morris County's Largest Wine Discounter</div>
@@ -1929,6 +1940,7 @@ function buildSignElement(talker) {
     </div>
     <div class="sign__band sign__band--footer">
       <span class="sign__footer-text">www.liquoroutletwinecellars.com</span>
+      ${showSku ? `<span class="sign__sku">SKU ${escapeHtml(talker.sku)}</span>` : ''}
       <img class="sign__logo" src="assets/logo.png" alt="" />
     </div>
   `;

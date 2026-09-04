@@ -4486,6 +4486,21 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 }
 .sign[data-size="small"] .sign__footer-text { font-size: calc(var(--w) * var(--sign-text) * 0.014); }
 
+/* Same treatment as .sign__footer-text right above (same band, same weight
+   of information) but dimmed slightly via opacity - staff-facing restock
+   detail, not the shopper-facing footer text/logo it shares the band with.
+   Large sign only (see buildSignElement's showSku in card.js), so no
+   [data-size="small"] override is needed here the way .sign__footer-text
+   has one. */
+.sign__sku {
+  color: #fff;
+  font-weight: 800;
+  font-size: calc(var(--w) * var(--sign-text) * 0.011);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+  opacity: 0.85;
+}
+
 .sign__logo { height: calc(var(--w) * 0.028); }
 .sign[data-size="small"] .sign__logo { height: calc(var(--w) * 0.036); }
 

@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.15',
+      items: [
+        'A beer Large Display Sign with a Store SKU now prints it in the footer band, next to the store URL and logo - same as it already does on beer Shelf Talkers.',
+      ],
+    },
+    {
       version: '4.6.14',
       items: [
         'On a beer Large Display Sign, the beer name sits closer to the Untappd rating/description below it, and Regular Price, Case Price, and Size print a bit larger with the room that frees up.',
