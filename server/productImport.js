@@ -1875,6 +1875,38 @@ function stripProducerLegalSuffix(brand) {
   return core;
 }
 
+// A narrower version of PRODUCER_LEGAL_SUFFIX_PATTERN above, used only by
+// normalizeProducerPrefix below to decide what's safe to actually cut out
+// of a displayed title (not just recognize, the way composeProducerTitle's
+// own read-only check above does). Deliberately drops bare "brewing"/
+// "brewery" from the list - unlike "Beer Co."/"Brewing Company", a lot of
+// real breweries are genuinely known BY that word with nothing after it
+// (confirmed against a real SKU: "Manskirt Brewing" is both the store's own
+// scraped brand and Untappd's own confirmed brewery name, verbatim, with no
+// "Company" trailing it - stripping "Brewing" off would rewrite a brewery's
+// actual name into something neither source ever called it, which is a much
+// bigger risk than composeProducerTitle's original read-only use of the
+// wider pattern above ever carried, since that only ever avoided writing
+// something, never rewrote what was already there).
+const PRODUCER_FORMAL_SUFFIX_PATTERN = new RegExp(
+  '\\s+(' + [
+    'brewing company', 'brewing co\\.?',
+    'beer company', 'beer co\\.?', 'brew(?:ing)? works', 'ale works',
+    'company', 'co\\.?',
+  ].join('|') + ')$',
+  'i'
+);
+
+function stripFormalProducerSuffix(brand) {
+  let core = (brand || '').trim();
+  let next = core.replace(PRODUCER_FORMAL_SUFFIX_PATTERN, '').trim();
+  while (next && next !== core) {
+    core = next;
+    next = core.replace(PRODUCER_FORMAL_SUFFIX_PATTERN, '').trim();
+  }
+  return core;
+}
+
 // Composes "Producer Product Name" (size left out) from a scraped product -
 // used two ways below: as the actual title field for wine/spirits SKU
 // lookups, and as the Untappd search query for beer. The store's own title
@@ -1906,6 +1938,74 @@ function composeProducerTitle({ title, brand, size }) {
   }
 
   return `${trimmedBrand} ${name}`.trim();
+}
+
+// Once enrichBeerFromUntappd below has a confirmed match, beer.brewery is
+// the one thing about this beer that's actually consistent across every SKU
+// from the same real brewery - it's scraped fresh off that brewery's own
+// Untappd page every time (see parseBeerHtml's domBrewery). The store's own
+// per-SKU brand/title text feeding composeProducerTitle above isn't: six
+// separate liquoroutletwinecellars.com product pages for the same brewery
+// have shown up with the brand spelled "Schilling Beer", "Schilling Beer
+// Co.", and a bare "Schilling" already baked into a third page's own title,
+// each producing a differently-worded producer prefix even though
+// composeProducerTitle did exactly what it's supposed to for each one in
+// isolation.
+//
+// This replaces whatever producer prefix composeProducerTitle already
+// settled on with Untappd's own core, per stripFormalProducerSuffix above -
+// but ONLY when that core is a strict prefix of the wording already there
+// (i.e. it can only shorten a prefix down, never introduce a word the
+// store's own text never had). A brewery whose registered Untappd name
+// carries a real descriptive word the store's shorter brand already dropped
+// ("Oakflower" for Untappd's own "Oakflower Craft Brewing Company") is
+// deliberately left alone rather than "corrected" into something a shopper
+// wouldn't recognize - see composeProducerTitle's own tests for that case,
+// and stripFormalProducerSuffix's own comment for why bare "Brewing"/
+// "Brewery" specifically never gets cut this way either.
+function normalizeProducerPrefix(title, brand, untappdBrewery) {
+  const trimmedTitle = (title || '').trim();
+  const trimmedBrewery = (untappdBrewery || '').trim();
+  if (!trimmedTitle || !trimmedBrewery) return trimmedTitle;
+
+  const canonicalCore = stripFormalProducerSuffix(trimmedBrewery) || trimmedBrewery;
+  const lowerCore = canonicalCore.toLowerCase();
+  const lowerTitle = trimmedTitle.toLowerCase();
+
+  // Every phrase the title's existing producer prefix might actually be -
+  // the full brand/brewery text as scraped, and each one's own
+  // formal-suffix-stripped core - checked longest-first so a title that
+  // opens with the full "Schilling Beer Co." isn't mistaken for one that
+  // only opens with the shorter "Schilling" (which would truncate the
+  // wrong amount off the front).
+  const candidateSet = new Set();
+  [trimmedBrewery, (brand || '').trim()].forEach((raw) => {
+    if (!raw) return;
+    candidateSet.add(raw);
+    const core = stripFormalProducerSuffix(raw);
+    if (core) candidateSet.add(core);
+  });
+  const candidates = [...candidateSet].sort((a, b) => b.length - a.length);
+
+  for (const candidate of candidates) {
+    const lowerCandidate = candidate.toLowerCase();
+    const isWholeTitle = lowerTitle === lowerCandidate;
+    const isPrefix = lowerTitle.startsWith(`${lowerCandidate} `);
+    if (!isWholeTitle && !isPrefix) continue;
+
+    // Found the title's real producer prefix. Already exactly the
+    // canonical core - nothing to do. Otherwise only rewrite it when the
+    // core is a strict (word-boundary) prefix of what's already there, so
+    // this can only trim trailing suffix wording off, never splice in a
+    // word ("Craft") the store's own text never had.
+    if (lowerCandidate === lowerCore) return trimmedTitle;
+    if (!lowerCandidate.startsWith(`${lowerCore} `)) return trimmedTitle;
+
+    const rest = trimmedTitle.slice(candidate.length).trim();
+    return rest ? `${canonicalCore} ${rest}` : canonicalCore;
+  }
+
+  return trimmedTitle;
 }
 
 // Folds the store page's separate Size ("16oz") and Pack Size ("4-Pack")
@@ -2043,7 +2143,12 @@ async function enrichBeerFromUntappd(product) {
     // see stripUnmatchedContainerWords's own comment for why a container
     // word ("Can") only gets dropped from the displayed title here, once
     // that confirmation exists, rather than unconditionally.
-    const displayTitle = stripUnmatchedContainerWords(title, beer.title);
+    const strippedTitle = stripUnmatchedContainerWords(title, beer.title);
+    // See normalizeProducerPrefix's own comment - this is the one place a
+    // confirmed Untappd match is allowed to touch the producer-name portion
+    // of the displayed title, and only ever to shorten it toward Untappd's
+    // own canonical brewery name, never to lengthen it.
+    const displayTitle = normalizeProducerPrefix(strippedTitle, product.brand, beer.brewery);
     // untappdFieldsOnly, not mergeUntappdBeer(product, beer) - a confident
     // automatic match should never quietly backfill from `product` (the
     // store's own generic manufacturer blurb, a previous product still
@@ -2293,6 +2398,7 @@ module.exports = {
   matchUntappdCandidates,
   UntappdAmbiguousMatchError,
   composeProducerTitle,
+  normalizeProducerPrefix,
   buildUntappdSearchQuery,
   stripUnmatchedContainerWords,
   mergeUntappdBeer,
