@@ -4770,31 +4770,35 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    side(s) actually carry a badge, mirrored onto the empty side too when
    only one resolved, so the title stays centered on the sign's own
    midpoint instead of drifting toward the empty side. Also adds bottom
-   margin the plain title never needs - the badges above (now top 0.008 +
-   width 0.088 of --w, up from 0.012/0.07 - bigger and closer to the
-   corner, per request) are tall enough that a short, single-line title's
+   margin the plain title never needs - the badges above (top 0.008 +
+   width 0.088 of --w) are tall enough that a short, single-line title's
    own height plus .sign__content's ordinary flex gap (0.008*--w) isn't
    enough clearance on its own; without this, the badges' lower edge
-   overlaps the Untappd Rating/Style row directly underneath - confirmed
-   via a getBoundingClientRect check against the actual rendered badge/
-   rating-row edges, not just eyeballed, since the overlap at the old
-   padding was only a few px and easy to miss in a screenshot.
-   padding-left/-right narrowed from 0.16 to 0.11 a side (also per
-   request, "closer to the flag and state silhouettes") - a long beer name
-   ("New Belgium Brewing Voodoo Ranger Imperial IPA") still wraps onto its
-   own already-provisioned 2nd line rather than running the full distance
-   between the badges on one line (see clampTitleToAvailableSpace's
-   maxLines for .sign__title in card.js), even at this narrower padding,
-   since the title's own font is meaningfully bigger now than when 0.16
-   was chosen. */
+   overlaps the Untappd Rating/Style row directly underneath.
+   padding-left/-right/-bottom narrowed again here (0.07 -> 0.045 a side,
+   0.038 -> 0.03 bottom, per request "narrow the margins on all sides for
+   the beer name") - previously 0.16 -> 0.11 -> 0.07, see git history for
+   that pass's own reasoning. Re-confirmed via getBoundingClientRect at
+   this narrower padding with the same long beer name used to justify the
+   old value ("New Belgium Brewing Voodoo Ranger Imperial IPA") - the
+   rendered text (not just the box) still clears the flag/state badges to
+   either side by ~10px at this render size, and the badges' own lower
+   edge still clears the Untappd Rating/Style row below by the same
+   ~10px - tighter than the old padding but not flush. Went with 0.03 over
+   an initially-tried 0.022 for the bottom specifically: at 0.022 the
+   state badge's lower edge (its silhouette runs taller than the flag) sat
+   under 2px above the rating row, too easy to collide on a taller state
+   shape or a longer Untappd Rating count pushing that row's own height up.
+   The shorter, more typical beer name reads noticeably larger now too,
+   since shrinkTitleToFitBody (card.js) has more width to work with. */
 .sign__title--badge-left,
 .sign__title--badge-right {
-  padding-bottom: calc(var(--w) * 0.038);
+  padding-bottom: calc(var(--w) * 0.03);
 }
-.sign__title--badge-left { padding-left: calc(var(--w) * 0.07); }
-.sign__title--badge-right { padding-right: calc(var(--w) * 0.07); }
-.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.07); }
-.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.07); }
+.sign__title--badge-left { padding-left: calc(var(--w) * 0.045); }
+.sign__title--badge-right { padding-right: calc(var(--w) * 0.045); }
+.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.045); }
+.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.045); }
 
 /* Beer's own two-column body: facts (rating/style/brewery/location/abv-ibu)
    on the left, Description gets the right column to itself - see
