@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.9',
+      items: [
+        'On a beer Large Display Sign, the country flag and state/country silhouette badges print larger and sit closer to the corner, and the beer name\'s own margins are narrower so it runs closer to them too.',
+      ],
+    },
+    {
       version: '4.6.8',
       items: [
         'Tightened the gap between the Untappd rating count and the Brewery row on a beer Large Display Sign, and used that freed-up room to print the beer name a bit larger.',
