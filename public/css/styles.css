@@ -4545,6 +4545,29 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    the title floating away from the top edge. */
 .sign[data-size="large"] .sign__content { justify-content: flex-start; }
 
+/* Beer Large Display Sign only (:has(.sign__columns), same scoping as the
+   gap/price/title overrides below) - a small, deliberate gap between the
+   price row (.sign__footer-block, which margin-top:auto's to the very
+   bottom of this box - see its own rule below) and the footer band
+   underneath it, per request; the price row previously sat flush against
+   the band with no breathing room. Paired with .sign__band--footer's own
+   matching cut just below: taking the gap from the band's own height
+   rather than adding it on top means this box's usable height (and
+   everything sized to fit inside it - title/facts/description/
+   --price-fit) is unchanged, so nothing needed to shrink to make room for
+   it. Explicitly scoped to beer only per request, not every Large sign -
+   wine/spirits/bourbon (and Small, which sits mid-body rather than flush
+   against its own footer band anyway - see .sign[data-size="small"]
+   .sign__content's space-between above) keep the plain flush layout. */
+.sign:has(.sign__columns)[data-size="large"] .sign__content { padding-bottom: calc(var(--w) * 0.002); }
+/* Same beer-only scoping, paired with the padding-bottom just above -
+   0.0333 (the real template's own measured footer height, see the
+   .sign[data-size="large"] .sign__band--footer comment above) trimmed to
+   0.0313 only for a beer Large Display Sign. Still comfortably taller
+   than .sign__logo (0.028*--w) with room to spare, so the logo/URL/SKU
+   line don't get cramped. */
+.sign:has(.sign__columns)[data-size="large"] .sign__band--footer { flex-basis: calc(var(--w) * 0.0313); }
+
 /* Beer Large Display Sign only - tightened from the base 0.008 above (per
    request, "reduce the gap between the title and the Untappd rating/
    description"). This single "gap" governs the space on both sides of

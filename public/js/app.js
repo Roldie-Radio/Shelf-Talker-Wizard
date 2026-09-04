@@ -52,6 +52,13 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.17',
+      items: [
+        "A beer Large Display Sign's Store SKU now always prints as the full 5 digits (e.g. \"00665\", not \"665\") even if it was typed without its leading zero(s).",
+        'Opened up a small gap between the price row and the footer band on a beer Large Display Sign - it previously sat flush against the band with no breathing room. Beer Large Display Signs only.',
+      ],
+    },
+    {
       version: '4.6.16',
       items: [
         'Tightened the gap between the beer name and the Untappd rating/description on a beer Large Display Sign further, and used the freed-up room to print Regular Price, Case Price, and Size a bit larger. Note: on a beer with little else in its facts column (no brewery/ABV/IBU, no rating yet), the flag/state badge can now sit very close to - or slightly touching - the rating row; a beer with real facts/rating data is unaffected.',
