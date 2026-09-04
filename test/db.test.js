@@ -1094,3 +1094,211 @@ test('getStats includes the rum count, independent of beers and mashBills', () =
     assert.equal(db.getStats().mashBills, 1);
   });
 });
+
+// ---------- The High Shelf ----------
+//
+// The whole `high_shelf_entries` surface went untested until the onset/
+// tasting_notes columns were added, so these cover the shared shape
+// (upsert-by-SKU-then-title, undefined-preserves, blank-clears) alongside
+// the new fields rather than just the new fields on their own.
+
+function sampleHighShelfEntry(overrides = {}) {
+  return {
+    title: 'Coastal Haze Blood Orange Seltzer',
+    sku: '48213',
+    thcMg: '5',
+    cbdMg: '5',
+    servings: '4',
+    isLabTested: true,
+    strain: 'hybrid',
+    effects: 'Chill & Calming',
+    onset: '15-30 min',
+    tastingNotes: 'Blood orange, light bitterness, dry finish',
+    ...overrides,
+  };
+}
+
+test('upsertHighShelfEntry stores every High Shelf field and rowToHighShelfEntry round-trips them', () => {
+  withTempDb(() => {
+    const entry = db.upsertHighShelfEntry(sampleHighShelfEntry());
+    assert.equal(entry.title, 'Coastal Haze Blood Orange Seltzer');
+    assert.equal(entry.sku, '48213');
+    assert.equal(entry.thcMg, '5');
+    assert.equal(entry.cbdMg, '5');
+    assert.equal(entry.servings, '4');
+    assert.equal(entry.isLabTested, true);
+    assert.equal(entry.strain, 'hybrid');
+    assert.equal(entry.effects, 'Chill & Calming');
+    assert.equal(entry.onset, '15-30 min');
+    assert.equal(entry.tastingNotes, 'Blood orange, light bitterness, dry finish');
+    assert.equal(entry.source, 'Manual');
+    // Read back out of the table rather than trusting the insert's own
+    // return value - a column the SET/VALUES list forgot would still look
+    // right in the object upsert built.
+    assert.deepEqual(db.getHighShelfEntry(entry.id), entry);
+  });
+});
+
+test('upsertHighShelfEntry defaults every unresearched field to a blank string, not null', () => {
+  withTempDb(() => {
+    const entry = db.upsertHighShelfEntry({ title: 'Mystery THC Seltzer' });
+    assert.deepEqual(
+      {
+        sku: entry.sku,
+        thcMg: entry.thcMg,
+        cbdMg: entry.cbdMg,
+        servings: entry.servings,
+        isLabTested: entry.isLabTested,
+        strain: entry.strain,
+        effects: entry.effects,
+        onset: entry.onset,
+        tastingNotes: entry.tastingNotes,
+      },
+      {
+        sku: '', thcMg: '', cbdMg: '', servings: '', isLabTested: false, strain: '', effects: '', onset: '', tastingNotes: '',
+      },
+    );
+  });
+});
+
+test('upsertHighShelfEntry matches an existing entry by SKU first, title second', () => {
+  withTempDb(() => {
+    const first = db.upsertHighShelfEntry({ title: 'Wynk Lemonade 10mg', sku: '39229', thcMg: '10' });
+    // Same SKU, different title - updates that row and keeps the name
+    // already on file rather than renaming it or adding a second row.
+    const bySku = db.upsertHighShelfEntry({ title: 'WYNK THC LEMONADE 10MG 4PK CAN', sku: '39229', onset: '15 min' });
+    assert.equal(bySku.id, first.id);
+    assert.equal(bySku.title, 'Wynk Lemonade 10mg');
+    assert.equal(bySku.onset, '15 min');
+    // No SKU at all - falls back to a case-insensitive title match.
+    const byTitle = db.upsertHighShelfEntry({ title: 'wynk lemonade 10mg', tastingNotes: 'Tart lemonade' });
+    assert.equal(byTitle.id, first.id);
+    assert.equal(byTitle.tastingNotes, 'Tart lemonade');
+    assert.equal(db.listHighShelfEntries().length, 1);
+  });
+});
+
+test('upsertHighShelfEntry: omitting a field (undefined) preserves it, an empty string clears it', () => {
+  withTempDb(() => {
+    const first = db.upsertHighShelfEntry(sampleHighShelfEntry());
+    // A THC/CBD talker auto-save (see thcCbdAutoSaveFields in app.js) only
+    // sends the fields it actually has, so a blank box on that talker must
+    // never erase researched data already on file.
+    const preserved = db.upsertHighShelfEntry({ title: first.title, thcMg: '10' });
+    assert.equal(preserved.thcMg, '10');
+    assert.equal(preserved.onset, '15-30 min');
+    assert.equal(preserved.tastingNotes, 'Blood orange, light bitterness, dry finish');
+    assert.equal(preserved.effects, 'Chill & Calming');
+    // An explicit empty string is a real edit (the High Shelf form clearing
+    // a box), so it does clear.
+    const cleared = db.upsertHighShelfEntry({ title: first.title, onset: '', tastingNotes: '' });
+    assert.equal(cleared.onset, '');
+    assert.equal(cleared.tastingNotes, '');
+  });
+});
+
+test('upsertHighShelfEntry rejects a missing title', () => {
+  withTempDb(() => {
+    assert.throws(() => db.upsertHighShelfEntry({ title: '' }), { code: 'TITLE_REQUIRED' });
+    assert.throws(() => db.upsertHighShelfEntry({}), { code: 'TITLE_REQUIRED' });
+  });
+});
+
+test('getHighShelfEntryByTitle/BySku match case-insensitively and return null on blank input', () => {
+  withTempDb(() => {
+    const entry = db.upsertHighShelfEntry(sampleHighShelfEntry());
+    assert.equal(db.getHighShelfEntryByTitle('coastal haze blood orange seltzer').id, entry.id);
+    assert.equal(db.getHighShelfEntryBySku('48213').id, entry.id);
+    assert.equal(db.getHighShelfEntryByTitle(''), null);
+    assert.equal(db.getHighShelfEntryBySku(''), null);
+    assert.equal(db.getHighShelfEntryByTitle('Nothing By This Name'), null);
+  });
+});
+
+test('listHighShelfEntries orders alphabetically by title, case-insensitively', () => {
+  withTempDb(() => {
+    db.upsertHighShelfEntry({ title: 'wynk thc tangerine 5mg 6pk' });
+    db.upsertHighShelfEntry({ title: 'ALTE THC TANGERINE CRANBERRY 5MG 4PK CAN' });
+    db.upsertHighShelfEntry({ title: 'Mood THC Cherry Lime Soda 10mg 4pk' });
+    assert.deepEqual(db.listHighShelfEntries().map((e) => e.title), [
+      'ALTE THC TANGERINE CRANBERRY 5MG 4PK CAN',
+      'Mood THC Cherry Lime Soda 10mg 4pk',
+      'wynk thc tangerine 5mg 6pk',
+    ]);
+  });
+});
+
+test('updateHighShelfEntryById changes onset/tasting notes and refuses to rename onto another title', () => {
+  withTempDb(() => {
+    const entry = db.upsertHighShelfEntry(sampleHighShelfEntry());
+    const updated = db.updateHighShelfEntryById(entry.id, {
+      title: entry.title, onset: '10-20 min', tastingNotes: 'Grapefruit, sea salt',
+    });
+    assert.equal(updated.onset, '10-20 min');
+    assert.equal(updated.tastingNotes, 'Grapefruit, sea salt');
+    assert.equal(db.updateHighShelfEntryById(999999, { title: 'Nope' }), null);
+
+    const other = db.upsertHighShelfEntry({ title: 'Some Other Seltzer' });
+    assert.throws(
+      () => db.updateHighShelfEntryById(other.id, { title: 'coastal haze blood orange seltzer' }),
+      { code: 'DUPLICATE_TITLE' },
+    );
+    assert.equal(db.getHighShelfEntry(other.id).title, 'Some Other Seltzer');
+  });
+});
+
+test('deleteHighShelfEntry removes the row and returns true, false if already gone', () => {
+  withTempDb(() => {
+    const entry = db.upsertHighShelfEntry({ title: 'Trail Magic Lime Margarita 5mg 4pk' });
+    assert.equal(db.deleteHighShelfEntry(entry.id), true);
+    assert.equal(db.getHighShelfEntry(entry.id), null);
+    assert.equal(db.deleteHighShelfEntry(entry.id), false);
+  });
+});
+
+// The counterpart to the applyBeerColumns migration test above: a store
+// that seeded The High Shelf before onset/tasting_notes existed has a table
+// without them, and opening it through db.js has to add them without losing
+// what's already researched on those rows.
+test('applyHighShelfColumns adds onset/tasting_notes to a pre-existing table without losing rows', () => {
+  withTempDb((dir) => {
+    const Database = require('better-sqlite3');
+    const filePath = path.join(dir, 'data.db');
+    const raw = new Database(filePath);
+    raw.exec(`
+      CREATE TABLE high_shelf_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        sku TEXT,
+        thc_mg TEXT,
+        cbd_mg TEXT,
+        servings TEXT,
+        is_lab_tested INTEGER NOT NULL DEFAULT 0,
+        strain TEXT,
+        effects TEXT,
+        source TEXT NOT NULL DEFAULT 'Manual',
+        updated_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX idx_high_shelf_entries_title_unique ON high_shelf_entries (title COLLATE NOCASE);
+    `);
+    raw.prepare(`
+      INSERT INTO high_shelf_entries (title, sku, thc_mg, cbd_mg, servings, is_lab_tested, effects, source, updated_at)
+      VALUES ('Old Seltzer', '11111', '5', '0', '4', 1, 'Chill & Calming', 'Manual', '2025-01-01T00:00:00.000Z')
+    `).run();
+    raw.close();
+
+    // Any call reaches getDb() -> applySchema(), same as a real app launch
+    // against an old data.db.
+    const [entry] = db.listHighShelfEntries();
+    assert.equal(entry.title, 'Old Seltzer');
+    assert.equal(entry.effects, 'Chill & Calming');
+    assert.equal(entry.isLabTested, true);
+    // The new columns exist and read back blank rather than throwing.
+    assert.equal(entry.onset, '');
+    assert.equal(entry.tastingNotes, '');
+    // And are writable from here on.
+    const researched = db.upsertHighShelfEntry({ title: 'Old Seltzer', onset: '20-40 min', tastingNotes: 'Grapefruit' });
+    assert.equal(researched.onset, '20-40 min');
+    assert.equal(researched.tastingNotes, 'Grapefruit');
+  });
+});

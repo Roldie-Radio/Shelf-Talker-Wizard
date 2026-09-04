@@ -1494,6 +1494,8 @@
     strain: document.getElementById('fStrain'),
     labTested: document.getElementById('fLabTested'),
     effects: document.getElementById('fEffects'),
+    onset: document.getElementById('fOnset'),
+    tastingNotes: document.getElementById('fTastingNotes'),
     railHighShelfBtn: document.getElementById('railHighShelfBtn'),
     highShelfView: document.getElementById('highShelfView'),
     highShelfAddBtn: document.getElementById('highShelfAddBtn'),
@@ -1517,6 +1519,8 @@
     highShelfFormStrainInput: document.getElementById('highShelfFormStrainInput'),
     highShelfFormLabTestedInput: document.getElementById('highShelfFormLabTestedInput'),
     highShelfFormEffectsInput: document.getElementById('highShelfFormEffectsInput'),
+    highShelfFormOnsetInput: document.getElementById('highShelfFormOnsetInput'),
+    highShelfFormTastingNotesInput: document.getElementById('highShelfFormTastingNotesInput'),
     highShelfFormSaveBtn: document.getElementById('highShelfFormSaveBtn'),
     highShelfFormCancelBtn: document.getElementById('highShelfFormCancelBtn'),
     highShelfFormDeleteBtn: document.getElementById('highShelfFormDeleteBtn'),
@@ -2594,6 +2598,8 @@
       strain: els.strain.value,
       isLabTested: els.labTested.checked,
       effects: els.effects.value.trim(),
+      onset: els.onset.value.trim(),
+      tastingNotes: els.tastingNotes.value.trim(),
       pairings: currentPairings.slice(),
       wineProfile: { ...currentProfile },
       // Beer and THC/CBD each have their own SKU box (only one is ever
@@ -2694,6 +2700,8 @@
     els.strain.value = ['sativa', 'indica', 'hybrid'].includes(talker.strain) ? talker.strain : '';
     els.labTested.checked = !!talker.isLabTested;
     els.effects.value = talker.effects || '';
+    els.onset.value = talker.onset || '';
+    els.tastingNotes.value = talker.tastingNotes || '';
     highShelfRecallDismissedFor = '';
     refreshHighShelfRecall();
     currentPairings = Array.isArray(talker.pairings) ? talker.pairings.slice() : [];
@@ -3301,7 +3309,8 @@
     const match = findHighShelfMatch(title);
     if (!match) { els.highShelfRecallBanner.hidden = true; return; }
 
-    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested || match.strain || match.effects);
+    const hasAnything = !!(match.thcMg || match.cbdMg || match.servings || match.isLabTested
+      || match.strain || match.effects || match.onset || match.tastingNotes);
     if (!hasAnything) {
       els.highShelfRecallBanner.innerHTML = `
         <div class="mashbill-recall__title">📚 "${escapeHtml(match.title)}" is in The High Shelf, but nothing's been researched yet.</div>
@@ -3317,6 +3326,8 @@
       highShelfRecallRowHtml('Servings', match.servings, 'use-servings'),
       highShelfRecallRowHtml('Strain Type', match.strain ? (match.strain.charAt(0).toUpperCase() + match.strain.slice(1)) : '', 'use-strain'),
       highShelfRecallRowHtml('Effects', match.effects, 'use-effects'),
+      highShelfRecallRowHtml('Onset Time', match.onset, 'use-onset'),
+      highShelfRecallRowHtml('Tasting Notes', match.tastingNotes, 'use-tasting-notes'),
       highShelfRecallRowHtml('Lab Tested', match.isLabTested ? 'Yes' : '', 'use-lab-tested'),
     ].join('');
     const updated = match.updatedAt ? formatHistoryTimestamp(match.updatedAt) : '';
@@ -3342,12 +3353,19 @@
 
   function highShelfFieldEl(field) {
     return {
-      thcMg: els.thcMg, cbdMg: els.cbdMg, servings: els.thcCbdServings, effects: els.effects,
+      thcMg: els.thcMg,
+      cbdMg: els.cbdMg,
+      servings: els.thcCbdServings,
+      effects: els.effects,
+      onset: els.onset,
+      tastingNotes: els.tastingNotes,
     }[field];
   }
 
   function highShelfFieldLabel(field) {
-    return { thcMg: 'THC', cbdMg: 'CBD', servings: 'Servings', effects: 'Effects' }[field] || field;
+    return {
+      thcMg: 'THC', cbdMg: 'CBD', servings: 'Servings', effects: 'Effects', onset: 'Onset Time', tastingNotes: 'Tasting Notes',
+    }[field] || field;
   }
 
   // Same "confirm before overwriting something already typed" pattern as
@@ -3376,7 +3394,7 @@
   }
 
   function applyHighShelfRecallAll(match) {
-    const targets = ['thcMg', 'cbdMg', 'servings', 'effects'].filter((f) => match[f]);
+    const targets = ['thcMg', 'cbdMg', 'servings', 'effects', 'onset', 'tastingNotes'].filter((f) => match[f]);
     const overwriting = targets.some((f) => {
       const el = highShelfFieldEl(f);
       return el.value.trim() && el.value.trim() !== String(match[f]).trim();
@@ -3407,6 +3425,10 @@
       applyHighShelfRecallField(match, 'strain');
     } else if (action === 'use-effects') {
       applyHighShelfRecallField(match, 'effects');
+    } else if (action === 'use-onset') {
+      applyHighShelfRecallField(match, 'onset');
+    } else if (action === 'use-tasting-notes') {
+      applyHighShelfRecallField(match, 'tastingNotes');
     } else if (action === 'use-all') {
       applyHighShelfRecallAll(match);
       highShelfRecallDismissedFor = title;
@@ -4453,7 +4475,7 @@
   // same distinction highShelfOptionalFieldParams makes server-side.
   function thcCbdAutoSaveFields(talker) {
     const fields = { isLabTested: !!talker.isLabTested };
-    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings', 'strain', 'effects'].forEach((key) => {
+    ['sku', 'thcMg', 'cbdMg', 'thcCbdServings', 'strain', 'effects', 'onset', 'tastingNotes'].forEach((key) => {
       if (talker[key]) fields[key] = talker[key];
     });
     // server/db.js's high_shelf_entries columns are named servings, not
@@ -12874,8 +12896,12 @@
   function highShelfMatchesSearch(entry) {
     const q = (highShelfFilterQuery || '').trim().toLowerCase();
     if (!q) return true;
+    // Tasting notes and effects are searchable too - "citrus" or "calming"
+    // is a reasonable way to find a product whose own name says neither.
     return (entry.title || '').toLowerCase().includes(q)
-      || (entry.sku || '').toLowerCase().includes(q);
+      || (entry.sku || '').toLowerCase().includes(q)
+      || (entry.effects || '').toLowerCase().includes(q)
+      || (entry.tastingNotes || '').toLowerCase().includes(q);
   }
 
   // Sort by... - same field-select dropdown pattern (and .results-toolbar
@@ -12888,12 +12914,19 @@
     const n = parseFloat(value);
     return Number.isFinite(n) ? n : null;
   }
+  function highShelfIsResearched(entry) {
+    return !!(entry.tastingNotes || entry.effects || entry.onset);
+  }
   const HIGH_SHELF_SORTS = [
     { group: 'Name', key: 'name-asc', label: 'Name (A–Z)', cmp: (a, b) => a.title.localeCompare(b.title) },
     { group: 'Potency', key: 'thc-desc', label: 'Highest THC', cmp: (a, b) => (highShelfNum(b.thcMg) ?? -Infinity) - (highShelfNum(a.thcMg) ?? -Infinity) || a.title.localeCompare(b.title) },
     { group: 'Potency', key: 'cbd-desc', label: 'Highest CBD', cmp: (a, b) => (highShelfNum(b.cbdMg) ?? -Infinity) - (highShelfNum(a.cbdMg) ?? -Infinity) || a.title.localeCompare(b.title) },
     { group: 'Other', key: 'servings-desc', label: 'Most Servings', cmp: (a, b) => (highShelfNum(b.servings) ?? -Infinity) - (highShelfNum(a.servings) ?? -Infinity) || a.title.localeCompare(b.title) },
     { group: 'Other', key: 'lab-tested', label: 'Lab Tested First', cmp: (a, b) => (b.isLabTested ? 1 : 0) - (a.isLabTested ? 1 : 0) || a.title.localeCompare(b.title) },
+    // The inverse of the others: puts whatever still has no tasting notes,
+    // effects, or onset window on file at the top, so the next research
+    // pass has a worklist instead of a scroll.
+    { group: 'Other', key: 'needs-research', label: 'Needs Research First', cmp: (a, b) => (highShelfIsResearched(a) ? 1 : 0) - (highShelfIsResearched(b) ? 1 : 0) || a.title.localeCompare(b.title) },
     { group: 'Other', key: 'sku-asc', label: 'SKU (Low–High)', cmp: (a, b) => (highShelfNum(a.sku) ?? Infinity) - (highShelfNum(b.sku) ?? Infinity) || a.title.localeCompare(b.title) },
     { group: 'Other', key: 'recent', label: 'Recently Updated', cmp: (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0) || a.title.localeCompare(b.title) },
   ];
@@ -12929,10 +12962,16 @@
     `).join('');
   }
 
+  // "Researched" counts entries carrying the brand-copy fields a POS export
+  // can never supply (tasting notes, effects, or an onset window) - the one
+  // number that says how much of the shelf still needs looking up, the way
+  // Lab Tested says how much of it has a COA on file.
   function renderHighShelfStats() {
     const labTested = highShelfLibraryCache.filter((e) => e.isLabTested).length;
+    const researched = highShelfLibraryCache.filter((e) => e.tastingNotes || e.effects || e.onset).length;
     els.highShelfStats.innerHTML = `
       <div class="library-stat"><b>${highShelfLibraryCache.length}</b><span>Products</span></div>
+      <div class="library-stat"><b>${researched}</b><span>Researched</span></div>
       <div class="library-stat"><b>${labTested}</b><span>Lab Tested</span></div>
     `;
   }
@@ -12947,6 +12986,7 @@
     if (entry.servings) statBits.push(`${escapeHtml(entry.servings)} servings`);
     const footerBits = [];
     if (entry.strain) footerBits.push(escapeHtml(entry.strain.charAt(0).toUpperCase() + entry.strain.slice(1)));
+    if (entry.onset) footerBits.push(`Onset ${escapeHtml(entry.onset)}`);
     if (entry.isLabTested) footerBits.push('Lab Tested');
     return `
       <button type="button" class="bourbon-card" data-id="${entry.id}">
@@ -12957,6 +12997,7 @@
           <span class="bourbon-card__sub">${footerBits.join(' &middot; ')}</span>
         </div>
         ${entry.effects ? `<div class="bourbon-card__sub bourbon-card__sub--effects">${escapeHtml(entry.effects)}</div>` : ''}
+        ${entry.tastingNotes ? `<div class="bourbon-card__sub bourbon-card__sub--tasting">${escapeHtml(entry.tastingNotes)}</div>` : ''}
       </button>
     `;
   }
@@ -13121,6 +13162,8 @@
     els.highShelfFormStrainInput.value = '';
     els.highShelfFormLabTestedInput.checked = false;
     els.highShelfFormEffectsInput.value = '';
+    els.highShelfFormOnsetInput.value = '';
+    els.highShelfFormTastingNotesInput.value = '';
     els.highShelfFormTitle.textContent = 'Add an entry manually';
     els.highShelfFormSaveBtn.textContent = 'Add Entry';
     els.highShelfFormCancelBtn.hidden = true;
@@ -13138,6 +13181,8 @@
     els.highShelfFormStrainInput.value = ['sativa', 'indica', 'hybrid'].includes(entry.strain) ? entry.strain : '';
     els.highShelfFormLabTestedInput.checked = !!entry.isLabTested;
     els.highShelfFormEffectsInput.value = entry.effects || '';
+    els.highShelfFormOnsetInput.value = entry.onset || '';
+    els.highShelfFormTastingNotesInput.value = entry.tastingNotes || '';
     els.highShelfFormTitle.textContent = `Edit "${entry.title}"`;
     els.highShelfFormSaveBtn.textContent = 'Save Changes';
     els.highShelfFormCancelBtn.hidden = false;
@@ -13205,6 +13250,8 @@
         strain: els.highShelfFormStrainInput.value,
         isLabTested: els.highShelfFormLabTestedInput.checked,
         effects: els.highShelfFormEffectsInput.value.trim(),
+        onset: els.highShelfFormOnsetInput.value.trim(),
+        tastingNotes: els.highShelfFormTastingNotesInput.value.trim(),
         source: 'Manual',
       };
       const resp = highShelfEditingId

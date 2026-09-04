@@ -243,13 +243,22 @@ function buildFlavorHtml(talker) {
 // whatever a brand's own marketing/site actually says about the drink, so
 // it's printed as-is rather than mapped to a fixed set like Strain Type -
 // there's no fixed vocabulary to normalize it against the way there is for
-// Sativa/Indica/Hybrid.
+// Sativa/Indica/Hybrid. Onset Time (talker.onset, see #fOnset - "15-30
+// min") is the one question staff field most about these drinks, so it
+// prints as its own labeled badge under Effects rather than buried in the
+// servings line; Tasting Notes (talker.tastingNotes, see #fTastingNotes)
+// closes the block as plain flavor copy, the same job Nose/Palate/Finish
+// does on a bourbon talker. Both are free text and both stay off the talker
+// entirely when blank, so a product nobody's researched yet still prints a
+// clean potency callout.
 const STRAIN_LABELS = { sativa: 'Sativa', indica: 'Indica', hybrid: 'Hybrid' };
 function buildDoseHtml(talker) {
   const thc = String(talker.thcMg || '').trim();
   const cbd = String(talker.cbdMg || '').trim();
   const servings = String(talker.thcCbdServings || '').trim();
   const effects = String(talker.effects || '').trim();
+  const onset = String(talker.onset || '').trim();
+  const tastingNotes = String(talker.tastingNotes || '').trim();
   if (!thc && !cbd) return '';
   const doseHtml = [
     thc ? `<div class="card__dose card__dose--thc"><span class="card__dose-label">THC</span><span class="card__dose-amount">${escapeHtml(thc)}<span class="card__dose-unit">mg</span></span></div>` : '',
@@ -262,12 +271,18 @@ function buildDoseHtml(talker) {
     ? `<div class="card__dose-servings">${servings ? `${escapeHtml(servings)} servings per container` : ''}${labBadge}</div>`
     : '';
   const effectsHtml = effects ? `<div class="card__effects">${escapeHtml(effects)}</div>` : '';
+  const onsetHtml = onset
+    ? `<div class="card__onset"><span class="card__onset-label">Onset</span><span class="card__onset-value">${escapeHtml(onset)}</span></div>`
+    : '';
+  const tastingHtml = tastingNotes ? `<div class="card__tasting-notes">${escapeHtml(tastingNotes)}</div>` : '';
   return `
     <div class="card__potency">
       ${strainHtml}
       <div class="card__dose-row">${doseHtml}</div>
       ${servingsHtml}
       ${effectsHtml}
+      ${onsetHtml}
+      ${tastingHtml}
     </div>
   `;
 }
@@ -1972,7 +1987,8 @@ function buildSignElement(talker) {
  *   salePrice, theme, talkerType, isChilled, ratings: [{reviewer, score}],
  *   nose, palate, finish, mashBill: [{grain, pct}], isStorePick, brewery,
  *   location, style, abv, ibu, untappdRating, untappdRatingCount, thcMg,
- *   cbdMg, thcCbdServings, isLabTested, strain, effects }
+ *   cbdMg, thcCbdServings, isLabTested, strain, effects, onset,
+ *   tastingNotes }
  * @returns {HTMLElement} a .card element, not yet size-fitted
  */
 function buildCardElement(talker) {

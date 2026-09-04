@@ -521,7 +521,21 @@
               <span>Effects (optional)</span>
               <input type="text" id="fEffects" maxlength="80" placeholder="Chill &amp; Calming" />
             </label>
-            <p class="help-text">Prints as a THC/CBD potency callout under the description - Strain Type prints as a small pill above it, Effects as a line underneath, Lab Tested adds its own badge next to the servings count.</p>
+            <!-- Onset and Tasting Notes: the two research fields with no POS
+                 equivalent (see the high_shelf_entries comment in
+                 server/db.js). Both are free text, typed as whatever the
+                 brand's own site/can actually says - left blank rather than
+                 guessed when it doesn't say, same rule as CBD and Strain
+                 Type above. -->
+            <label class="field">
+              <span>Onset Time (optional)</span>
+              <input type="text" id="fOnset" maxlength="40" placeholder="15&ndash;30 min" />
+            </label>
+            <label class="field">
+              <span>Tasting Notes (optional)</span>
+              <input type="text" id="fTastingNotes" maxlength="120" placeholder="Tart cherry, lime zest, dry finish" />
+            </label>
+            <p class="help-text">Prints as a THC/CBD potency callout under the description - Strain Type prints as a small pill above it, Effects as a line underneath, then Onset Time as its own badge and Tasting Notes below that. Lab Tested adds its own badge next to the servings count.</p>
           </div>
 
           <!-- Wine/Spirits-only, same visibility rule as Food Pairing
@@ -2469,6 +2483,14 @@
           <label class="field">
             <span>Effects (optional)</span>
             <input type="text" id="highShelfFormEffectsInput" maxlength="80" placeholder="Chill &amp; Calming" />
+          </label>
+          <label class="field">
+            <span>Onset Time (optional)</span>
+            <input type="text" id="highShelfFormOnsetInput" maxlength="40" placeholder="15&ndash;30 min" />
+          </label>
+          <label class="field">
+            <span>Tasting Notes (optional)</span>
+            <input type="text" id="highShelfFormTastingNotesInput" maxlength="120" placeholder="Tart cherry, lime zest, dry finish" />
           </label>
 
           <div class="reviewer-manager__add">

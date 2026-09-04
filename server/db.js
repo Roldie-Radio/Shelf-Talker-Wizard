@@ -198,6 +198,17 @@ function applySchema(db) {
     -- upsertHighShelfEntry) even though it isn't itself a unique index -
     -- application code, not the schema, resolves SKU-vs-title collisions.
     --
+    -- onset and tasting_notes are the two research fields with no POS
+    -- equivalent at all: onset is the "how long until it hits" window a
+    -- brand states for its own drink (free text - "15-30 min", "10-20
+    -- minutes", "under 15 min" - since brands word it every possible way
+    -- and there's no standard to normalize against, same reasoning as
+    -- effects), and tasting_notes is that brand's own flavor copy for it.
+    -- Both stay blank rather than guessed when a brand doesn't state one:
+    -- onset in particular varies with formulation (nanoemulsified vs. oil-
+    -- infused), so a made-up window on a printed talker would be worse than
+    -- no window at all - same rule the cbd_mg column already follows.
+    --
     -- No external lookup source exists for this category (no Untappd
     -- equivalent), so unlike beers this never gets an import-from-export or
     -- research-on-X feature - every entry is either typed by hand here or
@@ -215,6 +226,8 @@ function applySchema(db) {
       is_lab_tested INTEGER NOT NULL DEFAULT 0,
       strain TEXT,
       effects TEXT,
+      onset TEXT,
+      tasting_notes TEXT,
       source TEXT NOT NULL DEFAULT 'Manual',
       updated_at TEXT NOT NULL
     );
@@ -269,15 +282,17 @@ function applyRumColumns(db) {
   if (!existing.has('country')) db.exec('ALTER TABLE rums ADD COLUMN country TEXT');
 }
 
-// high_shelf_entries shipped without strain/effects across a couple of
-// releases - same "ALTER TABLE whatever PRAGMA table_info says is actually
-// missing" migration as applyRumColumns above. A row added before either
-// column existed just starts with it blank, same as every other optional
-// field already does.
+// high_shelf_entries shipped without strain/effects, then without onset/
+// tasting_notes, across a few releases - same "ALTER TABLE whatever PRAGMA
+// table_info says is actually missing" migration as applyRumColumns above.
+// A row added before any of these columns existed just starts with it
+// blank, same as every other optional field already does.
 function applyHighShelfColumns(db) {
   const existing = new Set(db.pragma('table_info(high_shelf_entries)').map((col) => col.name));
   if (!existing.has('strain')) db.exec('ALTER TABLE high_shelf_entries ADD COLUMN strain TEXT');
   if (!existing.has('effects')) db.exec('ALTER TABLE high_shelf_entries ADD COLUMN effects TEXT');
+  if (!existing.has('onset')) db.exec('ALTER TABLE high_shelf_entries ADD COLUMN onset TEXT');
+  if (!existing.has('tasting_notes')) db.exec('ALTER TABLE high_shelf_entries ADD COLUMN tasting_notes TEXT');
 }
 
 // Countries whose name this can recognize inside a Location tail, longest
@@ -1186,6 +1201,8 @@ function rowToHighShelfEntry(row) {
     isLabTested: !!row.is_lab_tested,
     strain: row.strain || '',
     effects: row.effects || '',
+    onset: row.onset || '',
+    tastingNotes: row.tasting_notes || '',
     source: row.source,
     updatedAt: row.updated_at,
   };
@@ -1230,10 +1247,10 @@ function validateHighShelfInput({ title }) {
 // meaningful value there, so it checks undefined specifically, not
 // falsiness.
 function highShelfOptionalFieldParams({
-  sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
+  sku, thcMg, cbdMg, servings, isLabTested, strain, effects, onset, tastingNotes,
 }, existing) {
   const prev = existing || {
-    sku: '', thcMg: '', cbdMg: '', servings: '', isLabTested: false, strain: '', effects: '',
+    sku: '', thcMg: '', cbdMg: '', servings: '', isLabTested: false, strain: '', effects: '', onset: '', tastingNotes: '',
   };
   return {
     sku: normalizeOptionalText(sku !== undefined ? sku : prev.sku),
@@ -1243,11 +1260,14 @@ function highShelfOptionalFieldParams({
     isLabTested: (isLabTested !== undefined ? !!isLabTested : !!prev.isLabTested) ? 1 : 0,
     strain: normalizeOptionalText(strain !== undefined ? strain : prev.strain),
     effects: normalizeOptionalText(effects !== undefined ? effects : prev.effects),
+    onset: normalizeOptionalText(onset !== undefined ? onset : prev.onset),
+    tastingNotes: normalizeOptionalText(tastingNotes !== undefined ? tastingNotes : prev.tastingNotes),
   };
 }
 
 const HIGH_SHELF_OPTIONAL_COLUMNS_SET = `
-  sku = @sku, thc_mg = @thcMg, cbd_mg = @cbdMg, servings = @servings, is_lab_tested = @isLabTested, strain = @strain, effects = @effects
+  sku = @sku, thc_mg = @thcMg, cbd_mg = @cbdMg, servings = @servings, is_lab_tested = @isLabTested, strain = @strain, effects = @effects,
+  onset = @onset, tasting_notes = @tastingNotes
 `;
 
 // Create-or-update by SKU first, title (case-insensitive) second - same
@@ -1256,7 +1276,7 @@ const HIGH_SHELF_OPTIONAL_COLUMNS_SET = `
 // Add/Save button both call this, so saving again for a product already on
 // file updates that same entry instead of duplicating it.
 function upsertHighShelfEntry({
-  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
+  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain, effects, onset, tastingNotes,
 }) {
   const db = getDb();
   const { cleanTitle } = validateHighShelfInput({ title });
@@ -1278,7 +1298,7 @@ function upsertHighShelfEntry({
     source: source || 'Manual',
     updatedAt: now,
     ...highShelfOptionalFieldParams({
-      sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
+      sku, thcMg, cbdMg, servings, isLabTested, strain, effects, onset, tastingNotes,
     }, existing),
   };
 
@@ -1292,10 +1312,12 @@ function upsertHighShelfEntry({
   }
   const info = db.prepare(`
     INSERT INTO high_shelf_entries (
-      title, source, updated_at, sku, thc_mg, cbd_mg, servings, is_lab_tested, strain, effects
+      title, source, updated_at, sku, thc_mg, cbd_mg, servings, is_lab_tested, strain, effects,
+      onset, tasting_notes
     )
     VALUES (
-      @title, @source, @updatedAt, @sku, @thcMg, @cbdMg, @servings, @isLabTested, @strain, @effects
+      @title, @source, @updatedAt, @sku, @thcMg, @cbdMg, @servings, @isLabTested, @strain, @effects,
+      @onset, @tastingNotes
     )
   `).run(params);
   return getHighShelfEntry(info.lastInsertRowid);
@@ -1307,7 +1329,7 @@ function upsertHighShelfEntry({
 // owns is a real conflict here, not a merge - same DUPLICATE_TITLE handling
 // as updateBeerById/updateRumById.
 function updateHighShelfEntryById(id, {
-  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
+  title, source, sku, thcMg, cbdMg, servings, isLabTested, strain, effects, onset, tastingNotes,
 }) {
   const db = getDb();
   const existing = getHighShelfEntry(id);
@@ -1325,7 +1347,7 @@ function updateHighShelfEntryById(id, {
       source: source || existing.source,
       updatedAt: nowIso(),
       ...highShelfOptionalFieldParams({
-        sku, thcMg, cbdMg, servings, isLabTested, strain, effects,
+        sku, thcMg, cbdMg, servings, isLabTested, strain, effects, onset, tastingNotes,
       }, existing),
     });
   } catch (err) {
