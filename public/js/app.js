@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.18',
+      items: [
+        'Fixed: a Description on a beer Large Display Sign could print as a single line ending in "..." with most of its own column left empty underneath, whenever the write-up was longer than the room the column had. It now always fills the column, trailing off only at the last line that genuinely fits.',
+      ],
+    },
+    {
       version: '4.6.17',
       items: [
         "A beer Large Display Sign's Store SKU now always prints as the full 5 digits (e.g. \"00665\", not \"665\") even if it was typed without its leading zero(s).",

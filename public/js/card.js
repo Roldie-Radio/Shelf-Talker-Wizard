@@ -2313,16 +2313,28 @@ function regrowSignDescriptionLines(cardEl, body) {
   const description = colRight && colRight.querySelector('[data-fit="description"]');
   if (!description || !description.textContent.trim()) return;
 
+  // Only the lines clampDescriptionToAvailableSpace actually took away are
+  // this pass's to give back. It leaves an inline line-clamp behind only
+  // when it narrowed something (see the early return there for the common
+  // case where the body already fits), so no override means nothing was
+  // narrowed and the CSS ceiling still stands - regrowing from an assumed
+  // 1 line in that case would hand this pass the power to CUT a
+  // description that was never trimmed at all, if the loop below happened
+  // to stop early (a body still overflowing at the --price-fit floor, say).
+  const currentLines = parseInt(description.style.webkitLineClamp, 10);
+  if (!currentLines) return;
+
   // colRight's own height, not description.clientHeight - .sign__col-right
   // is align-items: center (Description reads centered in its column, not
   // stretched to fill it top-to-bottom), so a flex item sized to its own
   // content is always exactly as tall as however many lines its line-clamp
-  // currently allows. Checking description.scrollHeight against that would
+  // currently allows. Checking description's own height against that would
   // be circular - always roughly equal regardless of whether real room is
   // left in the column, never actually detecting slack to grow into.
+  // Captured before the loop grows anything, since colRight stretches to
+  // whatever its content needs once the description outgrows the row.
   const availableH = colRight.clientHeight;
 
-  const currentLines = parseInt(description.style.webkitLineClamp, 10) || 1;
   // Clear the inline override clampDescriptionToAvailableSpace left behind
   // so the CSS cascade's own ceiling (.sign__col-right .sign__description's
   // line-clamp) is what getComputedStyle reports here, not that override.
@@ -2338,7 +2350,17 @@ function regrowSignDescriptionLines(cardEl, body) {
     const nextLines = lines + 1;
     description.style.webkitLineClamp = String(nextLines);
     description.style.lineClamp = String(nextLines);
-    if (description.scrollHeight > availableH + 1 || body.scrollHeight > body.clientHeight + 1) {
+    // clientHeight (what the line-clamp actually renders - nextLines'
+    // worth of text, or less if that's all there is), NOT scrollHeight.
+    // scrollHeight on a line-clamped box is the height of the WHOLE
+    // description as if nothing were clamped, so on any description longer
+    // than its column it already exceeds availableH at the very first step
+    // - the loop broke immediately and left a beer Large Display Sign
+    // showing a single line and an ellipsis with most of its own column
+    // sitting empty underneath, exactly the descriptions with the most to
+    // say. Growing is safe to keep checking against the body too: past the
+    // column's own height the row grows and the sign overflows with it.
+    if (description.clientHeight > availableH + 1 || body.scrollHeight > body.clientHeight + 1) {
       description.style.webkitLineClamp = String(lines);
       description.style.lineClamp = String(lines);
       break;
