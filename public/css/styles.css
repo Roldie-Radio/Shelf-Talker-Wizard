@@ -4604,12 +4604,12 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    buildLargeBeerSignBodyHtml in card.js. */
 .sign__content .card__country-badge,
 .sign__content .card__state-badge {
-  top: calc(var(--w) * 0.012 * var(--price-fit, 1));
-  width: calc(var(--w) * 0.07 * var(--price-fit, 1));
+  top: calc(var(--w) * 0.008 * var(--price-fit, 1));
+  width: calc(var(--w) * 0.088 * var(--price-fit, 1));
 }
-.sign__content .card__country-badge { left: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
-.sign__content .card__state-badge { right: calc(var(--w) * 0.016 * var(--price-fit, 1)); }
-.sign__content .card__state-badge-label { font-size: calc(var(--w) * var(--sign-text) * 0.012 * var(--price-fit, 1)); }
+.sign__content .card__country-badge { left: calc(var(--w) * 0.01 * var(--price-fit, 1)); }
+.sign__content .card__state-badge { right: calc(var(--w) * 0.01 * var(--price-fit, 1)); }
+.sign__content .card__state-badge-label { font-size: calc(var(--w) * var(--sign-text) * 0.014 * var(--price-fit, 1)); }
 
 /* Title/Regular Price/Case Price enlarged too, beer Large Display Signs
    only - scoped via :has(.sign__columns), the two-column wrapper only
@@ -4640,30 +4640,31 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
    side(s) actually carry a badge, mirrored onto the empty side too when
    only one resolved, so the title stays centered on the sign's own
    midpoint instead of drifting toward the empty side. Also adds bottom
-   margin the plain title never needs - the badges above are tall enough
-   (top 0.012 + width 0.045 of --w) that a short, single-line title's own
-   height plus .sign__content's ordinary flex gap (0.008*--w) isn't enough
-   clearance on its own; without this, the badges' lower edge overlaps the
-   Untappd Rating/Style row directly underneath.
-   Padding widened from 0.075 to 0.16 a side - at 0.075 a long beer name
-   ("New Belgium Brewing Voodoo Ranger Imperial IPA") still had enough
-   width to run the full distance between the badges on one line instead
-   of wrapping onto its own already-provisioned 2nd line (see
-   clampTitleToAvailableSpace's maxLines for .sign__title in card.js),
-   reading as text stretched corner-to-corner rather than a title confined
-   to its own centered block. The badge-clearance padding-bottom is
-   trimmed slightly (0.02 -> 0.015) to help make room for that now more
-   likely 2nd line - a title that does wrap to 2 lines is already tall
-   enough on its own to clear the badges, so the 1-line worst case this
-   padding exists for needs less insurance than before. */
+   margin the plain title never needs - the badges above (now top 0.008 +
+   width 0.088 of --w, up from 0.012/0.07 - bigger and closer to the
+   corner, per request) are tall enough that a short, single-line title's
+   own height plus .sign__content's ordinary flex gap (0.008*--w) isn't
+   enough clearance on its own; without this, the badges' lower edge
+   overlaps the Untappd Rating/Style row directly underneath - confirmed
+   via a getBoundingClientRect check against the actual rendered badge/
+   rating-row edges, not just eyeballed, since the overlap at the old
+   padding was only a few px and easy to miss in a screenshot.
+   padding-left/-right narrowed from 0.16 to 0.11 a side (also per
+   request, "closer to the flag and state silhouettes") - a long beer name
+   ("New Belgium Brewing Voodoo Ranger Imperial IPA") still wraps onto its
+   own already-provisioned 2nd line rather than running the full distance
+   between the badges on one line (see clampTitleToAvailableSpace's
+   maxLines for .sign__title in card.js), even at this narrower padding,
+   since the title's own font is meaningfully bigger now than when 0.16
+   was chosen. */
 .sign__title--badge-left,
 .sign__title--badge-right {
-  padding-bottom: calc(var(--w) * 0.015);
+  padding-bottom: calc(var(--w) * 0.038);
 }
-.sign__title--badge-left { padding-left: calc(var(--w) * 0.16); }
-.sign__title--badge-right { padding-right: calc(var(--w) * 0.16); }
-.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.16); }
-.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.16); }
+.sign__title--badge-left { padding-left: calc(var(--w) * 0.11); }
+.sign__title--badge-right { padding-right: calc(var(--w) * 0.11); }
+.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.11); }
+.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.11); }
 
 /* Beer's own two-column body: facts (rating/style/brewery/location/abv-ibu)
    on the left, Description gets the right column to itself - see
