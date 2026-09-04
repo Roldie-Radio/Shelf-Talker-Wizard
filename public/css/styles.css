@@ -4661,10 +4661,10 @@ html[data-queue-hidden="true"] .panel--queue { display: none; }
 .sign__title--badge-right {
   padding-bottom: calc(var(--w) * 0.038);
 }
-.sign__title--badge-left { padding-left: calc(var(--w) * 0.11); }
-.sign__title--badge-right { padding-right: calc(var(--w) * 0.11); }
-.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.11); }
-.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.11); }
+.sign__title--badge-left { padding-left: calc(var(--w) * 0.07); }
+.sign__title--badge-right { padding-right: calc(var(--w) * 0.07); }
+.sign__title--badge-left:not(.sign__title--badge-right) { padding-right: calc(var(--w) * 0.07); }
+.sign__title--badge-right:not(.sign__title--badge-left) { padding-left: calc(var(--w) * 0.07); }
 
 /* Beer's own two-column body: facts (rating/style/brewery/location/abv-ibu)
    on the left, Description gets the right column to itself - see
