@@ -52,6 +52,12 @@
   // be pruned by hand as it ages.
   const WHATS_NEW_ENTRIES = [
     {
+      version: '4.6.14',
+      items: [
+        'On a beer Large Display Sign, the beer name sits closer to the Untappd rating/description below it, and Regular Price, Case Price, and Size print a bit larger with the room that frees up.',
+      ],
+    },
+    {
       version: '4.6.13',
       items: [
         'The beer name on a beer Large Display Sign runs larger again - its margins next to the flag/state badges are narrower, so there\'s more room for the name itself.',
